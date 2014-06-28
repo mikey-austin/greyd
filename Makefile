@@ -7,6 +7,7 @@ OBJ		= $(SRC:.c=.o)
 TARGET 	= greyd
 CC		= clang
 CFLAGS	=
+TESTS   = tests
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
@@ -22,13 +23,11 @@ $(TARGET): $(OBJ)
 
 -include $(SRC:.c=.d)
 
-tests:
-	cd tests && $(MAKE)
+test: $(OBJ)
+	cd $(TESTS) && $(MAKE) test
 
-.PHONY: clean test
+.PHONY: clean
 
 clean:
-	rm $(TARGET) $(OBJ) $(SRC:.c=.d)
-
-test: tests
-	cd tests && $(MAKE) test
+	rm -f $(TARGET) $(OBJ) $(SRC:.c=.d)
+	cd $(TESTS) && $(MAKE) clean
