@@ -11,11 +11,9 @@ CFLAGS	=
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
 
-.PHONY: clean
-
-clean:
-	rm $(TARGET) $(OBJ) $(SRC:.c=.d)
-
+#
+# Generate the object file header dependencies.
+#
 %.d:%.c
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
@@ -23,3 +21,14 @@ clean:
     rm -f $@.$$$$
 
 -include $(SRC:.c=.d)
+
+tests:
+	cd tests && $(MAKE)
+
+.PHONY: clean test
+
+clean:
+	rm $(TARGET) $(OBJ) $(SRC:.c=.d)
+
+test: tests
+	cd tests && $(MAKE) test
