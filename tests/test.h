@@ -16,6 +16,15 @@
 #define TEST_PASSED 0
 #define TEST_FAILED 1
 
+#define TEST_START(total)\
+    struct Test_Plan_T *__plan = Test_start(total);
+
+#define TEST_OK(expr, desc)\
+    Test_ok(__plan, expr, desc, __FILE__, __LINE__);
+
+#define TEST_COMPLETE\
+    return Test_complete(__plan);
+
 struct T {
     int total;
     int current;
@@ -25,7 +34,7 @@ struct T {
 
 extern struct T *Test_start(int total);
 extern int       Test_complete(struct T *plan);
-extern int       Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int line);
+extern void      Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int line);
 extern void      Test_results(struct T *plan);
 
 #undef T

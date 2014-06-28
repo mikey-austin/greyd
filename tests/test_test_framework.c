@@ -10,9 +10,12 @@
 int
 main()
 {
-    struct Test_Plan_T *plan = Test_start(1);
+    TEST_START(4);
 
-    Test_ok(plan, (1 == 1), "1 equals 1", __FILE__, __LINE__);
+    TEST_OK((1 == 1), "1 equals 1");
+    TEST_OK((1 == 1), "1 equals 1");
+    TEST_OK((1 == 1), "1 equals 1");
+    TEST_OK((1 == 1), "1 equals 1");
 
-    return Test_complete(plan);
+    TEST_COMPLETE;
 }

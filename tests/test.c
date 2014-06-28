@@ -3,6 +3,10 @@
  * @brief  Implements the simple unit test framework.
  * @author Mikey Austin
  * @date   2014
+ *
+ * The output of these testing functions are intended to mock the PERL
+ * core Test::Simple module, so that these tests can make use of the PERL core
+ * Test::Harness functionality.
  */
 
 #include <stdio.h>
@@ -33,31 +37,28 @@ extern struct T
     return plan;
 }
 
-extern int
+extern void
 Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int line)
 {
     if(expr) {
         printf("ok %d - %s\n", plan->current, desc);
-        plan->current++;
         plan->succeeded++;
-        return 0;
     } else {
         printf("not ok %d - %s\n", plan->current, desc);
-        printf("#\tFailed test '%s'\n", desc);
-        printf("#\tin %s at line %d\n", file, line);
-        return 1;
+        printf("#   Failed test '%s'\n", desc);
+        printf("#   at %s line %d.\n", file, line);
+        plan->failed++;
     }
+
+    plan->current++;
 }
 
 extern void
 Test_results(struct T *plan)
 {
     if(plan->failed > 0) {
-        printf("Looks like you failed %d tests of %d.\n", plan->failed, plan->total);
-    } else if(plan->succeeded == plan->total) {
-        printf("All tests successful.\n");
-    } else {
-        printf("Only %d of %d tests ran.\n", plan->current, plan->total);
+        printf("# Looks like you failed %d test%s of %d.\n",
+               plan->failed, (plan->failed > 1 ? "s" : ""), plan->total);
     }
 }
 
