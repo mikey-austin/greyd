@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include "failures.h"
 
 int main()
 {
-    printf("Hello world\n");
+    I_INFO("here is %s the %drd\n", "mikey", 3);
+
     return 0;
 }
