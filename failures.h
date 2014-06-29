@@ -14,16 +14,16 @@
 #include <stdarg.h>
 
 #define I_CRIT(msg, ...)\
-    i_critical(__FILE__, __LINE__, msg, __VA_ARGS__)
+    i_critical(__FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 #define I_ERR(msg, ...)\
-    i_error(__FILE__, __LINE__, msg, __VA_ARGS__)
+    i_error(__FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 #define I_WARN(msg, ...)\
-    i_warning(__FILE__, __LINE__, msg, __VA_ARGS__)
+    i_warning(__FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 #define I_INFO(msg, ...)\
-    i_info(__FILE__, __LINE__, msg, __VA_ARGS__)
+    i_info(__FILE__, __LINE__, msg, ##__VA_ARGS__)
 
 /**
  * The critical info function will log it's message and exit.
