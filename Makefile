@@ -6,7 +6,7 @@ SRC		= $(wildcard *.c)
 OBJ		= $(SRC:.c=.o)
 TARGET 	= greyd
 CC		= clang
-CFLAGS	=
+CFLAGS	= -g -O0
 TESTS   = tests
 
 $(TARGET): $(OBJ)
@@ -29,5 +29,5 @@ test: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f $(TARGET) $(OBJ) $(SRC:.c=.d)
+	rm -f $(TARGET) $(OBJ) $(SRC:.c=.d) $(SRC:.c=.d).*
 	cd $(TESTS) && $(MAKE) clean
