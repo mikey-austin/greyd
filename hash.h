@@ -21,8 +21,8 @@
  * A struct to contain a hash entry's key and value pair.
  */
 struct E {
-    char k[MAX_KEY_LEN + 1]; /**< Hash entry key */
-    void *v;                 /**< Hash entry value */
+    char  k[MAX_KEY_LEN + 1]; /**< Hash entry key */
+    void *v;                  /**< Hash entry value */
 };
 
 /**
@@ -30,9 +30,9 @@ struct E {
  */
 typedef struct T *T;
 struct T {
-    int        size;
+    int        size;        /**< The initial hash size. */
+    int        num_entries; /**< The number of set elements. */
     int      (*lookup)(const char *key);
-    int      (*cmp)(const char *a, const char *b);
     void     (*destroy)(struct E *entry);
     struct E  *entries;
 };
@@ -40,9 +40,8 @@ struct T {
 /**
  * Create a new hash table.
  */
-extern T Hash_create(int size,
-                     int (*lookup)(const char *key),
-                     int (*cmp)(const char *a, const char *b),
+extern T Hash_create(int    size,
+                     int  (*lookup)(const char *key),
                      void (*destroy)(struct E *entry));
 
 /**

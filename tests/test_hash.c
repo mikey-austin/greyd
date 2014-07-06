@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define HASH_SIZE 5
+#define HASH_SIZE 2
 
 #define TEST_KEY1 "test key 1"
 #define TEST_KEY2 "test key 2"
@@ -29,7 +29,6 @@
 
 /* Include the private hash callback functions. */
 int  lookup(const char *key);
-int  cmp(const char *a, const char *b);
 void destroy(struct Hash_entry *entry);
 
 int
@@ -39,12 +38,13 @@ main()
     char *s, *s1, *s2, *s3, *s4, *s5;
 
     /* Test hash creation. */
-    hash = Hash_create(HASH_SIZE, lookup, cmp, destroy);
+    hash = Hash_create(HASH_SIZE, lookup, destroy);
 
-    TEST_START(7);
+    TEST_START(13);
 
     /* Create a hash string keys to string values. */
     TEST_OK((hash->size == HASH_SIZE), "Hash size is set correctly");
+    TEST_OK((hash->num_entries == 0), "Hash number of entries is zero as expected");
 
     /* Test insertion of keys in different orders. */
     s1 = (char *) malloc(strlen(TEST_VAL1) + 1); strcpy(s1, TEST_VAL1);
@@ -56,8 +56,16 @@ main()
     Hash_insert(hash, TEST_KEY5, (void *) s5);
     Hash_insert(hash, TEST_KEY4, (void *) s4);
     Hash_insert(hash, TEST_KEY3, (void *) s3);
+
+    /* Test that the realloc worked. */
+    TEST_OK((hash->num_entries == 3), "Hash number of entries is as expected");
+    TEST_OK((hash->size == (2 * HASH_SIZE)), "Hash size is as expected");
+    
     Hash_insert(hash, TEST_KEY2, (void *) s2);
     Hash_insert(hash, TEST_KEY1, (void *) s1);
+
+    TEST_OK((hash->num_entries == 5), "Hash size is as expected");
+    TEST_OK((hash->size == (2 * 2 * HASH_SIZE)), "Hash size is as expected");
 
     s = (char *) Hash_get(hash, TEST_KEY1);
     TEST_OK((strcmp(s, TEST_VAL1) == 0), "Hash entry 1 inserted correctly");
@@ -78,6 +86,7 @@ main()
     Hash_reset(hash);
     s = (char *) Hash_get(hash, TEST_KEY5);
     TEST_OK((s == NULL), "Hash reset correctly");
+    TEST_OK((hash->num_entries == 0), "Hash number of entries is zero as expected");
 
     /* Destroy the hash. */
     Hash_destroy(hash);
@@ -88,17 +97,7 @@ main()
 int
 lookup(const char *key)
 {
-    int len = strlen(key);
-    return len;
-}
-
-int
-cmp(const char *a, const char *b)
-{
-    if(a && b)
-        return strcmp(a, b);
-
-    return -1;
+    return strlen(key);
 }
 
 void
