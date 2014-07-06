@@ -1,11 +1,10 @@
 /**
  * @file   config.h
- * @brief  Defines the system configuration management interface.
+ * @brief  Defines the application configuration interface.
  * @author Mikey Austin
  * @date   2014
- *
  */
- 
+
 #ifndef CONFIG_DEFINED
 #define CONFIG_DEFINED
 
@@ -38,5 +37,4 @@ extern T Config_create_from_file(const char *file);
 extern void Config_destroy(T config);
 
 #undef T
-#undef S
 #endif

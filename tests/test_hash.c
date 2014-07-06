@@ -59,13 +59,13 @@ main()
 
     /* Test that the realloc worked. */
     TEST_OK((hash->num_entries == 3), "Hash number of entries is as expected");
-    TEST_OK((hash->size == (2 * HASH_SIZE)), "Hash size is as expected");
-    
+    TEST_OK((hash->size == (2 * HASH_SIZE)), "Hash size resized as expected");
+
     Hash_insert(hash, TEST_KEY2, (void *) s2);
     Hash_insert(hash, TEST_KEY1, (void *) s1);
 
     TEST_OK((hash->num_entries == 5), "Hash size is as expected");
-    TEST_OK((hash->size == (2 * 2 * HASH_SIZE)), "Hash size is as expected");
+    TEST_OK((hash->size == (2 * 2 * HASH_SIZE)), "Hash size resized as expected");
 
     s = (char *) Hash_get(hash, TEST_KEY1);
     TEST_OK((strcmp(s, TEST_VAL1) == 0), "Hash entry 1 inserted correctly");
