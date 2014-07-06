@@ -15,11 +15,11 @@
 
 #define HASH_SIZE 2
 
-#define TEST_KEY1 "test key 1"
-#define TEST_KEY2 "test key 2"
-#define TEST_KEY3 "test key 3"
-#define TEST_KEY4 "test key 4"
-#define TEST_KEY5 "test key 5"
+#define TEST_KEY1 "test key 1 - big"
+#define TEST_KEY2 "test key 2 - test data"
+#define TEST_KEY3 "test key 3 - medium"
+#define TEST_KEY4 "test key 4 - larger still"
+#define TEST_KEY5 "test key 5 - small"
 
 #define TEST_VAL1 "test value 1"
 #define TEST_VAL2 "test value 2"
@@ -94,6 +94,7 @@ main()
     TEST_COMPLETE;
 }
 
+/* Test hash function depends on the size of the key. */
 int
 lookup(const char *key)
 {
