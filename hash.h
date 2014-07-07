@@ -60,7 +60,7 @@ extern void Hash_insert(T hash, const char *key, void *value);
 /**
  * Fetch an element from the hash table by the specified key.
  */
-extern void *Hash_get(T hash, char *key);
+extern void *Hash_get(T hash, const char *key);
 
 #undef T
 #undef E

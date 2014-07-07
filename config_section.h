@@ -19,10 +19,10 @@
 typedef struct T *T;
 struct T {
     char   *name;  /**< The section name. */
-    Hash_T *vars;  /**< A hash of the variables in this section. */
+    Hash_T  vars;  /**< A hash of the variables in this section. */
 };
 
-extern T              Config_section_create();
+extern T              Config_section_create(const char *name);
 extern Config_value_T Config_section_get(T section, const char *varname);
 extern void           Config_section_set(T section, const char *varname, Config_value_T value);
 extern void           Config_section_set_int(T section, const char *varname, int value);

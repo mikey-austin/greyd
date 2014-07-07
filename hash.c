@@ -124,7 +124,7 @@ Hash_insert(T hash, const char *key, void *value)
 }
 
 extern void
-*Hash_get(T hash, char *key)
+*Hash_get(T hash, const char *key)
 {
     struct E *entry;
     entry = Hash_find_entry(hash, key);
