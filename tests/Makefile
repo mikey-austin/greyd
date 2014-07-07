@@ -14,7 +14,7 @@ all: $(TARGETS)
 
 test_%.t: test_%.o $(TEST_OBJ)
 	$(CC) $(CFLAGS) -o $@ $< $(SRC:.c=.o) $(shell find .. -maxdepth 1 -name \*.o -and -not -name main.\*)
-	echo "system(\"valgrind -q --tool=memcheck $(shell pwd)/$@\")" >test_$*.pl
+	echo "system(\"valgrind -q --leak-check=full --error-exitcode=1 --tool=memcheck $(shell pwd)/$@\")" >test_$*.pl
 
 .PHONY: clean test
 

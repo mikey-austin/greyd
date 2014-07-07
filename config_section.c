@@ -63,12 +63,7 @@ Config_section_destroy(T section)
 extern Config_value_T
 Config_section_get(T section, const char *varname)
 {
-    struct Hash_entry *value;
-
-    value = Hash_get(section->vars, varname);
-
-    /* This may be null. */
-    return (Config_value_T) value->v;
+    return (Config_value_T) Hash_get(section->vars, varname);
 }
 
 extern void
