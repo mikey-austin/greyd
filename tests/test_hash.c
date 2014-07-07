@@ -28,19 +28,19 @@
 #define TEST_VAL5 "test value 5"
 
 /* Include the private hash callback functions. */
-int  lookup(const char *key);
 void destroy(struct Hash_entry *entry);
 
 int
 main()
 {
     Hash_T hash;
-    char *s, *s1, *s2, *s3, *s4, *s5;
+    char *s, *s1, *s2, *s3, *s4, *s5, *s6;
+    int i;
 
     /* Test hash creation. */
-    hash = Hash_create(HASH_SIZE, lookup, destroy);
+    hash = Hash_create(HASH_SIZE, destroy);
 
-    TEST_START(13);
+    TEST_START(15);
 
     /* Create a hash string keys to string values. */
     TEST_OK((hash->size == HASH_SIZE), "Hash size is set correctly");
@@ -48,10 +48,11 @@ main()
 
     /* Test insertion of keys in different orders. */
     s1 = (char *) malloc(strlen(TEST_VAL1) + 1); strcpy(s1, TEST_VAL1);
-    s2 = (char *) malloc(strlen(TEST_VAL2) + 2); strcpy(s2, TEST_VAL2);
-    s3 = (char *) malloc(strlen(TEST_VAL3) + 3); strcpy(s3, TEST_VAL3);
-    s4 = (char *) malloc(strlen(TEST_VAL4) + 4); strcpy(s4, TEST_VAL4);
-    s5 = (char *) malloc(strlen(TEST_VAL5) + 5); strcpy(s5, TEST_VAL5);
+    s2 = (char *) malloc(strlen(TEST_VAL2) + 1); strcpy(s2, TEST_VAL2);
+    s3 = (char *) malloc(strlen(TEST_VAL3) + 1); strcpy(s3, TEST_VAL3);
+    s4 = (char *) malloc(strlen(TEST_VAL4) + 1); strcpy(s4, TEST_VAL4);
+    s5 = (char *) malloc(strlen(TEST_VAL5) + 1); strcpy(s5, TEST_VAL5);
+    s6 = (char *) malloc(strlen(TEST_VAL5) + 1); strcpy(s6, TEST_VAL5);
 
     Hash_insert(hash, TEST_KEY5, (void *) s5);
     Hash_insert(hash, TEST_KEY4, (void *) s4);
@@ -82,6 +83,13 @@ main()
     s = (char *) Hash_get(hash, TEST_KEY5);
     TEST_OK((strcmp(s, TEST_VAL5) == 0), "Hash entry 5 inserted correctly");
 
+    /* Test the ability to overwrite values. */
+    i = hash->num_entries;
+    Hash_insert(hash, TEST_KEY1, (void *) s6);
+    TEST_OK((i == hash->num_entries), "No new entry was added as expected");
+    s = (char *) Hash_get(hash, TEST_KEY1);
+    TEST_OK((strcmp(s, TEST_VAL5) == 0), "Hash entry overwritten correctly");
+
     /* Reset the hash and verify that the last value is no longer present. */
     Hash_reset(hash);
     s = (char *) Hash_get(hash, TEST_KEY5);
@@ -92,13 +100,6 @@ main()
     Hash_destroy(hash);
 
     TEST_COMPLETE;
-}
-
-/* Test hash function depends on the size of the key. */
-int
-lookup(const char *key)
-{
-    return strlen(key);
 }
 
 void

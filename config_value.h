@@ -19,15 +19,30 @@
 typedef struct T *T;
 struct T {
     short type;
-    union v {
+    union {
         int   i;
         char *s;
-    };
+    } v;
 };
 
+/**
+ * Create a new configuration value structure initialized to the specified type.
+ */
 extern T    Config_value_create(short type);
-extern T    Config_value_set_int(T value, int data);
-extern T    Config_value_set_str(T value, const char *data);
+
+/**
+ * Set the integer data into the specified value.
+ */
+extern void Config_value_set_int(T value, int data);
+
+/**
+ * Set the string data into the specified value.
+ */
+extern void Config_value_set_str(T value, const char *data);
+
+/**
+ * Destroy a configuration variable, including it's contents if required.
+ */
 extern void Config_value_destroy(T value);
 
 #undef T

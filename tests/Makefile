@@ -13,10 +13,8 @@ CFLAGS		= -g -O0
 all: $(TARGETS)
 
 test_%.t: test_%.o $(TEST_OBJ)
-	$(CC) $(CFLAGS) -o $@ $< \
-		$(SRC:.c=.o) \
-		$(shell find .. -maxdepth 1 -name \*.o -and -not -name main.\*)
-	echo "system(\"$(shell pwd)/$@\")" >test_$*.pl
+	$(CC) $(CFLAGS) -o $@ $< $(SRC:.c=.o) $(shell find .. -maxdepth 1 -name \*.o -and -not -name main.\*)
+	echo "system(\"valgrind -q --tool=memcheck $(shell pwd)/$@\")" >test_$*.pl
 
 .PHONY: clean test
 
@@ -24,4 +22,9 @@ clean:
 	rm -f $(TARGETS) $(TEST_OBJ) $(WRAPPERS)
 
 test: $(TARGETS)
-	perl -MTest::Harness -e 'runtests(@ARGV)' $(WRAPPERS)
+	@echo
+	@echo "******************************"
+	@echo "** Preparing to run tests...**"
+	@echo "******************************"
+	@echo
+	perl -MTest::Harness -e 'runtests(@ARGV)' *.pl

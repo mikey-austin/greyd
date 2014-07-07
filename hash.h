@@ -32,7 +32,6 @@ typedef struct T *T;
 struct T {
     int        size;        /**< The initial hash size. */
     int        num_entries; /**< The number of set elements. */
-    int      (*lookup)(const char *key);
     void     (*destroy)(struct E *entry);
     struct E  *entries;
 };
@@ -41,7 +40,6 @@ struct T {
  * Create a new hash table.
  */
 extern T Hash_create(int    size,
-                     int  (*lookup)(const char *key),
                      void (*destroy)(struct E *entry));
 
 /**
@@ -66,5 +64,4 @@ extern void *Hash_get(T hash, char *key);
 
 #undef T
 #undef E
-#undef K
 #endif

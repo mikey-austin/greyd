@@ -33,8 +33,13 @@ static void Hash_resize(T hash, int new_size);
  */
 static void Hash_init_entry(struct E *entry);
 
+/**
+ * The hash function to map a key to an index in the array of hash entries.
+ */
+static int Hash_lookup(const char *key);
+
 extern T
-Hash_create(int size, int (*lookup)(const char *key), void (*destroy)(struct E *entry))
+Hash_create(int size, void (*destroy)(struct E *entry))
 {
     int i;
     T new;
@@ -46,7 +51,6 @@ Hash_create(int size, int (*lookup)(const char *key), void (*destroy)(struct E *
 
     new->size        = size;
     new->num_entries = 0;
-    new->lookup      = lookup;
     new->destroy     = destroy;
 
     new->entries = (struct E*) malloc(sizeof(*(new->entries)) * size);
@@ -72,8 +76,8 @@ Hash_destroy(T hash)
     }
 
     if(hash && hash->entries) {
-        free(hash->entries); hash->entries = NULL;
-        free(hash); hash = NULL;
+        free(hash->entries);
+        free(hash);
     } else {
         I_ERR("Tried to free NULL hash (hash %d, entries %d)",
               hash, (hash ? hash->entries : 0x0));
@@ -133,7 +137,7 @@ static struct E
     int i, j;
     struct E *curr;
 
-    i = j = (hash->lookup(key) % hash->size);
+    i = j = (Hash_lookup(key) % hash->size);
     do {
         curr = hash->entries + i;
         if((strcmp(key, curr->k) == 0) || (curr->v == NULL))
@@ -191,6 +195,12 @@ Hash_init_entry(struct E *entry)
     /* Ensure that an empty key contains a null byte. */
     *(entry->k) = '\0';
     entry->v    = NULL;
+}
+
+static int
+Hash_lookup(const char *key)
+{
+    return strlen(key);
 }
 
 #undef T
