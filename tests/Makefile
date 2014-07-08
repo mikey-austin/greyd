@@ -27,4 +27,4 @@ test: $(TARGETS)
 	@echo "** Preparing to run tests...**"
 	@echo "******************************"
 	@echo
-	perl -MTest::Harness -e 'runtests(@ARGV)' *.pl
+	HARNESS_COLOR=1 HARNESS_VERBOSE=1 perl -MTest::Harness -e 'runtests(@ARGV)' *.pl
