@@ -9,6 +9,7 @@
 #define CONFIG_DEFINED
 
 #include "hash.h"
+#include "config_section.h"
 
 #define T Config_T
 
@@ -17,8 +18,7 @@
  */
 typedef struct T *T;
 struct T {
-    char   *file;      /**< The file making up this configuration. */
-    Hash_T *sections;  /**< A hash of the sections comprising this configuration. */
+    Hash_T sections;  /**< A hash of the sections comprising this configuration. */
 };
 
 /**
@@ -27,14 +27,19 @@ struct T {
 extern T Config_create();
 
 /**
- * Create a new configuration object from a file.
- */
-extern T Config_create_from_file(const char *file);
-
-/**
  * Destroy a config table, freeing all sections.
  */
 extern void Config_destroy(T config);
+
+/*
+ * Add a section to the configuration.
+ */
+extern void Config_add_section(T config, Config_section_T section);
+
+/**
+ * Get a configuration section by name if one exists.
+ */
+extern Config_section_T Config_get_section(T config, const char *section_name);
 
 #undef T
 #endif
