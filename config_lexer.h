@@ -8,6 +8,8 @@
 #ifndef CONFIG_LEXER_DEFINED
 #define CONFIG_LEXER_DEFINED
 
+#include "config_source.h"
+
 #define T Config_lexer_T
 
 #define CONFIG_LEXER_MAX_TOK_LEN   50
@@ -25,19 +27,21 @@
  */
 typedef struct T *T;
 struct T {
-    /* Semantic value of scanned token. */
+    /* Semantic value of current scanned token. */
     union {
         int  i;
         char s[CONFIG_LEXER_MAX_TOK_LEN + 1];
-    } value;
+    } current_value;
 
+    int current_token;
     int seen_end;
+
+    Config_source_T source;
 };
 
-extern T    Config_lexer_create();
+extern T    Config_lexer_create(Config_source_T source);
 extern void Config_lexer_destroy(T lexer);
 extern void Config_lexer_next_token(T lexer);
-extern void Config_lexer_reset(T lexer);
 
 #undef T
 #endif
