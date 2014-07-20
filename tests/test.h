@@ -32,10 +32,31 @@ struct T {
     int failed;
 };
 
+/**
+ * Initialize a test run with the total number of expected tests to be run.
+ */
 extern struct T *Test_start(int total);
-extern int       Test_complete(struct T *plan);
-extern void      Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int line);
-extern void      Test_results(struct T *plan);
+
+/**
+ * Finish off a test run, and perform and cleanup.
+ */
+extern int Test_complete(struct T *plan);
+
+/**
+ * Test that the supplied expression evaluates to 'true'.
+ */
+extern void Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int line);
+
+/**
+ * Print a summary of the test results.
+ */
+extern void Test_results(struct T *plan);
+
+/**
+ * Construct and return the full filesystem path to the supplied test data filename.
+ * The resultant path string must be explicitly freed after use.
+ */
+extern char *Test_get_file_path(const char *filename);
 
 #undef T
 #endif

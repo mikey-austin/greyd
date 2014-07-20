@@ -28,14 +28,15 @@ struct source_data_str {
 
 static T     source_create();
 static void  source_data_file_destroy(void *data);
-static void  source_data_str_destroy(void *data);
 static int   source_data_file_getc(void *data);
-static int   source_data_str_getc(void *data);
 static void  source_data_file_ungetc(void *data, int c);
+
+static void  source_data_str_destroy(void *data);
+static int   source_data_str_getc(void *data);
 static void  source_data_str_ungetc(void *data, int c);
 
 extern T
-Config_create_from_file(const char *filename)
+Config_source_create_from_file(const char *filename)
 {
     int flen = strlen(filename);
     T source = source_create();
@@ -43,7 +44,7 @@ Config_create_from_file(const char *filename)
 
     data = (struct source_data_file *) malloc(sizeof(*data));
     if(data == NULL) {
-        I_CRIT("Could not open %s", filename);
+        I_CRIT("Could not create config source for %s", filename);
     }
 
     /* Store the filename. */
@@ -71,9 +72,40 @@ Config_create_from_file(const char *filename)
 }
 
 extern T
-Config_create_from_str(const char *buf)
+Config_source_create_from_str(const char *buf)
 {
-    return NULL;
+    int blen = strlen(buf);
+    T source = source_create();
+    struct source_data_str *data;
+
+    if(blen <= 0) {
+        I_CRIT("Invalid config source buffer");
+    }
+
+    data = (struct source_data_str *) malloc(sizeof(*data));
+    if(data == NULL) {
+        I_CRIT("Could not create config source");
+    }
+
+    /* Copy the buffer into the new source object. */
+    data->buf = (char *) malloc(blen + 1);
+    if(data->buf == NULL) {
+        I_CRIT("Could not create config source buffer");
+    }
+
+    strncpy(data->buf, buf, blen);
+    data->buf[blen] = '\0';
+
+    data->index  = 0;    /* Index is for traversing buffer. */
+    data->length = blen; /* Not including sentinel. */
+
+    source->type     = CONFIG_SOURCE_STR;
+    source->data     = data;
+    source->_getc    = source_data_str_getc;
+    source->_ungetc  = source_data_str_ungetc;
+    source->_destroy = source_data_str_destroy;
+
+    return source;
 }
 
 extern void
@@ -123,7 +155,6 @@ source_data_file_destroy(void *data)
         return;
 
     data_file = (struct source_data_file *) data;
-
     if(data_file->filename != NULL) {
         free(data_file->filename);
     }
@@ -136,22 +167,11 @@ source_data_file_destroy(void *data)
     free(data_file);
 }
 
-static void
-source_data_str_destroy(void *data)
-{
-}
-
 static int
 source_data_file_getc(void *data)
 {
     struct source_data_file *data_file = (struct source_data_file *) data;
     return getc(data_file->handle);
-}
-
-static int
-source_data_str_getc(void *data)
-{
-    return 0;
 }
 
 static void
@@ -162,8 +182,45 @@ source_data_file_ungetc(void *data, int c)
 }
 
 static void
+source_data_str_destroy(void *data)
+{
+    struct source_data_str *data_str;
+    if(data == NULL)
+        return;
+
+    data_str = (struct source_data_str *) data;
+    if(data_str->buf != NULL) {
+        free(data_str->buf);
+    }
+
+    free(data_str);
+}
+
+/*
+ * The following string source getc and ungetc functions simulate a queue
+ * by moving the index back and forth.
+ */
+static int
+source_data_str_getc(void *data)
+{
+    struct source_data_str *data_str = (struct source_data_str *) data;
+
+    if(data_str->index <= (data_str->length - 1)) {
+        return data_str->buf[data_str->index++];
+    }
+
+    return EOF;
+}
+
+static void
 source_data_str_ungetc(void *data, int c)
 {
+    struct source_data_str *data_str = (struct source_data_str *) data;
+    int prev = data_str->index - 1;
+    
+    if(prev >= 0) {
+        data_str->index = prev;
+    }
 }
 
 #undef T

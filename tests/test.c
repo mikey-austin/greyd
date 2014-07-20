@@ -9,12 +9,17 @@
  * Test::Harness functionality.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "test.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
 #define T Test_Plan_T
+
+#define TEST_DATA_DIR "/data/"
+#define TEST_CWD      1024
 
 extern struct T
 *Test_start(int total)
@@ -79,3 +84,29 @@ Test_complete(struct T *plan)
     return failed;
 }
 
+extern char
+*Test_get_file_path(const char *filename)
+{
+    int path_len;
+    char *path, cwd[TEST_CWD + 1];
+
+    if(getcwd(cwd, TEST_CWD) == NULL) {
+        printf("Could not get current working directory...\n");
+        exit(1);
+    }
+
+    /* Allocate space for path. */
+    path_len = strlen(cwd) + strlen(TEST_DATA_DIR) + strlen(filename) + 1;
+    if((path = (char *) malloc(path_len)) == NULL) {
+        printf("Could not allocate file path...\n");
+        exit(1);
+    }
+
+    /* Copy the parts into the new path. */
+    strncpy(path, cwd, strlen(cwd));
+    strncpy(path + strlen(cwd), TEST_DATA_DIR, strlen(TEST_DATA_DIR));
+    strncpy(path + strlen(cwd) + strlen(TEST_DATA_DIR), filename, strlen(filename));
+    path[path_len - 1] = '\0';
+
+    return path;
+}
