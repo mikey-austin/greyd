@@ -46,28 +46,90 @@ Config_lexer_destroy(T lexer)
     free(lexer);
 }
 
-extern void
+extern int
 Config_lexer_next_token(T lexer)
 {
-    int c;
+    int c, seen_esc = 0, len = 0, i;
 
     if(lexer->seen_end)
-        return;
+        return 0;
 
     for(;;) {
         c = L_GETC(lexer);
 
-        switch(c) {
-        case '#':
-            /* Ignore everything until the end of the line (or end of file). */
-            while((c = L_GETC(lexer)) != '\n' || c != EOF)
+        if(c == '#') {
+            /*
+             * Ignore everything until the end of the line (or end of file).
+             */
+
+            while((c = L_GETC(lexer)) != '\n')
                 ;
+
+            continue;
+        } else if(c == '"') {
+            /*
+             * As we are in a string, populate current string value.
+             */
+
+            while((c = L_GETC(lexer)) != '"' || seen_esc) {
+                if(c == '\\' && !seen_esc) {
+                    seen_esc = 1;
+                    continue;
+                }
+
+                /* Add the character to the current value if there is space. */
+                if(++len <= CONFIG_LEXER_MAX_STR_LEN) {
+                    *(lexer->current_value.s + (len - 1)) = c;
+                } else {
+                    I_CRIT("Maximum config variable string length reached");
+                }
+
+                /* Re-set the escape flag. */
+                seen_esc = 0;
+            }
+
+            /* Close off the string. */
+            *(lexer->current_value.s + (len > 0 && len <= CONFIG_LEXER_MAX_STR_LEN
+                                        ? len : CONFIG_LEXER_MAX_STR_LEN)) = '\0';
+
+            return (lexer->current_token = CONFIG_LEXER_TOK_STR);
+        } else if(isdigit(c)) {
+            /*
+             * This is an integer.
+             */
+
+            for(i = (c - '0'); isdigit(c = L_GETC(lexer)); ) {
+                i = (i * 10) + (c - '0');
+            }
+            lexer->current_value.i = i;
+
+            return (lexer->current_token = CONFIG_LEXER_TOK_INT);
+        }
+
+        /*
+         * Process remaining characters.
+         */
+        switch(c) {
+        case ' ':
+        case '\t':
+            /* Ignore whitespace. */
             break;
 
-        case '"':
-            /* As we are in a string, populate current string value. */
-            lexer->current_token = CONFIG_LEXER_TOK_STR;
-            break;
+        case '\n':
+            return (lexer->current_token = CONFIG_LEXER_TOK_NEWLINE);
+
+        case '=':
+            return (lexer->current_token = CONFIG_LEXER_TOK_EQ);
+
+        case '{':
+            return (lexer->current_token = CONFIG_LEXER_TOK_BRACKET_L);
+
+        case '}':
+            return (lexer->current_token = CONFIG_LEXER_TOK_BRACKET_R);
+
+        default:
+            /* Unknown character. */
+            return 0;
         }
     }
 }
