@@ -22,7 +22,6 @@
 #define CONFIG_LEXER_TOK_INCLUDE   105
 #define CONFIG_LEXER_TOK_BRACKET_L 106
 #define CONFIG_LEXER_TOK_BRACKET_R 107
-#define CONFIG_LEXER_TOK_NEWLINE   108
 
 /**
  * The main config lexer structure.
@@ -41,8 +40,21 @@ struct T {
     Config_source_T source;
 };
 
+/**
+ * Create a fresh lexer object.
+ */
 extern T    Config_lexer_create(Config_source_T source);
+
+/**
+ * Destroy a lexer object. This will automatically destroy the associated
+ * configuration source object.
+ */
 extern void Config_lexer_destroy(T lexer);
+
+/**
+ * Scan the specified configuration source's character stream and return
+ * the next token seen.
+ */
 extern int  Config_lexer_next_token(T lexer);
 
 #undef T
