@@ -117,6 +117,8 @@ Config_lexer_next_token(T lexer)
         switch(c) {
         case ' ':
         case '\t':
+        case '\n':
+        case '\r':
             /*
              * Ignore whitespace.
              */
@@ -135,10 +137,11 @@ Config_lexer_next_token(T lexer)
 
         case '"':
             /*
-             * As we are in a string, populate current string value.
+             * As we are in a string, populate current string value, while accounting for escaped
+             * quote characters.
              */
 
-            while(((c = L_GETC(lexer)) != '"' || seen_esc) && len <= CONFIG_LEXER_MAX_STR_LEN) {
+            while(((c = L_GETC(lexer)) != '"' || seen_esc) && len <= CONFIG_LEXER_MAX_STR_LEN && c != EOF) {
                 if(c == '\\' && !seen_esc) {
                     seen_esc = 1;
                 } else {
@@ -149,7 +152,11 @@ Config_lexer_next_token(T lexer)
                     seen_esc = 0;
                 }
             }
-            reuse_char(lexer, c);
+
+            if(c != '"') {
+                /* We don't need the closing quote character. */
+                reuse_char(lexer, c);
+            }
 
             /* Close off the string. */
             lexer->current_value.s[len] = '\0';
