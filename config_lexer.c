@@ -60,7 +60,7 @@ Config_lexer_next_token(T lexer)
 
     for(;;) {
         if(lexer->seen_end) {
-            return 0;
+            return CONFIG_LEXER_TOK_EOF;
         }
 
         c = L_GETC(lexer);
@@ -174,7 +174,7 @@ Config_lexer_next_token(T lexer)
 
         default:
             /* Unknown character. */
-            return 0;
+            return CONFIG_LEXER_TOK_EOF;
         }
     }
 }

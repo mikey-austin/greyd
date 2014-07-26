@@ -3,6 +3,33 @@
  * @brief  Defines the configuration file parser interface.
  * @author Mikey Austin
  * @date   2014
+ *
+ * The config grammar is as follows (in BNF form, terminals uppercase):
+ *
+ * @code
+ * config : statement EOF
+ *        ;
+ *
+ * statement : assignment
+ *           | section
+ *           | include
+ *           | statement
+ *           ;
+ *
+ * assignment : NAME = INT
+ *            | NAME = STR
+ *            ;
+ *
+ * section : SECTION NAME { section_assignment }
+ *         ;
+ *
+ * section_assignment : assignment
+ *                    | section_assignment
+ *                    ;
+ *
+ * include : INCLUDE STR
+ *         ;
+ * @endcode
  */
 
 #ifndef CONFIG_PARSER_DEFINED
@@ -13,16 +40,18 @@
 
 #define T Config_parser_T
 
-#define CONFIG_PARSER_OK  0
-#define CONFIG_PARSER_ERR 1
+#define CONFIG_PARSER_OK  1
+#define CONFIG_PARSER_ERR 0
 
 /**
  * The main config parser structure.
  */
 typedef struct T *T;
 struct T {
-    Config_T       config; /**< Reference to the config object being populated. */
-    Config_lexer_T lexer;
+    Config_T         config;  /**< Reference to the config object. */
+    Config_section_T section; /**< Reference to the current section. */
+    Config_lexer_T   lexer;
+    int              curr;    /**< The current token being looked at. */
 };
 
 /**
@@ -56,7 +85,7 @@ extern void Config_parser_reset(T parser, Config_lexer_T lexer);
  * @param parser The initialized parser object.
  * @param config The initialized configuration object to populate.
  *
- * @return 0 if there are no problems, > 0 otherwise.
+ * @return 1 if there are no problems, 0 otherwise.
  */
 extern int Config_parser_start(T parser, Config_T config);
 

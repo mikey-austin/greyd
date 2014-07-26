@@ -98,7 +98,7 @@ main()
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_STR), "Test string type");
     TEST_OK(!strncmp(lexer->current_value.s, "/etc/somefile", strlen("/etc/somefile")), "Test string value");
 
-    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOF), "Test EOF");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOF\), "Test EOF");
 
     Config_lexer_destroy(lexer);
     free(test_file);

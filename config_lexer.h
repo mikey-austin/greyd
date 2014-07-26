@@ -22,6 +22,7 @@
 #define CONFIG_LEXER_TOK_INCLUDE   105
 #define CONFIG_LEXER_TOK_BRACKET_L 106
 #define CONFIG_LEXER_TOK_BRACKET_R 107
+#define CONFIG_LEXER_TOK_EOF       108
 
 /**
  * The main config lexer structure.
