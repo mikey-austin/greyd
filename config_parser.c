@@ -84,10 +84,18 @@ Config_parser_start(T parser, Config_T config)
         Config_add_section(config, global_section);
     }
 
-    /* Start token stream. */
+    /* Start token stream and consume all EOL tokens at the start of the file. */
     advance(parser);
+    accept(parser, CONFIG_LEXER_TOK_EOL);
 
-    return CONFIG_PARSER_OK;
+    /* Start the actual parsing. */
+    if((grammar_statement(parser) && grammar_statements(parser) && accept(parser, CONFIG_LEXER_TOK_EOF))
+       || accept(parser, CONFIG_LEXER_TOK_EOF))
+    {
+        return CONFIG_PARSER_OK;
+    }
+
+    return CONFIG_PARSER_ERR;
 }
 
 static int
@@ -100,7 +108,21 @@ static int
 accept(T parser, int tok)
 {
     if(accept_no_advance(parser, tok)) {
-        advance(parser);
+        /*
+         * If accepted token is a EOL, accept all subsequent EOLs until the
+         * first non-EOL token.
+         */
+
+        if(tok == CONFIG_LEXER_TOK_EOL) {
+            do {
+                advance(parser);
+            }
+            while(parser->curr == CONFIG_LEXER_TOK_EOL);
+        }
+        else {
+            advance(parser);
+        }
+
         return 1;
     }
 
