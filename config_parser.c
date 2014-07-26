@@ -81,6 +81,9 @@ Config_parser_start(T parser, Config_T config)
         Config_add_section(config, global_section);
     }
 
+    /* Start token stream. */
+    advance(parser);
+
     return CONFIG_PARSER_OK;
 }
 
@@ -154,6 +157,34 @@ grammar_assignment(T parser)
 static int
 grammar_section(T parser)
 {
+    char secname[CONFIG_LEXER_MAX_STR_LEN + 1];
+    int len;
+
+    if(accept(parser, CONFIG_LEXER_TOK_SECTION) && accept_no_advance(parser, CONFIG_LEXER_TOK_NAME)) {
+        /* Copy the section name. */
+        strncpy(secname, parser->lexer->current_value.s, (len = strlen(parser->lexer->current_value.s)));
+        secname[len] = '\0';
+        advance(parser);
+
+        if(accept(parser, CONFIG_LEXER_TOK_BRACKET_L)) {
+            /*
+             * Create a new section and overwrite any existing sections of the same
+             * name in the configuration.
+             */
+            parser->section = Config_section_create(secname);
+            Config_add_section(parser->config, parser->section);
+
+            if(grammar_section_assignment(parser) && accept(parser, CONFIG_LEXER_TOK_BRACKET_R)) {
+                /*
+                 * Remove the reference as we are now finished with this section.
+                 */
+                parser->section = NULL;
+
+                return CONFIG_PARSER_OK;
+            }
+        }
+    }
+
     return CONFIG_PARSER_ERR;
 }
 
@@ -166,6 +197,13 @@ grammar_include(T parser)
 static int
 grammar_section_assignment(T parser)
 {
+    /*
+     * A section may consist of one or more assignments.
+     */
+    if(grammar_assignment(parser) || grammar_section_assignment(parser)) {
+        return CONFIG_PARSER_OK;
+    }
+
     return CONFIG_PARSER_ERR;
 }
 

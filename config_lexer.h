@@ -23,6 +23,8 @@
 #define CONFIG_LEXER_TOK_BRACKET_L 106
 #define CONFIG_LEXER_TOK_BRACKET_R 107
 #define CONFIG_LEXER_TOK_EOF       108
+#define CONFIG_LEXER_TOK_EOL       109
+#define CONFIG_LEXER_TOK_COMMA     110
 
 /**
  * The main config lexer structure.

@@ -20,7 +20,7 @@ main()
     Config_lexer_T lexer;
     int tok;
 
-    TEST_START(36);
+    TEST_START(61);
 
     /*
      * Test the string config source first.
@@ -28,9 +28,10 @@ main()
     cs = Config_source_create_from_str(
         "test_var_1    =  12345 # This is a comment \n"
         "# This is another comment followed by a new line \n"
-        "section {"
-        "    test_var_2 = \"long \\\"string\\\"\" # A \"quoted\" string literal\n"
-        "} "
+        "section {\n"
+        "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
+        "    test_var_3 = 12\n"
+        "} \n"
         "include \"/etc/somefile\"");
     lexer = Config_lexer_create(cs);
     TEST_OK((lexer != NULL), "Lexer created successfully");
@@ -43,8 +44,12 @@ main()
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_INT), "Test int token type");
     TEST_OK((lexer->current_value.i == 12345), "Test token int value");
 
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_SECTION), "Test section keyword");
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_BRACKET_L), "Test left bracket");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_NAME), "Test name token type");
     TEST_OK(!strncmp(lexer->current_value.s, "test_var_2", strlen("test_var_2")), "Test token name value");
@@ -54,7 +59,22 @@ main()
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_STR), "Test name string type");
     TEST_OK(!strncmp(lexer->current_value.s, "long \"string\"", strlen("long \"string\"")), "Test string value");
 
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_COMMA), "Test comma token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_NAME), "Test name token type");
+    TEST_OK(!strncmp(lexer->current_value.s, "test_var_3", strlen("test_var_3")), "Test token name value");
+
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EQ), "Test equals token type");
+
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_INT), "Test int token type");
+    TEST_OK((lexer->current_value.i == 12), "Test token int value");
+
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_BRACKET_R), "Test right bracket");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_INCLUDE), "Test include keyword");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_STR), "Test string type");
@@ -73,6 +93,11 @@ main()
     lexer = Config_lexer_create(cs);
     TEST_OK((lexer != NULL), "Lexer created successfully");
 
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_NAME), "Test name token type");
     TEST_OK(!strncmp(lexer->current_value.s, "test_var_1", strlen("test_var_1")), "Test token name value");
 
@@ -81,8 +106,14 @@ main()
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_INT), "Test int token type");
     TEST_OK((lexer->current_value.i == 12345), "Test token int value");
 
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_SECTION), "Test section keyword");
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_BRACKET_L), "Test left bracket");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_NAME), "Test name token type");
     TEST_OK(!strncmp(lexer->current_value.s, "test_var_2", strlen("test_var_2")), "Test token name value");
@@ -91,12 +122,18 @@ main()
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_STR), "Test name string type");
     TEST_OK(!strncmp(lexer->current_value.s, "long \"string\"", strlen("long \"string\"")), "Test string value");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_BRACKET_R), "Test right bracket");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
+
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_INCLUDE), "Test include keyword");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_STR), "Test string type");
     TEST_OK(!strncmp(lexer->current_value.s, "/etc/somefile", strlen("/etc/somefile")), "Test string value");
+
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOL), "Test EOL token type");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOF), "Test EOF");
 

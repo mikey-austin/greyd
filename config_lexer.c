@@ -117,7 +117,6 @@ Config_lexer_next_token(T lexer)
         switch(c) {
         case ' ':
         case '\t':
-        case '\n':
         case '\r':
             /*
              * Ignore whitespace.
@@ -162,6 +161,12 @@ Config_lexer_next_token(T lexer)
             lexer->current_value.s[len] = '\0';
 
             return (lexer->current_token = CONFIG_LEXER_TOK_STR);
+
+        case '\n':
+            return (lexer->current_token = CONFIG_LEXER_TOK_EOL);
+
+        case ',':
+            return (lexer->current_token = CONFIG_LEXER_TOK_COMMA);
 
         case '=':
             return (lexer->current_token = CONFIG_LEXER_TOK_EQ);

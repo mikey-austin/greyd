@@ -7,25 +7,32 @@
  * The config grammar is as follows (in BNF form, terminals uppercase):
  *
  * @code
- * config : statement EOF
+ * config : statement statements EOF
  *        ;
+ *
+ * statements : EOL statement statements
+ *            |
+ *            ;
  *
  * statement : assignment
  *           | section
  *           | include
- *           | statement
  *           ;
  *
  * assignment : NAME = INT
  *            | NAME = STR
  *            ;
  *
- * section : SECTION NAME { section_assignment }
+ * section : SECTION NAME { EOL section_statements EOL }
+ *         | SECTION NAME EOL { EOL section_statements EOL }
  *         ;
  *
- * section_assignment : assignment
- *                    | section_assignment
+ * section_statements : assignment section_assignments
  *                    ;
+ *
+ * section_assignments : , assignment section_assignments
+ *                     |
+ *                     ;
  *
  * include : INCLUDE STR
  *         ;
