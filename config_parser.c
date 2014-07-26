@@ -15,12 +15,16 @@
 
 #define DEFAULT_SECTION "global"
 
-/* Parser utility functions. */
+/*
+ * Parser utility/helper functions.
+ */
 static int  accept(T parser, int tok);
 static int  accept_no_advance(T parser, int tok);
 static void advance(T parser);
 
-/* Parser grammar functions. */
+/*
+ * Parser grammar functions.
+ */
 static int grammar_statement(T parser);
 static int grammar_statements(T parser);
 static int grammar_assignment(T parser);
@@ -28,7 +32,6 @@ static int grammar_section(T parser);
 static int grammar_include(T parser);
 static int grammar_section_statements(T parser);
 static int grammar_section_assignments(T parser);
-
 
 extern T
 Config_parser_create(Config_lexer_T lexer)
@@ -190,6 +193,9 @@ grammar_assignment(T parser)
                 Config_section_set_str(section, varname, parser->lexer->current_value.s);
             }
 
+            /* Continue the token stream. */
+            advance(parser);
+
             return CONFIG_PARSER_OK;
         }
     }
@@ -243,6 +249,10 @@ grammar_include(T parser)
         /*
          * Enqueue the included file/directory here.
          */
+
+        /* Continue the token stream. */
+        advance(parser);
+
         return CONFIG_PARSER_OK;
     }
 
