@@ -8,6 +8,7 @@
  *
  * @code
  * config : statement statements EOF
+ *        | EOF
  *        ;
  *
  * statements : EOL statement statements

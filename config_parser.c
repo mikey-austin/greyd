@@ -22,10 +22,13 @@ static void advance(T parser);
 
 /* Parser grammar functions. */
 static int grammar_statement(T parser);
+static int grammar_statements(T parser);
 static int grammar_assignment(T parser);
 static int grammar_section(T parser);
 static int grammar_include(T parser);
-static int grammar_section_assignment(T parser);
+static int grammar_section_statements(T parser);
+static int grammar_section_assignments(T parser);
+
 
 extern T
 Config_parser_create(Config_lexer_T lexer)
@@ -111,8 +114,26 @@ advance(T parser)
 }
 
 static int
+grammar_statements(T parser)
+{
+    if(accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_statement(parser) && grammar_statements(parser)) {
+        return CONFIG_PARSER_OK;
+    }
+
+    /* Allow nothing here to complete the tail recursion. */
+    return CONFIG_PARSER_OK;
+}
+
+static int
 grammar_statement(T parser)
 {
+    if(grammar_assignment(parser)
+       || grammar_section(parser)
+       || grammar_include(parser))
+    {
+        return CONFIG_PARSER_OK;
+    }
+
     return CONFIG_PARSER_ERR;
 }
 
@@ -166,7 +187,10 @@ grammar_section(T parser)
         secname[len] = '\0';
         advance(parser);
 
-        if(accept(parser, CONFIG_LEXER_TOK_BRACKET_L)) {
+        if((accept(parser, CONFIG_LEXER_TOK_EOL) && accept(parser, CONFIG_LEXER_TOK_BRACKET_L)
+           && accept(parser, CONFIG_LEXER_TOK_EOL))
+           || (accept(parser, CONFIG_LEXER_TOK_BRACKET_L) && accept(parser, CONFIG_LEXER_TOK_EOL)))
+        {
             /*
              * Create a new section and overwrite any existing sections of the same
              * name in the configuration.
@@ -174,7 +198,9 @@ grammar_section(T parser)
             parser->section = Config_section_create(secname);
             Config_add_section(parser->config, parser->section);
 
-            if(grammar_section_assignment(parser) && accept(parser, CONFIG_LEXER_TOK_BRACKET_R)) {
+            if(grammar_section_statements(parser) && accept(parser, CONFIG_LEXER_TOK_EOL)
+               && accept(parser, CONFIG_LEXER_TOK_BRACKET_R))
+            {
                 /*
                  * Remove the reference as we are now finished with this section.
                  */
@@ -191,20 +217,40 @@ grammar_section(T parser)
 static int
 grammar_include(T parser)
 {
-    return CONFIG_PARSER_ERR;
-}
-
-static int
-grammar_section_assignment(T parser)
-{
-    /*
-     * A section may consist of one or more assignments.
-     */
-    if(grammar_assignment(parser) || grammar_section_assignment(parser)) {
+    if(accept(parser, CONFIG_LEXER_TOK_INCLUDE) && accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
+        /*
+         * Enqueue the included file/directory here.
+         */
         return CONFIG_PARSER_OK;
     }
 
     return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_section_statements(T parser)
+{
+    /*
+     * There must be at least one statement.
+     */
+    if(grammar_assignment(parser) && grammar_section_assignments(parser)) {
+        return CONFIG_PARSER_OK;
+    }
+
+    return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_section_assignments(T parser)
+{
+    if(accept(parser, CONFIG_LEXER_TOK_COMMA) && grammar_assignment(parser)
+       && grammar_section_assignments(parser))
+    {
+        return CONFIG_PARSER_OK;
+    }
+
+    /* Allow nothing here to complete the tail recursion. */
+    return CONFIG_PARSER_OK;
 }
 
 #undef T
