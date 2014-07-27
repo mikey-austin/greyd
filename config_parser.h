@@ -31,7 +31,7 @@
  * section_statements : assignment section_assignments
  *                    ;
  *
- * section_assignments : , assignment section_assignments
+ * section_assignments : , EOL assignment section_assignments
  *                     |
  *                     ;
  *
@@ -48,8 +48,10 @@
 
 #define T Config_parser_T
 
-#define CONFIG_PARSER_OK  1
-#define CONFIG_PARSER_ERR 0
+
+#define CONFIG_PARSER_DEFAULT_SECTION "global"
+#define CONFIG_PARSER_OK              1
+#define CONFIG_PARSER_ERR             0
 
 /**
  * The main config parser structure.

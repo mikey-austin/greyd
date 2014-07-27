@@ -13,8 +13,6 @@
 
 #define T Config_parser_T
 
-#define DEFAULT_SECTION "global"
-
 /*
  * Parser utility/helper functions.
  */
@@ -82,8 +80,8 @@ Config_parser_start(T parser, Config_T config)
     parser->config = config;
 
     /* Ensure that there is a global config section available. */
-    if((global_section = Config_get_section(config, DEFAULT_SECTION)) == NULL) {
-        global_section = Config_section_create(DEFAULT_SECTION);
+    if((global_section = Config_get_section(config, CONFIG_PARSER_DEFAULT_SECTION)) == NULL) {
+        global_section = Config_section_create(CONFIG_PARSER_DEFAULT_SECTION);
         Config_add_section(config, global_section);
     }
 
@@ -176,7 +174,7 @@ grammar_assignment(T parser)
         advance(parser);
 
         if(accept(parser, CONFIG_LEXER_TOK_EQ)
-           && (isint = accept_no_advance(parser, CONFIG_LEXER_TOK_INT)
+           && ((isint = accept_no_advance(parser, CONFIG_LEXER_TOK_INT))
                || accept_no_advance(parser, CONFIG_LEXER_TOK_STR)))
         {
             /*
@@ -184,7 +182,7 @@ grammar_assignment(T parser)
              * update with the new variable.
              */
             section = (parser->section ? parser->section
-                       : Config_get_section(parser->config, DEFAULT_SECTION));
+                       : Config_get_section(parser->config, CONFIG_PARSER_DEFAULT_SECTION));
 
             if(isint) {
                 Config_section_set_int(section, varname, parser->lexer->current_value.i);
@@ -275,8 +273,8 @@ grammar_section_statements(T parser)
 static int
 grammar_section_assignments(T parser)
 {
-    if(accept(parser, CONFIG_LEXER_TOK_COMMA) && grammar_assignment(parser)
-       && grammar_section_assignments(parser))
+    if(accept(parser, CONFIG_LEXER_TOK_COMMA) && accept(parser, CONFIG_LEXER_TOK_EOL)
+       && grammar_assignment(parser) && grammar_section_assignments(parser))
     {
         return CONFIG_PARSER_OK;
     }

@@ -23,9 +23,10 @@ main()
     Config_value_T v;
     int tok, ret;
 
-    TEST_START(3);
+    TEST_START(6);
 
     cs = Config_source_create_from_str(
+        "# This is a test config file\n\n\n"
         "test_var_1    =  12345 # This is a comment \n"
         "# This is another comment followed by a new line \n\n"
         "section test_section_1 {\n\n\n"
@@ -45,6 +46,15 @@ main()
     s = Config_get_section(c, CONFIG_PARSER_DEFAULT_SECTION);
     v = Config_section_get(s, "test_var_1");
     TEST_OK((v->v.i == 12345), "Parsed global section int variable correctly");
+
+    s = Config_get_section(c, "test_section_1");
+    TEST_OK((s != NULL), "Section name parsed correctly");
+
+    v = Config_section_get(s, "test_var_2");
+    TEST_OK((strcmp(v->v.s, "long \"string\"") == 0), "Parsed custom section string variable correctly");
+
+    v = Config_section_get(s, "test_var_3");
+    TEST_OK((v->v.i == 12), "Parsed custom section int variable correctly");
 
     Config_parser_destroy(parser);
     Config_destroy(c);

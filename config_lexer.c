@@ -56,8 +56,18 @@ Config_lexer_destroy(T lexer)
 extern int
 Config_lexer_next_token(T lexer)
 {
-    int c, seen_esc = 0, len = 0, i;
+    int c, seen_esc = 0, len = 0, i, tmp_tok;
+    union Config_lexer_token_value tmp_val;
 
+    /*
+     * Save the current token.
+     */
+    lexer->previous_token = lexer->current_token;
+    lexer->previous_value = lexer->current_value;
+
+    /*
+     * Scan for the next token.
+     */
     for(;;) {
         if(lexer->seen_end) {
             return CONFIG_LEXER_TOK_EOF;

@@ -26,18 +26,22 @@
 #define CONFIG_LEXER_TOK_EOL       109
 #define CONFIG_LEXER_TOK_COMMA     110
 
+union Config_lexer_token_value {
+    int  i;
+    char s[CONFIG_LEXER_MAX_STR_LEN + 1];
+};
+
 /**
  * The main config lexer structure.
  */
 typedef struct T *T;
 struct T {
     /* Semantic value of current scanned token. */
-    union {
-        int  i;
-        char s[CONFIG_LEXER_MAX_STR_LEN + 1];
-    } current_value;
+    union Config_lexer_token_value current_value;
+    union Config_lexer_token_value previous_value;
 
     int current_token;
+    int previous_token;
     int seen_end;
 
     Config_source_T source;
