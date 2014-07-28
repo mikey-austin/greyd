@@ -251,7 +251,10 @@ grammar_include(T parser)
          * Enqueue the included file/directory here.
          */
         len = strlen(parser->lexer->current_value.s);
-        include = (char *) malloc((sizeof(*include) * len) + 1);
+        if((include = (char *) malloc((sizeof(*include) * len) + 1)) == NULL) {
+            I_CRIT("Could not enqueue parsed included file %s", parser->lexer->current_value.s);
+        }
+
         strncpy(include, parser->lexer->current_value.s, len);
         include[len] = '\0';
         Queue_enqueue(parser->config->includes, include);
