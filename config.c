@@ -21,6 +21,11 @@
  */
 static void Config_section_value_destroy(struct Hash_entry *entry);
 
+/**
+ * Destroy each queue value appropriately when the queue is destroyed.
+ */
+static void Config_include_destroy(void *value);
+
 extern T
 Config_create()
 {
@@ -33,6 +38,7 @@ Config_create()
 
     /* Initialize the hash of sections. */
     config->sections = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
+    config->includes = Queue_create(Config_include_destroy);
 
     return config;
 }
@@ -44,6 +50,8 @@ Config_destroy(T config)
         return;
 
     Hash_destroy(config->sections);
+    Queue_destroy(config->includes);
+
     free(config);
 }
 
@@ -64,6 +72,16 @@ Config_section_value_destroy(struct Hash_entry *entry)
 {
     if(entry && entry->v) {
         Config_section_destroy(entry->v);
+    }
+}
+
+static void
+Config_include_destroy(void *value)
+{
+    char *include = (char *) value;
+
+    if(include) {
+        free(include);
     }
 }
 

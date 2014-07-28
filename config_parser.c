@@ -243,10 +243,18 @@ grammar_section(T parser)
 static int
 grammar_include(T parser)
 {
+    char *include;
+    int len;
+
     if(accept(parser, CONFIG_LEXER_TOK_INCLUDE) && accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
         /*
          * Enqueue the included file/directory here.
          */
+        len = strlen(parser->lexer->current_value.s);
+        include = (char *) malloc((sizeof(*include) * len) + 1);
+        strncpy(include, parser->lexer->current_value.s, len);
+        include[len] = '\0';
+        Queue_enqueue(parser->config->includes, include);
 
         /* Continue the token stream. */
         advance(parser);

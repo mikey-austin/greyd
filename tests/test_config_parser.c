@@ -22,8 +22,9 @@ main()
     Config_section_T s;
     Config_value_T v;
     int tok, ret;
+    char *include;
 
-    TEST_START(6);
+    TEST_START(8);
 
     cs = Config_source_create_from_str(
         "# This is a test config file\n\n\n"
@@ -56,6 +57,11 @@ main()
     v = Config_section_get(s, "test_var_3");
     TEST_OK((v->v.i == 12), "Parsed custom section int variable correctly");
 
+    TEST_OK((c->includes->size == 1), "Include parsed and enqueued correctly");
+    include = (char *) Queue_dequeue(c->includes);
+    TEST_OK((strcmp(include, "/etc/somefile") == 0), "Correct included file");
+
+    free(include);
     Config_parser_destroy(parser);
     Config_destroy(c);
 

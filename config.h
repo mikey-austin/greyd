@@ -9,6 +9,7 @@
 #define CONFIG_DEFINED
 
 #include "hash.h"
+#include "queue.h"
 #include "config_section.h"
 
 #define T Config_T
@@ -18,7 +19,8 @@
  */
 typedef struct T *T;
 struct T {
-    Hash_T sections;  /**< A hash of the sections comprising this configuration. */
+    Hash_T  sections;  /**< A hash of the sections comprising this configuration. */
+    Queue_T includes;  /**< A queue of included files to parse. */
 };
 
 /**
