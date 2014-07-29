@@ -17,7 +17,6 @@
  * A struct to contain a queue entry's key and value pair.
  */
 struct E {
-    struct E *prev; /**< Queue entry previous link. */
     struct E *next; /**< Queue entry next link. */
     void *v;        /**< Queue entry value */
 };
@@ -30,7 +29,6 @@ struct T {
     int        size;        /**< The queue size. */
     void     (*destroy)(void *value);
     struct E  *head;
-    struct E  *tail;
 };
 
 /**

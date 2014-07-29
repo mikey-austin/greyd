@@ -44,5 +44,13 @@ main()
 
     Config_destroy(c);
 
+    /*
+     * Test the recursive config loading & parsing from a blank config.
+     */
+    c = Config_create();
+    Config_load_file(c, "data/config_test1.conf");
+
+    Config_destroy(c);
+
     TEST_COMPLETE;
 }

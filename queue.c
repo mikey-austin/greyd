@@ -29,7 +29,6 @@ Queue_create(void (*destroy)(void *value))
     queue->destroy = destroy;
     queue->size    = 0;
     queue->head    = NULL;
-    queue->tail    = NULL;
 
     return queue;
 }
@@ -57,19 +56,21 @@ Queue_destroy(T queue)
 extern void
 Queue_enqueue(T queue, void *value)
 {
-    struct E *element;
+    struct E *element, *curr;
 
     element = Queue_create_element(queue, value);
     queue->size++;
 
-    if(queue->tail == NULL) {
-        /* This is the first element. */
-        queue->head = queue->tail = element;
+    if(queue->head) {
+        for(curr = queue->head; curr != NULL; curr = curr->next) {
+            if(curr->next == NULL) {
+                curr->next = element;
+                break;
+            }
+        }
     }
     else {
-        queue->tail->next = element;
-        element->prev = queue->tail;
-        queue->tail = element;
+        queue->head = element;
     }
 }
 
@@ -79,17 +80,11 @@ extern void
     struct E *element;
     void *value;
 
-    if(queue->head != NULL) {
-        element = queue->head;
-        queue->head = element->next;
-
-        if(queue->head) {
-            queue->head->prev = NULL;
-        }
-    }
-    else {
+    if((element = queue->head) == NULL) {
         return NULL;
     }
+
+    queue->head = element->next;
 
     value = element->v;
     Queue_destroy_element(queue, element);
@@ -107,7 +102,7 @@ static struct E
         I_CRIT("Could not initialize queue element");
     }
 
-    element->prev = element->next = NULL;
+    element->next = NULL;
     element->v    = value;
 
     return element;
@@ -116,8 +111,9 @@ static struct E
 static void
 Queue_destroy_element(T queue, struct E *element)
 {
-    if(element)
+    if(element) {
         free(element);
+    }
 }
 
 #undef T

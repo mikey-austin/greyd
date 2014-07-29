@@ -248,18 +248,9 @@ grammar_include(T parser)
 
     if(accept(parser, CONFIG_LEXER_TOK_INCLUDE) && accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
         /*
-         * Enqueue the included file/directory here.
+         * Enqueue the included file here and advance the token stream.
          */
-        len = strlen(parser->lexer->current_value.s);
-        if((include = (char *) malloc((sizeof(*include) * len) + 1)) == NULL) {
-            I_CRIT("Could not enqueue parsed included file %s", parser->lexer->current_value.s);
-        }
-
-        strncpy(include, parser->lexer->current_value.s, len);
-        include[len] = '\0';
-        Queue_enqueue(parser->config->includes, include);
-
-        /* Continue the token stream. */
+        Config_add_include(parser->config, parser->lexer->current_value.s);
         advance(parser);
 
         return CONFIG_PARSER_OK;
