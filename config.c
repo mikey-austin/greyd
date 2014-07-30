@@ -109,15 +109,9 @@ Config_load_file(T config, char *file)
 
     while(config->includes->size > 0) {
         include = (char *) Queue_dequeue(config->includes);
-        count = (int *) Hash_get(config->processed_includes, include);
-
-        if(count == NULL) {
+        if(Hash_get(config->processed_includes, include) == NULL) {
             Config_load_file(config, include);
             free(include);
-        }
-        else {
-            /* Increment the number of times this file has been included. */
-            *count += 1;
         }
     }
 }
