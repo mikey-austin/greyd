@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <glob.h>
 
 #define T Config_T
 
@@ -111,30 +112,48 @@ Config_load_file(T config, char *file)
         include = (char *) Queue_dequeue(config->includes);
         if(Hash_get(config->processed_includes, include) == NULL) {
             Config_load_file(config, include);
-            free(include);
         }
+
+        /* Cleanup the dequeued include. */
+        free(include);
     }
 }
 
 extern void
 Config_add_include(T config, const char *file)
 {
-    char *include;
-    int len;
+    char *match, *include;
+    int len, i;
+    glob_t paths;
 
     /*
-     * Check if it has already been processed.
+     * Treat the supplied file path as a potential glob expansion.
      */
-    if(Hash_get(config->processed_includes, file) == NULL) {
-        len = strlen(file);
-        if((include = (char *) malloc((sizeof(*include) * len) + 1)) == NULL) {
-            I_CRIT("Could not enqueue parsed included file %s", file);
-        }
-
-        strncpy(include, file, len);
-        include[len] = '\0';
-        Queue_enqueue(config->includes, include);
+    if((i = glob(file, GLOB_TILDE, NULL, &paths)) != 0) {
+        globfree(&paths);
+        return;
     }
+
+    /*
+     * Loop through each match and check if it has already been processed.
+     */
+    for(i = 0; i < paths.gl_pathc; i++) {
+        if(Hash_get(config->processed_includes, (match = paths.gl_pathv[i])) == NULL) {
+            len = strlen(match);
+            if((include = (char *) malloc((sizeof(*include) * len) + 1)) == NULL) {
+                I_CRIT("Could not enqueue matched file %s", match);
+            }
+
+            strncpy(include, match, len);
+            include[len] = '\0';
+            Queue_enqueue(config->includes, include);
+        }
+    }
+
+    /*
+     * Cleanup the paths.
+     */
+    globfree(&paths);
 }
 
 static void

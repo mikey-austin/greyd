@@ -34,7 +34,7 @@ main()
         "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
         "    test_var_3 = 12\n"
         "} \n"
-        "include \"/etc/somefile\"");
+        "include \"data/config_test1.conf\"");
     lexer = Config_lexer_create(cs);
     c = Config_create();
 
@@ -59,7 +59,7 @@ main()
 
     TEST_OK((c->includes->size == 1), "Include parsed and enqueued correctly");
     include = (char *) Queue_dequeue(c->includes);
-    TEST_OK((strcmp(include, "/etc/somefile") == 0), "Correct included file");
+    TEST_OK((include && (strcmp(include, "data/config_test1.conf") == 0)), "Correct included file");
 
     free(include);
     Config_parser_destroy(parser);
