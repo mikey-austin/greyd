@@ -10,8 +10,9 @@
 
 #define T Config_value_T
 
-#define CONFIG_VAL_TYPE_INT 1
-#define CONFIG_VAL_TYPE_STR 2
+#define CONFIG_VAL_TYPE_INT  1
+#define CONFIG_VAL_TYPE_STR  2
+#define CONFIG_VAL_TYPE_LIST 3
 
 /**
  * The structure of a configuration value.

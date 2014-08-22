@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "utils.h"
 #include "failures.h"
 #include "config_section.h"
 
@@ -24,7 +25,7 @@ extern T
 Config_section_create(const char *name)
 {
     T section;
-    int name_len = strlen(name);
+    int nlen = strlen(name) + 1;
 
     section = (T) malloc(sizeof(*section));
     if(section == NULL) {
@@ -32,13 +33,11 @@ Config_section_create(const char *name)
     }
 
     /* Set the config section name. */
-    section->name = (char *) malloc((sizeof(char) * name_len) + 1);
+    section->name = (char *) malloc(nlen);
     if(section->name == NULL) {
         I_CRIT("Could not set configuration section name");
     }
-
-    strncpy(section->name, name, name_len);
-    *(section->name + name_len) = '\0';
+    sstrncpy(section->name, name, nlen);
 
     /* Initialize the hash table to store the values. */
     section->vars = Hash_create(CONFIG_SEC_INIT_ENTRIES, Config_section_value_destroy);

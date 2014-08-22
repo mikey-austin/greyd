@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "utils.h"
 #include "failures.h"
 #include "config_value.h"
 
@@ -38,14 +39,14 @@ Config_value_set_int(T value, int data)
 extern void
 Config_value_set_str(T value, const char *data)
 {
+    int slen = strlen(data) + 1;
+
     value->type = CONFIG_VAL_TYPE_STR;
-    value->v.s = (char *) malloc(strlen(data) + 1);
+    value->v.s = (char *) malloc(slen);
     if(value->v.s == NULL) {
         I_CRIT("Could not create string config value");
     }
-
-    strncpy(value->v.s, data, strlen(data));
-    *(value->v.s + strlen(data)) = '\0';
+    sstrncpy(value->v.s, data, slen);
 }
 
 extern void

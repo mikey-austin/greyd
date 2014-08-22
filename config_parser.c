@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "utils.h"
 #include "failures.h"
 #include "config_parser.h"
 
@@ -169,8 +170,8 @@ grammar_assignment(T parser)
 
     if(accept_no_advance(parser, CONFIG_LEXER_TOK_NAME)) {
         /* Store the variable name. */
-        strncpy(varname, parser->lexer->current_value.s, (len = strlen(parser->lexer->current_value.s)));
-        varname[len] = '\0';
+        len = strlen(parser->lexer->current_value.s) + 1;
+        sstrncpy(varname, parser->lexer->current_value.s, len);
         advance(parser);
 
         if(accept(parser, CONFIG_LEXER_TOK_EQ)
@@ -209,8 +210,8 @@ grammar_section(T parser)
 
     if(accept(parser, CONFIG_LEXER_TOK_SECTION) && accept_no_advance(parser, CONFIG_LEXER_TOK_NAME)) {
         /* Copy the section name. */
-        strncpy(secname, parser->lexer->current_value.s, (len = strlen(parser->lexer->current_value.s)));
-        secname[len] = '\0';
+        len = strlen(parser->lexer->current_value.s) + 1;
+        sstrncpy(secname, parser->lexer->current_value.s, len);
         advance(parser);
 
         if((accept(parser, CONFIG_LEXER_TOK_EOL) && accept(parser, CONFIG_LEXER_TOK_BRACKET_L)

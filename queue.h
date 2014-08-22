@@ -4,31 +4,22 @@
  * @author Mikey Austin
  * @date   2014
  *
- * This abstract data type is defined by way of a doubly-linked list.
+ * This abstract data type is defined by way of a singly-linked list.
  */
 
 #ifndef QUEUE_DEFINED
 #define QUEUE_DEFINED
 
+#include "list.h"
+
 #define T Queue_T
-#define E Queue_entry_T
 
 /**
- * A struct to contain a queue entry's key and value pair.
- */
-struct E {
-    struct E *next; /**< Queue entry next link. */
-    void *v;        /**< Queue entry value */
-};
-
-/**
- * The main queue table structure.
+ * The main queue structure.
  */
 typedef struct T *T;
 struct T {
-    int        size;        /**< The queue size. */
-    void     (*destroy)(void *value);
-    struct E  *head;
+    List_T list;
 };
 
 /**
@@ -50,6 +41,11 @@ extern void Queue_enqueue(T queue, void *value);
  * Fetch and remove an element from the front of the list.
  */
 extern void *Queue_dequeue(T queue);
+
+/**
+ * Return the size of the queue.
+ */
+extern int Queue_size(T queue);
 
 #undef T
 #undef E

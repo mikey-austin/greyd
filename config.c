@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "utils.h"
 #include "failures.h"
 #include "config_section.h"
 #include "hash.h"
@@ -108,7 +109,7 @@ Config_load_file(T config, char *file)
         Hash_insert(config->processed_includes, file, (void *) count);
     }
 
-    while(config->includes->size > 0) {
+    while(Queue_size(config->includes) > 0) {
         include = (char *) Queue_dequeue(config->includes);
         if(Hash_get(config->processed_includes, include) == NULL) {
             Config_load_file(config, include);
@@ -139,13 +140,12 @@ Config_add_include(T config, const char *file)
      */
     for(i = 0; i < paths.gl_pathc; i++) {
         if(Hash_get(config->processed_includes, (match = paths.gl_pathv[i])) == NULL) {
-            len = strlen(match);
-            if((include = (char *) malloc((sizeof(*include) * len) + 1)) == NULL) {
+            len = strlen(match) + 1;
+            if((include = (char *) malloc(len)) == NULL) {
                 I_CRIT("Could not enqueue matched file %s", match);
             }
+            sstrncpy(include, match, len);
 
-            strncpy(include, match, len);
-            include[len] = '\0';
             Queue_enqueue(config->includes, include);
         }
     }

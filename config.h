@@ -19,9 +19,9 @@
  */
 typedef struct T *T;
 struct T {
-    Hash_T  sections;           /**< A hash of the sections comprising this configuration. */
-    Hash_T  processed_includes; /**< A record of the processed included files. */
-    Queue_T includes;           /**< A queue of included files to parse. */
+    Hash_T  sections;           /**< This config's sections */
+    Hash_T  processed_includes; /**< For tracking processed included files */
+    Queue_T includes;           /**< A queue of included files to be parsed */
 };
 
 /**
@@ -45,14 +45,14 @@ extern void Config_add_section(T config, Config_section_T section);
 extern Config_section_T Config_get_section(T config, const char *section_name);
 
 /**
- * Parse the specified file and load the configuration data. Any included sub-configuration
- * files will also be parsed.
+ * Parse the specified file and load the configuration data. Any included
+ * sub-configuration files will also be parsed.
  */
 extern void Config_load_file(T config, char *file);
 
 /**
- * Add the specified file to the list of include files to process if it hasn't
- * been processed already.
+ * Add the specified file to the list of include files to process if it
+ * hasn't been processed already.
  */
 extern void Config_add_include(T config, const char *file);
 

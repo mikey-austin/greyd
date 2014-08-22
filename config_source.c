@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "utils.h"
 #include "failures.h"
 #include "config_source.h"
 
@@ -38,7 +39,7 @@ static void  source_data_str_ungetc(void *data, int c);
 extern T
 Config_source_create_from_file(const char *filename)
 {
-    int flen = strlen(filename);
+    int flen = strlen(filename) + 1;
     T source = source_create();
     struct source_data_file *data;
 
@@ -48,13 +49,11 @@ Config_source_create_from_file(const char *filename)
     }
 
     /* Store the filename. */
-    data->filename = (char *) malloc(flen + 1);
+    data->filename = (char *) malloc(flen);
     if(data->filename == NULL) {
         I_CRIT("Could not create file config source");
     }
-
-    strncpy(data->filename, filename, flen);
-    data->filename[flen] = '\0';
+    sstrncpy(data->filename, filename, flen);
 
     /* Try to open the file. */
     data->handle = fopen(filename, "r");
@@ -74,7 +73,7 @@ Config_source_create_from_file(const char *filename)
 extern T
 Config_source_create_from_str(const char *buf)
 {
-    int blen = strlen(buf);
+    int blen = strlen(buf) + 1;
     T source = source_create();
     struct source_data_str *data;
 
@@ -88,13 +87,11 @@ Config_source_create_from_str(const char *buf)
     }
 
     /* Copy the buffer into the new source object. */
-    data->buf = (char *) malloc(blen + 1);
+    data->buf = (char *) malloc(blen);
     if(data->buf == NULL) {
         I_CRIT("Could not create config source buffer");
     }
-
-    strncpy(data->buf, buf, blen);
-    data->buf[blen] = '\0';
+    sstrncpy(data->buf, buf, blen);
 
     data->index  = 0;    /* Index is for traversing buffer. */
     data->length = blen; /* Not including sentinel. */
@@ -151,7 +148,7 @@ static void
 source_data_file_destroy(void *data)
 {
     struct source_data_file *data_file;
-    if(data == NULL) 
+    if(data == NULL)
         return;
 
     data_file = (struct source_data_file *) data;
@@ -217,7 +214,7 @@ source_data_str_ungetc(void *data, int c)
 {
     struct source_data_str *data_str = (struct source_data_str *) data;
     int prev = data_str->index - 1;
-    
+
     if(prev >= 0) {
         data_str->index = prev;
     }

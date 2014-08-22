@@ -4,7 +4,8 @@
  * @author Mikey Austin
  * @date   2014
  */
- 
+
+#include "utils.h"
 #include "hash.h"
 #include "failures.h"
 
@@ -106,7 +107,7 @@ Hash_insert(T hash, const char *key, void *value)
     /* Check if there is space and resize if required. */
     if(hash->num_entries >= hash->size) {
         Hash_resize(hash, (2 * hash->size));
-    } 
+    }
 
     entry = Hash_find_entry(hash, key);
     if(entry->v != NULL) {
@@ -118,8 +119,7 @@ Hash_insert(T hash, const char *key, void *value)
     }
 
     /* Setup the new entry. */
-    strncpy(entry->k, key, MAX_KEY_LEN + 1);
-    entry->k[MAX_KEY_LEN] = '\0';
+    sstrncpy(entry->k, key, MAX_KEY_LEN + 1);
     entry->v = value;
 }
 
