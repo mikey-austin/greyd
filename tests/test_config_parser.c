@@ -57,7 +57,7 @@ main()
     v = Config_section_get(s, "test_var_3");
     TEST_OK((v->v.i == 12), "Parsed custom section int variable correctly");
 
-    TEST_OK((c->includes->size == 1), "Include parsed and enqueued correctly");
+    TEST_OK((Queue_size(c->includes) == 1), "Include parsed and enqueued correctly");
     include = (char *) Queue_dequeue(c->includes);
     TEST_OK((include && (strcmp(include, "data/config_test1.conf") == 0)), "Correct included file");
 

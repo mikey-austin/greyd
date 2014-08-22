@@ -101,7 +101,7 @@ main()
     count = (int *) Hash_get(c->processed_includes, "data/config_test3.conf");
     TEST_OK((count && (*count == 1)), "Third config include file count as expected");
 
-    TEST_OK((c->includes->size == 0), "Include file to process queue is empty as expected");
+    TEST_OK((Queue_size(c->includes) == 0), "Include file to process queue is empty as expected");
 
     Config_destroy(c);
 
