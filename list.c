@@ -115,6 +115,15 @@ List_size(T list)
     return 0;
 }
 
+extern void
+*List_entry_value(struct E *entry)
+{
+    if(entry == NULL)
+        return NULL;
+
+    return entry->v;
+}
+
 static struct E
 *List_create_element(T list, void *value)
 {

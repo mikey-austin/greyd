@@ -8,8 +8,13 @@
 #ifndef LIST_DEFINED
 #define LIST_DEFINED
 
+#include <stdlib.h>
+
 #define T List_T
 #define E List_entry_T
+
+#define LIST_FOREACH(list, curr) \
+    for(curr = list->head; curr != NULL; curr = curr->next)
 
 /**
  * A struct to contain a list entry's data and links.
@@ -58,6 +63,11 @@ extern void *List_remove_head(T list);
  * Return the size of the list.
  */
 extern int List_size(T list);
+
+/**
+ * Return the value of this list entry.
+ */
+extern void *List_entry_value(struct E *entry);
 
 #undef T
 #undef E
