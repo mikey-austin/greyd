@@ -25,6 +25,8 @@
 #define CONFIG_LEXER_TOK_EOF       108
 #define CONFIG_LEXER_TOK_EOL       109
 #define CONFIG_LEXER_TOK_COMMA     110
+#define CONFIG_LEXER_TOK_SQBRACK_L 111
+#define CONFIG_LEXER_TOK_SQBRACK_R 112
 
 union Config_lexer_token_value {
     int  i;

@@ -27,6 +27,10 @@ static void advance(T parser);
 static int grammar_statement(T parser);
 static int grammar_statements(T parser);
 static int grammar_assignment(T parser);
+static int grammar_list(T parser);
+static int grammar_list_statements(T parser);
+static int grammar_list_value(T parser);
+static int grammar_list_values(T parser);
 static int grammar_section(T parser);
 static int grammar_include(T parser);
 static int grammar_section_statements(T parser);
@@ -43,7 +47,8 @@ Config_parser_create(Config_lexer_T lexer)
 
     parser->lexer   = lexer;
     parser->config  = NULL;  /* Config reference set when the parser is started. */
-    parser->section = NULL;  /* Section reference */
+    parser->section = NULL;  /* Section reference. */
+    parser->value   = NULL;  /* Value reference. */
 
     return parser;
 }
@@ -165,7 +170,7 @@ static int
 grammar_assignment(T parser)
 {
     char varname[CONFIG_LEXER_MAX_STR_LEN + 1];
-    int len, isint = 0;
+    int len, isint = 0, isstr = 0;
     Config_section_T section;
 
     if(accept_no_advance(parser, CONFIG_LEXER_TOK_NAME)) {
@@ -176,7 +181,8 @@ grammar_assignment(T parser)
 
         if(accept(parser, CONFIG_LEXER_TOK_EQ)
            && ((isint = accept_no_advance(parser, CONFIG_LEXER_TOK_INT))
-               || accept_no_advance(parser, CONFIG_LEXER_TOK_STR)))
+               || (isstr = accept_no_advance(parser, CONFIG_LEXER_TOK_STR))
+               || grammar_list(parser)))
         {
             /*
              * We have a complete assignment at this stage, so find the config section to
@@ -188,18 +194,100 @@ grammar_assignment(T parser)
             if(isint) {
                 Config_section_set_int(section, varname, parser->lexer->current_value.i);
             }
-            else {
+            else if(isstr) {
                 Config_section_set_str(section, varname, parser->lexer->current_value.s);
+            }
+            else {
+                /*
+                 * As this must be a list, the reference to the complete list is stored in the
+                 * parser's reference to the list-type config value.
+                 */
+                Config_section_set(section, varname, parser->value);
+                parser->value = NULL;
             }
 
             /* Continue the token stream. */
-            advance(parser);
+            if(isint || isstr)
+                advance(parser);
 
             return CONFIG_PARSER_OK;
         }
     }
 
     return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_list(T parser)
+{
+    if(accept(parser, CONFIG_LEXER_TOK_SQBRACK_L)) {
+        /*
+         * Setup the list config variable and save the reference.
+         */
+        parser->value = Config_value_create(CONFIG_VAL_TYPE_LIST);
+
+        if(((accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_list_statements(parser))
+            || grammar_list_statements(parser))
+           && ((accept(parser, CONFIG_LEXER_TOK_EOL) && accept(parser, CONFIG_LEXER_TOK_SQBRACK_R))
+               || accept(parser, CONFIG_LEXER_TOK_SQBRACK_R)))
+        {
+            return CONFIG_PARSER_OK;
+        }
+    }
+
+    return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_list_statements(T parser)
+{
+    /*
+     * There must be at least one list statement.
+     */
+    if(grammar_list_value(parser) && grammar_list_values(parser)) {
+        return CONFIG_PARSER_OK;
+    }
+
+    return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_list_value(T parser)
+{
+    Config_value_T value;
+
+    if(accept_no_advance(parser, CONFIG_LEXER_TOK_INT)) {
+        value = Config_value_create(CONFIG_VAL_TYPE_INT);
+        Config_value_set_int(value, parser->lexer->current_value.i);
+        advance(parser);
+        List_insert_after(parser->value->v.l, (void *) value);
+
+        return CONFIG_PARSER_OK;
+    }
+    else if(accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
+        value = Config_value_create(CONFIG_VAL_TYPE_STR);
+        Config_value_set_str(value, parser->lexer->current_value.s);
+        advance(parser);
+        List_insert_after(parser->value->v.l, (void *) value);
+
+        return CONFIG_PARSER_OK;
+    }
+
+    return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_list_values(T parser)
+{
+    if(accept(parser, CONFIG_LEXER_TOK_COMMA)
+       && ((accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_list_value(parser) && grammar_list_values(parser))
+           || (grammar_list_value(parser) && grammar_list_values(parser))))
+    {
+        return CONFIG_PARSER_OK;
+    }
+
+    /* Allow nothing here to complete the tail recursion. */
+    return CONFIG_PARSER_OK;
 }
 
 static int

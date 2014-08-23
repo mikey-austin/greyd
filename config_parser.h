@@ -22,6 +22,25 @@
  *
  * assignment : NAME = INT
  *            | NAME = STR
+ *            | NAME = list
+ *            ;
+ *
+ * list : [ list_statements ]
+ *      | [ list_statements EOL ]
+ *      | [ EOL list_statements ]
+ *      | [ EOL list_statements EOL ]
+ *      ;
+ *
+ * list_statements : list_value list_values
+ *                 ;
+ *
+ * list_values : , EOL list_value list_values
+ *             | , list_value list_values
+ *             |
+ *             ;
+ *
+ * list_value : INT
+ *            | STR
  *            ;
  *
  * section : SECTION NAME { EOL section_statements EOL }
@@ -59,6 +78,7 @@ typedef struct T *T;
 struct T {
     Config_T         config;  /**< Reference to the config object. */
     Config_section_T section; /**< Reference to the current section. */
+    Config_value_T   value;   /**< Reference to the current config value. */
     Config_lexer_T   lexer;
     int              curr;    /**< The current token being looked at. */
 };

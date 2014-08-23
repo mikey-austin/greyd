@@ -187,6 +187,12 @@ Config_lexer_next_token(T lexer)
         case '}':
             return (lexer->current_token = CONFIG_LEXER_TOK_BRACKET_R);
 
+        case '[':
+            return (lexer->current_token = CONFIG_LEXER_TOK_SQBRACK_L);
+
+        case ']':
+            return (lexer->current_token = CONFIG_LEXER_TOK_SQBRACK_R);
+
         default:
             /* Unknown character. */
             return CONFIG_LEXER_TOK_EOF;

@@ -14,7 +14,7 @@
 
 #define CONFIG_VAL_TYPE_INT  1
 #define CONFIG_VAL_TYPE_STR  2
-#define CONFIG_VAL_TYPE_LIST 3
+#define CONFIG_VAL_TYPE_LIST 3  /**< The list type manages a list of config values. */
 
 /**
  * The structure of a configuration value.
@@ -32,7 +32,7 @@ struct T {
 /**
  * Create a new configuration value structure initialized to the specified type.
  */
-extern T    Config_value_create(short type);
+extern T Config_value_create(short type);
 
 /**
  * Set the integer data into the specified value.

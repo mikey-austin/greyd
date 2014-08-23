@@ -21,10 +21,10 @@ main()
     Config_T c;
     Config_section_T s;
     Config_value_T v;
-    int tok, ret;
+    int tok, ret, i;
     char *include;
 
-    TEST_START(8);
+    TEST_START(11);
 
     cs = Config_source_create_from_str(
         "# This is a test config file\n\n\n"
@@ -32,8 +32,13 @@ main()
         "# This is another comment followed by a new line \n\n"
         "section test_section_1 {\n\n\n"
         "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
-        "    test_var_3 = 12\n"
+        "    test_var_3 = 12,\n"
+        "    test_var_4 = [ 4321, \"a string\" ]\n"
         "} \n"
+        "test_var_5 = [\n"
+        "    222,\n"
+        "    \"another string\" ]\n"
+        "test_var_6 = [ 1, 2, 3 ]\n"
         "include \"data/config_test1.conf\"");
     lexer = Config_lexer_create(cs);
     c = Config_create();
@@ -56,6 +61,16 @@ main()
 
     v = Config_section_get(s, "test_var_3");
     TEST_OK((v->v.i == 12), "Parsed custom section int variable correctly");
+
+    v = Config_section_get(s, "test_var_4");
+    TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
+
+    s = Config_get_section(c, CONFIG_PARSER_DEFAULT_SECTION);
+    v = Config_section_get(s, "test_var_5");
+    TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
+
+    v = Config_section_get(s, "test_var_6");
+    TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
 
     TEST_OK((Queue_size(c->includes) == 1), "Include parsed and enqueued correctly");
     include = (char *) Queue_dequeue(c->includes);
