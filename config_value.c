@@ -14,6 +14,11 @@
 
 #define T Config_value_T
 
+/**
+ * The destructor for config value lists.
+ */
+static void Config_value_list_entry_destroy(void *value);
+
 extern T
 Config_value_create(short type)
 {
@@ -25,6 +30,11 @@ Config_value_create(short type)
     }
 
     new->type = type;
+    switch(new->type) {
+    case CONFIG_VAL_TYPE_LIST:
+        new->v.l = List_create(Config_value_list_entry_destroy);
+        break;
+    }
 
     return new;
 }
@@ -62,10 +72,23 @@ Config_value_destroy(T value)
             value->v.s = NULL;
         }
         break;
+
+    case CONFIG_VAL_TYPE_LIST:
+        if(value->v.l != NULL) {
+            List_destroy(value->v.l);
+            value->v.l = NULL;
+        }
+        break;
     }
 
     free(value);
     value = NULL;
+}
+
+static void
+Config_value_list_entry_destroy(void *value)
+{
+    Config_value_destroy((T) value);
 }
 
 #undef T

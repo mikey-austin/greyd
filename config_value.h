@@ -8,6 +8,8 @@
 #ifndef CONFIG_VALUE_DEFINED
 #define CONFIG_VALUE_DEFINED
 
+#include "list.h"
+
 #define T Config_value_T
 
 #define CONFIG_VAL_TYPE_INT  1
@@ -21,8 +23,9 @@ typedef struct T *T;
 struct T {
     short type;
     union {
-        int   i;
-        char *s;
+        int     i;
+        char   *s;
+        List_T  l;
     } v;
 };
 

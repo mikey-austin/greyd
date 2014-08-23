@@ -13,10 +13,10 @@
 int
 main()
 {
-    Config_value_T v1, v2;
+    Config_value_T v1, v2, v3;
     const char *str1 = "hello world";
 
-    TEST_START(4);
+    TEST_START(6);
 
     v1 = Config_value_create(CONFIG_VAL_TYPE_INT);
     TEST_OK((v1->type = CONFIG_VAL_TYPE_INT), "Can create int config value");
@@ -30,8 +30,20 @@ main()
     Config_value_set_str(v2, str1);
     TEST_OK((strcmp(v2->v.s, str1) == 0), "Can set str values");
 
-    Config_value_destroy(v1);
-    Config_value_destroy(v2);
+    /*
+     * Create a value of list type, and add v1 & v2.
+     */
+    v3 = Config_value_create(CONFIG_VAL_TYPE_LIST);
+    TEST_OK((v3->type = CONFIG_VAL_TYPE_LIST), "Can create list config value");
+
+    List_insert_after(v3->v.l, (void *) v1);
+    List_insert_after(v3->v.l, (void *) v2);
+    TEST_OK((List_size(v3->v.l) == 2), "Config variables added onto list correctly");
+
+    /*
+     * This will destroy v1 & v2 as well.
+     */
+    Config_value_destroy(v3);
 
     TEST_COMPLETE;
 }
