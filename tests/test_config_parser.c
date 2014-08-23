@@ -24,7 +24,7 @@ main()
     int tok, ret, i;
     char *include;
 
-    TEST_START(11);
+    TEST_START(14);
 
     cs = Config_source_create_from_str(
         "# This is a test config file\n\n\n"
@@ -64,13 +64,16 @@ main()
 
     v = Config_section_get(s, "test_var_4");
     TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
+    TEST_OK((List_size(v->v.l) == 2), "List size is as expected");
 
     s = Config_get_section(c, CONFIG_PARSER_DEFAULT_SECTION);
     v = Config_section_get(s, "test_var_5");
     TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
+    TEST_OK((List_size(v->v.l) == 2), "List size is as expected");
 
     v = Config_section_get(s, "test_var_6");
     TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
+    TEST_OK((List_size(v->v.l) == 3), "List size is as expected");
 
     TEST_OK((Queue_size(c->includes) == 1), "Include parsed and enqueued correctly");
     include = (char *) Queue_dequeue(c->includes);

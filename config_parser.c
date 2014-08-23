@@ -32,9 +32,9 @@ static int grammar_list_statements(T parser);
 static int grammar_list_value(T parser);
 static int grammar_list_values(T parser);
 static int grammar_section(T parser);
-static int grammar_include(T parser);
 static int grammar_section_statements(T parser);
 static int grammar_section_assignments(T parser);
+static int grammar_include(T parser);
 
 extern T
 Config_parser_create(Config_lexer_T lexer)
@@ -330,25 +330,6 @@ grammar_section(T parser)
 }
 
 static int
-grammar_include(T parser)
-{
-    char *include;
-    int len;
-
-    if(accept(parser, CONFIG_LEXER_TOK_INCLUDE) && accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
-        /*
-         * Enqueue the included file here and advance the token stream.
-         */
-        Config_add_include(parser->config, parser->lexer->current_value.s);
-        advance(parser);
-
-        return CONFIG_PARSER_OK;
-    }
-
-    return CONFIG_PARSER_ERR;
-}
-
-static int
 grammar_section_statements(T parser)
 {
     /*
@@ -372,6 +353,25 @@ grammar_section_assignments(T parser)
 
     /* Allow nothing here to complete the tail recursion. */
     return CONFIG_PARSER_OK;
+}
+
+static int
+grammar_include(T parser)
+{
+    char *include;
+    int len;
+
+    if(accept(parser, CONFIG_LEXER_TOK_INCLUDE) && accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
+        /*
+         * Enqueue the included file here and advance the token stream.
+         */
+        Config_add_include(parser->config, parser->lexer->current_value.s);
+        advance(parser);
+
+        return CONFIG_PARSER_OK;
+    }
+
+    return CONFIG_PARSER_ERR;
 }
 
 #undef T
