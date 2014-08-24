@@ -43,9 +43,14 @@
  *            | STR
  *            ;
  *
- * section : SECTION NAME { EOL section_statements EOL }
- *         | SECTION NAME EOL { EOL section_statements EOL }
+ * section : section_type NAME { EOL section_statements EOL }
+ *         | section_type NAME EOL { EOL section_statements EOL }
  *         ;
+ *
+ * section_type : SECTION
+ *              | BLACKLIST
+ *              | WHITELIST
+ *              ;
  *
  * section_statements : assignment section_assignments
  *                    ;
@@ -81,6 +86,7 @@ struct T {
     Config_value_T   value;   /**< Reference to the current config value. */
     Config_lexer_T   lexer;
     int              curr;    /**< The current token being looked at. */
+    int              sectype; /**< The type of section being parsed. */
 };
 
 /**

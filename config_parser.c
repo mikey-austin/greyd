@@ -32,6 +32,7 @@ static int grammar_list_statements(T parser);
 static int grammar_list_value(T parser);
 static int grammar_list_values(T parser);
 static int grammar_section(T parser);
+static int grammar_section_type(T parser);
 static int grammar_section_statements(T parser);
 static int grammar_section_assignments(T parser);
 static int grammar_include(T parser);
@@ -185,22 +186,26 @@ grammar_assignment(T parser)
                || grammar_list(parser)))
         {
             /*
-             * We have a complete assignment at this stage, so find the config section to
-             * update with the new variable.
+             * We have a complete assignment at this stage, so find the
+             * config section to update with the new variable.
              */
             section = (parser->section ? parser->section
-                       : Config_get_section(parser->config, CONFIG_PARSER_DEFAULT_SECTION));
+                       : Config_get_section(parser->config,
+                                            CONFIG_PARSER_DEFAULT_SECTION));
 
             if(isint) {
-                Config_section_set_int(section, varname, parser->lexer->current_value.i);
+                Config_section_set_int(section, varname,
+                                       parser->lexer->current_value.i);
             }
             else if(isstr) {
-                Config_section_set_str(section, varname, parser->lexer->current_value.s);
+                Config_section_set_str(section, varname,
+                                       parser->lexer->current_value.s);
             }
             else {
                 /*
-                 * As this must be a list, the reference to the complete list is stored in the
-                 * parser's reference to the list-type config value.
+                 * As this must be a list, the reference to the complete
+                 * list is stored in the parser's reference to the list-type
+                 * config value.
                  */
                 Config_section_set(section, varname, parser->value);
                 parser->value = NULL;
@@ -226,9 +231,11 @@ grammar_list(T parser)
          */
         parser->value = Config_value_create(CONFIG_VAL_TYPE_LIST);
 
-        if(((accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_list_statements(parser))
+        if(((accept(parser, CONFIG_LEXER_TOK_EOL)
+             && grammar_list_statements(parser))
             || grammar_list_statements(parser))
-           && ((accept(parser, CONFIG_LEXER_TOK_EOL) && accept(parser, CONFIG_LEXER_TOK_SQBRACK_R))
+           && ((accept(parser, CONFIG_LEXER_TOK_EOL)
+                && accept(parser, CONFIG_LEXER_TOK_SQBRACK_R))
                || accept(parser, CONFIG_LEXER_TOK_SQBRACK_R)))
         {
             return CONFIG_PARSER_OK;
@@ -280,7 +287,8 @@ static int
 grammar_list_values(T parser)
 {
     if(accept(parser, CONFIG_LEXER_TOK_COMMA)
-       && ((accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_list_value(parser) && grammar_list_values(parser))
+       && ((accept(parser, CONFIG_LEXER_TOK_EOL)
+            && grammar_list_value(parser) && grammar_list_values(parser))
            || (grammar_list_value(parser) && grammar_list_values(parser))))
     {
         return CONFIG_PARSER_OK;
@@ -296,34 +304,68 @@ grammar_section(T parser)
     char secname[CONFIG_LEXER_MAX_STR_LEN + 1];
     int len;
 
-    if(accept(parser, CONFIG_LEXER_TOK_SECTION) && accept_no_advance(parser, CONFIG_LEXER_TOK_NAME)) {
+    if(grammar_section_type(parser)
+       && accept_no_advance(parser, CONFIG_LEXER_TOK_NAME))
+    {
         /* Copy the section name. */
         len = strlen(parser->lexer->current_value.s) + 1;
         sstrncpy(secname, parser->lexer->current_value.s, len);
         advance(parser);
 
-        if((accept(parser, CONFIG_LEXER_TOK_EOL) && accept(parser, CONFIG_LEXER_TOK_BRACKET_L)
+        if((accept(parser, CONFIG_LEXER_TOK_EOL)
+            && accept(parser, CONFIG_LEXER_TOK_BRACKET_L)
            && accept(parser, CONFIG_LEXER_TOK_EOL))
-           || (accept(parser, CONFIG_LEXER_TOK_BRACKET_L) && accept(parser, CONFIG_LEXER_TOK_EOL)))
+           || (accept(parser, CONFIG_LEXER_TOK_BRACKET_L)
+               && accept(parser, CONFIG_LEXER_TOK_EOL)))
         {
             /*
-             * Create a new section and overwrite any existing sections of the same
-             * name in the configuration.
+             * Create a new section and overwrite any existing sections
+             * of the same name in the configuration.
              */
             parser->section = Config_section_create(secname);
-            Config_add_section(parser->config, parser->section);
+            switch(parser->sectype) {
+            case CONFIG_LEXER_TOK_SECTION:
+                Config_add_section(parser->config, parser->section);
+                break;
 
-            if(grammar_section_statements(parser) && accept(parser, CONFIG_LEXER_TOK_EOL)
+            case CONFIG_LEXER_TOK_BLACKLIST:
+                Config_add_blacklist(parser->config, parser->section);
+                break;
+
+            case CONFIG_LEXER_TOK_WHITELIST:
+                Config_add_whitelist(parser->config, parser->section);
+                break;
+            }
+
+            if(grammar_section_statements(parser)
+               && accept(parser, CONFIG_LEXER_TOK_EOL)
                && accept(parser, CONFIG_LEXER_TOK_BRACKET_R))
             {
                 /*
-                 * Remove the reference as we are now finished with this section.
+                 * Remove the reference as we are now finished with this
+                 * section.
                  */
                 parser->section = NULL;
 
                 return CONFIG_PARSER_OK;
             }
         }
+    }
+
+    return CONFIG_PARSER_ERR;
+}
+
+static int
+grammar_section_type(T parser)
+{
+    if(accept_no_advance(parser, CONFIG_LEXER_TOK_SECTION)
+       || accept_no_advance(parser, CONFIG_LEXER_TOK_BLACKLIST)
+       || accept_no_advance(parser, CONFIG_LEXER_TOK_WHITELIST))
+    {
+        /* Store the type of section. */
+        parser->sectype = parser->curr;
+        advance(parser);
+        return CONFIG_PARSER_OK;
     }
 
     return CONFIG_PARSER_ERR;
@@ -345,8 +387,10 @@ grammar_section_statements(T parser)
 static int
 grammar_section_assignments(T parser)
 {
-    if(accept(parser, CONFIG_LEXER_TOK_COMMA) && accept(parser, CONFIG_LEXER_TOK_EOL)
-       && grammar_assignment(parser) && grammar_section_assignments(parser))
+    if(accept(parser, CONFIG_LEXER_TOK_COMMA)
+       && accept(parser, CONFIG_LEXER_TOK_EOL)
+       && grammar_assignment(parser)
+       && grammar_section_assignments(parser))
     {
         return CONFIG_PARSER_OK;
     }
@@ -361,7 +405,9 @@ grammar_include(T parser)
     char *include;
     int len;
 
-    if(accept(parser, CONFIG_LEXER_TOK_INCLUDE) && accept_no_advance(parser, CONFIG_LEXER_TOK_STR)) {
+    if(accept(parser, CONFIG_LEXER_TOK_INCLUDE)
+       && accept_no_advance(parser, CONFIG_LEXER_TOK_STR))
+    {
         /*
          * Enqueue the included file here and advance the token stream.
          */

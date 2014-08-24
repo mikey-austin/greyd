@@ -27,6 +27,8 @@
 #define CONFIG_LEXER_TOK_COMMA     110
 #define CONFIG_LEXER_TOK_SQBRACK_L 111
 #define CONFIG_LEXER_TOK_SQBRACK_R 112
+#define CONFIG_LEXER_TOK_BLACKLIST 113
+#define CONFIG_LEXER_TOK_WHITELIST 114
 
 union Config_lexer_token_value {
     int  i;

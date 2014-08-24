@@ -18,7 +18,7 @@
 
 #define T Config_T
 
-#define CONFIG_INIT_SECTIONS 20
+#define CONFIG_INIT_SECTIONS 30
 #define CONFIG_INIT_INCLUDES 50
 
 /**
@@ -47,8 +47,14 @@ Config_create()
     }
 
     /* Initialize the hash of sections. */
-    config->sections           = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
-    config->processed_includes = Hash_create(CONFIG_INIT_INCLUDES, Config_include_destroy_hash);
+    config->sections           = Hash_create(CONFIG_INIT_SECTIONS,
+                                             Config_section_value_destroy);
+    config->blacklists         = Hash_create(CONFIG_INIT_SECTIONS,
+                                             Config_section_value_destroy);
+    config->whitelists         = Hash_create(CONFIG_INIT_SECTIONS,
+                                             Config_section_value_destroy);
+    config->processed_includes = Hash_create(CONFIG_INIT_INCLUDES,
+                                             Config_include_destroy_hash);
     config->includes           = Queue_create(Config_include_destroy);
 
     return config;
@@ -61,6 +67,8 @@ Config_destroy(T config)
         return;
 
     Hash_destroy(config->sections);
+    Hash_destroy(config->blacklists);
+    Hash_destroy(config->whitelists);
     Hash_destroy(config->processed_includes);
     Queue_destroy(config->includes);
 
@@ -70,13 +78,40 @@ Config_destroy(T config)
 extern void
 Config_add_section(T config, Config_section_T section)
 {
-    Hash_insert(config->sections, (const char *) section->name, (void *) section);
+    Hash_insert(config->sections, (const char *) section->name,
+                (void *) section);
+}
+
+extern void
+Config_add_blacklist(T config, Config_section_T section)
+{
+    Hash_insert(config->blacklists, (const char *) section->name,
+                (void *) section);
+}
+
+extern void
+Config_add_whitelist(T config, Config_section_T section)
+{
+    Hash_insert(config->whitelists, (const char *) section->name,
+                (void *) section);
 }
 
 extern Config_section_T
 Config_get_section(T config, const char *section_name)
 {
     return (Config_section_T) Hash_get(config->sections, section_name);
+}
+
+extern Config_section_T
+Config_get_blacklist(T config, const char *section_name)
+{
+    return (Config_section_T) Hash_get(config->blacklists, section_name);
+}
+
+extern Config_section_T
+Config_get_whitelist(T config, const char *section_name)
+{
+    return (Config_section_T) Hash_get(config->whitelists, section_name);
 }
 
 extern void

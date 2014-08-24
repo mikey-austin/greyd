@@ -20,11 +20,12 @@ main()
     Config_parser_T parser;
     Config_T c;
     Config_section_T s;
-    Config_value_T v;
+    Config_value_T v, v2;
+    struct List_entry_T *curr;
     int tok, ret, i;
     char *include;
 
-    TEST_START(14);
+    TEST_START(22);
 
     cs = Config_source_create_from_str(
         "# This is a test config file\n\n\n"
@@ -35,10 +36,15 @@ main()
         "    test_var_3 = 12,\n"
         "    test_var_4 = [ 4321, \"a string\" ]\n"
         "} \n"
-        "test_var_5 = [\n"
+        "blacklist spews {\n"
+        "    test_var_5 = [\n"
         "    222,\n"
         "    \"another string\" ]\n"
-        "test_var_6 = [ 1, 2, 3 ]\n"
+        "}\n"
+        "whitelist custom {\n"
+        "    test_var_6 = [ 1, 2, 3 ],\n"
+        "    test_var_7 = 55\n"
+        "}\n"
         "include \"data/config_test1.conf\"");
     lexer = Config_lexer_create(cs);
     c = Config_create();
@@ -66,14 +72,41 @@ main()
     TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
     TEST_OK((List_size(v->v.l) == 2), "List size is as expected");
 
-    s = Config_get_section(c, CONFIG_PARSER_DEFAULT_SECTION);
+    s = Config_get_blacklist(c, "spews");
+    TEST_OK((s != NULL), "Blacklist parsed correctly");
     v = Config_section_get(s, "test_var_5");
     TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
     TEST_OK((List_size(v->v.l) == 2), "List size is as expected");
 
+    i = 1;
+    LIST_FOREACH(v->v.l, curr) {
+        v2 = List_entry_value(curr);
+        switch(i++) {
+        case 1:
+            TEST_OK((v2 && v2->v.i == 222), "Integer list value is correct");
+            break;
+
+        case 2:
+            TEST_OK((v2 && strcmp(v2->v.s, "another string") == 0), "String list value is correct");
+            break;
+        }
+    }
+
+    s = Config_get_whitelist(c, "custom");
+    TEST_OK((s != NULL), "Whitelist parsed correctly");
     v = Config_section_get(s, "test_var_6");
     TEST_OK((v && (v->type == CONFIG_VAL_TYPE_LIST)), "Parsed custom section list variable correctly");
     TEST_OK((List_size(v->v.l) == 3), "List size is as expected");
+
+    i = 1;
+    LIST_FOREACH(v->v.l, curr) {
+        v2 = List_entry_value(curr);
+        TEST_OK((v2 && v2->v.i == i), "List value is correct");
+        i++;
+    }
+
+    v = Config_section_get(s, "test_var_7");
+    TEST_OK((v->v.i == 55), "Parsed whitelist section int variable correctly");
 
     TEST_OK((Queue_size(c->includes) == 1), "Include parsed and enqueued correctly");
     include = (char *) Queue_dequeue(c->includes);

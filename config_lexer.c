@@ -111,10 +111,16 @@ Config_lexer_next_token(T lexer)
             else if(L_MATCH(lexer->current_value.s, len, "include")) {
                 return (lexer->current_token = CONFIG_LEXER_TOK_INCLUDE);
             }
+            else if(L_MATCH(lexer->current_value.s, len, "blacklist")) {
+                return (lexer->current_token = CONFIG_LEXER_TOK_BLACKLIST);
+            }
+            else if(L_MATCH(lexer->current_value.s, len, "whitelist")) {
+                return (lexer->current_token = CONFIG_LEXER_TOK_WHITELIST);
+            }
             else {
                 /*
-                 * The scanned token is not a reserved word and is not a string value,
-                 * so it must be a configuration variable name.
+                 * The scanned token is not a reserved word and is not a
+                 * string value, so it must be a configuration variable name.
                  */
 
                 return (lexer->current_token = CONFIG_LEXER_TOK_NAME);

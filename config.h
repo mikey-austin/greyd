@@ -20,6 +20,8 @@
 typedef struct T *T;
 struct T {
     Hash_T  sections;           /**< This config's sections */
+    Hash_T  blacklists;         /**< Configured blacklists */
+    Hash_T  whitelists;         /**< Configured whitelists */
     Hash_T  processed_includes; /**< For tracking processed included files */
     Queue_T includes;           /**< A queue of included files to be parsed */
 };
@@ -39,10 +41,30 @@ extern void Config_destroy(T config);
  */
 extern void Config_add_section(T config, Config_section_T section);
 
+/*
+ * Add a blacklist to the configuration.
+ */
+extern void Config_add_blacklist(T config, Config_section_T section);
+
+/*
+ * Add a whitelist to the configuration.
+ */
+extern void Config_add_whitelist(T config, Config_section_T section);
+
 /**
  * Get a configuration section by name if one exists.
  */
 extern Config_section_T Config_get_section(T config, const char *section_name);
+
+/**
+ * Get a blacklist by name if one exists.
+ */
+extern Config_section_T Config_get_blacklist(T config, const char *section_name);
+
+/**
+ * Get a whitelist by name if one exists.
+ */
+extern Config_section_T Config_get_whitelist(T config, const char *section_name);
 
 /**
  * Parse the specified file and load the configuration data. Any included

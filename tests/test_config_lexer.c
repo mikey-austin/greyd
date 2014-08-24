@@ -20,7 +20,7 @@ main()
     Config_lexer_T lexer;
     int tok;
 
-    TEST_START(74);
+    TEST_START(76);
 
     /*
      * Test the string config source first.
@@ -33,7 +33,8 @@ main()
         "    test_var_3 = 12\n"
         "} \n"
         "include \"/etc/somefile\"\n"
-        "test_var_4 = [ 1234, \"a string\"]");
+        "test_var_4 = [ 1234, \"a string\"]"
+        "blacklist whitelist");
     lexer = Config_lexer_create(cs);
     TEST_OK((lexer != NULL), "Lexer created successfully");
 
@@ -95,6 +96,9 @@ main()
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_STR), "Test name string type");
     TEST_OK(!strncmp(lexer->current_value.s, "a string", strlen("a string")), "Test string value");
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_SQBRACK_R), "Test ] token type");
+
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_BLACKLIST), "Test blacklist keyword")
+    TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_WHITELIST), "Test whitelist keyword");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOF), "Test EOF");
 
