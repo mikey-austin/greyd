@@ -15,7 +15,7 @@
 int
 main()
 {
-    Config_source_T cs;
+    Lexer_source_T cs;
     Config_lexer_T lexer;
     Config_parser_T parser;
     Config_T c;
@@ -24,10 +24,7 @@ main()
     struct List_entry_T *curr;
     int tok, ret, i;
     char *include;
-
-    TEST_START(22);
-
-    cs = Config_source_create_from_str(
+    char *src =
         "# This is a test config file\n\n\n"
         "test_var_1    =  12345 # This is a comment \n"
         "# This is another comment followed by a new line \n\n"
@@ -45,7 +42,11 @@ main()
         "    test_var_6 = [ 1, 2, 3 ],\n"
         "    test_var_7 = 55\n"
         "}\n"
-        "include \"data/config_test1.conf\"");
+        "include \"data/config_test1.conf\"";
+
+    TEST_START(22);
+
+    cs = Lexer_source_create_from_str(src, strlen(src));
     lexer = Config_lexer_create(cs);
     c = Config_create();
 

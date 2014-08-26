@@ -16,16 +16,10 @@ int
 main()
 {
     char *test_file;
-    Config_source_T cs;
+    Lexer_source_T cs;
     Config_lexer_T lexer;
     int tok;
-
-    TEST_START(76);
-
-    /*
-     * Test the string config source first.
-     */
-    cs = Config_source_create_from_str(
+    char *src =
         "test_var_1    =  12345 # This is a comment \n"
         "# This is another comment followed by a new line \n"
         "section {\n"
@@ -34,7 +28,14 @@ main()
         "} \n"
         "include \"/etc/somefile\"\n"
         "test_var_4 = [ 1234, \"a string\"]"
-        "blacklist whitelist");
+        "blacklist whitelist";
+
+    TEST_START(76);
+
+    /*
+     * Test the string config source first.
+     */
+    cs = Lexer_source_create_from_str(src, strlen(src));
     lexer = Config_lexer_create(cs);
     TEST_OK((lexer != NULL), "Lexer created successfully");
 
@@ -108,7 +109,7 @@ main()
      * Run the tests from the equivalent file source to be thourough.
      */
     test_file = Test_get_file_path("config_lexer_test1.conf");
-    cs = Config_source_create_from_file(test_file);
+    cs = Lexer_source_create_from_file(test_file);
 
     lexer = Config_lexer_create(cs);
     TEST_OK((lexer != NULL), "Lexer created successfully");

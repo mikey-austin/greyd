@@ -1,5 +1,5 @@
 /**
- * @file   config_source.c
+ * @file   lexer_source.c
  * @brief  Implements interface for configuration source data.
  * @author Mikey Austin
  * @date   2014
@@ -7,14 +7,14 @@
 
 #include "utils.h"
 #include "failures.h"
-#include "config_source.h"
+#include "lexer_source.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#define T Config_source_T
+#define T Lexer_source_T
 
 struct source_data_file {
     char *filename;
@@ -22,9 +22,9 @@ struct source_data_file {
 };
 
 struct source_data_str {
-    char *buf;
-    int   index;
-    int   length;
+    const char *buf;
+    int         index;
+    int         length;
 };
 
 static T     source_create();
@@ -37,7 +37,7 @@ static int   source_data_str_getc(void *data);
 static void  source_data_str_ungetc(void *data, int c);
 
 extern T
-Config_source_create_from_file(const char *filename)
+Lexer_source_create_from_file(const char *filename)
 {
     int flen = strlen(filename) + 1;
     T source = source_create();
@@ -61,7 +61,7 @@ Config_source_create_from_file(const char *filename)
         I_CRIT("Error opening config file source: %s", strerror(errno));
     }
 
-    source->type     = CONFIG_SOURCE_FILE;
+    source->type     = LEXER_SOURCE_FILE;
     source->data     = data;
     source->_getc    = source_data_file_getc;
     source->_ungetc  = source_data_file_ungetc;
@@ -71,15 +71,10 @@ Config_source_create_from_file(const char *filename)
 }
 
 extern T
-Config_source_create_from_str(const char *buf)
+Lexer_source_create_from_str(const char *buf, int len)
 {
-    int blen = strlen(buf) + 1;
     T source = source_create();
     struct source_data_str *data;
-
-    if(blen <= 0) {
-        I_CRIT("Invalid config source buffer");
-    }
 
     data = (struct source_data_str *) malloc(sizeof(*data));
     if(data == NULL) {
@@ -87,16 +82,12 @@ Config_source_create_from_str(const char *buf)
     }
 
     /* Copy the buffer into the new source object. */
-    data->buf = (char *) malloc(blen);
-    if(data->buf == NULL) {
-        I_CRIT("Could not create config source buffer");
-    }
-    sstrncpy(data->buf, buf, blen);
+    data->buf = buf;
 
     data->index  = 0;    /* Index is for traversing buffer. */
-    data->length = blen; /* Not including sentinel. */
+    data->length = len;
 
-    source->type     = CONFIG_SOURCE_STR;
+    source->type     = LEXER_SOURCE_STR;
     source->data     = data;
     source->_getc    = source_data_str_getc;
     source->_ungetc  = source_data_str_ungetc;
@@ -106,7 +97,7 @@ Config_source_create_from_str(const char *buf)
 }
 
 extern void
-Config_source_destroy(T source)
+Lexer_source_destroy(T source)
 {
     if(!source)
         return;
@@ -116,13 +107,13 @@ Config_source_destroy(T source)
 }
 
 extern int
-Config_source_getc(T source)
+Lexer_source_getc(T source)
 {
     return source->_getc(source->data);
 }
 
 extern void
-Config_source_ungetc(T source, int c)
+Lexer_source_ungetc(T source, int c)
 {
     source->_ungetc(source->data, c);
 }
@@ -186,10 +177,6 @@ source_data_str_destroy(void *data)
         return;
 
     data_str = (struct source_data_str *) data;
-    if(data_str->buf != NULL) {
-        free(data_str->buf);
-    }
-
     free(data_str);
 }
 

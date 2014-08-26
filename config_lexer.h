@@ -8,7 +8,7 @@
 #ifndef CONFIG_LEXER_DEFINED
 #define CONFIG_LEXER_DEFINED
 
-#include "config_source.h"
+#include "lexer_source.h"
 
 #define T Config_lexer_T
 
@@ -48,13 +48,13 @@ struct T {
     int previous_token;
     int seen_end;
 
-    Config_source_T source;
+    Lexer_source_T source;
 };
 
 /**
  * Create a fresh lexer object.
  */
-extern T Config_lexer_create(Config_source_T source);
+extern T Config_lexer_create(Lexer_source_T source);
 
 /**
  * Destroy a lexer object. This will automatically destroy the associated

@@ -6,7 +6,7 @@
  */
 
 #include "failures.h"
-#include "config_source.h"
+#include "lexer_source.h"
 #include "config_lexer.h"
 
 #include <stdio.h>
@@ -16,8 +16,8 @@
 
 #define T Config_lexer_T
 
-#define L_GETC(lexer)      Config_source_getc(lexer->source)
-#define L_UNGETC(lexer, c) Config_source_ungetc(lexer->source, c)
+#define L_GETC(lexer)      Lexer_source_getc(lexer->source)
+#define L_UNGETC(lexer, c) Lexer_source_ungetc(lexer->source, c)
 #define L_MATCH(a, len, b) (len == strlen(b) && strncmp(a, b, len) == 0)
 
 /**
@@ -27,7 +27,7 @@
 static void reuse_char(T lexer, int c);
 
 extern T
-Config_lexer_create(Config_source_T source)
+Config_lexer_create(Lexer_source_T source)
 {
     T lexer;
 
@@ -48,7 +48,7 @@ Config_lexer_destroy(T lexer)
         return;
 
     if(lexer->source)
-        Config_source_destroy(lexer->source);
+        Lexer_source_destroy(lexer->source);
 
     free(lexer);
 }

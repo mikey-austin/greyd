@@ -117,14 +117,14 @@ Config_get_whitelist(T config, const char *section_name)
 extern void
 Config_load_file(T config, char *file)
 {
-    Config_source_T source;
+    Lexer_source_T source;
     Config_lexer_T lexer;
     Config_parser_T parser;
     char *include;
     int *count;
 
     if(file) {
-        source = Config_source_create_from_file(file);
+        source = Lexer_source_create_from_file(file);
         lexer = Config_lexer_create(source);
         parser = Config_parser_create(lexer);
 
