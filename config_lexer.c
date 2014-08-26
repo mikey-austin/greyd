@@ -60,12 +60,6 @@ Config_lexer_next_token(T lexer)
     union Config_lexer_token_value tmp_val;
 
     /*
-     * Save the current token.
-     */
-    lexer->previous_token = lexer->current_token;
-    lexer->previous_value = lexer->current_value;
-
-    /*
      * Scan for the next token.
      */
     for(;;) {

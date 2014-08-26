@@ -30,7 +30,7 @@ main()
         "test_var_4 = [ 1234, \"a string\"]"
         "blacklist whitelist";
 
-    TEST_START(76);
+    TEST_START(74);
 
     /*
      * Test the string config source first.
@@ -43,9 +43,6 @@ main()
     TEST_OK(!strncmp(lexer->current_value.s, "test_var_1", strlen("test_var_1")), "Test token name value");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EQ), "Test equals token type");
-
-    TEST_OK((lexer->previous_token == CONFIG_LEXER_TOK_NAME), "Test previous token type");
-    TEST_OK(!strncmp(lexer->previous_value.s, "test_var_1", strlen("test_var_1")), "Test previous name value");
 
     TEST_OK(((tok = Config_lexer_next_token(lexer)) == CONFIG_LEXER_TOK_INT), "Test int token type");
     TEST_OK((lexer->current_value.i == 12345), "Test token int value");

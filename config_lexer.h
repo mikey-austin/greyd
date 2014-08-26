@@ -42,10 +42,8 @@ typedef struct T *T;
 struct T {
     /* Semantic value of current scanned token. */
     union Config_lexer_token_value current_value;
-    union Config_lexer_token_value previous_value;
 
     int current_token;
-    int previous_token;
     int seen_end;
 
     Lexer_source_T source;
