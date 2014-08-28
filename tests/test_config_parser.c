@@ -16,7 +16,7 @@ int
 main()
 {
     Lexer_source_T cs;
-    Config_lexer_T lexer;
+    Lexer_T lexer;
     Config_parser_T parser;
     Config_T c;
     Config_section_T s;

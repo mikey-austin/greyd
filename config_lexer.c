@@ -14,50 +14,20 @@
 #include <string.h>
 #include <ctype.h>
 
-#define T Config_lexer_T
-
-#define L_GETC(lexer)      Lexer_source_getc(lexer->source)
-#define L_UNGETC(lexer, c) Lexer_source_ungetc(lexer->source, c)
-#define L_MATCH(a, len, b) (len == strlen(b) && strncmp(a, b, len) == 0)
-
-/**
- * Put the character back onto the front of the queue while checking
- * for the end of the stream.
- */
-static void reuse_char(T lexer, int c);
-
-extern T
+extern Lexer_T
 Config_lexer_create(Lexer_source_T source)
 {
-    T lexer;
+    Lexer_T lexer;
 
-    if((lexer = (T) malloc(sizeof(*lexer))) == NULL) {
-        I_CRIT("Could not create lexer");
-    }
-
-    lexer->source   = source;
-    lexer->seen_end = 0;
+    lexer = Lexer_create(source, Config_lexer_next_token);
 
     return lexer;
 }
 
-extern void
-Config_lexer_destroy(T lexer)
-{
-    if(!lexer)
-        return;
-
-    if(lexer->source)
-        Lexer_source_destroy(lexer->source);
-
-    free(lexer);
-}
-
 extern int
-Config_lexer_next_token(T lexer)
+Config_lexer_next_token(Lexer_T lexer)
 {
-    int c, seen_esc = 0, len = 0, i, tmp_tok;
-    union Config_lexer_token_value tmp_val;
+    int c, seen_esc = 0, len = 0, i;
 
     /*
      * Scan for the next token.
@@ -79,7 +49,7 @@ Config_lexer_next_token(T lexer)
             }
 
             lexer->current_value.i = i;
-            reuse_char(lexer, c);
+            Lexer_reuse_char(lexer, c);
 
             return (lexer->current_token = CONFIG_LEXER_TOK_INT);
         }
@@ -93,10 +63,10 @@ Config_lexer_next_token(T lexer)
                 lexer->current_value.s[len++] = tolower(c);
             }
             while((isalpha(c = L_GETC(lexer)) || isdigit(c) || c == '_')
-                  && len <= CONFIG_LEXER_MAX_STR_LEN);
+                  && len <= LEXER_MAX_STR_LEN);
 
             lexer->current_value.s[len] = '\0';
-            reuse_char(lexer, c);
+            Lexer_reuse_char(lexer, c);
 
             /* Search for reserved words. */
             if(L_MATCH(lexer->current_value.s, len, "section")) {
@@ -140,7 +110,7 @@ Config_lexer_next_token(T lexer)
 
             while((c = L_GETC(lexer)) != '\n' && c != EOF)
                 ;
-            reuse_char(lexer, c);
+            Lexer_reuse_char(lexer, c);
 
             continue;
 
@@ -150,7 +120,7 @@ Config_lexer_next_token(T lexer)
              * quote characters.
              */
 
-            while(((c = L_GETC(lexer)) != '"' || seen_esc) && len <= CONFIG_LEXER_MAX_STR_LEN && c != EOF) {
+            while(((c = L_GETC(lexer)) != '"' || seen_esc) && len <= LEXER_MAX_STR_LEN && c != EOF) {
                 if(c == '\\' && !seen_esc) {
                     seen_esc = 1;
                 } else {
@@ -164,7 +134,7 @@ Config_lexer_next_token(T lexer)
 
             if(c != '"') {
                 /* We don't need the closing quote character. */
-                reuse_char(lexer, c);
+                Lexer_reuse_char(lexer, c);
             }
 
             /* Close off the string. */
@@ -199,17 +169,3 @@ Config_lexer_next_token(T lexer)
         }
     }
 }
-
-static void
-reuse_char(T lexer, int c)
-{
-    if(c == EOF || c < 0) {
-        /* We can't reuse an EOF character. */
-        lexer->seen_end = 1;
-    }
-    else {
-        L_UNGETC(lexer, c);
-    }
-}
-
-#undef T

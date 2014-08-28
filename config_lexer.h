@@ -8,9 +8,7 @@
 #ifndef CONFIG_LEXER_DEFINED
 #define CONFIG_LEXER_DEFINED
 
-#include "lexer_source.h"
-
-#define T Config_lexer_T
+#include "lexer.h"
 
 #define CONFIG_LEXER_MAX_STR_LEN   256
 
@@ -30,41 +28,15 @@
 #define CONFIG_LEXER_TOK_BLACKLIST 113
 #define CONFIG_LEXER_TOK_WHITELIST 114
 
-union Config_lexer_token_value {
-    int  i;
-    char s[CONFIG_LEXER_MAX_STR_LEN + 1];
-};
-
-/**
- * The main config lexer structure.
- */
-typedef struct T *T;
-struct T {
-    /* Semantic value of current scanned token. */
-    union Config_lexer_token_value current_value;
-
-    int current_token;
-    int seen_end;
-
-    Lexer_source_T source;
-};
-
 /**
  * Create a fresh lexer object.
  */
-extern T Config_lexer_create(Lexer_source_T source);
-
-/**
- * Destroy a lexer object. This will automatically destroy the associated
- * configuration source object.
- */
-extern void Config_lexer_destroy(T lexer);
+extern Lexer_T Config_lexer_create(Lexer_source_T source);
 
 /**
  * Scan the specified configuration source's character stream and return
  * the next token seen.
  */
-extern int Config_lexer_next_token(T lexer);
+extern int Config_lexer_next_token(Lexer_T lexer);
 
-#undef T
 #endif

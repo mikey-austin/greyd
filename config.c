@@ -118,7 +118,7 @@ extern void
 Config_load_file(T config, char *file)
 {
     Lexer_source_T source;
-    Config_lexer_T lexer;
+    Lexer_T lexer;
     Config_parser_T parser;
     char *include;
     int *count;

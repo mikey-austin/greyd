@@ -84,7 +84,7 @@ struct T {
     Config_T         config;  /**< Reference to the config object. */
     Config_section_T section; /**< Reference to the current section. */
     Config_value_T   value;   /**< Reference to the current config value. */
-    Config_lexer_T   lexer;
+    Lexer_T          lexer;
     int              curr;    /**< The current token being looked at. */
     int              sectype; /**< The type of section being parsed. */
 };
@@ -96,7 +96,7 @@ struct T {
  *
  * @return An initialized parser object.
  */
-extern T Config_parser_create(Config_lexer_T lexer);
+extern T Config_parser_create(Lexer_T lexer);
 
 /**
  * Destroy a parser object. This will automatically destroy the associated
@@ -112,7 +112,7 @@ extern void Config_parser_destroy(T parser);
  * @param parser The initialized parser object.
  * @param lexer The initialized token stream.
  */
-extern void Config_parser_reset(T parser, Config_lexer_T lexer);
+extern void Config_parser_reset(T parser, Lexer_T lexer);
 
 /**
  * Start parsing the lexer's token stream, and populate the specified config object.

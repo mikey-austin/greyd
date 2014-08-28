@@ -38,7 +38,7 @@ static int grammar_section_assignments(T parser);
 static int grammar_include(T parser);
 
 extern T
-Config_parser_create(Config_lexer_T lexer)
+Config_parser_create(Lexer_T lexer)
 {
     T parser;
 
@@ -61,18 +61,18 @@ Config_parser_destroy(T parser)
         return;
 
     if(parser->lexer != NULL) {
-        Config_lexer_destroy(parser->lexer);
+        Lexer_destroy(parser->lexer);
     }
 
     free(parser);
 }
 
 extern void
-Config_parser_reset(T parser, Config_lexer_T lexer)
+Config_parser_reset(T parser, Lexer_T lexer)
 {
     /* Destroy the existing lexer. */
     if(parser->lexer) {
-        Config_lexer_destroy(parser->lexer);
+        Lexer_destroy(parser->lexer);
     }
 
     parser->lexer = lexer;
@@ -140,7 +140,7 @@ accept(T parser, int tok)
 static void
 advance(T parser)
 {
-    parser->curr = Config_lexer_next_token(parser->lexer);
+    parser->curr = Lexer_next_token(parser->lexer);
 }
 
 static int
@@ -170,7 +170,7 @@ grammar_statement(T parser)
 static int
 grammar_assignment(T parser)
 {
-    char varname[CONFIG_LEXER_MAX_STR_LEN + 1];
+    char varname[LEXER_MAX_STR_LEN + 1];
     int len, isint = 0, isstr = 0;
     Config_section_T section;
 
@@ -301,7 +301,7 @@ grammar_list_values(T parser)
 static int
 grammar_section(T parser)
 {
-    char secname[CONFIG_LEXER_MAX_STR_LEN + 1];
+    char secname[LEXER_MAX_STR_LEN + 1];
     int len;
 
     if(grammar_section_type(parser)
