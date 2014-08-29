@@ -402,9 +402,6 @@ grammar_section_assignments(T parser)
 static int
 grammar_include(T parser)
 {
-    char *include;
-    int len;
-
     if(accept(parser, CONFIG_LEXER_TOK_INCLUDE)
        && accept_no_advance(parser, CONFIG_LEXER_TOK_STR))
     {

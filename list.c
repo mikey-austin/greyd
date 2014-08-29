@@ -77,7 +77,7 @@ List_insert_after(T list, void *value)
 extern void
 List_insert_head(T list, void *value)
 {
-    struct E *element, *curr;
+    struct E *element;
 
     element = List_create_element(list, value);
     list->size++;

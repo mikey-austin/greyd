@@ -20,7 +20,6 @@
 #define RETURN_CRIT 1
 #define RETURN_ERR  2
 
-static void log(const char *severity, const char *file, const int line, const char *msg, ...);
 static void vlog(const char *severity, const char *file, const int line, const char *msg, va_list args);
 
 extern void
@@ -64,16 +63,6 @@ i_info(const char *file, const int line, const char *msg, ...)
 
     va_start(args, msg);
     vlog(SEV_INFO, file, line, msg, args);
-    va_end(args);
-}
-
-void
-log(const char *severity, const char *file, const int line, const char *msg, ...)
-{
-    va_list args;
-
-    va_start(args, msg);
-    vlog(severity, file, line, msg, args);
     va_end(args);
 }
 

@@ -6,7 +6,7 @@ SRC		= $(wildcard *.c)
 OBJ		= $(SRC:.c=.o)
 TARGET 	= greyd
 CC		= clang
-CFLAGS	= -g -O0
+CFLAGS	= -g -O0 -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments
 TESTS   = tests
 
 $(TARGET): $(OBJ)
