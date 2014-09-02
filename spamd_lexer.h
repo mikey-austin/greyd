@@ -10,14 +10,16 @@
 
 #include "lexer.h"
 
-#define SPAMD_LEXER_MAX_INT   255
+#define SPAMD_LEXER_MAX_INT6  32
+#define SPAMD_LEXER_MAX_INT8  255
 
 #define SPAMD_LEXER_TOK_DOT   100
-#define SPAMD_LEXER_TOK_INT   101
-#define SPAMD_LEXER_TOK_DASH  102
-#define SPAMD_LEXER_TOK_SLASH 103
-#define SPAMD_LEXER_TOK_EOF   104
-#define SPAMD_LEXER_TOK_EOL   105
+#define SPAMD_LEXER_TOK_INT6  101
+#define SPAMD_LEXER_TOK_INT8  102
+#define SPAMD_LEXER_TOK_DASH  103
+#define SPAMD_LEXER_TOK_SLASH 104
+#define SPAMD_LEXER_TOK_EOF   105
+#define SPAMD_LEXER_TOK_EOL   106
 
 /**
  * Create a fresh lexer object.

@@ -26,7 +26,7 @@ Spamd_lexer_create(Lexer_source_T source)
 extern int
 Spamd_lexer_next_token(Lexer_T lexer)
 {
-    int c, i;
+    int c, i, j;
 
     /*
      * Scan for the next token.
@@ -40,18 +40,25 @@ Spamd_lexer_next_token(Lexer_T lexer)
 
         if(isdigit(c)) {
             /*
-             * This is an integer.
+             * This is either a 6 bit or 8 bit integer token. Strings of
+             * digits greater than 255 will be split up into multiple
+             * tokens, eg 25566 will yield 255 & 66 tokens.
              */
 
             i = (c - '0');
-            while(isdigit(c = L_GETC(lexer)) && i <= SPAMD_LEXER_MAX_INT) {
-                i = (i * 10) + (c - '0');
+            while(isdigit(c = L_GETC(lexer))) {
+                if((j = (i * 10) + (c - '0')) > SPAMD_LEXER_MAX_INT8)
+                    break;
+
+                i = j;
             }
 
             lexer->current_value.i = i;
             Lexer_reuse_char(lexer, c);
 
-            return (lexer->current_token = SPAMD_LEXER_TOK_INT);
+            return lexer->current_token =
+                (i <= SPAMD_LEXER_MAX_INT6 ?
+                 SPAMD_LEXER_TOK_INT6 : SPAMD_LEXER_TOK_INT8);
         }
 
         /*
