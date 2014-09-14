@@ -104,6 +104,7 @@ Lexer_source_destroy(T source)
 
     source->_destroy(source->data);
     free(source);
+    source = NULL;
 }
 
 extern int
@@ -145,6 +146,7 @@ source_data_file_destroy(void *data)
     data_file = (struct source_data_file *) data;
     if(data_file->filename != NULL) {
         free(data_file->filename);
+        data_file->filename = NULL;
     }
 
     /* Try to close the handle. */
@@ -153,6 +155,7 @@ source_data_file_destroy(void *data)
     }
 
     free(data_file);
+    data_file = NULL;
 }
 
 static int
@@ -178,6 +181,7 @@ source_data_str_destroy(void *data)
 
     data_str = (struct source_data_str *) data;
     free(data_str);
+    data_str = NULL;
 }
 
 /*

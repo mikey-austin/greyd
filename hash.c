@@ -57,6 +57,7 @@ Hash_create(int size, void (*destroy)(struct E *entry))
     new->entries = (struct E*) malloc(sizeof(*(new->entries)) * size);
     if(!new->entries) {
         free(new);
+        new = NULL;
         I_CRIT("Could not allocate hash entries of size %d", size);
     }
 
@@ -78,7 +79,9 @@ Hash_destroy(T hash)
 
     if(hash && hash->entries) {
         free(hash->entries);
+        hash->entries = NULL;
         free(hash);
+        hash = NULL;
     } else {
         I_ERR("Tried to free NULL hash (hash %d, entries %d)",
               hash, (hash ? hash->entries : 0x0));
@@ -187,6 +190,7 @@ Hash_resize(T hash, int new_size)
 
     /* Cleanup the old entries. */
     free(old_entries);
+    old_entries = NULL;
 }
 
 static void

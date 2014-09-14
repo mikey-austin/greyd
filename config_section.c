@@ -51,12 +51,15 @@ Config_section_destroy(T section)
     if(!section)
         return;
 
-    if(section->name)
+    if(section->name) {
         free(section->name);
+        section->name = NULL;
+    }
 
     Hash_destroy(section->vars);
 
     free(section);
+    section = NULL;
 }
 
 extern Config_value_T

@@ -65,6 +65,7 @@ Config_parser_destroy(T parser)
     }
 
     free(parser);
+    parser = NULL;
 }
 
 extern void

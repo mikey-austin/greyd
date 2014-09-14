@@ -51,6 +51,7 @@ List_destroy(T list)
     }
 
     free(list);
+    list = NULL;
 }
 
 extern void
@@ -144,6 +145,7 @@ List_destroy_element(T list, struct E *element)
 {
     if(element) {
         free(element);
+        element = NULL;
     }
 }
 

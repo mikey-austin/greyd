@@ -32,6 +32,7 @@ Queue_destroy(T queue)
     if(queue != NULL) {
         List_destroy(queue->list);
         free(queue);
+        queue = NULL;
     }
 }
 

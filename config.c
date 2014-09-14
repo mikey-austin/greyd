@@ -73,6 +73,7 @@ Config_destroy(T config)
     Queue_destroy(config->includes);
 
     free(config);
+    config = NULL;
 }
 
 extern void
@@ -152,6 +153,7 @@ Config_load_file(T config, char *file)
 
         /* Cleanup the dequeued include. */
         free(include);
+        include = NULL;
     }
 }
 
@@ -204,6 +206,7 @@ Config_include_destroy_hash(struct Hash_entry *entry)
 {
     if(entry && entry->v) {
         free(entry->v);
+        entry->v = NULL;
     }
 }
 
@@ -214,6 +217,7 @@ Config_include_destroy(void *value)
 
     if(include) {
         free(include);
+        include = NULL;
     }
 }
 

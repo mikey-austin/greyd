@@ -52,6 +52,7 @@ Lexer_destroy(T lexer)
         Lexer_source_destroy(lexer->source);
 
     free(lexer);
+    lexer = NULL;
 }
 
 extern void
