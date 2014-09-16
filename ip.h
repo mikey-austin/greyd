@@ -9,15 +9,16 @@
 #define IP_DEFINED
 
 #include <stdint.h>
+#include <stdlib.h>
 
 /**
  * Structure to house a single CIDR network.
  */
 struct IP_cidr {
-    uint32_t address;
-    int      bits;
+    u_int32_t addr;
+    u_int8_t  bits;
 };
 
-extern IP_cidr_to_range(struct IP_cidr *cidr, uint32_t *start, uint32_t *end);
+extern IP_cidr_to_range(struct IP_cidr *cidr, u_int32_t *start, u_int32_t *end);
 
 #endif

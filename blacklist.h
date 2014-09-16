@@ -21,9 +21,9 @@
  * Internal structure for containing a single blacklist entry.
  */
 struct E {
-    uint32_t address;
-    int      black;
-    int      white;
+    u_int32_t address;
+    int8_t   black;
+    int8_t   white;
 };
 
 /**
@@ -31,8 +31,11 @@ struct E {
  */
 typedef struct T *T;
 struct T {
-    struct E *entries;
+    char     *name;
     char     *message;
+    struct E *entries;
+    size_t   size;
+    size_t   count;
 };
 
 /**
@@ -48,7 +51,7 @@ extern void Blacklist_destroy(T list);
 /**
  * Add a range of addresses to the blacklist of the specified type.
  */
-extern void Blacklist_add_range(T list, uint32_t start, uint32_t end, int type);
+extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type);
 
 /**
  * "Collapse" a blacklist's entries by removing overlapping regions as well

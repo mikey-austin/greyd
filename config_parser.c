@@ -147,7 +147,9 @@ advance(T parser)
 static int
 grammar_statements(T parser)
 {
-    if(accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_statement(parser) && grammar_statements(parser)) {
+    if(accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_statement(parser)
+       && grammar_statements(parser))
+    {
         return CONFIG_PARSER_OK;
     }
 
