@@ -5,11 +5,13 @@
  * @date   2014
  */
 
+#include "utils.h"
 #include "failures.h"
 #include "blacklist.h"
 
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #define T Blacklist_T
 #define E Blacklist_ip
@@ -17,14 +19,63 @@
 #define BLACKLIST_INIT_SIZE (1024 * 1024)
 
 extern T
-Blacklist_create(const char *message)
+Blacklist_create(const char *name, const char *message)
 {
-    return NULL;
+    int len;
+    T blacklist;
+
+    if((blacklist = (T) malloc(sizeof(*blacklist))) == NULL) {
+        I_CRIT("Could not create blacklist");
+    }
+
+    blacklist->entries = (struct E *) calloc(BLACKLIST_INIT_SIZE + 1,
+                                             sizeof(struct E));
+    if(blacklist->entries == NULL) {
+        I_CRIT("Could not create blacklist entries");
+    }
+
+    len = strlen(name) + 1;
+    if((blacklist->name = (char *) malloc(len)) == NULL) {
+        I_CRIT("could not malloc blacklist name");
+    }
+    sstrncpy(blacklist->name, name, len);
+
+    len = strlen(message) + 1;
+    if((blacklist->message = (char *) malloc(len)) == NULL) {
+        I_CRIT("could not malloc blacklist message");
+    }
+    sstrncpy(blacklist->name, name, len);
+
+    blacklist->size = BLACKLIST_INIT_SIZE + 1;
+    blacklist->count = 0;
+
+    return blacklist;
 }
 
 extern void
 Blacklist_destroy(T list)
 {
+    if(!list) {
+        return;
+    }
+
+    if(list->entries) {
+        free(list->entries);
+        list->entries = NULL;
+    }
+
+    if(list->name) {
+        free(list->name);
+        list->name = NULL;
+    }
+
+    if(list->message) {
+        free(list->message);
+        list->message = NULL;
+    }
+
+    free(list);
+    list = NULL;
 }
 
 extern void

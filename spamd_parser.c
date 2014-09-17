@@ -103,27 +103,33 @@ grammar_entry(T parser)
     u_int32_t start, end;
 
     if(grammar_address(parser, SPAMD_ADDR_START)) {
-        if(accept(parser, SPAMD_LEXER_TOK_SLASH)
-           && accept_no_advance(parser, SPAMD_LEXER_TOK_INT6))
-        {
-            /*
-             * We have a CIDR netblock, cast the four 8-bit bytes
-             * into a single 32-bit address.
-             */
-            cidr.addr = (u_int32_t) parser->start;
-            cidr.bits = parser->lexer->current_value.i;
-            advance(parser);
+        if(accept(parser, SPAMD_LEXER_TOK_SLASH)) {
+            if(accept_no_advance(parser, SPAMD_LEXER_TOK_INT6)) {
+                /*
+                 * We have a CIDR netblock, cast the four 8-bit bytes
+                 * into a single 32-bit address.
+                 */
+                cidr.addr = (u_int32_t) parser->start;
+                cidr.bits = parser->lexer->current_value.i;
+                advance(parser);
 
-            IP_cidr_to_range(&cidr, &start, &end);
+                IP_cidr_to_range(&cidr, &start, &end);
+            }
+            else {
+                return SPAMD_PARSER_ERR;
+            }
         }
-        else if(accept(parser, SPAMD_LEXER_TOK_DASH)
-            && grammar_address(parser, SPAMD_ADDR_END))
-        {
-            /*
-             * We have an address range stored in the parser object.
-             */
-            start = (u_int32_t) parser->start;
-            end   = (u_int32_t) parser->end;
+        else if(accept(parser, SPAMD_LEXER_TOK_DASH)) {
+            if(grammar_address(parser, SPAMD_ADDR_END)) {
+                /*
+                 * We have an address range stored in the parser object.
+                 */
+                start = (u_int32_t) parser->start;
+                end   = (u_int32_t) parser->end;
+            }
+            else {
+                return SPAMD_PARSER_ERR;
+            }
         }
         else {
             /*

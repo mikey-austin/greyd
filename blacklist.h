@@ -41,7 +41,7 @@ struct T {
 /**
  * Create an empty blacklist.
  */
-extern T Blacklist_create(const char *message);
+extern T Blacklist_create(const char *name, const char *message);
 
 /**
  * Destroy a blacklist and cleanup.
