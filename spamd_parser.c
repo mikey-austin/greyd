@@ -5,7 +5,6 @@
  * @date   2014
  */
 
-#include "utils.h"
 #include "failures.h"
 #include "spamd_parser.h"
 #include "blacklist.h"
@@ -32,7 +31,6 @@ static void advance(T parser);
 static int grammar_entry(T parser);
 static int grammar_entries(T parser);
 static int grammar_address(T parser, int end);
-static int grammar_number(T parser);
 
 extern T
 Spamd_parser_create(Lexer_T lexer)
@@ -113,7 +111,7 @@ grammar_entry(T parser)
              * into a single 32-bit address.
              */
             cidr.addr = (u_int32_t) parser->start;
-            cidr.bits = lexer->current_value.i;
+            cidr.bits = parser->lexer->current_value.i;
             advance(parser);
 
             IP_cidr_to_range(&cidr, &start, &end);
@@ -136,7 +134,8 @@ grammar_entry(T parser)
         }
 
         /*
-         * Add the address range onto the appropriate blacklist.
+         * Add the address range onto the appropriate blacklist. The
+         * blacklist interface will worry about the endianness.
          */
         Blacklist_add_range(parser->blacklist, start, end, parser->type);
 

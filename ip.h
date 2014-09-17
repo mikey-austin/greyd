@@ -19,6 +19,6 @@ struct IP_cidr {
     u_int8_t  bits;
 };
 
-extern IP_cidr_to_range(struct IP_cidr *cidr, u_int32_t *start, u_int32_t *end);
+extern void IP_cidr_to_range(struct IP_cidr *cidr, u_int32_t *start, u_int32_t *end);
 
 #endif

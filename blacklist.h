@@ -22,8 +22,8 @@
  */
 struct E {
     u_int32_t address;
-    int8_t   black;
-    int8_t   white;
+    int8_t    black;
+    int8_t    white;
 };
 
 /**
@@ -58,7 +58,8 @@ extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type
  * as removing whitelist regions. A list of non-overlapping blacklist
  * CIDR networks is returned.
  */
-extern IP_cidr *Blacklist_collapse(T list);
+extern struct IP_cidr *Blacklist_collapse(T list);
 
 #undef T
+#undef E
 #endif
