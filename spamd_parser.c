@@ -165,7 +165,7 @@ grammar_entries(T parser)
 }
 
 static int
-grammar_address(T parser, int end)
+grammar_address(T parser, int start)
 {
     int i;
 
@@ -173,20 +173,25 @@ grammar_address(T parser, int end)
             && (accept_no_advance(parser, SPAMD_LEXER_TOK_INT6)
                 || accept_no_advance(parser, SPAMD_LEXER_TOK_INT8)); i++)
     {
-        if(end) {
-            parser->end[i] = parser->lexer->current_value.i;
-        }
-        else {
+        if(start) {
             parser->start[i] = parser->lexer->current_value.i;
         }
-
+        else {
+            parser->end[i] = parser->lexer->current_value.i;
+        }
         advance(parser);
+
+        if(i < (SPAMD_PARSER_IPV4_QUADS - 1)
+           && !accept(parser, SPAMD_LEXER_TOK_DOT))
+        {
+            return SPAMD_PARSER_ERR;
+        }
     }
 
     /*
      * Return an error if we didn't receive a full address.
      */
-    return (i >= SPAMD_PARSER_IPV4_QUADS
+    return (i == SPAMD_PARSER_IPV4_QUADS
             ? SPAMD_PARSER_OK : SPAMD_PARSER_ERR);
 }
 

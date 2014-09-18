@@ -44,7 +44,7 @@ Blacklist_create(const char *name, const char *message)
     if((blacklist->message = (char *) malloc(len)) == NULL) {
         I_CRIT("could not malloc blacklist message");
     }
-    sstrncpy(blacklist->name, name, len);
+    sstrncpy(blacklist->message, message, len);
 
     blacklist->size = BLACKLIST_INIT_SIZE + 1;
     blacklist->count = 0;
