@@ -14,6 +14,8 @@
 
 #define T Config_T
 
+#define CONFIG_DEFAULT_SECTION "default"
+
 /**
  * The main config table structure.
  */

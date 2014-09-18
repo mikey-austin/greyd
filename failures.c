@@ -71,4 +71,5 @@ vlog(const char *severity, const char *file, const int line, const char *msg, va
 {
     printf("%s: %s logged at file %s line %d:\n  >> ", PROG_NAME, severity, file, line);
     vprintf(msg, args);
+    printf("\n");
 }

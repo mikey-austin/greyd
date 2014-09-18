@@ -25,10 +25,10 @@ main()
     TEST_OK((v1->type = CONFIG_VAL_TYPE_STR), "Can create str config value");
 
     Config_value_set_int(v1, 100);
-    TEST_OK((v1->v.i == 100), "Can set int values");
+    TEST_OK((cv_int(v1) == 100), "Can set int values");
 
     Config_value_set_str(v2, str1);
-    TEST_OK((strcmp(v2->v.s, str1) == 0), "Can set str values");
+    TEST_OK((strcmp(cv_str(v2), str1) == 0), "Can set str values");
 
     /*
      * Create a value of list type, and add v1 & v2.

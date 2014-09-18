@@ -85,6 +85,33 @@ Config_value_destroy(T value)
     value = NULL;
 }
 
+extern char
+*cv_str(T value)
+{
+    return (value && value->type == CONFIG_VAL_TYPE_STR
+            ? value->v.s : NULL);
+}
+
+extern int
+cv_int(T value)
+{
+    return (value && value->type == CONFIG_VAL_TYPE_INT
+            ? value->v.i : -1);
+}
+
+extern List_T
+cv_list(T value)
+{
+    return (value && value->type == CONFIG_VAL_TYPE_LIST
+            ? value->v.l : NULL);
+}
+
+extern int
+cv_type(T value)
+{
+    return value->type;
+}
+
 static void
 Config_value_list_entry_destroy(void *value)
 {

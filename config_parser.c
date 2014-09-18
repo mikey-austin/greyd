@@ -88,8 +88,8 @@ Config_parser_start(T parser, Config_T config)
     parser->config = config;
 
     /* Ensure that there is a global config section available. */
-    if((global_section = Config_get_section(config, CONFIG_PARSER_DEFAULT_SECTION)) == NULL) {
-        global_section = Config_section_create(CONFIG_PARSER_DEFAULT_SECTION);
+    if((global_section = Config_get_section(config, CONFIG_DEFAULT_SECTION)) == NULL) {
+        global_section = Config_section_create(CONFIG_DEFAULT_SECTION);
         Config_add_section(config, global_section);
     }
 
@@ -194,7 +194,7 @@ grammar_assignment(T parser)
              */
             section = (parser->section ? parser->section
                        : Config_get_section(parser->config,
-                                            CONFIG_PARSER_DEFAULT_SECTION));
+                                            CONFIG_DEFAULT_SECTION));
 
             if(isint) {
                 Config_section_set_int(section, varname,

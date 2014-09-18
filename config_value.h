@@ -49,5 +49,13 @@ extern void Config_value_set_str(T value, const char *data);
  */
 extern void Config_value_destroy(T value);
 
+/**
+ * Accessor functions to hide the implementation of the config values.
+ */
+extern char  *cv_str(T value);
+extern int    cv_int(T value);
+extern List_T cv_list(T value);
+extern int    cv_type(T value);
+
 #undef T
 #endif

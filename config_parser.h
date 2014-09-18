@@ -72,7 +72,6 @@
 
 #define T Config_parser_T
 
-#define CONFIG_PARSER_DEFAULT_SECTION "global"
 #define CONFIG_PARSER_OK              1
 #define CONFIG_PARSER_ERR             0
 

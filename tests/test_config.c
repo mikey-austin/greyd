@@ -67,7 +67,7 @@ main()
     v = Config_section_get(s1, "db_name");
     TEST_OK((v && (strcmp(v->v.s, "greyd") == 0)), "Section variable overridden correctly");
 
-    s2 = Config_get_section(c, CONFIG_PARSER_DEFAULT_SECTION);
+    s2 = Config_get_section(c, CONFIG_DEFAULT_SECTION);
     TEST_OK((s2 != NULL), "Storage section parsed correctly");
 
     v = Config_section_get(s2, "ip_address");
