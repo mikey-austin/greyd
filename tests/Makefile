@@ -13,7 +13,7 @@ CFLAGS		= -g -O0
 all: $(TARGETS)
 
 test_%.t: test_%.o $(TEST_OBJ)
-	$(CC) $(CFLAGS) -o $@ $< $(SRC:.c=.o) $(shell find .. -maxdepth 1 -name \*.o -and -not -name main.\*)
+	$(CC) $(CFLAGS) -o $@ $< $(SRC:.c=.o) $(shell find .. -maxdepth 1 -name \*.o -and -not -name main_\*)
 	echo "system(\"valgrind -q --leak-check=full --error-exitcode=1 --tool=memcheck $(shell pwd)/$@\")" >test_$*.pl
 
 .PHONY: clean test
