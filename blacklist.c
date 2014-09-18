@@ -16,8 +16,6 @@
 #define T Blacklist_T
 #define E Blacklist_ip
 
-#define BLACKLIST_INIT_SIZE (1024 * 1024)
-
 extern T
 Blacklist_create(const char *name, const char *message)
 {
@@ -28,7 +26,7 @@ Blacklist_create(const char *name, const char *message)
         I_CRIT("Could not create blacklist");
     }
 
-    blacklist->entries = (struct E *) calloc(BLACKLIST_INIT_SIZE + 1,
+    blacklist->entries = (struct E *) calloc(BLACKLIST_INIT_SIZE,
                                              sizeof(struct E));
     if(blacklist->entries == NULL) {
         I_CRIT("Could not create blacklist entries");
@@ -46,7 +44,7 @@ Blacklist_create(const char *name, const char *message)
     }
     sstrncpy(blacklist->message, message, len);
 
-    blacklist->size = BLACKLIST_INIT_SIZE + 1;
+    blacklist->size = BLACKLIST_INIT_SIZE;
     blacklist->count = 0;
 
     return blacklist;
@@ -85,18 +83,18 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
 
     if(list->count >= (list->size - 2)) {
         list->entries = realloc(
-            list->entries, list->size + BLACKLIST_INIT_SIZE + 1);
+            list->entries, list->size + BLACKLIST_INIT_SIZE);
 
         if(list->entries == NULL) {
             I_CRIT("realloc failed");
         }
 
-        list->size += BLACKLIST_INIT_SIZE + 1;
+        list->size += BLACKLIST_INIT_SIZE;
     }
 
     /* Reserve room for the pair. */
+    i = list->count;
     list->count += 2;
-    i = list->count - 1; /* Start entry. */
 
     list->entries[i].address = ntohl(start);
     list->entries[i + 1].address = ntohl(end);

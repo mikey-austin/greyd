@@ -17,6 +17,8 @@
 #define BL_TYPE_WHITE 0
 #define BL_TYPE_BLACK 1
 
+#define BLACKLIST_INIT_SIZE (1024 * 1024)
+
 /**
  * Internal structure for containing a single blacklist entry.
  */
