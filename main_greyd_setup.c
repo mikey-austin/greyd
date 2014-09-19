@@ -10,6 +10,7 @@
 #include "config.h"
 #include "list.h"
 #include "blacklist.h"
+#include "spamd_parser.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,14 +20,70 @@
 #define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
 #define PROGNAME       "greyd-setup"
 #define MAX_PLEN       1024
+#define METHOD_FTP     "ftp"
+#define METHOD_HTTP    "http"
+#define METHOD_EXEC    "exec"
+#define METHOD_FILE    "file"
 
 static void usage();
+static Spamd_parser_T get_parser(Config_section_T section);
 
 static void
 usage()
 {
 	fprintf(stderr, "usage: %s [-bDdn]\n", PROGNAME);
 	exit(1);    
+}
+
+/**
+ * Given the relevant configuration section, fetch the blacklist via
+ * specified method, decompress into a buffer, then construct and
+ * return a parser.
+ */
+static Spamd_parser_T
+get_parser(Config_section_T section)
+{
+    Spamd_parser_T parser = NULL;
+    Config_value_T val;
+    char *method, *file;
+    
+    /* Extract the method & file variables from the section. */
+    if((val = Config_section_get(section, "method")) == NULL
+       || (method = cv_str(val)) == NULL
+       || (val = Config_section_get(section, "file")) == NULL
+       || (file = cv_str(val)) == NULL)
+    {
+        I_WARN("No method/file configuration variables set");
+        return NULL;
+    }
+
+    if(strncmp(method, METHOD_HTTP, strlen(METHOD_HTTP)) == 0) {
+        /*
+         * The file is to be fetched via HTTP using curl.
+         */
+    }
+    else if(strncmp(method, METHOD_FTP, strlen(METHOD_FTP)) == 0) {
+        /*
+         * The file is to be fetched via FTP using curl.
+         */
+    }
+    else if(strncmp(method, METHOD_EXEC, strlen(METHOD_EXEC)) == 0) {
+        /*
+         * The file is to be exec'ed, with the output to be parsed.
+         * Decompressing this output is not required before parsing.
+         */
+    }
+    else if(strncmp(method, METHOD_FILE, strlen(METHOD_FILE)) == 0) {
+        /*
+         * A file on the local filesystem is to be processed.
+         */
+    }
+    else {
+        I_WARN("Unknown method %s", method);
+        return NULL;
+    }
+
+    return parser;
 }
 
 int
@@ -102,6 +159,11 @@ main(int argc, char **argv)
             continue;
         }
     }
+
+    /*
+     * Cleanup the various objects.
+     */
+    Config_destroy(config);
 
     return 0;
 }
