@@ -16,6 +16,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
 #define PROGNAME       "greyd-setup"
@@ -27,12 +30,48 @@
 
 static void usage();
 static Spamd_parser_T get_parser(Config_section_T section);
+static int open_child(char *file, char **argv);
 
 static void
 usage()
 {
 	fprintf(stderr, "usage: %s [-bDdn]\n", PROGNAME);
 	exit(1);    
+}
+
+/**
+ * Open a pipe, for the specified child process and return the descriptor
+ * pertaining to it's stdout.
+ */
+static int
+open_child(char *file, char **argv)
+{
+	int pdes[2];
+
+	if(pipe(pdes) != 0) 
+		return (-1);
+
+	switch(fork()) {
+	case -1:
+		close(pdes[0]);
+		close(pdes[1]);
+		return (-1);
+
+	case 0:
+		/* child */
+		close(pdes[0]);
+		if(pdes[1] != STDOUT_FILENO) {
+			dup2(pdes[1], STDOUT_FILENO);
+			close(pdes[1]);
+		}
+		execvp(file, argv);
+		_exit(1);
+	}
+
+	/* parent */
+	close(pdes[1]);
+
+	return (pdes[0]);
 }
 
 /**
@@ -45,43 +84,64 @@ get_parser(Config_section_T section)
 {
     Spamd_parser_T parser = NULL;
     Config_value_T val;
-    char *method, *file;
+    char *method, *file, *deflated, **ap, **argv;
+    int fd, len;
     
     /* Extract the method & file variables from the section. */
-    if((val = Config_section_get(section, "method")) == NULL
-       || (method = cv_str(val)) == NULL
-       || (val = Config_section_get(section, "file")) == NULL
+    val = Config_section_get(section, "method");
+    method = cv_str(val);
+
+    if((val = Config_section_get(section, "file")) == NULL
        || (file = cv_str(val)) == NULL)
     {
-        I_WARN("No method/file configuration variables set");
+        I_WARN("No file configuration variables set");
         return NULL;
     }
 
-    if(strncmp(method, METHOD_HTTP, strlen(METHOD_HTTP)) == 0) {
+    if((method == NULL)
+       || (strncmp(method, METHOD_FILE, strlen(METHOD_FILE)) == 0))
+    {
         /*
-         * The file is to be fetched via HTTP using curl.
+         * A file on the local filesystem is to be processed.
          */
+        fd = open(file, O_RDONLY);
     }
-    else if(strncmp(method, METHOD_FTP, strlen(METHOD_FTP)) == 0) {
+    else if((strncmp(method, METHOD_HTTP, strlen(METHOD_HTTP)) == 0)
+            || (strncmp(method, METHOD_FTP, strlen(METHOD_FTP)) == 0))
+    {
         /*
-         * The file is to be fetched via FTP using curl.
+         * The file is to be fetched via curl.
          */
     }
     else if(strncmp(method, METHOD_EXEC, strlen(METHOD_EXEC)) == 0) {
         /*
-         * The file is to be exec'ed, with the output to be parsed.
-         * Decompressing this output is not required before parsing.
+         * The file is to be exec'ed, with the output to be parsed. The
+         * string specified in the "file" variable is to be interpreted as
+         * a command invocation.
          */
-    }
-    else if(strncmp(method, METHOD_FILE, strlen(METHOD_FILE)) == 0) {
-        /*
-         * A file on the local filesystem is to be processed.
-         */
+		len = strlen(file);
+		if((argv = calloc(len, sizeof(char *))) == NULL) {
+			I_ERR("malloc failed");
+        }
+
+		for(ap = argv; ap < &argv[len - 1] &&
+                (*ap = strsep(&file, " \t")) != NULL;)
+        {
+			if(**ap != '\0')
+				ap++;
+		}
+		*ap = NULL;
+        fd = open_child(argv[0], argv);
     }
     else {
         I_WARN("Unknown method %s", method);
         return NULL;
     }
+
+    /*
+     * Now run the appropriate file descriptor through zlib
+     */
+    deflated = NULL;
 
     return parser;
 }
