@@ -7,12 +7,13 @@ MAINS   = main_greyd_setup.o
 OBJ		= $(SRC:.c=.o)
 CC		= clang
 CFLAGS	= -g -O0 -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments
+LIBS    = -lz
 TESTS   = tests
 
 all: greyd-setup test
 
 greyd-setup: $(OBJ)
-	$(CC) $(CFLAGS) -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ))
+	$(CC) $(CFLAGS) -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
 
 #
 # Generate the object file header dependencies.

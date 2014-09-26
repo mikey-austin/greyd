@@ -5,6 +5,8 @@
  * @date   2014
  */
 
+#define _GNU_SOURCE
+
 #include "failures.h"
 #include "utils.h"
 #include "config.h"
@@ -19,8 +21,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <zlib.h>
 
 #define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
+#define DEFAULT_CURL   "/bin/curl"
+#define DEFAULT_MSG    "You have been blacklisted..."
 #define PROGNAME       "greyd-setup"
 #define MAX_PLEN       1024
 #define METHOD_FTP     "ftp"
@@ -29,14 +34,29 @@
 #define METHOD_FILE    "file"
 
 static void usage();
-static Spamd_parser_T get_parser(Config_section_T section);
+static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
+static int fileget(char *url, char *curl_path);
 
 static void
 usage()
 {
 	fprintf(stderr, "usage: %s [-bDdn]\n", PROGNAME);
 	exit(1);    
+}
+
+static int
+fileget(char *url, char *curl_path)
+{
+	char *argv[3];
+
+	argv[0] = curl_path;
+	argv[1] = url;
+	argv[2] = NULL;
+
+    I_INFO("Getting %s", url);
+
+	return (open_child(curl_path, argv));
 }
 
 /**
@@ -80,12 +100,15 @@ open_child(char *file, char **argv)
  * return a parser.
  */
 static Spamd_parser_T
-get_parser(Config_section_T section)
+get_parser(Config_section_T section, Config_T config)
 {
     Spamd_parser_T parser = NULL;
+    Lexer_T lexer;
+    Lexer_source_T source;
     Config_value_T val;
-    char *method, *file, *deflated, **ap, **argv;
-    int fd, len;
+    char *method, *file, *deflated, **ap, **argv, *curl_path, *url, *tmp;
+    int fd, len, nread = 0, bu = 0, bs = 0;
+    gzFile gzf;
     
     /* Extract the method & file variables from the section. */
     val = Config_section_get(section, "method");
@@ -112,6 +135,21 @@ get_parser(Config_section_T section)
         /*
          * The file is to be fetched via curl.
          */
+        section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
+        val = Config_section_get(section, "curl_path");
+        if((curl_path = cv_str(val)) == NULL) {
+            curl_path = DEFAULT_CURL;
+        }
+
+        asprintf(&url, "%s://%s", method, file);
+        if(url == NULL) {
+            I_WARN("Could not create URL");
+            return NULL;
+        }
+
+        fd = fileget(url, curl_path);
+        free(url);
+        url = NULL;
     }
     else if(strncmp(method, METHOD_EXEC, strlen(METHOD_EXEC)) == 0) {
         /*
@@ -130,8 +168,11 @@ get_parser(Config_section_T section)
 			if(**ap != '\0')
 				ap++;
 		}
+
 		*ap = NULL;
         fd = open_child(argv[0], argv);
+        free(argv);
+        argv = NULL;
     }
     else {
         I_WARN("Unknown method %s", method);
@@ -139,9 +180,42 @@ get_parser(Config_section_T section)
     }
 
     /*
-     * Now run the appropriate file descriptor through zlib
+     * Now run the appropriate file descriptor through zlib. Note, gzread
+     * will still work on uncompressed streams.
      */
-    deflated = NULL;
+    if((gzf = gzdopen(fd, "r")) == NULL) {
+        I_WARN("gzdopen");
+        return NULL;
+    }
+
+    do {
+        if(bu == bs) {
+			tmp = realloc(deflated, bs + (1024 * 1024) + 1);
+			if (tmp == NULL) {
+				free(deflated);
+				deflated = NULL;
+				bs = 0;
+                break;
+			}
+			bs += 1024 * 1024;
+			deflated = tmp;            
+        }
+
+        bu += nread;
+    }
+    while((nread = gzread(gzf, deflated + bu, bs - bu)) > 0);
+
+    /* Cleanup. */
+    gzclose(gzf);
+
+    if(deflated == NULL) {
+        I_WARN("error decompressing source");
+        return NULL;
+    }
+
+    source = Lexer_source_create_from_str(deflated, bu);
+    lexer = Spamd_lexer_create(source);
+    parser = Spamd_parser_create(lexer);
 
     return parser;
 }
@@ -149,13 +223,14 @@ get_parser(Config_section_T section)
 int
 main(int argc, char **argv)
 {
-    int option, dryrun, debug, greyonly = 1, daemonize = 0;
-    char *config_path = DEFAULT_CONFIG, *list_name;
+    int option, dryrun, debug, greyonly = 1, daemonize = 0, bltype, res;
+    char *config_path = DEFAULT_CONFIG, *list_name, *message;
+    Spamd_parser_T parser;
     Config_T config;
-    Config_section_T section, prev_bl_section;
-    Blacklist_T bl;
+    Config_section_T section;
+    Blacklist_T blacklist;
     Config_value_T val;
-    List_T lists, blacklists;
+    List_T lists;
     struct List_entry_T *entry;
 
 	while((option = getopt(argc, argv, "bdDnc:")) != -1) {
@@ -206,18 +281,37 @@ main(int argc, char **argv)
             /*
              * We have a new blacklist.
              */
-            prev_bl_section = section;
+            message = NULL;
+            if((val = Config_section_get(section, "message")) == NULL
+               && (message = cv_str(val)) == NULL)
+            {
+                message = DEFAULT_MSG;
+            }
+
+            Blacklist_destroy(blacklist);
+            blacklist = Blacklist_create(list_name, message);
+            bltype = BL_TYPE_BLACK;
         }
         else if((section = Config_get_whitelist(config, list_name))
-            && prev_bl_section != NULL)
+            && blacklist != NULL)
         {
             /*
              * Add this whitelist's entries to the previous blacklist.
              */
+            bltype = BL_TYPE_WHITE;
         }
         else {
             continue;
         }
+
+        if((parser = get_parser(section, config)) == NULL) {
+            I_WARN("Ignoring list %s", list_name);
+            continue;
+        }
+
+        res = Spamd_parser_start(parser, blacklist, bltype);
+
+        Spamd_parser_destroy(parser);
     }
 
     /*
