@@ -106,8 +106,8 @@ get_parser(Config_section_T section, Config_T config)
     Lexer_T lexer;
     Lexer_source_T source;
     Config_value_T val;
-    char *method, *file, *deflated, **ap, **argv, *curl_path, *url, *tmp;
-    int fd, len, nread = 0, bu = 0, bs = 0;
+    char *method, *file, **ap, **argv, *curl_path, *url;
+    int fd, len;
     gzFile gzf;
     
     /* Extract the method & file variables from the section. */
@@ -188,32 +188,7 @@ get_parser(Config_section_T section, Config_T config)
         return NULL;
     }
 
-    do {
-        if(bu == bs) {
-			tmp = realloc(deflated, bs + (1024 * 1024) + 1);
-			if (tmp == NULL) {
-				free(deflated);
-				deflated = NULL;
-				bs = 0;
-                break;
-			}
-			bs += 1024 * 1024;
-			deflated = tmp;            
-        }
-
-        bu += nread;
-    }
-    while((nread = gzread(gzf, deflated + bu, bs - bu)) > 0);
-
-    /* Cleanup. */
-    gzclose(gzf);
-
-    if(deflated == NULL) {
-        I_WARN("error decompressing source");
-        return NULL;
-    }
-
-    source = Lexer_source_create_from_str(deflated, bu);
+    source = Lexer_source_create_from_gz(gzf);
     lexer = Spamd_lexer_create(source);
     parser = Spamd_parser_create(lexer);
 

@@ -27,6 +27,10 @@ struct source_data_str {
     int         length;
 };
 
+struct source_data_gz {
+    gzFile gzf;
+};
+
 static T     source_create();
 static void  source_data_file_destroy(void *data);
 static int   source_data_file_getc(void *data);
@@ -35,6 +39,10 @@ static void  source_data_file_ungetc(void *data, int c);
 static void  source_data_str_destroy(void *data);
 static int   source_data_str_getc(void *data);
 static void  source_data_str_ungetc(void *data, int c);
+
+static void  source_data_gz_destroy(void *data);
+static int   source_data_gz_getc(void *data);
+static void  source_data_gz_ungetc(void *data, int c);
 
 extern T
 Lexer_source_create_from_file(const char *filename)
@@ -92,6 +100,29 @@ Lexer_source_create_from_str(const char *buf, int len)
     source->_getc    = source_data_str_getc;
     source->_ungetc  = source_data_str_ungetc;
     source->_destroy = source_data_str_destroy;
+
+    return source;
+}
+
+extern T
+Lexer_source_create_from_gz(gzFile gzf)
+{
+    T source = source_create();
+    struct source_data_gz *data;
+
+    data = (struct source_data_gz *) malloc(sizeof(*data));
+    if(data == NULL) {
+        I_CRIT("Could not create config source");
+    }
+
+    /* Store the reference to the gz file handle. */
+    data->gzf = gzf;
+
+    source->type     = LEXER_SOURCE_GZ;
+    source->data     = data;
+    source->_getc    = source_data_gz_getc;
+    source->_ungetc  = source_data_gz_ungetc;
+    source->_destroy = source_data_gz_destroy;
 
     return source;
 }
@@ -209,6 +240,37 @@ source_data_str_ungetc(void *data, int c)
     if(prev >= 0) {
         data_str->index = prev;
     }
+}
+
+static void
+source_data_gz_destroy(void *data)
+{
+    int ret;
+    struct source_data_gz *data_gz = (struct source_data_gz *) data;
+
+    if(data_gz == NULL)
+        return;
+
+    if(data_gz->gzf && ((ret = gzclose(data_gz->gzf)) != Z_OK)) {
+        I_WARN("gzclose returned an unexpected %d", ret);
+    }
+
+    free(data_gz);
+    data_gz = NULL;
+}
+
+static int
+source_data_gz_getc(void *data)
+{
+   struct source_data_gz *data_gz = (struct source_data_gz *) data;
+   return gzgetc(data_gz->gzf);
+}
+
+static void
+source_data_gz_ungetc(void *data, int c)
+{
+   struct source_data_gz *data_gz = (struct source_data_gz *) data;
+   gzungetc(c, data_gz->gzf);
 }
 
 #undef T

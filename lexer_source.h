@@ -11,10 +11,13 @@
 #ifndef LEXER_SOURCE_DEFINED
 #define LEXER_SOURCE_DEFINED
 
+#include <zlib.h>
+
 #define T Lexer_source_T
 
 #define LEXER_SOURCE_STR  1
 #define LEXER_SOURCE_FILE 2
+#define LEXER_SOURCE_GZ   3
 
 typedef struct T *T;
 struct T {
@@ -35,6 +38,11 @@ extern T Lexer_source_create_from_file(const char *filename);
  * the buffer will be copied into the newly created source object.
  */
 extern T Lexer_source_create_from_str(const char *buf, int len);
+
+/**
+ * Create a new configuration source from a gzipped file.
+ */
+extern T Lexer_source_create_from_gz(gzFile gzf);
 
 /**
  * Destroy a source object and it's data.
