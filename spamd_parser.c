@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 #define T Spamd_parser_T
 
@@ -21,8 +22,8 @@
 /*
  * Parser utility/helper functions.
  */
-static int  accept(T parser, int tok);
-static int  accept_no_advance(T parser, int tok);
+static int  tok_accept(T parser, int tok);
+static int  tok_accept_no_advance(T parser, int tok);
 static void advance(T parser);
 
 /*
@@ -83,12 +84,12 @@ Spamd_parser_start(T parser, Blacklist_T blacklist, int type)
 
     /* Get rid of all beginning new lines at the start of the feed. */
     advance(parser);
-    accept(parser, SPAMD_LEXER_TOK_EOL);
+    tok_accept(parser, SPAMD_LEXER_TOK_EOL);
 
     /* Start the actual parsing. */
     if((grammar_entry(parser) && grammar_entries(parser)
-        && accept(parser, SPAMD_LEXER_TOK_EOF))
-       || accept(parser, SPAMD_LEXER_TOK_EOF))
+        && tok_accept(parser, SPAMD_LEXER_TOK_EOF))
+       || tok_accept(parser, SPAMD_LEXER_TOK_EOF))
     {
         return SPAMD_PARSER_OK;
     }
@@ -103,29 +104,30 @@ grammar_entry(T parser)
     u_int32_t start, end;
 
     if(grammar_address(parser, SPAMD_ADDR_START)) {
-        if(accept(parser, SPAMD_LEXER_TOK_SLASH)) {
-            if(accept_no_advance(parser, SPAMD_LEXER_TOK_INT6)) {
+        if(tok_accept(parser, SPAMD_LEXER_TOK_SLASH)) {
+            if(tok_accept_no_advance(parser, SPAMD_LEXER_TOK_INT6)) {
                 /*
                  * We have a CIDR netblock, cast the four 8-bit bytes
                  * into a single 32-bit address.
                  */
-                cidr.addr = (u_int32_t) parser->start;
+                cidr.addr = ntohl((u_int32_t) parser->start);
                 cidr.bits = parser->lexer->current_value.i;
                 advance(parser);
 
                 IP_cidr_to_range(&cidr, &start, &end);
+                end += 1;
             }
             else {
                 return SPAMD_PARSER_ERR;
             }
         }
-        else if(accept(parser, SPAMD_LEXER_TOK_DASH)) {
+        else if(tok_accept(parser, SPAMD_LEXER_TOK_DASH)) {
             if(grammar_address(parser, SPAMD_ADDR_END)) {
                 /*
                  * We have an address range stored in the parser object.
                  */
-                start = (u_int32_t) parser->start;
-                end   = (u_int32_t) parser->end;
+                start = ntohl((u_int32_t) parser->start);
+                end   = ntohl((u_int32_t) parser->end) + 1;
             }
             else {
                 return SPAMD_PARSER_ERR;
@@ -135,13 +137,12 @@ grammar_entry(T parser)
             /*
              * We have a single address.
              */
-            start = (u_int32_t) parser->start;
+            start = ntohl((u_int32_t) parser->start);
             end   = start + 1;
         }
 
         /*
-         * Add the address range onto the appropriate blacklist. The
-         * blacklist interface will worry about the endianness.
+         * Add the address range onto the appropriate blacklist.
          */
         Blacklist_add_range(parser->blacklist, start, end, parser->type);
 
@@ -154,7 +155,7 @@ grammar_entry(T parser)
 static int
 grammar_entries(T parser)
 {
-    if(accept(parser, SPAMD_LEXER_TOK_EOL) && grammar_entry(parser)
+    if(tok_accept(parser, SPAMD_LEXER_TOK_EOL) && grammar_entry(parser)
        && grammar_entries(parser))
     {
         return SPAMD_PARSER_OK;
@@ -170,8 +171,8 @@ grammar_address(T parser, int start)
     int i;
 
     for(i = 0; i < SPAMD_PARSER_IPV4_QUADS
-            && (accept_no_advance(parser, SPAMD_LEXER_TOK_INT6)
-                || accept_no_advance(parser, SPAMD_LEXER_TOK_INT8)); i++)
+            && (tok_accept_no_advance(parser, SPAMD_LEXER_TOK_INT6)
+                || tok_accept_no_advance(parser, SPAMD_LEXER_TOK_INT8)); i++)
     {
         if(start) {
             parser->start[i] = parser->lexer->current_value.i;
@@ -182,7 +183,7 @@ grammar_address(T parser, int start)
         advance(parser);
 
         if(i < (SPAMD_PARSER_IPV4_QUADS - 1)
-           && !accept(parser, SPAMD_LEXER_TOK_DOT))
+           && !tok_accept(parser, SPAMD_LEXER_TOK_DOT))
         {
             return SPAMD_PARSER_ERR;
         }
@@ -196,15 +197,15 @@ grammar_address(T parser, int start)
 }
 
 static int
-accept_no_advance(T parser, int tok)
+tok_accept_no_advance(T parser, int tok)
 {
     return (tok == parser->curr);
 }
 
 static int
-accept(T parser, int tok)
+tok_accept(T parser, int tok)
 {
-    if(accept_no_advance(parser, tok)) {
+    if(tok_accept_no_advance(parser, tok)) {
         /*
          * If accepted token is a EOL, accept all subsequent EOLs until the
          * first non-EOL token.

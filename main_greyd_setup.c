@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "config.h"
 #include "list.h"
+#include "hash.h"
 #include "blacklist.h"
 #include "spamd_parser.h"
 
@@ -32,11 +33,13 @@
 #define METHOD_HTTP    "http"
 #define METHOD_EXEC    "exec"
 #define METHOD_FILE    "file"
+#define INIT_BL        10
 
 static void usage();
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
-static int fileget(char *url, char *curl_path);
+static int file_get(char *url, char *curl_path);
+static void blacklist_destroy(struct Hash_entry *entry);
 
 static void
 usage()
@@ -45,8 +48,16 @@ usage()
 	exit(1);    
 }
 
+static void
+blacklist_destroy(struct Hash_entry *entry)
+{
+    if(entry && entry->v) {
+        Blacklist_destroy(entry->v);
+    }
+}
+
 static int
-fileget(char *url, char *curl_path)
+file_get(char *url, char *curl_path)
 {
 	char *argv[3];
 
@@ -147,7 +158,7 @@ get_parser(Config_section_T section, Config_T config)
             return NULL;
         }
 
-        fd = fileget(url, curl_path);
+        fd = file_get(url, curl_path);
         free(url);
         url = NULL;
     }
@@ -206,6 +217,7 @@ main(int argc, char **argv)
     Blacklist_T blacklist;
     Config_value_T val;
     List_T lists;
+    Hash_T blacklists;
     struct List_entry_T *entry;
 
 	while((option = getopt(argc, argv, "bdDnc:")) != -1) {
@@ -246,7 +258,10 @@ main(int argc, char **argv)
         I_ERR("no lists configured in %s", config_path);
     }
 
-    /* Loop through lists configured in the configuration. */
+    /*
+     * Loop through lists configured in the configuration.
+     */
+    blacklists = Hash_create(INIT_BL, blacklist_destroy);
     LIST_FOREACH(lists, entry) {
         val = List_entry_value(entry);
         if((list_name = cv_str(val)) == NULL)
@@ -263,9 +278,9 @@ main(int argc, char **argv)
                 message = DEFAULT_MSG;
             }
 
-            Blacklist_destroy(blacklist);
             blacklist = Blacklist_create(list_name, message);
             bltype = BL_TYPE_BLACK;
+            Hash_insert(blacklists, list_name, (void *) blacklist);
         }
         else if((section = Config_get_whitelist(config, list_name))
             && blacklist != NULL)
@@ -285,13 +300,13 @@ main(int argc, char **argv)
         }
 
         res = Spamd_parser_start(parser, blacklist, bltype);
-
         Spamd_parser_destroy(parser);
     }
 
     /*
      * Cleanup the various objects.
      */
+    Hash_destroy(blacklists);
     Config_destroy(config);
 
     return 0;
