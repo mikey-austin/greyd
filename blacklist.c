@@ -16,6 +16,30 @@
 #define T Blacklist_T
 #define E Blacklist_ip
 
+static int cmp_entry(const void *a, const void *b);
+static void cidr_destroy(void *cidr);
+
+static int
+cmp_entry(const void *a, const void *b)
+{
+    if(((struct E *) a)->address > ((struct E *) b)->address)
+        return 1;
+
+    if(((struct E *) a)->address < ((struct E *) b)->address)
+        return -1;
+
+    return 0;
+}
+
+static void
+cidr_destroy(void *cidr)
+{
+    if(cidr) {
+        free(cidr);
+        cidr = NULL;
+    }
+}
+
 extern T
 Blacklist_create(const char *name, const char *message)
 {
@@ -81,6 +105,12 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
 {
     int i;
 
+    /*
+     * If the start address is greater than the end address, ignore entry.
+     */
+    if(start > end)
+        return;
+
     if(list->count >= (list->size - 2)) {
         list->entries = realloc(
             list->entries, list->size + BLACKLIST_INIT_SIZE);
@@ -113,10 +143,56 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
     }
 }
 
-extern struct IP_cidr
-*Blacklist_collapse(T list)
+extern List_T
+Blacklist_collapse(T list)
 {
-    return NULL;
+    int i, bs = 0, ws = 0, state = 0, laststate;
+    u_int32_t addr, bstart = 0;
+    List_T cidr_list;
+
+    if(list->count == 0)
+        return NULL;
+
+    cidr_list = List_create(cidr_destroy);
+
+    qsort(list->entries, list->count, sizeof(struct E), cmp_entry);
+    for(i = 0; i < list->count; ) {
+		laststate = state;
+		addr = list->entries[i].address;
+
+		do {
+			bs += list->entries[i].black;
+			ws += list->entries[i].white;
+			i++;
+		} while(list->entries[i].address == addr);
+
+		if(state == 1 && bs == 0)
+			state = 0;
+		else if(state == 0 && bs > 0)
+			state = 1;
+
+		if(ws > 0)
+			state = 0;
+
+		if(laststate == 0 && state == 1) {
+			/*
+             * This state transition marks the start of a blacklist region.
+             */
+			bstart = addr;
+		}
+
+		if(laststate == 1 && state == 0) {
+			/*
+             * We are at the end of a blacklist region, convert the range
+             * into CIDR format.
+             */
+            IP_range_to_cidr_list(cidr_list, bstart, (addr - 1));
+		}
+
+		laststate = state;
+    }
+
+    return cidr_list;
 }
 
 #undef T

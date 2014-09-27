@@ -39,21 +39,14 @@ static void usage();
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
 static int file_get(char *url, char *curl_path);
-static void blacklist_destroy(struct Hash_entry *entry);
+static void send_blacklist(Blacklist_T blacklist, int greyonly,
+                           Config_T config);
 
 static void
 usage()
 {
 	fprintf(stderr, "usage: %s [-bDdn]\n", PROGNAME);
 	exit(1);    
-}
-
-static void
-blacklist_destroy(struct Hash_entry *entry)
-{
-    if(entry && entry->v) {
-        Blacklist_destroy(entry->v);
-    }
 }
 
 static int
@@ -191,8 +184,7 @@ get_parser(Config_section_T section, Config_T config)
     }
 
     /*
-     * Now run the appropriate file descriptor through zlib. Note, gzread
-     * will still work on uncompressed streams.
+     * Now run the appropriate file descriptor through zlib.
      */
     if((gzf = gzdopen(fd, "r")) == NULL) {
         I_WARN("gzdopen");
@@ -206,18 +198,23 @@ get_parser(Config_section_T section, Config_T config)
     return parser;
 }
 
+static void
+send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
+{
+}
+
 int
 main(int argc, char **argv)
 {
-    int option, dryrun, debug, greyonly = 1, daemonize = 0, bltype, res;
+    int option, dryrun = 0, debug = 0, greyonly = 1, daemonize = 0;
+    int bltype, res;
     char *config_path = DEFAULT_CONFIG, *list_name, *message;
     Spamd_parser_T parser;
     Config_T config;
     Config_section_T section;
-    Blacklist_T blacklist;
+    Blacklist_T blacklist = NULL;
     Config_value_T val;
     List_T lists;
-    Hash_T blacklists;
     struct List_entry_T *entry;
 
 	while((option = getopt(argc, argv, "bdDnc:")) != -1) {
@@ -247,6 +244,13 @@ main(int argc, char **argv)
 			break;
 		}
 	}
+	argc -= optind;
+	argv += optind;
+	if(argc != 0)
+		usage();
+
+	if(daemonize)
+		daemon(0, 0);
 
     config = Config_create();
     Config_load_file(config, config_path);
@@ -261,7 +265,6 @@ main(int argc, char **argv)
     /*
      * Loop through lists configured in the configuration.
      */
-    blacklists = Hash_create(INIT_BL, blacklist_destroy);
     LIST_FOREACH(lists, entry) {
         val = List_entry_value(entry);
         if((list_name = cv_str(val)) == NULL)
@@ -269,8 +272,14 @@ main(int argc, char **argv)
 
         if((section = Config_get_blacklist(config, list_name))) {
             /*
-             * We have a new blacklist.
+             * We have a new blacklist. If there was a previous list,
+             * send it off and destroy it before creating the new one.
              */
+            if(blacklist && !dryrun) {
+                send_blacklist(blacklist, greyonly, config);
+            }
+            Blacklist_destroy(blacklist);
+
             message = NULL;
             if((val = Config_section_get(section, "message")) == NULL
                && (message = cv_str(val)) == NULL)
@@ -280,7 +289,6 @@ main(int argc, char **argv)
 
             blacklist = Blacklist_create(list_name, message);
             bltype = BL_TYPE_BLACK;
-            Hash_insert(blacklists, list_name, (void *) blacklist);
         }
         else if((section = Config_get_whitelist(config, list_name))
             && blacklist != NULL)
@@ -299,6 +307,9 @@ main(int argc, char **argv)
             continue;
         }
 
+        /*
+         * Parse the list and populate the current blacklist.
+         */
         res = Spamd_parser_start(parser, blacklist, bltype);
         Spamd_parser_destroy(parser);
     }
@@ -306,7 +317,7 @@ main(int argc, char **argv)
     /*
      * Cleanup the various objects.
      */
-    Hash_destroy(blacklists);
+    Blacklist_destroy(blacklist);
     Config_destroy(config);
 
     return 0;

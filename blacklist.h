@@ -58,7 +58,8 @@ extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type
 /**
  * "Collapse" a blacklist's entries by removing overlapping regions as well
  * as removing whitelist regions. A list of non-overlapping blacklist
- * CIDR networks is returned.
+ * CIDR networks is returned, suitable for feeding in printable form to
+ * a firewall or greyd.
  */
 extern struct IP_cidr *Blacklist_collapse(T list);
 
