@@ -45,18 +45,19 @@ static void send_blacklist(Blacklist_T blacklist, int greyonly,
 static void
 usage()
 {
-	fprintf(stderr, "usage: %s [-bDdn]\n", PROGNAME);
+	fprintf(stderr, "usage: %s [-bDdnc <config>]\n", PROGNAME);
 	exit(1);    
 }
 
 static int
 file_get(char *url, char *curl_path)
 {
-	char *argv[3];
+	char *argv[4];
 
 	argv[0] = curl_path;
-	argv[1] = url;
-	argv[2] = NULL;
+	argv[1] = "-s";
+    argv[2] = url;
+	argv[3] = NULL;
 
     I_INFO("Getting %s", url);
 
@@ -201,13 +202,14 @@ get_parser(Config_section_T section, Config_T config)
 static void
 send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
 {
+    // TODO
 }
 
 int
 main(int argc, char **argv)
 {
     int option, dryrun = 0, debug = 0, greyonly = 1, daemonize = 0;
-    int bltype, res;
+    int bltype, res, count;
     char *config_path = DEFAULT_CONFIG, *list_name, *message;
     Spamd_parser_T parser;
     Config_T config;
@@ -254,6 +256,8 @@ main(int argc, char **argv)
 
     config = Config_create();
     Config_load_file(config, config_path);
+    free(config_path);
+    config_path = NULL;
 
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
     val = Config_section_get(section, "lists");
@@ -281,9 +285,8 @@ main(int argc, char **argv)
             Blacklist_destroy(blacklist);
 
             message = NULL;
-            if((val = Config_section_get(section, "message")) == NULL
-               && (message = cv_str(val)) == NULL)
-            {
+            val = Config_section_get(section, "message");
+            if((message = cv_str(val)) == NULL) {
                 message = DEFAULT_MSG;
             }
 
@@ -310,7 +313,15 @@ main(int argc, char **argv)
         /*
          * Parse the list and populate the current blacklist.
          */
+        count = blacklist->count;
         res = Spamd_parser_start(parser, blacklist, bltype);
+        if(debug) {
+            I_INFO("%slist %s %zu entries",
+                   (bltype == BL_TYPE_BLACK ? "black" : "white"),
+                   list_name,
+                   (blacklist->count - count));
+        }
+
         Spamd_parser_destroy(parser);
     }
 
