@@ -319,7 +319,7 @@ main(int argc, char **argv)
             I_INFO("%slist %s %zu entries",
                    (bltype == BL_TYPE_BLACK ? "black" : "white"),
                    list_name,
-                   (blacklist->count - count));
+                   ((blacklist->count - count) / 2));
         }
 
         Spamd_parser_destroy(parser);
