@@ -19,27 +19,6 @@
 static int cmp_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
 
-static int
-cmp_entry(const void *a, const void *b)
-{
-    if(((struct E *) a)->address > ((struct E *) b)->address)
-        return 1;
-
-    if(((struct E *) a)->address < ((struct E *) b)->address)
-        return -1;
-
-    return 0;
-}
-
-static void
-cidr_destroy(void *cidr)
-{
-    if(cidr) {
-        free(cidr);
-        cidr = NULL;
-    }
-}
-
 extern T
 Blacklist_create(const char *name, const char *message)
 {
@@ -144,27 +123,27 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
 }
 
 extern List_T
-Blacklist_collapse(T list)
+Blacklist_collapse(T blacklist)
 {
     int i, bs = 0, ws = 0, state = 0, laststate;
     u_int32_t addr, bstart = 0;
-    List_T cidr_list;
+    List_T cidrs;
 
-    if(list->count == 0)
+    if(blacklist->count == 0)
         return NULL;
 
-    cidr_list = List_create(cidr_destroy);
+    qsort(blacklist->entries, blacklist->count, sizeof(struct E), cmp_entry);
+    cidrs = List_create(cidr_destroy);
 
-    qsort(list->entries, list->count, sizeof(struct E), cmp_entry);
-    for(i = 0; i < list->count; ) {
+    for(i = 0; i < blacklist->count; ) {
 		laststate = state;
-		addr = list->entries[i].address;
+		addr = blacklist->entries[i].address;
 
 		do {
-			bs += list->entries[i].black;
-			ws += list->entries[i].white;
+			bs += blacklist->entries[i].black;
+			ws += blacklist->entries[i].white;
 			i++;
-		} while(list->entries[i].address == addr);
+		} while(blacklist->entries[i].address == addr);
 
 		if(state == 1 && bs == 0)
 			state = 0;
@@ -186,13 +165,34 @@ Blacklist_collapse(T list)
              * We are at the end of a blacklist region, convert the range
              * into CIDR format.
              */
-            IP_range_to_cidr_list(cidr_list, bstart, (addr - 1));
+            IP_range_to_cidr_list(cidrs, bstart, (addr - 1));
 		}
 
 		laststate = state;
     }
 
-    return cidr_list;
+    return cidrs;
+}
+
+static int
+cmp_entry(const void *a, const void *b)
+{
+    if(((struct E *) a)->address > ((struct E *) b)->address)
+        return 1;
+
+    if(((struct E *) a)->address < ((struct E *) b)->address)
+        return -1;
+
+    return 0;
+}
+
+static void
+cidr_destroy(void *cidr)
+{
+    if(cidr) {
+        free(cidr);
+        cidr = NULL;
+    }
 }
 
 #undef T

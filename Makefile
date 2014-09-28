@@ -10,7 +10,7 @@ CFLAGS	= -g -O0 -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments
 LIBS    = -lz
 TESTS   = tests
 
-all: greyd-setup test
+all: greyd-setup
 
 greyd-setup: $(OBJ)
 	$(CC) $(CFLAGS) -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)

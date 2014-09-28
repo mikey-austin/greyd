@@ -29,9 +29,17 @@ extern void IP_cidr_to_range(struct IP_cidr *cidr, u_int32_t *start,
 
 /**
  * Decompose the supplied range into a series of CIDRs, and populate the
- * supplied list.
+ * supplied list. The number of CIDR blocks created is returned.
  */
-extern List_T IP_range_to_cidr_list(List_T cidrs, u_int32_t start,
-                                    u_int32_t end));
+extern int IP_range_to_cidr_list(List_T cidrs, u_int32_t start,
+                                 u_int32_t end);
+
+
+/**
+ * Return a human-readable string representation of the CIDR block.
+ *
+ * The returned string must be cleaned up manually using free.
+ */
+extern char *IP_cidr_to_str(const struct IP_cidr *cidr);
 
 #endif

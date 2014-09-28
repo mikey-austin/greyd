@@ -61,7 +61,7 @@ extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type
  * CIDR networks is returned, suitable for feeding in printable form to
  * a firewall or greyd.
  */
-extern struct IP_cidr *Blacklist_collapse(T list);
+extern List_T Blacklist_collapse(T blacklist);
 
 #undef T
 #undef E
