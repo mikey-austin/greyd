@@ -10,7 +10,6 @@
 #include "blacklist.h"
 
 #include <stdlib.h>
-#include <arpa/inet.h>
 #include <string.h>
 
 #define T Blacklist_T
@@ -105,8 +104,8 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
     i = list->count;
     list->count += 2;
 
-    list->entries[i].address = ntohl(start);
-    list->entries[i + 1].address = ntohl(end);
+    list->entries[i].address = start;
+    list->entries[i + 1].address = end;
 
     if(type == BL_TYPE_WHITE) {
         list->entries[i].black = 0;
