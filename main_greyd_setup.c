@@ -106,7 +106,7 @@ open_child(char *file, char **argv)
 
 /**
  * Given the relevant configuration section, fetch the blacklist via
- * specified method, decompress into a buffer, then construct and
+ * the specified method, create a gz lexer source, then construct and
  * return a parser.
  */
 static Spamd_parser_T
@@ -214,8 +214,8 @@ send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
     section = Config_get_section(config, "firewall");
     cidrs = Blacklist_collapse(blacklist);
 
-    if(!greyonly && (!section ||
-                     (nadded = FW_replace_networks(section, cidrs)) < 0))
+    if(!greyonly &&
+       (!section || (nadded = FW_replace_networks(section, cidrs)) < 0))
     {
         I_CRIT("Could not configure firewall");
     }
