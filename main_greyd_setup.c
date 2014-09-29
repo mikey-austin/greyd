@@ -42,6 +42,9 @@ static int file_get(char *url, char *curl_path);
 static void send_blacklist(Blacklist_T blacklist, int greyonly,
                            Config_T config);
 
+/* Global debug variable. */
+static int debug = 0;
+
 static void
 usage()
 {
@@ -59,7 +62,8 @@ file_get(char *url, char *curl_path)
     argv[2] = url;
 	argv[3] = NULL;
 
-    I_INFO("Getting %s", url);
+    if(debug)
+       fprintf(stderr, "Getting %s\n", url);
 
 	return (open_child(curl_path, argv));
 }
@@ -208,7 +212,7 @@ send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
 int
 main(int argc, char **argv)
 {
-    int option, dryrun = 0, debug = 0, greyonly = 1, daemonize = 0;
+    int option, dryrun = 0, greyonly = 1, daemonize = 0;
     int bltype, res, count;
     char *config_path = DEFAULT_CONFIG, *list_name, *message;
     Spamd_parser_T parser;
@@ -316,10 +320,10 @@ main(int argc, char **argv)
         count = blacklist->count;
         res = Spamd_parser_start(parser, blacklist, bltype);
         if(debug) {
-            I_INFO("%slist %s %zu entries",
-                   (bltype == BL_TYPE_BLACK ? "black" : "white"),
-                   list_name,
-                   ((blacklist->count - count) / 2));
+            fprintf(stderr, "%slist %s %zu entries\n",
+                    (bltype == BL_TYPE_BLACK ? "black" : "white"),
+                    list_name,
+                    ((blacklist->count - count) / 2));
         }
 
         Spamd_parser_destroy(parser);
