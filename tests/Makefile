@@ -7,7 +7,7 @@ TESTS		= $(wildcard test_*.c)
 TEST_OBJ    = $(SRC:.c=.o) $(TESTS:.c=.o)
 TARGETS		= $(TESTS:.c=.t)
 WRAPPERS	= $(TESTS:.c=.pl)
-LIBS        = -lz
+LIBS        = -lz -ldl
 CC			= clang
 CFLAGS		= -g -O0
 

@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "../firewall.h"
 #include "../config_section.h"
 #include "../list.h"
 #include "../ip.h"
@@ -16,6 +17,12 @@
 #define PATH_PFCTL    "/sbin/pfctl"
 #define DEFAULT_TABLE "greyd"
 
+void
+Mod_fw_init(Config_section_T section)
+{
+    /* NOOP. */
+}
+
 int
 Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
 {
@@ -23,7 +30,6 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
 	    "-f" "-", NULL };
     char *netblock, *pfctl_path = PATH_PFCTL;
 	static FILE *pf = NULL;
-	int pdes[2];
     struct List_entry_T *entry;
     Config_value_T val;
     struct IP_cidr *cidr;
@@ -41,35 +47,9 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
         argv[3] = DEFAULT_TABLE;
     }
 
-	if(pf == NULL) {
-		if(pipe(pdes) != 0)
-			return 1;
-
-		switch (fork()) {
-		case -1:
-			close(pdes[0]);
-			close(pdes[1]);
-			return 1;
-
-		case 0:
-			/* child */
-			close(pdes[1]);
-			if(pdes[0] != STDIN_FILENO) {
-				dup2(pdes[0], STDIN_FILENO);
-				close(pdes[0]);
-			}
-			execvp(pfctl_path, argv);
-			_exit(1);
-		}
-
-		/* parent */
-		close(pdes[0]);
-		pf = fdopen(pdes[1], "w");
-		if(pf == NULL) {
-			close(pdes[1]);
-			return 1;
-		}
-	}
+    if((pf = FW_setup_cntl_pipe(pfctl_path, argv)) == NULL) {
+        return -1;
+    }
 
     LIST_FOREACH(cidrs, entry) {
         cidr = List_entry_value(entry);

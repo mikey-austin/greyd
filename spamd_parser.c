@@ -110,7 +110,7 @@ grammar_entry(T parser)
                  * We have a CIDR netblock, cast the four 8-bit bytes
                  * into a single 32-bit address.
                  */
-                cidr.addr = ntohl((u_int32_t) parser->start);
+                cidr.addr = ntohl(*((u_int32_t *) parser->start));
                 cidr.bits = parser->lexer->current_value.i;
                 advance(parser);
 
@@ -126,8 +126,8 @@ grammar_entry(T parser)
                 /*
                  * We have an address range stored in the parser object.
                  */
-                start = ntohl((u_int32_t) parser->start);
-                end   = ntohl((u_int32_t) parser->end) + 1;
+                start = ntohl(*((u_int32_t *) parser->start));
+                end   = ntohl(*((u_int32_t *) parser->end)) + 1;
             }
             else {
                 return SPAMD_PARSER_ERR;
@@ -137,7 +137,7 @@ grammar_entry(T parser)
             /*
              * We have a single address.
              */
-            start = ntohl((u_int32_t) parser->start);
+            start = ntohl(*((u_int32_t *) parser->start));
             end   = start + 1;
         }
 

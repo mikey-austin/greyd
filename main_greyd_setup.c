@@ -209,12 +209,18 @@ send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
 {
     Config_section_T section;
     List_T cidrs;
+    int nadded;
 
     section = Config_get_section(config, "firewall");
     cidrs = Blacklist_collapse(blacklist);
 
-    if(!greyonly && (!section || FW_replace_networks(section, cidrs) != 0)) {
+    if(!greyonly && (!section ||
+                     (nadded = FW_replace_networks(section, cidrs)) < 0))
+    {
         I_CRIT("Could not configure firewall");
+    }
+    else if(debug) {
+        fprintf(stderr, "%d entries added to firewall\n", nadded);
     }
 
     List_destroy(cidrs);
@@ -281,6 +287,11 @@ main(int argc, char **argv)
         I_ERR("no lists configured in %s", config_path);
     }
 
+    if(!greyonly && !dryrun) {
+        section = Config_get_section(config, "firewall");
+        FW_init(section);
+    }
+
     /*
      * Loop through lists configured in the configuration.
      */
@@ -343,7 +354,9 @@ main(int argc, char **argv)
     /*
      * Send the last blacklist and cleanup the various objects.
      */
-    send_blacklist(blacklist, greyonly, config);
+    if(blacklist && !dryrun) {
+        send_blacklist(blacklist, greyonly, config);
+    }
     Blacklist_destroy(blacklist);
     Config_destroy(config);
 
