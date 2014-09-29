@@ -13,7 +13,7 @@ TESTS   = tests
 all: greyd-setup modules
 
 greyd-setup: $(OBJ)
-	$(CC) $(CFLAGS) -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
+	$(CC) $(CFLAGS) -Wl,-E -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
 
 #
 # Generate the object file header dependencies.

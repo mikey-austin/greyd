@@ -14,6 +14,7 @@
 #include "hash.h"
 #include "blacklist.h"
 #include "spamd_parser.h"
+#include "firewall.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -206,7 +207,17 @@ get_parser(Config_section_T section, Config_T config)
 static void
 send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
 {
-    // TODO
+    Config_section_T section;
+    List_T cidrs;
+
+    section = Config_get_section(config, "firewall");
+    cidrs = Blacklist_collapse(blacklist);
+
+    if(!greyonly && (!section || FW_replace_networks(section, cidrs) != 0)) {
+        I_CRIT("Could not configure firewall");
+    }
+
+    List_destroy(cidrs);
 }
 
 int
@@ -330,8 +341,9 @@ main(int argc, char **argv)
     }
 
     /*
-     * Cleanup the various objects.
+     * Send the last blacklist and cleanup the various objects.
      */
+    send_blacklist(blacklist, greyonly, config);
     Blacklist_destroy(blacklist);
     Config_destroy(config);
 

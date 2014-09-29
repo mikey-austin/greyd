@@ -16,8 +16,8 @@
 #define PATH_PFCTL    "/sbin/pfctl"
 #define DEFAULT_TABLE "greyd"
 
-void
-Firewall_replace_networks(Config_section_T section, List_T cidrs)
+int
+Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
 {
 	char *argv[9] = { "pfctl", "-q", "-t", DEFAULT_TABLE, "-T", "replace",
 	    "-f" "-", NULL };
@@ -43,13 +43,13 @@ Firewall_replace_networks(Config_section_T section, List_T cidrs)
 
 	if(pf == NULL) {
 		if(pipe(pdes) != 0)
-			return;
+			return 1;
 
 		switch (fork()) {
 		case -1:
 			close(pdes[0]);
 			close(pdes[1]);
-			return;
+			return 1;
 
 		case 0:
 			/* child */
@@ -67,7 +67,7 @@ Firewall_replace_networks(Config_section_T section, List_T cidrs)
 		pf = fdopen(pdes[1], "w");
 		if(pf == NULL) {
 			close(pdes[1]);
-			return;
+			return 1;
 		}
 	}
 
@@ -79,4 +79,6 @@ Firewall_replace_networks(Config_section_T section, List_T cidrs)
             free(netblock);
         }
     }
+
+    return 0;
 }
