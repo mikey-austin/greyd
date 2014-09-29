@@ -272,13 +272,14 @@ main(int argc, char **argv)
 	if(argc != 0)
 		usage();
 
-	if(daemonize)
-		daemon(0, 0);
-
     config = Config_create();
     Config_load_file(config, config_path);
     free(config_path);
     config_path = NULL;
+
+	if(daemonize) {
+		daemon(0, 0);
+    }
 
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
     val = Config_section_get(section, "lists");
