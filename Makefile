@@ -7,10 +7,10 @@ MAINS   = main_greyd_setup.o
 OBJ		= $(SRC:.c=.o)
 CC		= clang
 CFLAGS	= -g -O0 -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments
-LIBS    = -lz
+LIBS    = -lz -ldl
 TESTS   = tests
 
-all: greyd-setup
+all: greyd-setup modules
 
 greyd-setup: $(OBJ)
 	$(CC) $(CFLAGS) -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
@@ -26,7 +26,10 @@ greyd-setup: $(OBJ)
 
 -include $(SRC:.c=.d)
 
-test: $(OBJ)
+modules: $(OBJ)
+	cd modules && $(MAKE)
+
+test: $(OBJ) modules
 	cd $(TESTS) && $(MAKE) test
 
 .PHONY: clean
@@ -34,3 +37,4 @@ test: $(OBJ)
 clean:
 	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup
 	cd $(TESTS) && $(MAKE) clean
+	cd modules && $(MAKE) clean
