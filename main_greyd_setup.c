@@ -49,7 +49,7 @@ static int debug = 0;
 static void
 usage()
 {
-	fprintf(stderr, "usage: %s [-bDdnc <config>]\n", PROGNAME);
+	fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROGNAME);
 	exit(1);    
 }
 
@@ -253,7 +253,7 @@ main(int argc, char **argv)
 			break;
 
         case 'c':
-            config_path = strndup(optarg, MAX_PLEN);
+            config_path = optarg;
             break;
 
 		default:
@@ -268,8 +268,6 @@ main(int argc, char **argv)
 
     config = Config_create();
     Config_load_file(config, config_path);
-    free(config_path);
-    config_path = NULL;
 
 	if(daemonize) {
 		daemon(0, 0);
