@@ -115,17 +115,13 @@ get_parser(Config_section_T section, Config_T config)
     Spamd_parser_T parser = NULL;
     Lexer_T lexer;
     Lexer_source_T source;
-    Config_value_T val;
     char *method, *file, **ap, **argv, *curl_path, *url;
     int fd, len;
     gzFile gzf;
     
     /* Extract the method & file variables from the section. */
-    val = Config_section_get(section, "method");
-    method = cv_str(val);
-
-    if((val = Config_section_get(section, "file")) == NULL
-       || (file = cv_str(val)) == NULL)
+    method = Config_section_get_str(section, "method", NULL);
+    if((file = Config_section_get_str(section, "file", NULL)) == NULL)
     {
         I_WARN("No file configuration variables set");
         return NULL;
@@ -146,10 +142,8 @@ get_parser(Config_section_T section, Config_T config)
          * The file is to be fetched via curl.
          */
         section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
-        val = Config_section_get(section, "curl_path");
-        if((curl_path = cv_str(val)) == NULL) {
-            curl_path = DEFAULT_CURL;
-        }
+        curl_path = Config_section_get_str(section, "curl_path",
+                                           DEFAULT_CURL);
 
         asprintf(&url, "%s://%s", method, file);
         if(url == NULL) {
@@ -311,12 +305,7 @@ main(int argc, char **argv)
             }
             Blacklist_destroy(blacklist);
 
-            message = NULL;
-            val = Config_section_get(section, "message");
-            if((message = cv_str(val)) == NULL) {
-                message = DEFAULT_MSG;
-            }
-
+            message = Config_section_get_str(section, "message", DEFAULT_MSG);
             blacklist = Blacklist_create(list_name, message);
             bltype = BL_TYPE_BLACK;
         }

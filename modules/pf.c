@@ -31,21 +31,13 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
     char *netblock, *pfctl_path = PATH_PFCTL;
 	static FILE *pf = NULL;
     struct List_entry_T *entry;
-    Config_value_T val;
     struct IP_cidr *cidr;
 
     /*
      * Pull out the custom paths and/or table names from the config section.
      */
-    val = Config_section_get(section, "pfctl_path");
-    if((pfctl_path = cv_str(val)) == NULL) {
-        pfctl_path = PATH_PFCTL;
-    }
-
-    val = Config_section_get(section, "table_name");
-    if((argv[3] = cv_str(val)) == NULL) {
-        argv[3] = DEFAULT_TABLE;
-    }
+    pfctl_path = Config_section_get_str(section, "pfctl_path", PATH_PFCTL);
+    argv[3]    = Config_section_get_str(section, "table_name", DEFAULT_TABLE);
 
     if((pf = FW_setup_cntl_pipe(pfctl_path, argv)) == NULL) {
         return -1;

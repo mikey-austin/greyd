@@ -14,6 +14,8 @@
 
 #define PATH_IPSET  "/usr/sbin/ipset"
 #define DEFAULT_SET "greyd"
+#define MAX_ELEM    200000
+#define HASH_SIZE   (1024 * 1024)
 
 void
 Mod_fw_init(Config_section_T section)
@@ -21,27 +23,23 @@ Mod_fw_init(Config_section_T section)
 	char *argv[9] = { "ipset", "-", NULL };
     char *ipset_path = PATH_IPSET, *set_name;
 	static FILE *ipset = NULL;
-    Config_value_T val;
+    int max_elem, hash_size;
 
     /*
      * Pull out the custom paths and/or table names from the config section.
      */
-    val = Config_section_get(section, "ipset_path");
-    if((ipset_path = cv_str(val)) == NULL) {
-        ipset_path = PATH_IPSET;
-    }
-
-    val = Config_section_get(section, "table_name");
-    if((set_name = cv_str(val)) == NULL) {
-        set_name = DEFAULT_SET;
-    }
+    ipset_path = Config_section_get_str(section, "ipset_path", PATH_IPSET);
+    set_name   = Config_section_get_str(section, "table_name", DEFAULT_SET);
+    max_elem   = Config_section_get_int(section, "max_elem", MAX_ELEM);
+    hash_size  = Config_section_get_int(section, "hash_size", HASH_SIZE);
 
     if((ipset = FW_setup_cntl_pipe(ipset_path, argv)) == NULL) {
         return;
     }
 
     /* Flush the set in preparation for the addition of new entries. */
-    fprintf(ipset, "create %s hash:net -exist\n", set_name);
+    fprintf(ipset, "create %s hash:net hashsize %d maxelem %d -exist\n",
+            set_name, hash_size, max_elem);
     fprintf(ipset, "flush %s\n", set_name);
     fprintf(ipset, "quit\n");
     fclose(ipset);
@@ -55,28 +53,17 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
 	static FILE *ipset = NULL;
 	int nadded = 0;
     struct List_entry_T *entry;
-    Config_value_T val;
     struct IP_cidr *cidr;
 
     /*
      * Pull out the custom paths and/or table names from the config section.
      */
-    val = Config_section_get(section, "ipset_path");
-    if((ipset_path = cv_str(val)) == NULL) {
-        ipset_path = PATH_IPSET;
-    }
-
-    val = Config_section_get(section, "table_name");
-    if((set_name = cv_str(val)) == NULL) {
-        set_name = DEFAULT_SET;
-    }
+    ipset_path = Config_section_get_str(section, "ipset_path", PATH_IPSET);
+    set_name   = Config_section_get_str(section, "table_name", DEFAULT_SET);
 
     if((ipset = FW_setup_cntl_pipe(ipset_path, argv)) == NULL) {
         return -1;
     }
-
-    /* Ensure the set exists. */
-    fprintf(ipset, "create %s hash:net -exist\n", set_name);
 
     LIST_FOREACH(cidrs, entry) {
         cidr = List_entry_value(entry);

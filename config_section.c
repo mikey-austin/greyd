@@ -98,4 +98,35 @@ Config_section_value_destroy(struct Hash_entry *entry)
     }
 }
 
+extern int
+Config_section_get_int(T section, const char *varname, int default_int)
+{
+    Config_value_T val;
+    
+    if((val = Config_section_get(section, varname)) == NULL
+       || val->type != CONFIG_VAL_TYPE_INT)
+    {
+        return default_int;
+    }
+    else {
+        return val->v.i;
+    }
+}
+
+extern char
+*Config_section_get_str(T section, const char *varname, char *default_str)
+{
+    Config_value_T val;
+    
+    if((val = Config_section_get(section, varname)) == NULL
+       || val->type != CONFIG_VAL_TYPE_STR
+       || val->v.s == NULL)
+    {
+        return default_str;
+    }
+    else {
+        return val->v.s;
+    }
+}
+
 #undef T

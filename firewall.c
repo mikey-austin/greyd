@@ -96,14 +96,12 @@ static void
 {
     void *handle;
     char *mod_path = NULL;
-    Config_value_T val;
 
     if(section == NULL) {
         I_CRIT("No firewall configuration set");
     }
 
-    val = Config_section_get(section, "driver");
-    if((mod_path = cv_str(val)) == NULL) {
+    if((mod_path = Config_section_get_str(section, "driver", NULL)) == NULL) {
         I_CRIT("No firewall module configured");
     }
     
