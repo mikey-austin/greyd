@@ -46,20 +46,20 @@ Config_section_create(const char *name)
 }
 
 extern void
-Config_section_destroy(T section)
+Config_section_destroy(T *section)
 {
-    if(!section)
+    if(section == NULL || *section == NULL)
         return;
 
-    if(section->name) {
-        free(section->name);
-        section->name = NULL;
+    if((*section)->name) {
+        free((*section)->name);
+        (*section)->name = NULL;
     }
 
-    Hash_destroy(section->vars);
+    Hash_destroy(&((*section)->vars));
 
-    free(section);
-    section = NULL;
+    free(*section);
+    *section = NULL;
 }
 
 extern Config_value_T
@@ -94,7 +94,7 @@ static void
 Config_section_value_destroy(struct Hash_entry *entry)
 {
     if(entry && entry->v) {
-        Config_value_destroy(entry->v);
+        Config_value_destroy((Config_value_T *) &(entry->v));
     }
 }
 

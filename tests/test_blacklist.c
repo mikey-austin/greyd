@@ -54,7 +54,7 @@ main()
     TEST_OK((bl->entries[1].black == -1), "Second address is black");
     TEST_OK((bl->entries[1].white == 0), "Second address is not white");
 
-    Blacklist_destroy(bl);
+    Blacklist_destroy(&bl);
 
     /* Test collapsing a blacklist with 3 overlapping regions. */
     bl = Blacklist_create("Test List", "You have been blacklisted");
@@ -93,8 +93,8 @@ main()
         i++;
     }
 
-    List_destroy(cidrs);
-    Blacklist_destroy(bl);
+    List_destroy(&cidrs);
+    Blacklist_destroy(&bl);
 
     TEST_COMPLETE;
 }

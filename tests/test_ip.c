@@ -90,7 +90,7 @@ main()
         i++;
     }
 
-    List_destroy(cidrs);
+    List_destroy(&cidrs);
 
     TEST_COMPLETE;
 }

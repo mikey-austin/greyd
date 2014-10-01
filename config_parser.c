@@ -55,17 +55,17 @@ Config_parser_create(Lexer_T lexer)
 }
 
 extern void
-Config_parser_destroy(T parser)
+Config_parser_destroy(T *parser)
 {
-    if(parser == NULL)
+    if(parser == NULL || *parser == NULL)
         return;
 
-    if(parser->lexer != NULL) {
-        Lexer_destroy(parser->lexer);
+    if((*parser)->lexer != NULL) {
+        Lexer_destroy(&((*parser)->lexer));
     }
 
-    free(parser);
-    parser = NULL;
+    free(*parser);
+    *parser = NULL;
 }
 
 extern void
@@ -73,7 +73,7 @@ Config_parser_reset(T parser, Lexer_T lexer)
 {
     /* Destroy the existing lexer. */
     if(parser->lexer) {
-        Lexer_destroy(parser->lexer);
+        Lexer_destroy(&(parser->lexer));
     }
 
     parser->lexer = lexer;

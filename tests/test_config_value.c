@@ -43,7 +43,7 @@ main()
     /*
      * This will destroy v1 & v2 as well.
      */
-    Config_value_destroy(v3);
+    Config_value_destroy(&v3);
 
     TEST_COMPLETE;
 }

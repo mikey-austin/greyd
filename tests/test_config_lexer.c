@@ -100,7 +100,7 @@ main()
 
     TEST_OK(((tok = Lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOF), "Test EOF");
 
-    Lexer_destroy(lexer);
+    Lexer_destroy(&lexer);
 
     /*
      * Run the tests from the equivalent file source to be thourough.
@@ -155,7 +155,7 @@ main()
 
     TEST_OK(((tok = Lexer_next_token(lexer)) == CONFIG_LEXER_TOK_EOF), "Test EOF");
 
-    Lexer_destroy(lexer);
+    Lexer_destroy(&lexer);
     free(test_file);
 
     TEST_COMPLETE;

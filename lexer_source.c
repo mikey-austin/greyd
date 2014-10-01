@@ -128,14 +128,14 @@ Lexer_source_create_from_gz(gzFile gzf)
 }
 
 extern void
-Lexer_source_destroy(T source)
+Lexer_source_destroy(T *source)
 {
-    if(!source)
+    if(source == NULL || *source == NULL)
         return;
 
-    source->_destroy(source->data);
-    free(source);
-    source = NULL;
+    (*source)->_destroy((*source)->data);
+    free(*source);
+    *source = NULL;
 }
 
 extern int

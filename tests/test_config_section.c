@@ -56,7 +56,7 @@ main()
      * Clean up all allocated memory. We don't need to explicitly test here as valgrind
      * will notify us of any unfreed variables.
      */
-    Config_section_destroy(s1);
+    Config_section_destroy(&s1);
 
     TEST_COMPLETE;
 }

@@ -43,16 +43,16 @@ Lexer_next_token(T lexer)
 }
 
 extern void
-Lexer_destroy(T lexer)
+Lexer_destroy(T *lexer)
 {
-    if(!lexer)
+    if(lexer == NULL || *lexer == NULL)
         return;
 
-    if(lexer->source)
-        Lexer_source_destroy(lexer->source);
+    if((*lexer)->source)
+        Lexer_source_destroy(&((*lexer)->source));
 
-    free(lexer);
-    lexer = NULL;
+    free(*lexer);
+    *lexer = NULL;
 }
 
 extern void

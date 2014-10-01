@@ -70,7 +70,7 @@ extern T Spamd_parser_create(Lexer_T lexer);
  *
  * @param parser The initialized parser object to be destroyed.
  */
-extern void Spamd_parser_destroy(T parser);
+extern void Spamd_parser_destroy(T *parser);
 
 /**
  * Re-set the parser with a new token stream.

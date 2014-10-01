@@ -97,7 +97,7 @@ main()
     TEST_OK((hash->num_entries == 0), "Hash number of entries is zero as expected");
 
     /* Destroy the hash. */
-    Hash_destroy(hash);
+    Hash_destroy(&hash);
 
     TEST_COMPLETE;
 }

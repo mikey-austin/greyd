@@ -47,7 +47,7 @@ extern void Config_value_set_str(T value, const char *data);
 /**
  * Destroy a configuration variable, including it's contents if required.
  */
-extern void Config_value_destroy(T value);
+extern void Config_value_destroy(T *value);
 
 /**
  * Accessor functions to hide the implementation of the config values.

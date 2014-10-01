@@ -44,7 +44,7 @@ main()
     s = Config_get_section(c, "this section doesn't exist");
     TEST_OK((s == NULL), "Non-existant section fetched as expected");
 
-    Config_destroy(c);
+    Config_destroy(&c);
 
     /*
      * Test the recursive config loading & parsing from a blank config.
@@ -103,7 +103,7 @@ main()
 
     TEST_OK((Queue_size(c->includes) == 0), "Include file to process queue is empty as expected");
 
-    Config_destroy(c);
+    Config_destroy(&c);
 
     TEST_COMPLETE;
 }

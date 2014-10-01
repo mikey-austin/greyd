@@ -61,19 +61,20 @@ Config_create()
 }
 
 extern void
-Config_destroy(T config)
+Config_destroy(T *config)
 {
-    if(!config)
+    if(config == NULL || *config == NULL) {
         return;
+    }
 
-    Hash_destroy(config->sections);
-    Hash_destroy(config->blacklists);
-    Hash_destroy(config->whitelists);
-    Hash_destroy(config->processed_includes);
-    Queue_destroy(config->includes);
+    Hash_destroy(&((*config)->sections));
+    Hash_destroy(&((*config)->blacklists));
+    Hash_destroy(&((*config)->whitelists));
+    Hash_destroy(&((*config)->processed_includes));
+    Queue_destroy(&((*config)->includes));
 
-    free(config);
-    config = NULL;
+    free(*config);
+    *config = NULL;
 }
 
 extern void
@@ -134,7 +135,7 @@ Config_load_file(T config, char *file)
         }
 
         /* Clean up the parser & friends. */
-        Config_parser_destroy(parser);
+        Config_parser_destroy(&parser);
 
         /* Record this file as being "processed". */
         if((count = (int *) malloc(sizeof(*count))) == NULL) {
@@ -197,7 +198,7 @@ static void
 Config_section_value_destroy(struct Hash_entry *entry)
 {
     if(entry && entry->v) {
-        Config_section_destroy(entry->v);
+        Config_section_destroy((Config_section_T *) &(entry->v));
     }
 }
 

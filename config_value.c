@@ -60,29 +60,29 @@ Config_value_set_str(T value, const char *data)
 }
 
 extern void
-Config_value_destroy(T value)
+Config_value_destroy(T *value)
 {
-    if(!value)
+    if(value == NULL || *value == NULL)
         return;
 
-    switch(value->type) {
+    switch((*value)->type) {
     case CONFIG_VAL_TYPE_STR:
-        if(value->v.s != NULL) {
-            free(value->v.s);
-            value->v.s = NULL;
+        if((*value)->v.s != NULL) {
+            free((*value)->v.s);
+            (*value)->v.s = NULL;
         }
         break;
 
     case CONFIG_VAL_TYPE_LIST:
-        if(value->v.l != NULL) {
-            List_destroy(value->v.l);
-            value->v.l = NULL;
+        if((*value)->v.l != NULL) {
+            List_destroy((List_T *) &((*value)->v.l));
+            (*value)->v.l = NULL;
         }
         break;
     }
 
-    free(value);
-    value = NULL;
+    free(*value);
+    *value = NULL;
 }
 
 extern char
@@ -115,7 +115,7 @@ cv_type(T value)
 static void
 Config_value_list_entry_destroy(void *value)
 {
-    Config_value_destroy((T) value);
+    Config_value_destroy((T *) &value);
 }
 
 #undef T

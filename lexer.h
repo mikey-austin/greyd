@@ -56,7 +56,7 @@ extern T Lexer_create(Lexer_source_T source, int (*next_token)(T lexer));
  * Destroy a lexer object. This will automatically destroy the associated
  * configuration source object.
  */
-extern void Lexer_destroy(T lexer);
+extern void Lexer_destroy(T *lexer);
 
 /**
  * Scan the specified configuration source's character stream and return

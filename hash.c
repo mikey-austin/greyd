@@ -69,22 +69,27 @@ Hash_create(int size, void (*destroy)(struct E *entry))
 }
 
 extern void
-Hash_destroy(T hash)
+Hash_destroy(T *hash)
 {
     int i;
 
-    for(i=0; i < hash->size; i++) {
-        hash->destroy((hash->entries + i));
+    if(hash == NULL || *hash == NULL) {
+        return;
     }
 
-    if(hash && hash->entries) {
-        free(hash->entries);
-        hash->entries = NULL;
-        free(hash);
-        hash = NULL;
-    } else {
+    for(i=0; i < (*hash)->size; i++) {
+        (*hash)->destroy(((*hash)->entries + i));
+    }
+
+    if(*hash && (*hash)->entries) {
+        free((*hash)->entries);
+        (*hash)->entries = NULL;
+        free(*hash);
+        *hash = NULL;
+    }
+    else {
         I_ERR("Tried to free NULL hash (hash %d, entries %d)",
-              hash, (hash ? hash->entries : 0x0));
+              *hash, (*hash ? (*hash)->entries : 0x0));
     }
 }
 

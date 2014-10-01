@@ -48,7 +48,7 @@ extern T Blacklist_create(const char *name, const char *message);
 /**
  * Destroy a blacklist and cleanup.
  */
-extern void Blacklist_destroy(T list);
+extern void Blacklist_destroy(T *list);
 
 /**
  * Add a range of addresses to the blacklist of the specified type.

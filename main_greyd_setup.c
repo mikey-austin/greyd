@@ -217,7 +217,7 @@ send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
         fprintf(stderr, "%d entries added to firewall\n", nadded);
     }
 
-    List_destroy(cidrs);
+    List_destroy(&cidrs);
 }
 
 int
@@ -301,7 +301,7 @@ main(int argc, char **argv)
             if(blacklist && !dryrun) {
                 send_blacklist(blacklist, greyonly, config);
             }
-            Blacklist_destroy(blacklist);
+            Blacklist_destroy(&blacklist);
 
             message = Config_section_get_str(section, "message", DEFAULT_MSG);
             blacklist = Blacklist_create(list_name, message);
@@ -336,7 +336,7 @@ main(int argc, char **argv)
                     ((blacklist->count - count) / 2));
         }
 
-        Spamd_parser_destroy(parser);
+        Spamd_parser_destroy(&parser);
     }
 
     /*
@@ -345,8 +345,8 @@ main(int argc, char **argv)
     if(blacklist && !dryrun) {
         send_blacklist(blacklist, greyonly, config);
     }
-    Blacklist_destroy(blacklist);
-    Config_destroy(config);
+    Blacklist_destroy(&blacklist);
+    Config_destroy(&config);
 
     return 0;
 }

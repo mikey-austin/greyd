@@ -47,7 +47,7 @@ extern T Lexer_source_create_from_gz(gzFile gzf);
 /**
  * Destroy a source object and it's data.
  */
-extern void Lexer_source_destroy(T source);
+extern void Lexer_source_destroy(T *source);
 
 /**
  * Get the next character from this source's queue. An EOF will be returned

@@ -75,7 +75,7 @@ main()
     TEST_OK((List_size(list) == 0), "List size decremented correctly");
 
     /* Destroy the list. */
-    List_destroy(list);
+    List_destroy(&list);
 
     /* Test list destructor. */
     list = List_create(destroy_string);
@@ -89,7 +89,7 @@ main()
      * by the destructor.
      */
     List_insert_head(list, (void *) v);
-    List_destroy(list);
+    List_destroy(&list);
 
     TEST_COMPLETE;
 }

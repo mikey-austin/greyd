@@ -30,7 +30,7 @@ extern T Queue_create(void (*destroy)(void *value));
 /**
  * Destroy a queue, freeing all elements.
  */
-extern void Queue_destroy(T queue);
+extern void Queue_destroy(T *queue);
 
 /**
  * Insert a new element onto the end of the queue.

@@ -45,7 +45,7 @@ extern T Hash_create(int    size,
 /**
  * Destroy a hash table, freeing all elements
  */
-extern void Hash_destroy(T hash);
+extern void Hash_destroy(T *hash);
 
 /**
  * Clear out all entries in the table.

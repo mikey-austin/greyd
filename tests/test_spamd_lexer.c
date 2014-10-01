@@ -106,7 +106,7 @@ main()
     TEST_OK(((tok = Lexer_next_token(lexer)) == SPAMD_LEXER_TOK_INT6), "Test int8 overflow");
     TEST_OK((lexer->current_value.i == 5), "Test token int value");
 
-    Lexer_destroy(lexer);
+    Lexer_destroy(&lexer);
 
     TEST_COMPLETE;
 }

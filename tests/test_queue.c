@@ -41,7 +41,7 @@ main()
     TEST_OK((Queue_size(queue) == 0), "Queue size is as expected");
 
     /* Destroy the queue. */
-    Queue_destroy(queue);
+    Queue_destroy(&queue);
 
     TEST_COMPLETE;
 }

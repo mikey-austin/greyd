@@ -39,8 +39,8 @@ main()
 
     TEST_OK((bl->count == 6), "Correct number of addresses added to list");
 
-    Spamd_parser_destroy(parser);
-    Blacklist_destroy(bl);
+    Spamd_parser_destroy(&parser);
+    Blacklist_destroy(&bl);
 
     TEST_COMPLETE;
 }

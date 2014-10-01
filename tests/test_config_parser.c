@@ -117,8 +117,8 @@ main()
     TEST_OK((include && (strcmp(include, "data/config_test1.conf") == 0)), "Correct included file");
 
     free(include);
-    Config_parser_destroy(parser);
-    Config_destroy(c);
+    Config_parser_destroy(&parser);
+    Config_destroy(&c);
 
     TEST_COMPLETE;
 }

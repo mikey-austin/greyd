@@ -53,29 +53,29 @@ Blacklist_create(const char *name, const char *message)
 }
 
 extern void
-Blacklist_destroy(T list)
+Blacklist_destroy(T *list)
 {
-    if(!list) {
+    if(list == NULL || *list == NULL) {
         return;
     }
 
-    if(list->entries) {
-        free(list->entries);
-        list->entries = NULL;
+    if((*list)->entries) {
+        free((*list)->entries);
+        (*list)->entries = NULL;
     }
 
-    if(list->name) {
-        free(list->name);
-        list->name = NULL;
+    if((*list)->name) {
+        free((*list)->name);
+        (*list)->name = NULL;
     }
 
-    if(list->message) {
-        free(list->message);
-        list->message = NULL;
+    if((*list)->message) {
+        free((*list)->message);
+        (*list)->message = NULL;
     }
 
-    free(list);
-    list = NULL;
+    free(*list);
+    *list = NULL;
 }
 
 extern void

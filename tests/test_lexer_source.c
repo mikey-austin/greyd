@@ -38,7 +38,7 @@ main()
     TEST_OK(((c = Lexer_source_getc(cs)) == 't'), "Successful ungetc");
     TEST_OK(((c = Lexer_source_getc(cs)) == ' '), "Successful getc");
 
-    Lexer_source_destroy(cs);
+    Lexer_source_destroy(&cs);
 
     /*
      * Test the file lexer source.
@@ -57,7 +57,7 @@ main()
     TEST_OK(((c = Lexer_source_getc(cs)) == 't'), "Successful ungetc");
     TEST_OK(((c = Lexer_source_getc(cs)) == ' '), "Successful getc");
 
-    Lexer_source_destroy(cs);
+    Lexer_source_destroy(&cs);
     free(test_file);
 
     /*
@@ -78,7 +78,7 @@ main()
     TEST_OK(((c = Lexer_source_getc(cs)) == 't'), "Successful ungetc");
     TEST_OK(((c = Lexer_source_getc(cs)) == ' '), "Successful getc");
 
-    Lexer_source_destroy(cs);
+    Lexer_source_destroy(&cs);
     free(test_file);
 
     TEST_COMPLETE;

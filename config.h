@@ -36,7 +36,7 @@ extern T Config_create();
 /**
  * Destroy a config table, freeing all sections.
  */
-extern void Config_destroy(T config);
+extern void Config_destroy(T *config);
 
 /*
  * Add a section to the configuration.

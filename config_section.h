@@ -31,7 +31,7 @@ extern T Config_section_create(const char *name);
  * Destroy a configuration section. All configuration variables will also
  * be automatically destroyed.
  */
-extern void Config_section_destroy(T section);
+extern void Config_section_destroy(T *section);
 
 /**
  * Request a variable from the section by the varname. NULL will be returned

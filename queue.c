@@ -27,12 +27,12 @@ Queue_create(void (*destroy)(void *value))
 }
 
 extern void
-Queue_destroy(T queue)
+Queue_destroy(T *queue)
 {
-    if(queue != NULL) {
-        List_destroy(queue->list);
-        free(queue);
-        queue = NULL;
+    if(queue != NULL && *queue != NULL) {
+        List_destroy(&((*queue)->list));
+        free(*queue);
+        *queue = NULL;
     }
 }
 

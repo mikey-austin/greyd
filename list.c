@@ -14,7 +14,7 @@
 #define E List_entry_T
 
 static struct E *List_create_element(T list, void *value);
-static void      List_destroy_element(T list, struct E *element);
+static void      List_destroy_element(T list, struct E **element);
 
 extern T
 List_create(void (*destroy)(void *value))
@@ -34,24 +34,27 @@ List_create(void (*destroy)(void *value))
 }
 
 extern void
-List_destroy(T list)
+List_destroy(T *list)
 {
     struct E *element, *curr;
 
-    for(curr = list->head; curr != NULL; ) {
+    if(list == NULL || *list == NULL)
+        return;
+
+    for(curr = (*list)->head; curr != NULL; ) {
         element = curr;
         curr = curr->next;
 
         /* Destroy the element's value. */
-        if(element->v && list->destroy) {
-            list->destroy(element->v);
+        if(element->v && (*list)->destroy) {
+            (*list)->destroy(element->v);
         }
 
-        List_destroy_element(list, element);
+        List_destroy_element(*list, &element);
     }
 
-    free(list);
-    list = NULL;
+    free(*list);
+    *list = NULL;
 }
 
 extern void
@@ -100,7 +103,7 @@ extern void
     list->head = element->next;
 
     value = element->v;
-    List_destroy_element(list, element);
+    List_destroy_element(list, &element);
     list->size--;
 
     return value;
@@ -141,11 +144,11 @@ static struct E
 }
 
 static void
-List_destroy_element(T list, struct E *element)
+List_destroy_element(T list, struct E **element)
 {
-    if(element) {
-        free(element);
-        element = NULL;
+    if(element && *element) {
+        free(*element);
+        *element = NULL;
     }
 }
 
