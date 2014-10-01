@@ -8,10 +8,7 @@
 #include "failures.h"
 #include "firewall.h"
 #include "config_section.h"
-
-#include <dlfcn.h>
-
-static void *FW_load_module(Config_section_T section);
+#include "mod.h"
 
 extern FILE
 *FW_setup_cntl_pipe(char *command, char **argv)
@@ -55,20 +52,14 @@ extern FILE
 extern int
 FW_replace_networks(Config_section_T section, List_T cidrs)
 {
-    char *error;
     void *handle;
     int (*replace_networks)(Config_section_T section, List_T cidrs), ret;
 
-    handle = FW_load_module(section);
+    handle = Mod_open(section, "firewall");
     replace_networks = (int (*)(Config_section_T, List_T))
-        dlsym(handle, "Mod_fw_replace_networks");
-
-    if((error = dlerror()) != NULL) {
-        I_CRIT("Could not find symbol: %s", error);        
-    }
-
+        Mod_get(handle, "Mod_fw_replace_networks");
     ret = (*replace_networks)(section, cidrs);
-    dlclose(handle);
+    Mod_close(handle);
 
     return ret;
 }
@@ -76,38 +67,11 @@ FW_replace_networks(Config_section_T section, List_T cidrs)
 extern void
 FW_init(Config_section_T section)
 {
-    char *error;
     void *handle;
     void (*init)(Config_section_T section);
 
-    handle = FW_load_module(section);
-    init = (void (*)(Config_section_T)) dlsym(handle, "Mod_fw_init");
-
-    if((error = dlerror()) != NULL) {
-        I_CRIT("Could not find symbol: %s", error);        
-    }
-
+    handle = Mod_open(section, "firewall");
+    init = (void (*)(Config_section_T)) Mod_get(handle, "Mod_fw_init");
     (*init)(section);
-    dlclose(handle);
-}
-
-static void
-*FW_load_module(Config_section_T section)
-{
-    void *handle;
-    char *mod_path = NULL;
-
-    if(section == NULL) {
-        I_CRIT("No firewall configuration set");
-    }
-
-    if((mod_path = Config_section_get_str(section, "driver", NULL)) == NULL) {
-        I_CRIT("No firewall module configured");
-    }
-    
-    if((handle = dlopen(mod_path, RTLD_NOW)) == NULL) {
-        I_CRIT("Could not open module: %s", dlerror());
-    }
-
-    return handle;
+    Mod_close(handle);
 }

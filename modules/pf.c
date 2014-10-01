@@ -11,7 +11,6 @@
 #include "../ip.h"
 
 #include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 #define PATH_PFCTL    "/sbin/pfctl"
