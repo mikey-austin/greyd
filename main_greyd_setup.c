@@ -58,6 +58,9 @@ file_get(char *url, char *curl_path)
 {
 	char *argv[4];
 
+    if(curl_path == NULL)
+        return -1;
+
 	argv[0] = curl_path;
 	argv[1] = "-s";
     argv[2] = url;
@@ -80,6 +83,9 @@ open_child(char *file, char **argv)
 
 	if(pipe(pdes) != 0) 
 		return (-1);
+
+    if(file == NULL)
+        return -1;
 
 	switch(fork()) {
 	case -1:
@@ -203,7 +209,7 @@ send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
 {
     Config_section_T section;
     List_T cidrs;
-    int nadded;
+    int nadded = 0;
 
     section = Config_get_section(config, "firewall");
     cidrs = Blacklist_collapse(blacklist);
@@ -262,7 +268,6 @@ main(int argc, char **argv)
 		}
 	}
 	argc -= optind;
-	argv += optind;
 	if(argc != 0)
 		usage();
 
@@ -329,6 +334,10 @@ main(int argc, char **argv)
          */
         count = blacklist->count;
         res = Spamd_parser_start(parser, blacklist, bltype);
+        if(res != SPAMD_PARSER_OK) {
+            I_WARN("Blacklist parse error");
+        }
+
         if(debug) {
             fprintf(stderr, "%slist %s %zu entries\n",
                     (bltype == BL_TYPE_BLACK ? "black" : "white"),

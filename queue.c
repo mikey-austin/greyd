@@ -20,8 +20,9 @@ Queue_create(void (*destroy)(void *value))
     if((queue = (T) malloc(sizeof(*queue))) == NULL) {
         I_CRIT("Could not create an empty queue");
     }
-
-    queue->list = List_create(destroy);
+    else {
+        queue->list = List_create(destroy);
+    }
 
     return queue;
 }

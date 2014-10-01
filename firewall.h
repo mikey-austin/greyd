@@ -12,8 +12,6 @@
 #include "list.h"
 
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 /**
  * Setup a pipe for communication with firewall control command.

@@ -55,25 +55,26 @@ Lexer_source_create_from_file(const char *filename)
     if(data == NULL) {
         I_CRIT("Could not create config source for %s", filename);
     }
+    else {
+        /* Store the filename. */
+        data->filename = (char *) malloc(flen);
+        if(data->filename == NULL) {
+            I_CRIT("Could not create file config source");
+        }
+        sstrncpy(data->filename, filename, flen);
 
-    /* Store the filename. */
-    data->filename = (char *) malloc(flen);
-    if(data->filename == NULL) {
-        I_CRIT("Could not create file config source");
+        /* Try to open the file. */
+        data->handle = fopen(filename, "r");
+        if(data->handle == NULL) {
+            I_CRIT("Error opening config file source: %s", strerror(errno));
+        }
+
+        source->type     = LEXER_SOURCE_FILE;
+        source->data     = data;
+        source->_getc    = source_data_file_getc;
+        source->_ungetc  = source_data_file_ungetc;
+        source->_destroy = source_data_file_destroy;
     }
-    sstrncpy(data->filename, filename, flen);
-
-    /* Try to open the file. */
-    data->handle = fopen(filename, "r");
-    if(data->handle == NULL) {
-        I_CRIT("Error opening config file source: %s", strerror(errno));
-    }
-
-    source->type     = LEXER_SOURCE_FILE;
-    source->data     = data;
-    source->_getc    = source_data_file_getc;
-    source->_ungetc  = source_data_file_ungetc;
-    source->_destroy = source_data_file_destroy;
 
     return source;
 }
@@ -88,18 +89,19 @@ Lexer_source_create_from_str(const char *buf, int len)
     if(data == NULL) {
         I_CRIT("Could not create config source");
     }
+    else {
+        /* Copy the buffer into the new source object. */
+        data->buf = buf;
 
-    /* Copy the buffer into the new source object. */
-    data->buf = buf;
+        data->index  = 0;    /* Index is for traversing buffer. */
+        data->length = len;
 
-    data->index  = 0;    /* Index is for traversing buffer. */
-    data->length = len;
-
-    source->type     = LEXER_SOURCE_STR;
-    source->data     = data;
-    source->_getc    = source_data_str_getc;
-    source->_ungetc  = source_data_str_ungetc;
-    source->_destroy = source_data_str_destroy;
+        source->type     = LEXER_SOURCE_STR;
+        source->data     = data;
+        source->_getc    = source_data_str_getc;
+        source->_ungetc  = source_data_str_ungetc;
+        source->_destroy = source_data_str_destroy;
+    }
 
     return source;
 }
@@ -114,15 +116,16 @@ Lexer_source_create_from_gz(gzFile gzf)
     if(data == NULL) {
         I_CRIT("Could not create config source");
     }
+    else {
+        /* Store the reference to the gz file handle. */
+        data->gzf = gzf;
 
-    /* Store the reference to the gz file handle. */
-    data->gzf = gzf;
-
-    source->type     = LEXER_SOURCE_GZ;
-    source->data     = data;
-    source->_getc    = source_data_gz_getc;
-    source->_ungetc  = source_data_gz_ungetc;
-    source->_destroy = source_data_gz_destroy;
+        source->type     = LEXER_SOURCE_GZ;
+        source->data     = data;
+        source->_getc    = source_data_gz_getc;
+        source->_ungetc  = source_data_gz_ungetc;
+        source->_destroy = source_data_gz_destroy;
+    }
 
     return source;
 }
@@ -159,10 +162,11 @@ source_create()
     if(source == NULL) {
         I_CRIT("Could not create config source");
     }
-
-    /* Initialize object. */
-    source->type = -1;
-    source->data = NULL;
+    else {
+        /* Initialize object. */
+        source->type = -1;
+        source->data = NULL;
+    }
 
     return source;
 }

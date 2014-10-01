@@ -27,7 +27,6 @@ Blacklist_create(const char *name, const char *message)
     if((blacklist = (T) malloc(sizeof(*blacklist))) == NULL) {
         I_CRIT("Could not create blacklist");
     }
-
     blacklist->entries = (struct E *) calloc(BLACKLIST_INIT_SIZE,
                                              sizeof(struct E));
     if(blacklist->entries == NULL) {
@@ -100,24 +99,26 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
         list->size += BLACKLIST_INIT_SIZE;
     }
 
-    /* Reserve room for the pair. */
-    i = list->count;
-    list->count += 2;
+    if(list->entries) {
+        /* Reserve room for the pair. */
+        i = list->count;
+        list->count += 2;
 
-    list->entries[i].address = start;
-    list->entries[i + 1].address = end;
+        list->entries[i].address = start;
+        list->entries[i + 1].address = end;
 
-    if(type == BL_TYPE_WHITE) {
-        list->entries[i].black = 0;
-        list->entries[i].white = 1;
-        list->entries[i + 1].black = 0;
-        list->entries[i + 1].white = -1;
-    }
-    else {
-        list->entries[i].black = 1;
-        list->entries[i].white = 0;
-        list->entries[i + 1].black = -1;
-        list->entries[i + 1].white = 0;
+        if(type == BL_TYPE_WHITE) {
+            list->entries[i].black = 0;
+            list->entries[i].white = 1;
+            list->entries[i + 1].black = 0;
+            list->entries[i + 1].white = -1;
+        }
+        else {
+            list->entries[i].black = 1;
+            list->entries[i].white = 0;
+            list->entries[i + 1].black = -1;
+            list->entries[i + 1].white = 0;
+        }
     }
 }
 
@@ -166,8 +167,6 @@ Blacklist_collapse(T blacklist)
              */
             IP_range_to_cidr_list(cidrs, bstart, (addr - 1));
 		}
-
-		laststate = state;
     }
 
     return cidrs;

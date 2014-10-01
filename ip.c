@@ -15,8 +15,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 
 static u_int8_t max_diff(u_int32_t a, u_int32_t b);

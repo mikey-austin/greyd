@@ -54,7 +54,7 @@ Hash_create(int size, void (*destroy)(struct E *entry))
     new->num_entries = 0;
     new->destroy     = destroy;
 
-    new->entries = (struct E*) malloc(sizeof(*(new->entries)) * size);
+    new->entries = (struct E*) calloc(sizeof(*(new->entries)), size);
     if(!new->entries) {
         free(new);
         new = NULL;
@@ -121,7 +121,8 @@ Hash_insert(T hash, const char *key, void *value)
     if(entry->v != NULL) {
         /* An entry exists, clear contents before overwriting. */
         hash->destroy(entry);
-    } else {
+    }
+    else {
         /* As nothing was over written, increment the number of entries. */
         hash->num_entries++;
     }
@@ -165,19 +166,22 @@ Hash_resize(T hash, int new_size)
     struct E *old_entries = hash->entries;
 
     if(new_size <= hash->size) {
-        I_WARN("Refusing to resize a hash of %d elements to %d", hash->size, new_size);
+        I_WARN("Refusing to resize a hash of %d elements to %d",
+               hash->size, new_size);
         return;
     }
 
     /*
-     * We must create a whole new larger area and re-hash each element as the hash function
-     * depends on the size, which is changing. This is not very efficient for large hashes,
-     * so best to choose an appropriate starting size.
+     * We must create a whole new larger area and re-hash each element as
+     * the hash function depends on the size, which is changing. This is
+     * not very efficient for large hashes, so best to choose an
+     * appropriate starting size.
      */
-    hash->entries = (struct E*) malloc(sizeof(*(hash->entries)) * new_size);
+    hash->entries = (struct E*) calloc(sizeof(*(hash->entries)), new_size);
 
     if(!hash->entries) {
-        I_CRIT("Could not resize hash entries of size %d to %d", hash->size, new_size);
+        I_CRIT("Could not resize hash entries of size %d to %d",
+               hash->size, new_size);
     }
 
     /* Re-initialize the hash entries. */

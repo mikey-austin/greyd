@@ -10,6 +10,8 @@
 #include "config_section.h"
 #include "mod.h"
 
+#include <unistd.h>
+
 extern FILE
 *FW_setup_cntl_pipe(char *command, char **argv)
 {

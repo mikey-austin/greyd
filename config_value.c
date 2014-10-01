@@ -28,12 +28,13 @@ Config_value_create(short type)
     if(new == NULL) {
         I_CRIT("Could not create new config value");
     }
-
-    new->type = type;
-    switch(new->type) {
-    case CONFIG_VAL_TYPE_LIST:
-        new->v.l = List_create(Config_value_list_entry_destroy);
-        break;
+    else {
+        new->type = type;
+        switch(new->type) {
+        case CONFIG_VAL_TYPE_LIST:
+            new->v.l = List_create(Config_value_list_entry_destroy);
+            break;
+        }
     }
 
     return new;

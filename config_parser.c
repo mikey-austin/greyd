@@ -45,11 +45,12 @@ Config_parser_create(Lexer_T lexer)
     if((parser = (T) malloc(sizeof(*parser))) == NULL) {
         I_CRIT("Could not create parser");
     }
-
-    parser->lexer   = lexer;
-    parser->config  = NULL;  /* Config reference set when the parser is started. */
-    parser->section = NULL;  /* Section reference. */
-    parser->value   = NULL;  /* Value reference. */
+    else {
+        parser->lexer   = lexer;
+        parser->config  = NULL;  /* Reg set when the parser is started. */
+        parser->section = NULL;  /* Section reference. */
+        parser->value   = NULL;  /* Value reference. */
+    }
 
     return parser;
 }
