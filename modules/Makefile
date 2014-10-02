@@ -16,7 +16,7 @@ ipset.so: ipset.o
 	$(CC) $(CFLAGS) -shared -o ipset.so ipset.o
 
 bdb.so: bdb.o
-	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -ldb
+	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -L/usr/local/BerkeleyDB.5.3/lib -ldb
 
 .PHONY: clean
 

@@ -15,7 +15,7 @@ all: $(TARGETS)
 
 test_%.t: test_%.o $(TEST_OBJ)
 	$(CC) $(CFLAGS) $(LIBS) -Wl,-E -o $@ $< $(SRC:.c=.o) $(shell find .. -maxdepth 1 -name \*.o -and -not -name main_\*)
-	echo "system(\"valgrind -q --leak-check=full --error-exitcode=1 --tool=memcheck $(shell pwd)/$@\")" >test_$*.pl
+	echo "system(\"valgrind -q --track-origins=yes --leak-check=full --error-exitcode=1 --tool=memcheck $(shell pwd)/$@\")" >test_$*.pl
 
 .PHONY: clean test
 
@@ -28,4 +28,4 @@ test: $(TARGETS)
 	@echo "** Preparing to run tests...**"
 	@echo "******************************"
 	@echo
-	HARNESS_COLOR=1 perl -MTest::Harness -e 'runtests(@ARGV)' *.pl
+	LD_LIBRARY_PATH=/usr/local/BerkeleyDB.5.3/lib HARNESS_COLOR=1 perl -MTest::Harness -e 'runtests(@ARGV)' *.pl

@@ -74,7 +74,29 @@ Mod_db_close(DB_handle_T handle)
 extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    return 0;
+    DB *db = (DB *) handle->dbh;
+    DBT dbkey, data;
+    int ret;
+
+    memset(&dbkey, 0, sizeof(DBT));
+    memset(&data, 0, sizeof(DBT));
+
+    dbkey.data = key;
+    dbkey.size = sizeof(struct DB_val);
+
+    data.data = val;
+    data.size = sizeof(struct DB_val);
+
+    ret = db->put(db, NULL, &dbkey, &data, 0);
+    switch(ret) {
+    case 0:
+        return GREYDB_OK;
+
+    default:
+        I_ERR("Error putting record: %s", db_strerror(ret));
+    }
+
+    return GREYDB_ERR;
 }
 
 extern int
@@ -84,7 +106,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     DBT dbkey, data;
     int ret;
 
-    memset(&key, 0, sizeof(DBT));
+    memset(&dbkey, 0, sizeof(DBT));
     memset(&data, 0, sizeof(DBT));
     memset(val, 0, sizeof(struct DB_val));
 

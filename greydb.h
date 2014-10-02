@@ -28,7 +28,8 @@
 
 #define GREYDB_ERR       -1
 #define GREYDB_FOUND     0
-#define GREYDB_NOT_FOUND 1
+#define GREYDB_OK        1
+#define GREYDB_NOT_FOUND 2
 
 /**
  * Keys may be of different types depending on the type of database entry.
