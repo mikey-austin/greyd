@@ -8,16 +8,17 @@
 #ifndef GREY_DEFINED
 #define GREY_DEFINED
 
-#define T Grey_tuple_T
-#define D Grey_data_T
+#define T Grey_tuple
+#define D Grey_data
 
 #define GREY_MAX_MAIL 1024
+#define GREY_MAX_KEY  45
 
 struct T {
-    char *ip;
-    char *helo;
-    char *from;
-    char *to;
+    char ip[GREY_MAX_KEY];
+    char helo[GREY_MAX_MAIL];
+    char from[GREY_MAX_MAIL];
+    char to[GREY_MAX_MAIL];
 };
 
 struct D {

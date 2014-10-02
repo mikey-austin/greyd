@@ -80,7 +80,34 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 extern int
 Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    return 0;
+    DB *db = (DB *) handle->dbh;
+    DBT dbkey, data;
+    int ret;
+
+    memset(&key, 0, sizeof(DBT));
+    memset(&data, 0, sizeof(DBT));
+    memset(val, 0, sizeof(struct DB_val));
+
+    dbkey.data = key;
+    dbkey.size = sizeof(struct DB_val);
+
+    data.data = val;
+    data.ulen = sizeof(struct DB_val);
+    data.flags = DB_DBT_USERMEM;
+
+    ret = db->get(db, NULL, &dbkey, &data, 0);
+    switch(ret) {
+    case 0:
+        return GREYDB_FOUND;
+
+    case DB_NOTFOUND:
+        return GREYDB_NOT_FOUND;
+
+    default:
+        I_ERR("Error retrieving record: %s", db_strerror(ret));
+    }
+
+    return GREYDB_ERR;
 }
 
 extern void

@@ -26,9 +26,9 @@
 #define DB_VAL_GREY         1 /**< Grey counters data. */
 #define DB_VAL_MATCH_SUFFIX 2 /**< Match suffix data. */
 
-#define DB_ERR       -1
-#define DB_FOUND     0
-#define DB_NOT_FOUND 1
+#define GREYDB_ERR       -1
+#define GREYDB_FOUND     0
+#define GREYDB_NOT_FOUND 1
 
 /**
  * Keys may be of different types depending on the type of database entry.
@@ -37,7 +37,7 @@ struct K {
     int type;
     union {
         char s[GREY_MAX_MAIL];  /**< May contain IP or MAIL key types. */
-        struct Grey_tuple_T gt; 
+        struct Grey_tuple gt; 
     } data;
 };
 
@@ -45,7 +45,7 @@ struct V {
     int type;
     union {
         char s[GREY_MAX_MAIL]; /**< Allowed domain. */
-        struct Grey_data_T gd; /**< Greylisting counters.h */
+        struct Grey_data gd;   /**< Greylisting counters.h */
     } data;
 };
 
