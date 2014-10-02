@@ -17,20 +17,37 @@
 #define V DB_val
 
 extern H
-DB_open(Config_section_T section)
+DB_open(Config_T config)
 {
     H handle;
     void *mod_handle;
     void (*db_open)(H handle);
+    Config_section_T section;
+    char *user;
 
     /* Setup the db handle. */
     if((handle = (H) malloc(sizeof(*handle))) == NULL) {
         I_CRIT("Could not create db handle");
     }
 
+    if((section = Config_get_section(config, "database")) == NULL) {
+        I_CRIT("Could not find database configuration");
+    }
+
+    handle->config  = config;
     handle->section = section;
+
+    section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
+    if((user = Config_section_get_str(section, "user", NULL)) != NULL) {
+        if((handle->pw = getpwnam(user)) == NULL) {
+            I_CRIT("No such user %s", user);
+        }
+    }
+    else {
+        handle->pw = NULL;
+    }
     
-    mod_handle = Mod_open(section, "db");
+    mod_handle = Mod_open(handle->section, "db");
     db_open = (void (*)(H)) Mod_get(mod_handle, "Mod_db_open");
     (*db_open)(handle);
     Mod_close(mod_handle);
@@ -55,21 +72,6 @@ DB_close(H *handle)
 
     free(*handle);
     *handle = NULL;
-}
-
-extern int
-DB_init(H handle)
-{
-    void *mod_handle;
-    int (*db_init)(H handle);
-    int ret;
-
-    mod_handle = Mod_open(handle->section, "db");
-    db_init = (int (*)(H)) Mod_get(mod_handle, "Mod_db_init");
-    ret = (*db_init)(handle);
-    Mod_close(mod_handle);
-
-    return ret;
 }
 
 extern int

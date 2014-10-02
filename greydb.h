@@ -8,8 +8,11 @@
 #ifndef GREYDB_DEFINED
 #define GREYDB_DEFINED
 
-#include "config_section.h"
+#include "config.h"
 #include "grey.h"
+
+#include <sys/types.h>
+#include <pwd.h>
 
 #define H DB_handle_T
 #define I DB_itr_T
@@ -49,7 +52,9 @@ struct V {
 typedef struct H *H;
 struct H {
     void *dbh;                /**< Module dependent handle reference. */
+    Config_T config;          /**< System configuration. */
     Config_section_T section; /**< Module configuration section. */
+    struct passwd *pw;        /**< System user/group information. */
 };
 
 typedef struct I *I;
@@ -62,17 +67,12 @@ struct I {
 /**
  * Open a connection to the configured database based on the configuration.
  */
-extern H DB_open(Config_section_T db_section);
+extern H DB_open(Config_T config);
 
 /**
  * Close a database connection.
  */
 extern void DB_close(H *handle);
-
-/**
- * Initialize the database identified by the supplied handle.
- */
-extern int DB_init(H handle);
 
 /**
  * Insert a single key/value pair into the database.
