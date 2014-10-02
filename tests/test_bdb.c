@@ -35,7 +35,7 @@ main()
         "}";
     
 
-    TEST_START(10);
+    TEST_START(11);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -49,11 +49,8 @@ main()
 
     memset(&key1, 0, sizeof(key1));
     memset(&key2, 0, sizeof(key2));
-    memset(&val1, 0, sizeof(val1));
-    memset(&val2, 0, sizeof(val2));
-    memset(&gd, 0, sizeof(gd));
-    memset(&gd2, 0, sizeof(gd2));
     memset(&gt, 0, sizeof(gt));
+    memset(&val1, 0, sizeof(val1));
 
     /* Configure some test data. */
     strcpy(gt.ip, "192.168.12.1");
@@ -86,6 +83,11 @@ main()
     TEST_OK((gd2.expire == 3), "expire attr ok");
     TEST_OK((gd2.bcount == 4), "bcount attr ok");
     TEST_OK((gd2.pcount == 5), "pcount attr ok");
+
+    /* Test getting a non-existant entry. */
+    key1.type = DB_KEY_MAIL;
+    ret = DB_get(db, &key1, &val2);
+    TEST_OK((ret == GREYDB_NOT_FOUND), "Failed get expected");
 
     DB_close(&db);
     Config_destroy(&c);
