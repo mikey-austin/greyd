@@ -12,9 +12,9 @@
 #include <stdlib.h>
 
 #define H DB_handle_T
-#define K DB_key_T
-#define V DB_val_T
 #define I DB_itr_T
+#define K DB_key
+#define V DB_val
 
 extern H
 DB_open(Config_section_T section)
@@ -108,7 +108,7 @@ extern I
 DB_get_itr(H handle)
 {
     void *mod_handle;
-    void (*db_init_itr)(I itr);
+    void (*db_get_itr)(I itr);
     I itr;
 
     /* Setup the iterator. */
@@ -121,8 +121,8 @@ DB_get_itr(H handle)
     itr->size    = 0;
 
     mod_handle = Mod_open(handle->section, "db");
-    db_init_itr = (void (*)(I)) Mod_get(mod_handle, "Mod_db_init_itr");
-    (*db_init_itr)(itr);
+    db_get_itr = (void (*)(I)) Mod_get(mod_handle, "Mod_db_get_itr");
+    (*db_get_itr)(itr);
     Mod_close(mod_handle);
 
     return itr;
@@ -137,7 +137,7 @@ DB_itr_next(I itr, struct K *key, struct V *val)
 
     mod_handle = Mod_open(itr->handle->section, "db");
     db_itr_next = (int (*)(I, struct K *, struct V *))
-        Mod_get(mod_handle, "Mod_itr_next");
+        Mod_get(mod_handle, "Mod_db_itr_next");
     ret = (*db_itr_next)(itr, key, val);
     Mod_close(mod_handle);
 

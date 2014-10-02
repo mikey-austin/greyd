@@ -12,9 +12,9 @@
 #include "grey.h"
 
 #define H DB_handle_T
-#define K DB_key_T
-#define V DB_val_T
 #define I DB_itr_T
+#define K DB_key
+#define V DB_val
 
 #define DB_KEY_IP    1 /**< An ip address. */
 #define DB_KEY_MAIL  2 /**< A valid email address. */
