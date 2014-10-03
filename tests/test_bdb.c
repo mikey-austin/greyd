@@ -18,7 +18,8 @@
 int
 main()
 {
-    DB_handle_T db = NULL;
+    DB_handle_T db;
+    DB_itr_T itr;
     Lexer_source_T ls;
     Lexer_T l;
     Config_parser_T cp;
@@ -34,8 +35,7 @@ main()
         "  path   = \"/tmp/greyd_test.db\"\n"
         "}";
     
-
-    TEST_START(11);
+    TEST_START(43);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -84,10 +84,115 @@ main()
     TEST_OK((gd2.bcount == 4), "bcount attr ok");
     TEST_OK((gd2.pcount == 5), "pcount attr ok");
 
-    /* Test getting a non-existant entry. */
-    key1.type = DB_KEY_MAIL;
+    /* Test deletion. */
+    ret = DB_del(db, &key1);
+    TEST_OK((ret == GREYDB_OK), "Deletion worked as expected");
+
+    /* Test getting & deleting a non-existant entry. */
     ret = DB_get(db, &key1, &val2);
-    TEST_OK((ret == GREYDB_NOT_FOUND), "Failed get expected");
+    TEST_OK((ret == GREYDB_NOT_FOUND), "Get failed expected");
+
+    ret = DB_del(db, &key1);
+    TEST_OK((ret == GREYDB_NOT_FOUND), "Deletion failed as expected");
+
+    /* Insert multiple records to test iteration. */
+    DB_put(db, &key1, &val1);
+
+    /* val 2. */
+    strcpy(gt.ip, "10.10.10.10");
+    strcpy(gt.helo, "hotmail.com");
+    strcpy(gt.from, "test2@hotmail.com");
+    strcpy(gt.to, "test2@gmail.com");
+
+    gd.first = 2;
+    gd.pass = 4;
+    gd.expire = 3;
+    gd.bcount = 2;
+    gd.pcount = 1;
+
+    key1.data.gt = gt;
+    val1.data.gd = gd;
+    DB_put(db, &key1, &val1);
+
+    /* val 3 */
+    strcpy(gt.ip, "10.200.200.200");
+    strcpy(gt.helo, "2hotmail.com");
+    strcpy(gt.from, "2test2@hotmail.com");
+    strcpy(gt.to, "2test2@gmail.com");
+
+    gd.first = 3;
+    gd.pass = 140;
+    gd.expire = 130;
+    gd.bcount = 120;
+    gd.pcount = 110;
+
+    key1.data.gt = gt;
+    val1.data.gd = gd;
+    DB_put(db, &key1, &val1);
+
+    /* Iterate over the 3 key/value pairs. */
+    itr = DB_get_itr(db);
+    TEST_OK((itr != NULL), "Iterator created successfully");
+    TEST_OK((itr->current == 0), "Iterator current index OK");
+
+    /* Clear values. */
+    memset(&gt, 0, sizeof(gt));
+    memset(&gd, 0, sizeof(gd));
+    memset(&key1, 0, sizeof(key1));
+    memset(&val1, 0, sizeof(val1));
+
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
+        gt = key1.data.gt;
+        gd = val1.data.gd;
+
+        switch(gd.first) {
+        case 1:
+            TEST_OK(!strcmp(gt.ip, "192.168.12.1"), "ip ok");
+            TEST_OK(!strcmp(gt.helo, "gmail.com"), "helo ok");
+            TEST_OK(!strcmp(gt.from, "test@gmail.com"), "from ok");
+            TEST_OK(!strcmp(gt.to, "test@hotmail.com"), "to ok");
+
+            TEST_OK((gd.first == 1), "type attr ok");
+            TEST_OK((gd.pass == 2), "pass attr ok");
+            TEST_OK((gd.expire == 3), "expire attr ok");
+            TEST_OK((gd.bcount == 4), "bcount attr ok");
+            TEST_OK((gd.pcount == 5), "pcount attr ok");
+            break;
+
+        case 2:
+            gt = key1.data.gt;
+            TEST_OK(!strcmp(gt.ip, "10.10.10.10"), "ip ok");
+            TEST_OK(!strcmp(gt.helo, "hotmail.com"), "helo ok");
+            TEST_OK(!strcmp(gt.from, "test2@hotmail.com"), "from ok");
+            TEST_OK(!strcmp(gt.to, "test2@gmail.com"), "to ok");
+
+            gd = val1.data.gd;
+            TEST_OK((gd.first == 2), "type attr ok");
+            TEST_OK((gd.pass == 4), "pass attr ok");
+            TEST_OK((gd.expire == 3), "expire attr ok");
+            TEST_OK((gd.bcount == 2), "bcount attr ok");
+            TEST_OK((gd.pcount == 1), "pcount attr ok");
+            break;
+
+        case 3:
+            gt = key1.data.gt;
+            TEST_OK(!strcmp(gt.ip, "10.200.200.200"), "ip ok");
+            TEST_OK(!strcmp(gt.helo, "2hotmail.com"), "helo ok");
+            TEST_OK(!strcmp(gt.from, "2test2@hotmail.com"), "from ok");
+            TEST_OK(!strcmp(gt.to, "2test2@gmail.com"), "to ok");
+
+            gd = val1.data.gd;
+            TEST_OK((gd.first == 3), "type attr ok");
+            TEST_OK((gd.pass == 140), "pass attr ok");
+            TEST_OK((gd.expire == 130), "expire attr ok");
+            TEST_OK((gd.bcount == 120), "bcount attr ok");
+            TEST_OK((gd.pcount == 110), "pcount attr ok");
+            break;
+        }
+    }
+
+    DB_close_itr(&itr);
+    TEST_OK((itr == NULL), "Iterator close OK");
 
     DB_close(&db);
     Config_destroy(&c);

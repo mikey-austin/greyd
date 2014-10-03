@@ -106,6 +106,22 @@ DB_get(H handle, struct K *key, struct V *val)
     return ret;
 }
 
+extern int
+DB_del(H handle, struct K *key)
+{
+    void *mod_handle;
+    int (*db_del)(H handle, struct K *key);
+    int ret;
+
+    mod_handle = Mod_open(handle->section, "db");
+    db_del = (int (*)(H, struct K *))
+        Mod_get(mod_handle, "Mod_db_del");
+    ret = (*db_del)(handle, key);
+    Mod_close(mod_handle);
+
+    return ret;
+}
+
 extern I
 DB_get_itr(H handle)
 {
@@ -149,9 +165,18 @@ DB_itr_next(I itr, struct K *key, struct V *val)
 extern void
 DB_close_itr(I *itr)
 {
-    if(itr || *itr == NULL) {
+    void *mod_handle;
+    void (*db_itr_close)(I itr);
+
+    if(itr == NULL || *itr == NULL) {
         return;
     }
+
+    mod_handle = Mod_open((*itr)->handle->section, "db");
+    db_itr_close = (void (*)(I))
+        Mod_get(mod_handle, "Mod_db_itr_close");
+    (*db_itr_close)(*itr);
+    Mod_close(mod_handle);
 
     free(*itr);
     *itr = NULL;

@@ -52,7 +52,7 @@ struct V {
 
 typedef struct H *H;
 struct H {
-    void *dbh;                /**< Module dependent handle reference. */
+    void *dbh;                /**< Driver dependent handle reference. */
     Config_T config;          /**< System configuration. */
     Config_section_T section; /**< Module configuration section. */
     struct passwd *pw;        /**< System user/group information. */
@@ -61,6 +61,7 @@ struct H {
 typedef struct I *I;
 struct I {
     H   handle;  /**< Database handle reference. */
+    void *dbi;   /**< Driver specific iterator. */
     int current; /**< Current index. */
     int size;    /**< Number of elements in the iteration. */
 };
@@ -85,6 +86,11 @@ extern int DB_put(H handle, struct K *key, struct V *val);
  * specified key.
  */
 extern int DB_get(H handle, struct K *key, struct V *val);
+
+/**
+ * Remove a record specified by the key.
+ */
+extern int DB_del(H handle, struct K *key);
 
 /**
  * Return an iterator for all database entries. If there are no entries,

@@ -82,7 +82,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     memset(&data, 0, sizeof(DBT));
 
     dbkey.data = key;
-    dbkey.size = sizeof(struct DB_val);
+    dbkey.size = sizeof(struct DB_key);
 
     data.data = val;
     data.size = sizeof(struct DB_val);
@@ -111,7 +111,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     memset(val, 0, sizeof(struct DB_val));
 
     dbkey.data = key;
-    dbkey.size = sizeof(struct DB_val);
+    dbkey.size = sizeof(struct DB_key);
 
     data.data = val;
     data.ulen = sizeof(struct DB_val);
@@ -132,13 +132,94 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     return GREYDB_ERR;
 }
 
+extern int
+Mod_db_del(DB_handle_T handle, struct DB_key *key)
+{
+    DB *db = (DB *) handle->dbh;
+    DBT dbkey;
+    int ret;
+
+    memset(&dbkey, 0, sizeof(DBT));
+    dbkey.data = key;
+    dbkey.size = sizeof(struct DB_key);
+
+    ret = db->del(db, NULL, &dbkey, 0);
+    switch(ret) {
+    case 0:
+        return GREYDB_OK;
+
+    case DB_NOTFOUND:
+        return GREYDB_NOT_FOUND;
+
+    default:
+        I_ERR("Error deleting record: %s", db_strerror(ret));
+    }
+
+    return GREYDB_ERR;
+}
+
 extern void
 Mod_db_get_itr(DB_itr_T itr)
 {
+    DBC *cursor;
+    DB *db = (DB *) itr->handle->dbh;
+    int ret;
+    
+    ret = db->cursor(db, NULL, &cursor, 0);
+    if(ret != 0) {
+        I_CRIT("Could not create cursor (%s)", db_strerror(ret));
+    }
+    else {
+        itr->dbi = (void *) cursor;
+    }
+}
+
+extern void
+Mod_db_itr_close(DB_itr_T itr)
+{
+    DBC *cursor = (DBC *) itr->dbi;
+    int ret;
+
+    ret = cursor->close(cursor);
+    if(ret != 0) {
+        I_WARN("Could not close cursor (%s)", db_strerror(ret));        
+    }
+    else {
+        itr->dbi = NULL;
+    }
 }
 
 extern int
 Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
 {
-    return 0;
+    DBC *cursor = (DBC *) itr->dbi;
+    DBT dbkey, data;
+    int ret;
+
+    memset(&dbkey, 0, sizeof(DBT));
+    memset(&data, 0, sizeof(DBT));
+    memset(key, 0, sizeof(struct DB_key));
+    memset(val, 0, sizeof(struct DB_val));
+
+    dbkey.data = key;
+    dbkey.ulen = sizeof(struct DB_key);
+    dbkey.flags = DB_DBT_USERMEM;
+
+    data.data = val;
+    data.ulen = sizeof(struct DB_val);
+    data.flags = DB_DBT_USERMEM;
+
+    ret = cursor->get(cursor, &dbkey, &data, DB_NEXT);
+    switch(ret) {
+    case 0:
+        return GREYDB_FOUND;
+
+    case DB_NOTFOUND:
+        return GREYDB_NOT_FOUND;
+
+    default:
+        I_ERR("Error retrieving next record: %s", db_strerror(ret));
+    }
+
+    return GREYDB_ERR;
 }
