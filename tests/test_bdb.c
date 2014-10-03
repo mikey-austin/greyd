@@ -28,14 +28,14 @@ main()
     struct DB_val val1, val2;
     struct Grey_tuple gt;
     struct Grey_data gd, gd2;
-    int ret;
+    int ret, i = 0;
     char *conf =
         "section database {\n"
         "  driver = \"../modules/bdb.so\",\n"
         "  path   = \"/tmp/greyd_test.db\"\n"
         "}";
     
-    TEST_START(43);
+    TEST_START(47);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -133,7 +133,7 @@ main()
     /* Iterate over the 3 key/value pairs. */
     itr = DB_get_itr(db);
     TEST_OK((itr != NULL), "Iterator created successfully");
-    TEST_OK((itr->current == 0), "Iterator current index OK");
+    TEST_OK((itr->current == -1), "Iterator current index OK");
 
     /* Clear values. */
     memset(&gt, 0, sizeof(gt));
@@ -189,7 +189,12 @@ main()
             TEST_OK((gd.pcount == 110), "pcount attr ok");
             break;
         }
+
+        TEST_OK((i == itr->current), "Iterator index OK");
+        i++;
     }
+
+    TEST_OK((itr->current == 2), "Iterations as expected");
 
     DB_close_itr(&itr);
     TEST_OK((itr == NULL), "Iterator close OK");

@@ -212,6 +212,7 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
     ret = cursor->get(cursor, &dbkey, &data, DB_NEXT);
     switch(ret) {
     case 0:
+        itr->current++;
         return GREYDB_FOUND;
 
     case DB_NOTFOUND:

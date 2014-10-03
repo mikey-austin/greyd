@@ -135,7 +135,7 @@ DB_get_itr(H handle)
     }
 
     itr->handle  = handle;
-    itr->current = 0;
+    itr->current = -1;
     itr->size    = 0;
 
     mod_handle = Mod_open(handle->section, "db");
