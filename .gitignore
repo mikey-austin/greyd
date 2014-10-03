@@ -6,4 +6,5 @@
 *.t
 *.pl
 greyd
+greydb
 greyd-setup

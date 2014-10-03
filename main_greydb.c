@@ -48,6 +48,61 @@ usage()
 static int
 db_list(DB_handle_T db)
 {
+    DB_itr_T itr;
+    struct DB_key key;
+    struct DB_val val;
+    struct Grey_tuple gt;
+    struct Grey_data gd;
+
+    memset(&key, 0, sizeof(key));
+    memset(&val, 0, sizeof(val));
+
+    itr = DB_get_itr(db);
+    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
+        gd = val.data.gd;
+
+        switch(key.type) {
+        case DB_KEY_TUPLE:
+            /*
+             * This is a greylist entry.
+             */
+            gt = key.data.gt;
+            printf("GREY|%s|%s|%s|%s|%lld|%lld|%lld|%d|%d\n",
+                   gt.ip, gt.helo, gt.from, gt.to, (long long) gd.first,
+                   (long long) gd.pass, (long long) gd.expire,
+                   gd.bcount, gd.pcount);
+            break;
+
+        case DB_KEY_IP:
+        case DB_KEY_MAIL:
+            /*
+             * We have a non-greylist entry.
+             */
+            switch(gd.pcount) {
+            case -1:
+                /* Spamtrap hit, with expiry time. */
+                printf("TRAPPED|%s|%lld\n", key.data.s,
+                       (long long) gd.expire);
+                break;
+
+			case -2:
+                /* Spamtrap address. */
+				printf("SPAMTRAP|%s\n", key.data.s);
+				break;
+
+			default:
+                /* Must be a whitelist entry. */
+				printf("WHITE|%s|||%lld|%lld|%lld|%d|%d\n", key.data.s,
+				    (long long) gd.first, (long long) gd.pass,
+				    (long long) gd.expire, gd.bcount, gd.pcount);
+				break;
+            }
+            break;
+        }
+    }
+
+    DB_close_itr(&itr);
+
     return 0;
 }
 
@@ -90,7 +145,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
         key.type = DB_KEY_MAIL;
 
         if(strchr(ip, '@') == NULL) {
-            I_ERR("Not an email address: %s", ip);
+            I_WARN("Not an email address: %s", ip);
             return 1;
         }
 
@@ -149,7 +204,8 @@ db_update(DB_handle_T db, char *ip, int action, int type)
                 break;
 
             default:
-                I_ERR("unknown type %d", type);
+                I_WARN("unknown type %d", type);
+                return 1;
             }
 
             val.data.gd = gd;
@@ -182,7 +238,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
                 break;
 
             default:
-                I_ERR("Unknown type %d", type);
+                I_WARN("Unknown type %d", type);
                 return 1;
             }
 
@@ -205,7 +261,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
 int
 main(int argc, char **argv)
 {
-    int option, type = TYPE_WHITE, action = ACTION_LIST, i, r = 0, c = 0;
+    int option, type = TYPE_WHITE, action = ACTION_LIST, i, ret = 0, c = 0;
     char *config_path = DEFAULT_CONFIG;
     Config_T config;
     DB_handle_T db;
@@ -230,6 +286,7 @@ main(int argc, char **argv)
 
         case 'c':
             config_path = optarg;
+            break;
 
 		default:
 			usage();
@@ -237,8 +294,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	argc -= optind;
-	if (action == ACTION_LIST && type != TYPE_WHITE) {
+	if(action == ACTION_LIST && type != TYPE_WHITE) {
 		usage();
     }
 
@@ -248,28 +304,29 @@ main(int argc, char **argv)
     
     switch(action) {
     case ACTION_LIST:
-        return db_list(db);
+        ret = db_list(db);
+        break;
 
     case ACTION_DEL:
     case ACTION_ADD:
-        for(i = 0; i < argc; i++) {
+        for(i = optind; i < argc; i++) {
             if(argv[i][0] != '\0') {
                 c++;
-                r += db_update(db, argv[i], action, type);
+                ret += db_update(db, argv[i], action, type);
             }
         }
         
         if(c == 0) {
-            I_CRIT("No addresses specified");
+            I_WARN("No addresses specified");
         }
         break;
 
     default:
-        I_CRIT("Bad action specified");
+        I_WARN("Bad action specified");
     }
 
     DB_close(&db);
     Config_destroy(&config);
 
-    return r;
+    return ret;
 }

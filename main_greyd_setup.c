@@ -267,9 +267,11 @@ main(int argc, char **argv)
 			break;
 		}
 	}
+
 	argc -= optind;
-	if(argc != 0)
+	if(argc != 0) {
 		usage();
+    }
 
     config = Config_create();
     Config_load_file(config, config_path);
