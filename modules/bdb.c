@@ -16,11 +16,11 @@
 #define DEFAULT_PATH "/var/db/greyd"
 
 extern void
-Mod_db_open(DB_handle_T handle)
+Mod_db_open(DB_handle_T handle, int flags)
 {
     char *db_path;
     DB *db;
-    int i, ret;
+    int i, ret, open_flags;
 
     db_path = Config_section_get_str(handle->section, "path", DEFAULT_PATH);
 
@@ -30,7 +30,8 @@ Mod_db_open(DB_handle_T handle)
     }
     handle->dbh = (void *) db;
 
-    ret = db->open(db, NULL, db_path, NULL, DB_HASH, DB_CREATE, 0600);
+    open_flags = DB_CREATE | (flags & GREYDB_RO ? DB_RDONLY : 0);
+    ret = db->open(db, NULL, db_path, NULL, DB_HASH, open_flags, 0600);
     if(ret != 0) {
         switch(ret) {
         case ENOENT:

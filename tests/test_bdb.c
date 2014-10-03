@@ -43,7 +43,7 @@ main()
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
 
-    db = DB_open(c);
+    db = DB_open(c, GREYDB_RW);
     TEST_OK((db != NULL), "DB handle created successfully");
     TEST_OK((db->dbh != NULL), "BDB handle created successfully");
 

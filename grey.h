@@ -13,6 +13,10 @@
 
 #define GREY_MAX_MAIL 1024
 #define GREY_MAX_KEY  45
+#define GREY_PASSTIME (60 * 25) /* pass after first retry seen after 25 mins */
+#define GREY_GREYEXP  (60 * 60 * 4) /* remove grey entries after 4 hours */
+#define GREY_WHITEEXP (60 * 60 * 24 * 36) /* remove white entries after 36 days */
+#define GREY_TRAPEXP  (60 * 60 * 24) /* hitting a spamtrap blacklists for a day */
 
 struct T {
     char ip[GREY_MAX_KEY];

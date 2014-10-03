@@ -17,7 +17,7 @@
 #define V DB_val
 
 extern H
-DB_open(Config_T config)
+DB_open(Config_T config, int flags)
 {
     H handle;
     void *mod_handle;

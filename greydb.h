@@ -31,6 +31,9 @@
 #define GREYDB_OK        1
 #define GREYDB_NOT_FOUND 2
 
+#define GREYDB_RO 1
+#define GREYDB_RW 2
+
 /**
  * Keys may be of different types depending on the type of database entry.
  */
@@ -69,7 +72,7 @@ struct I {
 /**
  * Open a connection to the configured database based on the configuration.
  */
-extern H DB_open(Config_T config);
+extern H DB_open(Config_T config, int flags);
 
 /**
  * Close a database connection.
