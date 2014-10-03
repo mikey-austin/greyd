@@ -3,17 +3,20 @@
 #
 
 SRC		= $(wildcard *.c)
-MAINS   = main_greyd_setup.o
+MAINS   = main_greyd_setup.o main_greydb.o
 OBJ		= $(SRC:.c=.o)
 CC		= clang
 CFLAGS	= -g -O0 -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments
 LIBS    = -lz -ldl
 TESTS   = tests
 
-all: greyd-setup modules
+all: greyd-setup greydb modules
 
 greyd-setup: $(OBJ)
 	$(CC) $(CFLAGS) -Wl,-E -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
+
+greydb: $(OBJ)
+	$(CC) $(CFLAGS) -Wl,-E -o greydb main_greydb.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
 
 #
 # Generate the object file header dependencies.
