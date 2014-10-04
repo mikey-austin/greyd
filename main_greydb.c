@@ -42,7 +42,7 @@ usage()
 {
 	fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys] "
                     "[-c config]\n", PROGNAME);
-	exit(1);    
+	exit(1);
 }
 
 static int
@@ -208,6 +208,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
                 return 1;
             }
 
+            val.type = DB_VAL_GREY;
             val.data.gd = gd;
             if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
                 I_WARN("Put failed");
@@ -221,6 +222,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
              */
             gd.first = now;
             gd.bcount = 1;
+
             switch(type) {
             case TYPE_WHITE:
                 gd.pass = now;
@@ -242,6 +244,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
                 return 1;
             }
 
+            val.type = DB_VAL_GREY;
             val.data.gd = gd;
             if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
                 I_WARN("Put failed");
@@ -301,7 +304,7 @@ main(int argc, char **argv)
     config = Config_create();
     Config_load_file(config, config_path);
     db = DB_open(config, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
-    
+
     switch(action) {
     case ACTION_LIST:
         ret = db_list(db);
@@ -315,7 +318,7 @@ main(int argc, char **argv)
                 ret += db_update(db, argv[i], action, type);
             }
         }
-        
+
         if(c == 0) {
             I_WARN("No addresses specified");
         }
