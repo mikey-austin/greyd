@@ -19,10 +19,10 @@
 #define GREY_TRAPEXP  (60 * 60 * 24) /* hitting a spamtrap blacklists for a day */
 
 struct T {
-    char ip[GREY_MAX_KEY];
-    char helo[GREY_MAX_MAIL];
-    char from[GREY_MAX_MAIL];
-    char to[GREY_MAX_MAIL];
+    char ip*;
+    char helo*;
+    char from*;
+    char to*;
 };
 
 struct D {

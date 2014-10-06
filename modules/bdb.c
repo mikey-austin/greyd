@@ -15,6 +15,15 @@
 
 #define DEFAULT_PATH "/var/db/greyd"
 
+/*
+ * The key/values need to be marshalled before storing, to allow for
+ * better on-disk efficiency.
+ */
+static void pack_key(struct DB_key *key, DBT *dbkey);
+static void pack_val(struct DB_val *val, DBT *dbval);
+static void unpack_key(struct DB_key *key, DBT *dbkey);
+static void unpack_val(struct DB_val *val, DBT *dbval);
+
 extern void
 Mod_db_open(DB_handle_T handle, int flags)
 {
@@ -54,7 +63,7 @@ Mod_db_open(DB_handle_T handle, int flags)
 
             close(i);
             return;
-            
+
         default:
             I_CRIT("Create %s failed (%m)", db_path, db_strerror(ret));
         }
@@ -65,7 +74,7 @@ extern void
 Mod_db_close(DB_handle_T handle)
 {
     DB *db;
-    
+
     if((db = (DB *) handle->dbh) != NULL) {
         db->close(db, 0);
         handle->dbh = NULL;
@@ -165,7 +174,7 @@ Mod_db_get_itr(DB_itr_T itr)
     DBC *cursor;
     DB *db = (DB *) itr->handle->dbh;
     int ret;
-    
+
     ret = db->cursor(db, NULL, &cursor, 0);
     if(ret != 0) {
         I_CRIT("Could not create cursor (%s)", db_strerror(ret));
@@ -183,7 +192,7 @@ Mod_db_itr_close(DB_itr_T itr)
 
     ret = cursor->close(cursor);
     if(ret != 0) {
-        I_WARN("Could not close cursor (%s)", db_strerror(ret));        
+        I_WARN("Could not close cursor (%s)", db_strerror(ret));
     }
     else {
         itr->dbi = NULL;
@@ -224,4 +233,48 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
     }
 
     return GREYDB_ERR;
+}
+
+static void
+pack_key(struct DB_key *key, DBT *dbkey)
+{
+    char *buf = NULL;
+    int len, slen = 0;
+
+    len = sizeof(int) + (key->type == DB_KEY_TUPLE
+                         ? strlen(struct Grey_tuple)
+                         : (slen = strlen(key->data.s) + 1));
+    if((buf = (char *) malloc(len)) == NULL) {
+        I_CRIT("Could not pack key");
+    }
+    memcpy(buf, &(key->type), sizeof(int));
+
+    switch(key->type) {
+    case DB_KEY_IP:
+    case DB_KEY_MAIL:
+        memcpy(buf + sizeof(int), key->data.s, slen);
+        break;
+
+    case DB_KEY_TUPLE:
+        memcpy(buf + sizeof(int), &(key->data.gt),
+               sizeof(struct Grey_tuple));
+        break;
+    }
+
+    memset(dbkey, 0, sizeof(*dbkey));
+}
+
+static void
+pack_val(struct DB_val *val, DBT *dbval)
+{
+}
+
+static void
+unpack_key(struct DB_key *key, DBT *dbkey)
+{
+}
+
+static void
+unpack_val(struct DB_val *val, DBT *dbval)
+{
 }

@@ -40,15 +40,15 @@
 struct K {
     int type;
     union {
-        char s[GREY_MAX_MAIL];  /**< May contain IP or MAIL key types. */
-        struct Grey_tuple gt; 
+        char *s; /**< May contain IP or MAIL key types. */
+        struct Grey_tuple gt;
     } data;
 };
 
 struct V {
     int type;
     union {
-        char s[GREY_MAX_MAIL]; /**< Allowed domain. */
+        char *s; /**< Allowed domain. */
         struct Grey_data gd;   /**< Greylisting counters.h */
     } data;
 };
