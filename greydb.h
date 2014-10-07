@@ -48,8 +48,8 @@ struct K {
 struct V {
     int type;
     union {
-        char *s; /**< Allowed domain. */
-        struct Grey_data gd;   /**< Greylisting counters.h */
+        char *s;             /**< Allowed domain. */
+        struct Grey_data gd; /**< Greylisting counters.h */
     } data;
 };
 

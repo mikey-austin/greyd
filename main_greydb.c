@@ -5,7 +5,6 @@
  * @date   2014
  */
 
-#include "utils.h"
 #include "failures.h"
 #include "config.h"
 #include "greydb.h"
@@ -53,9 +52,6 @@ db_list(DB_handle_T db)
     struct DB_val val;
     struct Grey_tuple gt;
     struct Grey_data gd;
-
-    memset(&key, 0, sizeof(key));
-    memset(&val, 0, sizeof(val));
 
     itr = DB_get_itr(db);
     while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
@@ -116,10 +112,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
     int ret, i;
     struct addrinfo hints, *res;
 
-    memset(&key, 0, sizeof(key));
-    memset(&val, 0, sizeof(val));
     memset(&gd, 0, sizeof(gd));
-
     now = time(NULL);
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -156,7 +149,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
         }
     }
 
-    sstrncpy(key.data.s, ip, (strlen(ip) + 1));
+    key.data.s = ip;
     if(action == ACTION_DEL) {
         ret = DB_del(db, &key);
         switch(ret) {

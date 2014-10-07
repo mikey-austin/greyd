@@ -34,7 +34,7 @@ main()
         "  driver = \"../modules/bdb.so\",\n"
         "  path   = \"/tmp/greyd_test.db\"\n"
         "}";
-    
+
     TEST_START(47);
 
     c = Config_create();
@@ -47,26 +47,22 @@ main()
     TEST_OK((db != NULL), "DB handle created successfully");
     TEST_OK((db->dbh != NULL), "BDB handle created successfully");
 
-    memset(&key1, 0, sizeof(key1));
-    memset(&key2, 0, sizeof(key2));
     memset(&gt, 0, sizeof(gt));
     memset(&val1, 0, sizeof(val1));
 
     /* Configure some test data. */
-    strcpy(gt.ip, "192.168.12.1");
-    strcpy(gt.helo, "gmail.com");
-    strcpy(gt.from, "test@gmail.com");
-    strcpy(gt.to, "test@hotmail.com");
+    gt.ip = "192.168.12.1";
+    gt.helo = "gmail.com";
+    gt.from = "test@gmail.com";
+    gt.to = "test@hotmail.com";
+    key1.type = DB_KEY_TUPLE;
+    key1.data.gt = gt;
 
     gd.first = 1;
     gd.pass = 2;
     gd.expire = 3;
     gd.bcount = 4;
     gd.pcount = 5;
-
-    key1.type = DB_KEY_TUPLE;
-    key1.data.gt = gt;
-
     val1.type = DB_VAL_GREY;
     val1.data.gd = gd;
 
@@ -99,10 +95,10 @@ main()
     DB_put(db, &key1, &val1);
 
     /* val 2. */
-    strcpy(gt.ip, "10.10.10.10");
-    strcpy(gt.helo, "hotmail.com");
-    strcpy(gt.from, "test2@hotmail.com");
-    strcpy(gt.to, "test2@gmail.com");
+    gt.ip = "10.10.10.10";
+    gt.helo = "hotmail.com";
+    gt.from = "test2@hotmail.com";
+    gt.to = "test2@gmail.com";
 
     gd.first = 2;
     gd.pass = 4;
@@ -115,10 +111,10 @@ main()
     DB_put(db, &key1, &val1);
 
     /* val 3 */
-    strcpy(gt.ip, "10.200.200.200");
-    strcpy(gt.helo, "2hotmail.com");
-    strcpy(gt.from, "2test2@hotmail.com");
-    strcpy(gt.to, "2test2@gmail.com");
+    gt.ip = "10.200.200.200";
+    gt.helo = "2hotmail.com";
+    gt.from = "2test2@hotmail.com";
+    gt.to = "2test2@gmail.com";
 
     gd.first = 3;
     gd.pass = 140;
