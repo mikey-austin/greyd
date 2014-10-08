@@ -20,8 +20,6 @@ extern H
 DB_open(Config_T config, int flags)
 {
     H handle;
-    void *mod_handle;
-    void (*db_open)(H handle);
     Config_section_T section;
     char *user;
 
@@ -46,11 +44,27 @@ DB_open(Config_T config, int flags)
     else {
         handle->pw = NULL;
     }
-    
-    mod_handle = Mod_open(handle->section, "db");
-    db_open = (void (*)(H)) Mod_get(mod_handle, "Mod_db_open");
-    (*db_open)(handle);
-    Mod_close(mod_handle);
+
+    /* Open the configured driver and extract all required symbols. */
+    handle->driver = Mod_open(handle->section, "db");
+
+    handle->db_open = (void (*)(H, int)) Mod_get(handle->driver, "Mod_db_open");
+    handle->db_close = (void (*)(H)) Mod_get(handle->driver, "Mod_db_close");
+    handle->db_put = (int (*)(H, struct K *, struct V *))
+        Mod_get(handle->driver, "Mod_db_put");
+    handle->db_get = (int (*)(H, struct K *, struct V *))
+        Mod_get(handle->driver, "Mod_db_get");
+    handle->db_del = (int (*)(H, struct K *))
+        Mod_get(handle->driver, "Mod_db_del");
+    handle->db_get_itr = (void (*)(I))
+        Mod_get(handle->driver, "Mod_db_get_itr");
+    handle->db_itr_next = (int (*)(I, struct K *, struct V *))
+        Mod_get(handle->driver, "Mod_db_itr_next");
+    handle->db_itr_close = (void (*)(I))
+        Mod_get(handle->driver, "Mod_db_itr_close");
+
+    /* Initialize the database driver. */
+    handle->db_open(handle, flags);
 
     return handle;
 }
@@ -58,18 +72,12 @@ DB_open(Config_T config, int flags)
 extern void
 DB_close(H *handle)
 {
-    void *mod_handle;
-    void (*db_close)(H handle);
-
     if(handle == NULL || *handle == NULL) {
         return;
     }
 
-    mod_handle = Mod_open((*handle)->section, "db");
-    db_close = (void (*)(H)) Mod_get(mod_handle, "Mod_db_close");
-    (*db_close)(*handle);
-    Mod_close(mod_handle);
-
+    (*handle)->db_close(*handle);
+    Mod_close((*handle)->driver);
     free(*handle);
     *handle = NULL;
 }
@@ -77,56 +85,24 @@ DB_close(H *handle)
 extern int
 DB_put(H handle, struct K *key, struct V *val)
 {
-    void *mod_handle;
-    int (*db_put)(H handle, struct K *key, struct V *val);
-    int ret;
-
-    mod_handle = Mod_open(handle->section, "db");
-    db_put = (int (*)(H, struct K *, struct V *))
-        Mod_get(mod_handle, "Mod_db_put");
-    ret = (*db_put)(handle, key, val);
-    Mod_close(mod_handle);
-
-    return ret;
+    return handle->db_put(handle, key, val);
 }
 
 extern int
 DB_get(H handle, struct K *key, struct V *val)
 {
-    void *mod_handle;
-    int (*db_get)(H handle, struct K *key, struct V *val);
-    int ret;
-
-    mod_handle = Mod_open(handle->section, "db");
-    db_get = (int (*)(H, struct K *, struct V *))
-        Mod_get(mod_handle, "Mod_db_get");
-    ret = (*db_get)(handle, key, val);
-    Mod_close(mod_handle);
-
-    return ret;
+    return handle->db_get(handle, key, val);
 }
 
 extern int
 DB_del(H handle, struct K *key)
 {
-    void *mod_handle;
-    int (*db_del)(H handle, struct K *key);
-    int ret;
-
-    mod_handle = Mod_open(handle->section, "db");
-    db_del = (int (*)(H, struct K *))
-        Mod_get(mod_handle, "Mod_db_del");
-    ret = (*db_del)(handle, key);
-    Mod_close(mod_handle);
-
-    return ret;
+    return handle->db_del(handle, key);
 }
 
 extern I
 DB_get_itr(H handle)
 {
-    void *mod_handle;
-    void (*db_get_itr)(I itr);
     I itr;
 
     /* Setup the iterator. */
@@ -138,10 +114,7 @@ DB_get_itr(H handle)
     itr->current = -1;
     itr->size    = 0;
 
-    mod_handle = Mod_open(handle->section, "db");
-    db_get_itr = (void (*)(I)) Mod_get(mod_handle, "Mod_db_get_itr");
-    (*db_get_itr)(itr);
-    Mod_close(mod_handle);
+    handle->db_get_itr(itr);
 
     return itr;
 }
@@ -149,35 +122,17 @@ DB_get_itr(H handle)
 extern int
 DB_itr_next(I itr, struct K *key, struct V *val)
 {
-    void *mod_handle;
-    int (*db_itr_next)(I itr, struct K *key, struct V *val);
-    int ret;
-
-    mod_handle = Mod_open(itr->handle->section, "db");
-    db_itr_next = (int (*)(I, struct K *, struct V *))
-        Mod_get(mod_handle, "Mod_db_itr_next");
-    ret = (*db_itr_next)(itr, key, val);
-    Mod_close(mod_handle);
-
-    return ret;
+    return itr->handle->db_itr_next(itr, key, val);
 }
 
 extern void
 DB_close_itr(I *itr)
 {
-    void *mod_handle;
-    void (*db_itr_close)(I itr);
-
     if(itr == NULL || *itr == NULL) {
         return;
     }
 
-    mod_handle = Mod_open((*itr)->handle->section, "db");
-    db_itr_close = (void (*)(I))
-        Mod_get(mod_handle, "Mod_db_itr_close");
-    (*db_itr_close)(*itr);
-    Mod_close(mod_handle);
-
+    (*itr)->handle->db_itr_close(*itr);
     free(*itr);
     *itr = NULL;
 }

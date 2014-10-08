@@ -54,14 +54,24 @@ struct V {
 };
 
 typedef struct H *H;
+typedef struct I *I;
+
 struct H {
     void *dbh;                /**< Driver dependent handle reference. */
     Config_T config;          /**< System configuration. */
     Config_section_T section; /**< Module configuration section. */
     struct passwd *pw;        /**< System user/group information. */
+    void *driver;
+    void (*db_open)(H handle, int);
+    void (*db_close)(H handle);
+    int (*db_put)(H handle, struct K *key, struct V *val);
+    int (*db_get)(H handle, struct K *key, struct V *val);
+    int (*db_del)(H handle, struct K *key);
+    void (*db_get_itr)(I itr);
+    int (*db_itr_next)(I itr, struct K *key, struct V *val);
+    void (*db_itr_close)(I itr);
 };
 
-typedef struct I *I;
 struct I {
     H   handle;  /**< Database handle reference. */
     void *dbi;   /**< Driver specific iterator. */

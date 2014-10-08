@@ -39,7 +39,7 @@ Mod_db_open(DB_handle_T handle, int flags)
     }
     handle->dbh = (void *) db;
 
-    open_flags = DB_CREATE | (flags & GREYDB_RO ? DB_RDONLY : 0);
+    open_flags = (flags & GREYDB_RO ? DB_RDONLY : DB_CREATE);
     ret = db->open(db, NULL, db_path, NULL, DB_HASH, open_flags, 0600);
     if(ret != 0) {
         switch(ret) {
