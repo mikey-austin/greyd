@@ -38,6 +38,6 @@ test: $(OBJ) modules
 .PHONY: clean
 
 clean:
-	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup
+	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup greydb
 	cd $(TESTS) && $(MAKE) clean
 	cd modules && $(MAKE) clean

@@ -21,4 +21,4 @@ bdb.so: bdb.o
 .PHONY: clean
 
 clean:
-	rm -f $(OBJ) pf.so ipset.so
+	rm -f $(OBJ) pf.so ipset.so bdb.so
