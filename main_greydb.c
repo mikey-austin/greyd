@@ -118,6 +118,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_NUMERICHOST;
+
     if(action && (type == TYPE_TRAPHIT || type == TYPE_WHITE)) {
         /*
          * We are expecting a numeric IP address.
