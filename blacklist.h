@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #define T Blacklist_T
-#define E Blacklist_ip
+#define E Blacklist_entry
 
 #define BL_TYPE_WHITE 0
 #define BL_TYPE_BLACK 1
@@ -23,13 +23,14 @@
  * Internal structure for containing a single blacklist entry.
  */
 struct E {
-    u_int32_t address;
-    int8_t    black;
-    int8_t    white;
+    struct IP_addr address;
+    struct IP_addr mask;
+    int8_t         black;
+    int8_t         white;
 };
 
 /**
- * The main blacklist structure. 
+ * The main blacklist structure.
  */
 typedef struct T *T;
 struct T {
@@ -51,7 +52,14 @@ extern T Blacklist_create(const char *name, const char *message);
 extern void Blacklist_destroy(T *list);
 
 /**
- * Add a range of addresses to the blacklist of the specified type.
+ * Add a single IPv4/IPv6 formatted address to the specified blacklist's
+ * list of entries.
+ */
+extern int Blacklist_add(T list, char *address);
+
+/**
+ * Add a range of addresses to the blacklist of the specified type. A call to this
+ * function will result in two separate entries for the start and end addresses.
  */
 extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type);
 

@@ -13,10 +13,11 @@
 #include <string.h>
 
 #define T Blacklist_T
-#define E Blacklist_ip
+#define E Blacklist_entry
 
-static int cmp_entry(const void *a, const void *b);
+static int cmp_ipv4_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
+static void grow_entries(T list);
 
 extern T
 Blacklist_create(const char *name, const char *message)
@@ -77,6 +78,14 @@ Blacklist_destroy(T *list)
     *list = NULL;
 }
 
+extern int
+Blacklist_add(T list, char *address)
+{
+    grow_entries(list);
+
+    return 0;
+}
+
 extern void
 Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
 {
@@ -88,24 +97,15 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
     if(start > end)
         return;
 
-    if(list->count >= (list->size - 2)) {
-        list->entries = realloc(
-            list->entries, list->size + BLACKLIST_INIT_SIZE);
-
-        if(list->entries == NULL) {
-            I_CRIT("realloc failed");
-        }
-
-        list->size += BLACKLIST_INIT_SIZE;
-    }
+    grow_entries(list);
 
     if(list->entries) {
         /* Reserve room for the pair. */
         i = list->count;
         list->count += 2;
 
-        list->entries[i].address = start;
-        list->entries[i + 1].address = end;
+        list->entries[i].address.v4.s_addr = start;
+        list->entries[i + 1].address.v4.s_addr = end;
 
         if(type == BL_TYPE_WHITE) {
             list->entries[i].black = 0;
@@ -132,18 +132,18 @@ Blacklist_collapse(T blacklist)
     if(blacklist->count == 0)
         return NULL;
 
-    qsort(blacklist->entries, blacklist->count, sizeof(struct E), cmp_entry);
+    qsort(blacklist->entries, blacklist->count, sizeof(struct E), cmp_ipv4_entry);
     cidrs = List_create(cidr_destroy);
 
     for(i = 0; i < blacklist->count; ) {
 		laststate = state;
-		addr = blacklist->entries[i].address;
+		addr = blacklist->entries[i].address.v4.s_addr;
 
 		do {
 			bs += blacklist->entries[i].black;
 			ws += blacklist->entries[i].white;
 			i++;
-		} while(blacklist->entries[i].address == addr);
+		} while(blacklist->entries[i].address.v4.s_addr == addr);
 
 		if(state == 1 && bs == 0)
 			state = 0;
@@ -172,13 +172,28 @@ Blacklist_collapse(T blacklist)
     return cidrs;
 }
 
-static int
-cmp_entry(const void *a, const void *b)
+static void
+grow_entries(T list)
 {
-    if(((struct E *) a)->address > ((struct E *) b)->address)
+    if(list->count >= (list->size - 2)) {
+        list->entries = realloc(
+            list->entries, list->size + BLACKLIST_INIT_SIZE);
+
+        if(list->entries == NULL) {
+            I_CRIT("realloc failed");
+        }
+
+        list->size += BLACKLIST_INIT_SIZE;
+    }
+}
+
+static int
+cmp_ipv4_entry(const void *a, const void *b)
+{
+    if(((struct E *) a)->address.v4.s_addr > ((struct E *) b)->address.v4.s_addr)
         return 1;
 
-    if(((struct E *) a)->address < ((struct E *) b)->address)
+    if(((struct E *) a)->address.v4.s_addr < ((struct E *) b)->address.v4.s_addr)
         return -1;
 
     return 0;

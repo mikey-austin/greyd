@@ -45,11 +45,11 @@ main()
     Blacklist_add_range(bl, a1, b1, BL_TYPE_BLACK);
     TEST_OK((bl->count == 2), "Added 2 elements");
 
-    TEST_OK((bl->entries[0].address == a1), "First address is correct");
+    TEST_OK((bl->entries[0].address.v4.s_addr == a1), "First address is correct");
     TEST_OK((bl->entries[0].black == 1), "First address is black");
     TEST_OK((bl->entries[0].white == 0), "First address is not white");
 
-    TEST_OK((bl->entries[1].address == b1),
+    TEST_OK((bl->entries[1].address.v4.s_addr == b1),
             "Second address is correct");
     TEST_OK((bl->entries[1].black == -1), "Second address is black");
     TEST_OK((bl->entries[1].white == 0), "Second address is not white");
