@@ -14,6 +14,10 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
+#define IP_MAX_STR_LEN     40
+#define IP_MAX_MASKBITS    128
+#define IP_MAX_MASKBITS_V4 32
+
 /**
  * Structure to house a single IPv4 CIDR network.
  */
@@ -60,5 +64,14 @@ extern int IP_range_to_cidr_list(List_T cidrs, u_int32_t start,
  * The returned string must be cleaned up manually using free.
  */
 extern char *IP_cidr_to_str(const struct IP_cidr *cidr);
+
+/**
+ * Return 1 if the addresses a (with mask m) matches address b
+ * otherwise return 0. It is assumed that address a has been
+ * pre-masked out, we only need to mask b.
+ */
+extern int IP_match_addr(struct IP_addr *a, struct IP_addr *m,
+                      struct IP_addr *b, sa_family_t af);
+
 
 #endif

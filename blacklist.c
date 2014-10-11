@@ -9,6 +9,7 @@
 #include "failures.h"
 #include "blacklist.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -81,9 +82,55 @@ Blacklist_destroy(T *list)
 extern int
 Blacklist_add(T list, char *address)
 {
+    int ret, maskbits, af, i, j;
+    char parsed[IP_MAX_STR_LEN];
+    struct IP_addr *m, *n;
+
     grow_entries(list);
+    i = list->count++;
+    n = &(list->entries[i].address);
+    m = &(list->entries[i].mask);
+
+    ret = sscanf(address, "%39[^/]/%u", parsed, &maskbits);
+    if(ret != 2 || maskbits == 0 || maskbits > IP_MAX_MASKBITS) {
+        goto parse_error;
+    }
+
+    af = (strchr(parsed, ':') != NULL ? AF_INET6 : AF_INET);
+    if(af == AF_INET && maskbits > IP_MAX_MASKBITS_V4) {
+        goto parse_error;
+    }
+
+    if((ret = inet_pton(af, parsed, n)) != 1) {
+        goto parse_error;
+    }
+    else {
+        I_DEBUG("Added %s/%u\n", parsed, maskbits);
+    }
+
+    for(i = 0, j = 0; i < 4; i++)
+        m->addr32[i] = 0;
+
+    while(maskbits >= 32) {
+        m->addr32[j++] = 0xffffffff;
+        maskbits -= 32;
+    }
+
+    for(i = 31; i > (31 - maskbits); --i)
+        m->addr32[j] |= (1 << i);
+
+    if(maskbits)
+        m->addr32[j] = htonl(m->addr32[j]);
+
+    /* Mask off address bits that won't ever be used. */
+    for(i = 0; i < 4; i++)
+        n->addr32[i] = n->addr32[i] & m->addr32[i];
 
     return 0;
+
+parse_error:
+    I_DEBUG("Error parsing address %s", address);
+    return -1;
 }
 
 extern void
@@ -132,7 +179,8 @@ Blacklist_collapse(T blacklist)
     if(blacklist->count == 0)
         return NULL;
 
-    qsort(blacklist->entries, blacklist->count, sizeof(struct E), cmp_ipv4_entry);
+    qsort(blacklist->entries, blacklist->count, sizeof(struct E),
+          cmp_ipv4_entry);
     cidrs = List_create(cidr_destroy);
 
     for(i = 0; i < blacklist->count; ) {
@@ -190,11 +238,17 @@ grow_entries(T list)
 static int
 cmp_ipv4_entry(const void *a, const void *b)
 {
-    if(((struct E *) a)->address.v4.s_addr > ((struct E *) b)->address.v4.s_addr)
+    if(((struct E *) a)->address.v4.s_addr
+       > ((struct E *) b)->address.v4.s_addr)
+    {
         return 1;
+    }
 
-    if(((struct E *) a)->address.v4.s_addr < ((struct E *) b)->address.v4.s_addr)
+    if(((struct E *) a)->address.v4.s_addr
+       < ((struct E *) b)->address.v4.s_addr)
+    {
         return -1;
+    }
 
     return 0;
 }

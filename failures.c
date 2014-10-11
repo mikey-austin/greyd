@@ -12,10 +12,11 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#define SEV_CRIT "CRITICAL"
-#define SEV_ERR  "ERROR"
-#define SEV_WARN "WARNING"
-#define SEV_INFO "INFO"
+#define SEV_CRIT  "CRITICAL"
+#define SEV_ERR   "ERROR"
+#define SEV_WARN  "WARNING"
+#define SEV_INFO  "INFO"
+#define SEV_DEBUG "DEBUG"
 
 #define RETURN_CRIT 1
 #define RETURN_ERR  2
@@ -66,10 +67,20 @@ i_info(const char *file, const int line, const char *msg, ...)
     va_end(args);
 }
 
+extern void
+i_debug(const char *file, const int line, const char *msg, ...)
+{
+    va_list args;
+
+    va_start(args, msg);
+    vlog(SEV_DEBUG, file, line, msg, args);
+    va_end(args);
+}
+
 void
 vlog(const char *severity, const char *file, const int line, const char *msg, va_list args)
 {
-    printf("%s: %s logged at file %s line %d:\n  >> ", PROG_NAME, severity, file, line);
+    printf("%s (at %s:%d): ", severity, file, line);
     vprintf(msg, args);
     printf("\n");
 }

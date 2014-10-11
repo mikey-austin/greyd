@@ -70,6 +70,32 @@ extern char
     return str;
 }
 
+extern int
+IP_match_addr(struct IP_addr *a, struct IP_addr *m, struct IP_addr *b,
+           sa_family_t af)
+{
+	int	match = 0;
+
+	switch(af) {
+	case AF_INET:
+		if((a->addr32[0]) == (b->addr32[0] & m->addr32[0]))
+			match++;
+		break;
+
+	case AF_INET6:
+		if(((a->addr32[0]) == (b->addr32[0] & m->addr32[0]))
+           && ((a->addr32[1]) == (b->addr32[1] & m->addr32[1]))
+           && ((a->addr32[2]) == (b->addr32[2] & m->addr32[2]))
+           && ((a->addr32[3]) == (b->addr32[3] & m->addr32[3])))
+        {
+			match++;
+        }
+		break;
+	}
+
+	return match;
+}
+
 static u_int8_t
 max_diff(u_int32_t a, u_int32_t b)
 {
