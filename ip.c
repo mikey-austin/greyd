@@ -72,7 +72,7 @@ extern char
 
 extern int
 IP_match_addr(struct IP_addr *a, struct IP_addr *m, struct IP_addr *b,
-           sa_family_t af)
+              sa_family_t af)
 {
 	int	match = 0;
 

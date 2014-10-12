@@ -80,7 +80,25 @@ Blacklist_destroy(T *list)
 }
 
 extern int
-Blacklist_add(T list, char *address)
+Blacklist_match(T list, struct IP_addr *source, sa_family_t af)
+{
+    int i;
+    struct IP_addr *a, *m;
+
+    for(i = 0; i < list->count; i++) {
+        a = &(list->entries[i].address);
+        m = &(list->entries[i].mask);
+
+        if(IP_match_addr(a, m, source, af) > 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+extern int
+Blacklist_add(T list, const char *address)
 {
     int ret, maskbits, af, i, j;
     char parsed[IP_MAX_STR_LEN];
@@ -105,7 +123,7 @@ Blacklist_add(T list, char *address)
         goto parse_error;
     }
     else {
-        I_DEBUG("Added %s/%u\n", parsed, maskbits);
+        //I_DEBUG("Added %s/%u\n", parsed, maskbits);
     }
 
     for(i = 0, j = 0; i < 4; i++)

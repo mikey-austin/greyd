@@ -22,13 +22,14 @@ int
 main()
 {
     struct IP_cidr cidr, *c;
+    struct IP_addr a, m, b;
     u_int32_t start, end;
     char *s, *s2;
     List_T cidrs;
     struct List_entry_T *entry;
     int i = 0;
 
-    TEST_START(10);
+    TEST_START(14);
 
     start = stoi("192.168.1.0");
     end = stoi("192.168.1.100");
@@ -91,6 +92,40 @@ main()
     }
 
     List_destroy(&cidrs);
+
+    /* Test IPv4 matching. */
+    a.v4.s_addr = 0xC0A80C01; /* 192.168.12.1 */
+    m.v4.s_addr = 0xffffff00; /* 255.255.255.0 */
+    b.v4.s_addr = 0xC0A80C18; /* 192.168.12.24 */
+
+    a.addr32[0] = a.addr32[0] & m.addr32[0];
+    TEST_OK((IP_match_addr(&a, &m, &b, AF_INET) > 0), "IPv4 matches as expected");
+
+    b.v4.s_addr = 0xC0A80D18; /* 192.168.13.24 */
+    TEST_OK((IP_match_addr(&a, &m, &b, AF_INET) == 0), "IPv4 mismatch as expected");
+
+    /* Test IPv6 matching. */
+    a.addr32[0] = 0xfe800000; /* FE80::0202:B3FF:FE1E:2201 */
+    a.addr32[1] = 0x00000000;
+    a.addr32[2] = 0x0202b3ff;
+    a.addr32[3] = 0xfe1e2201;
+
+    m.addr32[0] = 0xffffffff; /* CIDR /120 */
+    m.addr32[1] = 0xffffffff;
+    m.addr32[2] = 0xffffffff;
+    m.addr32[3] = 0xffffff00;
+
+    b.addr32[0] = 0xfe800000; /* FE80::0202:B3FF:FE1E:2205 */
+    b.addr32[1] = 0x00000000;
+    b.addr32[2] = 0x0202b3ff;
+    b.addr32[3] = 0xfe1e2205;
+
+    for(i = 0; i < 4; i++)
+        a.addr32[i] = a.addr32[i] & m.addr32[i];
+    TEST_OK((IP_match_addr(&a, &m, &b, AF_INET6) > 0), "IPv6 matches as expected");
+
+    b.addr32[3] = 0x11223344;
+    TEST_OK((IP_match_addr(&a, &m, &b, AF_INET6) == 0), "IPv6 mismatch as expected");
 
     TEST_COMPLETE;
 }

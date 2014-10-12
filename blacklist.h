@@ -52,10 +52,15 @@ extern T Blacklist_create(const char *name, const char *message);
 extern void Blacklist_destroy(T *list);
 
 /**
+ * Return 1 if the source address is in the list, otherwise return 0.
+ */
+extern int Blacklist_match(T list, struct IP_addr *source, sa_family_t af);
+
+/**
  * Add a single IPv4/IPv6 formatted address to the specified blacklist's
  * list of entries.
  */
-extern int Blacklist_add(T list, char *address);
+extern int Blacklist_add(T list, const char *address);
 
 /**
  * Add a range of addresses to the blacklist of the specified type. A call to this

@@ -27,8 +27,9 @@ main()
     List_T cidrs;
     struct List_entry_T *entry;
     struct IP_cidr *c;
+    struct IP_addr a;
 
-    TEST_START(14);
+    TEST_START(22);
 
     bl = Blacklist_create("Test List", "You have been blacklisted");
     TEST_OK((bl != NULL), "Blacklist created successfully");
@@ -95,6 +96,27 @@ main()
 
     List_destroy(&cidrs);
     Blacklist_destroy(&bl);
+
+    /* Test the adding of single addresses & matching of addresses. */
+    bl = Blacklist_create("Test List", "You have been blacklisted");
+    TEST_OK((Blacklist_add(bl, "192.168.12.1/24") == 0), "IPv4 added OK");
+    TEST_OK((Blacklist_add(bl, "10.20.1.3/16") == 0), "IPv4 added OK");
+    TEST_OK((bl->count == 2), "Entries added OK");
+
+    a.addr32[0] = ntohl(0xC0A80C23); /* 192.168.12.35 */
+    TEST_OK((Blacklist_match(bl, &a, AF_INET) == 1), "IPv4 match as expected");
+
+    a.addr32[0] = ntohl(0xC0A80E23); /* 192.168.14.35 */
+    TEST_OK((Blacklist_match(bl, &a, AF_INET) == 0), "IPv4 mismatch as expected");
+
+    a.addr32[0] = ntohl(0x0A146917); /* 10.20.105.23 */
+    TEST_OK((Blacklist_match(bl, &a, AF_INET) == 1), "IPv4 match as expected");
+
+    a.addr32[0] = ntohl(0x0A00002D); /* 10.0.0.45 */
+    TEST_OK((Blacklist_match(bl, &a, AF_INET) == 0), "IPv4 mismatch as expected");
+
+    Blacklist_destroy(&bl);
+    TEST_OK(bl == NULL, "blacklist memory cleaned up and set to NULL");
 
     TEST_COMPLETE;
 }
