@@ -29,7 +29,7 @@ main()
     struct IP_cidr *c;
     struct IP_addr a;
 
-    TEST_START(22);
+    TEST_START(27);
 
     bl = Blacklist_create("Test List", "You have been blacklisted");
     TEST_OK((bl != NULL), "Blacklist created successfully");
@@ -114,6 +114,20 @@ main()
 
     a.addr32[0] = ntohl(0x0A00002D); /* 10.0.0.45 */
     TEST_OK((Blacklist_match(bl, &a, AF_INET) == 0), "IPv4 mismatch as expected");
+
+    TEST_OK((Blacklist_add(bl, "fe80::0202:b3ff:fe1e:2201/120") == 0), "IPv6 added OK");
+    TEST_OK((Blacklist_add(bl, "2010:2acd::beef:a322/64") == 0), "IPv6 added OK");
+    TEST_OK((bl->count == 4), "More entries added OK");
+
+    a.addr32[0] = ntohl(0xfe800000); /* FE80::0202:B3FF:FE1E:22A2 */
+    a.addr32[1] = ntohl(0x00000000);
+    a.addr32[2] = ntohl(0x0202b3ff);
+    a.addr32[3] = ntohl(0xfe1e22a2);
+
+    TEST_OK((Blacklist_match(bl, &a, AF_INET6) == 1), "IPv6 match as expected");
+
+    a.addr32[2] = ntohl(0x0A00002D);
+    TEST_OK((Blacklist_match(bl, &a, AF_INET6) == 0), "IPv6 mismatch as expected");
 
     Blacklist_destroy(&bl);
     TEST_OK(bl == NULL, "blacklist memory cleaned up and set to NULL");
