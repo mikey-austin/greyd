@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#define IP_MAX_STR_LEN     40
 #define IP_MAX_MASKBITS    128
 #define IP_MAX_MASKBITS_V4 32
 

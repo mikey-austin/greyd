@@ -101,7 +101,7 @@ extern int
 Blacklist_add(T list, const char *address)
 {
     int ret, maskbits, af, i, j;
-    char parsed[IP_MAX_STR_LEN];
+    char parsed[INET6_ADDRSTRLEN];
     struct IP_addr *m, *n;
 
     grow_entries(list);
