@@ -39,9 +39,9 @@ static int db_update(DB_handle_T db, char *ip, int action, int type);
 static void
 usage()
 {
-	fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys] "
+    fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys] "
                     "[-c config]\n", PROGNAME);
-	exit(1);
+    exit(1);
 }
 
 static int
@@ -81,17 +81,17 @@ db_list(DB_handle_T db)
                        (long long) gd.expire);
                 break;
 
-			case -2:
+            case -2:
                 /* Spamtrap address. */
-				printf("SPAMTRAP|%s\n", key.data.s);
-				break;
+                printf("SPAMTRAP|%s\n", key.data.s);
+                break;
 
-			default:
+            default:
                 /* Must be a whitelist entry. */
-				printf("WHITE|%s|||%lld|%lld|%lld|%d|%d\n", key.data.s,
-				    (long long) gd.first, (long long) gd.pass,
-				    (long long) gd.expire, gd.bcount, gd.pcount);
-				break;
+                printf("WHITE|%s|||%lld|%lld|%lld|%d|%d\n", key.data.s,
+                       (long long) gd.first, (long long) gd.pass,
+                       (long long) gd.expire, gd.bcount, gd.pcount);
+                break;
             }
             break;
         }
@@ -263,36 +263,36 @@ main(int argc, char **argv)
     Config_T config;
     DB_handle_T db;
 
-	while((option = getopt(argc, argv, "adtTc:")) != -1) {
-		switch(option) {
-		case 'a':
-			action = ACTION_ADD;
-			break;
+    while((option = getopt(argc, argv, "adtTc:")) != -1) {
+        switch(option) {
+        case 'a':
+            action = ACTION_ADD;
+            break;
 
-		case 'd':
-			action = ACTION_DEL;
-			break;
+        case 'd':
+            action = ACTION_DEL;
+            break;
 
-		case 't':
-			type = TYPE_TRAPHIT;
-			break;
+        case 't':
+            type = TYPE_TRAPHIT;
+            break;
 
-		case 'T':
-			type = TYPE_SPAMTRAP;
-			break;
+        case 'T':
+            type = TYPE_SPAMTRAP;
+            break;
 
         case 'c':
             config_path = optarg;
             break;
 
-		default:
-			usage();
-			break;
-		}
-	}
+        default:
+            usage();
+            break;
+        }
+    }
 
-	if(action == ACTION_LIST && type != TYPE_WHITE) {
-		usage();
+    if(action == ACTION_LIST && type != TYPE_WHITE) {
+        usage();
     }
 
     config = Config_create();

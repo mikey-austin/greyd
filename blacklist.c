@@ -202,37 +202,37 @@ Blacklist_collapse(T blacklist)
     cidrs = List_create(cidr_destroy);
 
     for(i = 0; i < blacklist->count; ) {
-		laststate = state;
-		addr = blacklist->entries[i].address.v4.s_addr;
+        laststate = state;
+        addr = blacklist->entries[i].address.v4.s_addr;
 
-		do {
-			bs += blacklist->entries[i].black;
-			ws += blacklist->entries[i].white;
-			i++;
-		} while(blacklist->entries[i].address.v4.s_addr == addr);
+        do {
+            bs += blacklist->entries[i].black;
+            ws += blacklist->entries[i].white;
+            i++;
+        } while(blacklist->entries[i].address.v4.s_addr == addr);
 
-		if(state == 1 && bs == 0)
-			state = 0;
-		else if(state == 0 && bs > 0)
-			state = 1;
+        if(state == 1 && bs == 0)
+            state = 0;
+        else if(state == 0 && bs > 0)
+            state = 1;
 
-		if(ws > 0)
-			state = 0;
+        if(ws > 0)
+            state = 0;
 
-		if(laststate == 0 && state == 1) {
-			/*
+        if(laststate == 0 && state == 1) {
+            /*
              * This state transition marks the start of a blacklist region.
              */
-			bstart = addr;
-		}
+            bstart = addr;
+        }
 
-		if(laststate == 1 && state == 0) {
-			/*
+        if(laststate == 1 && state == 0) {
+            /*
              * We are at the end of a blacklist region, convert the range
              * into CIDR format.
              */
             IP_range_to_cidr_list(cidrs, bstart, (addr - 1));
-		}
+        }
     }
 
     return cidrs;
