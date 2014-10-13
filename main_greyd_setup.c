@@ -49,27 +49,27 @@ static int debug = 0;
 static void
 usage()
 {
-	fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROGNAME);
-	exit(1);    
+    fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROGNAME);
+    exit(1);
 }
 
 static int
 file_get(char *url, char *curl_path)
 {
-	char *argv[4];
+    char *argv[4];
 
     if(curl_path == NULL)
         return -1;
 
-	argv[0] = curl_path;
-	argv[1] = "-s";
+    argv[0] = curl_path;
+    argv[1] = "-s";
     argv[2] = url;
-	argv[3] = NULL;
+    argv[3] = NULL;
 
     if(debug)
        fprintf(stderr, "Getting %s\n", url);
 
-	return (open_child(curl_path, argv));
+    return (open_child(curl_path, argv));
 }
 
 /**
@@ -79,35 +79,35 @@ file_get(char *url, char *curl_path)
 static int
 open_child(char *file, char **argv)
 {
-	int pdes[2];
+    int pdes[2];
 
-	if(pipe(pdes) != 0) 
-		return (-1);
+    if(pipe(pdes) != 0)
+        return (-1);
 
     if(file == NULL)
         return -1;
 
-	switch(fork()) {
-	case -1:
-		close(pdes[0]);
-		close(pdes[1]);
-		return (-1);
+    switch(fork()) {
+    case -1:
+        close(pdes[0]);
+        close(pdes[1]);
+        return (-1);
 
-	case 0:
-		/* child */
-		close(pdes[0]);
-		if(pdes[1] != STDOUT_FILENO) {
-			dup2(pdes[1], STDOUT_FILENO);
-			close(pdes[1]);
-		}
-		execvp(file, argv);
-		_exit(1);
-	}
+    case 0:
+        /* child */
+        close(pdes[0]);
+        if(pdes[1] != STDOUT_FILENO) {
+            dup2(pdes[1], STDOUT_FILENO);
+            close(pdes[1]);
+        }
+        execvp(file, argv);
+        _exit(1);
+    }
 
-	/* parent */
-	close(pdes[1]);
+    /* parent */
+    close(pdes[1]);
 
-	return (pdes[0]);
+    return (pdes[0]);
 }
 
 /**
@@ -124,7 +124,7 @@ get_parser(Config_section_T section, Config_T config)
     char *method, *file, **ap, **argv, *curl_path, *url;
     int fd, len;
     gzFile gzf;
-    
+
     /* Extract the method & file variables from the section. */
     method = Config_section_get_str(section, "method", NULL);
     if((file = Config_section_get_str(section, "file", NULL)) == NULL)
@@ -167,19 +167,19 @@ get_parser(Config_section_T section, Config_T config)
          * string specified in the "file" variable is to be interpreted as
          * a command invocation.
          */
-		len = strlen(file);
-		if((argv = calloc(len, sizeof(char *))) == NULL) {
-			I_ERR("malloc failed");
+        len = strlen(file);
+        if((argv = calloc(len, sizeof(char *))) == NULL) {
+            I_ERR("malloc failed");
         }
 
-		for(ap = argv; ap < &argv[len - 1] &&
+        for(ap = argv; ap < &argv[len - 1] &&
                 (*ap = strsep(&file, " \t")) != NULL;)
         {
-			if(**ap != '\0')
-				ap++;
-		}
+            if(**ap != '\0')
+                ap++;
+        }
 
-		*ap = NULL;
+        *ap = NULL;
         fd = open_child(argv[0], argv);
         free(argv);
         argv = NULL;
@@ -240,44 +240,44 @@ main(int argc, char **argv)
     List_T lists;
     struct List_entry_T *entry;
 
-	while((option = getopt(argc, argv, "bdDnc:")) != -1) {
-		switch(option) {
-		case 'n':
-			dryrun = 1;
-			break;
+    while((option = getopt(argc, argv, "bdDnc:")) != -1) {
+        switch(option) {
+        case 'n':
+            dryrun = 1;
+            break;
 
-		case 'd':
-			debug = 1;
-			break;
+        case 'd':
+            debug = 1;
+            break;
 
-		case 'b':
-			greyonly = 0;
-			break;
+        case 'b':
+            greyonly = 0;
+            break;
 
-		case 'D':
-			daemonize = 1;
-			break;
+        case 'D':
+            daemonize = 1;
+            break;
 
         case 'c':
             config_path = optarg;
             break;
 
-		default:
-			usage();
-			break;
-		}
-	}
+        default:
+            usage();
+            break;
+        }
+    }
 
-	argc -= optind;
-	if(argc != 0) {
-		usage();
+    argc -= optind;
+    if(argc != 0) {
+        usage();
     }
 
     config = Config_create();
     Config_load_file(config, config_path);
 
-	if(daemonize) {
-		daemon(0, 0);
+    if(daemonize) {
+        daemon(0, 0);
     }
 
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
