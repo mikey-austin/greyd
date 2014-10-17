@@ -9,6 +9,7 @@
 #define BLACKLIST_DEFINED
 
 #include "ip.h"
+#include "list.h"
 #include <stdint.h>
 
 #define T Blacklist_T
