@@ -42,6 +42,7 @@ struct D {
 /**
  * The greylister holds the state of the greylisting engine.
  */
+typedef struct G *G;
 struct G {
     Config_T  config;
     char     *traplist_name;
@@ -50,15 +51,26 @@ struct G {
     List_T    traplist;
     FILE     *trap_out;
     FILE     *grey_in;
-    pid_t     jail_pid;
-    pid_t     db_pid;
+    pid_t     grey_pid;
+    pid_t     reader_pid;
+    time_t    startup;
 };
 
 /**
- * Given a configuration structure, initialize and start the
- * grey listing engine.
+ * Given a configuration structure, setup and initialize and
+ * return the greylisting engine state.
  */
-extern G Grey_start(Config_T config);
+extern G Grey_setup(Config_T config);
+
+/**
+ * Start the greylisting engine.
+ */
+extern void Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out);
+
+/**
+ * Stop the greylisting engine and cleanup afterwards.
+ */
+extern void Grey_finish(G *greylister);
 
 /**
  * Start the child process which reads data from the main
@@ -75,4 +87,5 @@ extern int Grey_start_scanner(G greylister);
 
 #undef T
 #undef D
+#undef G
 #endif
