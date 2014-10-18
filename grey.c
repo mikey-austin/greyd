@@ -65,7 +65,7 @@ Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
 {
     struct sigaction sa;
 
-    // TODO: setup the database.
+    // TODO: setup the database and drop privileges.
 
     greylister->grey_pid = grey_pid;
     greylister->startup  = time(NULL);
