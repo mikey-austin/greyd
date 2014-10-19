@@ -116,13 +116,13 @@ Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
      */
     Grey_greylister = greylister;
 
-	sigfillset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-	sa.sa_handler = sig_term_children;
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGHUP, &sa, NULL);
-	sigaction(SIGCHLD, &sa, NULL);
-	sigaction(SIGINT, &sa, NULL);
+    sigfillset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sa.sa_handler = sig_term_children;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGCHLD, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
 
     // TODO: Set proc title "(greyd fw whitelist update)".
 
@@ -241,10 +241,15 @@ scan_db(G greylister)
                 }
 
                 /* Re-add entry, keyed only by IP address. */
+                memset(&wkey, 0, sizeof(wkey));
                 wkey.type = DB_KEY_IP;
                 wkey.data.s = gt.ip;
+
+                memset(&wval, 0, sizeof(wval));
+                wval.type = DB_VAL_GREY;
                 gd.expire = now + GREY_WHITEEXP;
                 wval.data.gd = gd;
+
                 if(DB_put(db, &wkey, &wval) != GREYDB_OK) {
                     ret = -1;
                     goto cleanup;
@@ -320,15 +325,15 @@ db_addr_state(DB_handle_T db, char *addr)
 static int
 push_addr(List_T list, char *addr)
 {
-	struct addrinfo hints, *res;
+    struct addrinfo hints, *res;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;	   /* Dummy. */
-	hints.ai_protocol = IPPROTO_UDP;   /* Dummy. */
-	hints.ai_flags = AI_NUMERICHOST;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;  /* Dummy. */
+    hints.ai_protocol = IPPROTO_UDP; /* Dummy. */
+    hints.ai_flags = AI_NUMERICHOST;
 
-	if(getaddrinfo(addr, NULL, &hints, &res) == 0) {
+    if(getaddrinfo(addr, NULL, &hints, &res) == 0) {
         freeaddrinfo(res);
         List_insert_after(list, strdup(addr));
     }
