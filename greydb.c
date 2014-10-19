@@ -60,6 +60,10 @@ DB_open(Config_T config, int flags)
         Mod_get(handle->driver, "Mod_db_get_itr");
     handle->db_itr_next = (int (*)(I, struct K *, struct V *))
         Mod_get(handle->driver, "Mod_db_itr_next");
+    handle->db_itr_replace_curr = (int (*)(I, struct V *))
+        Mod_get(handle->driver, "Mod_db_itr_replace_curr");
+    handle->db_itr_del_curr = (int (*)(I))
+        Mod_get(handle->driver, "Mod_db_itr_del_curr");
     handle->db_itr_close = (void (*)(I))
         Mod_get(handle->driver, "Mod_db_itr_close");
 
@@ -123,6 +127,18 @@ extern int
 DB_itr_next(I itr, struct K *key, struct V *val)
 {
     return itr->handle->db_itr_next(itr, key, val);
+}
+
+extern int
+DB_itr_replace_curr(I itr, struct V *val)
+{
+    return itr->handle->db_itr_replace_curr(itr, val);
+}
+
+extern int
+DB_itr_del_curr(I itr)
+{
+    return itr->handle->db_itr_del_curr(itr);
 }
 
 extern void

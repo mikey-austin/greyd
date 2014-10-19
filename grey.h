@@ -17,12 +17,22 @@
 #define D Grey_data
 #define G Greylister_T
 
-#define GREY_MAX_MAIL 1024
-#define GREY_MAX_KEY  45
-#define GREY_PASSTIME (60 * 25) /* pass after first retry seen after 25 mins */
-#define GREY_GREYEXP  (60 * 60 * 4) /* remove grey entries after 4 hours */
-#define GREY_WHITEEXP (60 * 60 * 24 * 36) /* remove white entries after 36 days */
-#define GREY_TRAPEXP  (60 * 60 * 24) /* hitting a spamtrap blacklists for a day */
+#define GREY_MAX_MAIL         1024
+#define GREY_MAX_KEY          45
+#define GREY_DB_SCAN_INTERVAL 60
+#define GREY_DB_TRAP_INTERVAL (60 * 10)
+
+/**< Pass after first retry seen after 25 minutes. */
+#define GREY_PASSTIME (60 * 25)
+
+/**< Remove grey entries after 4 hours. */
+#define GREY_GREYEXP  (60 * 60 * 4)
+
+/**< Remove white entries after 36 days. */
+#define GREY_WHITEEXP (60 * 60 * 24 * 36)
+
+/**< Hitting a spamtrap blacklists for a day. */
+#define GREY_TRAPEXP  (60 * 60 * 24)
 
 struct T {
     char *ip;
@@ -83,7 +93,7 @@ extern int Grey_start_reader(G greylister);
  * database to update counters, expire entries, configure
  * whitelists and traplists.
  */
-extern int Grey_start_scanner(G greylister);
+extern void Grey_start_scanner(G greylister);
 
 #undef T
 #undef D

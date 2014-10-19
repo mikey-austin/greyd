@@ -226,6 +226,48 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
     return GREYDB_ERR;
 }
 
+extern int
+Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
+{
+    DBC *cursor = (DBC *) itr->dbi;
+    DBT dbval;
+    int ret;
+
+    pack_val(val, &dbval);
+    ret = cursor->put(cursor, NULL, &dbval, DB_CURRENT);
+
+    /* Cleanup packed data. */
+    free(dbval.data);
+
+    switch(ret) {
+    case 0:
+        return GREYDB_OK;
+
+    default:
+        I_ERR("Error replacing record: %s", db_strerror(ret));
+    }
+
+    return GREYDB_ERR;
+}
+
+extern int
+Mod_db_itr_del_curr(DB_itr_T itr)
+{
+    DBC *cursor = (DBC *) itr->dbi;
+    int ret;
+
+    ret = cursor->del(cursor, 0);
+    switch(ret) {
+    case 0:
+        return GREYDB_OK;
+
+    default:
+        I_ERR("Error deleting current record: %s", db_strerror(ret));
+    }
+
+    return GREYDB_ERR;
+}
+
 static void
 pack_key(struct DB_key *key, DBT *dbkey)
 {

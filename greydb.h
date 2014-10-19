@@ -69,6 +69,8 @@ struct H {
     int (*db_del)(H handle, struct K *key);
     void (*db_get_itr)(I itr);
     int (*db_itr_next)(I itr, struct K *key, struct V *val);
+    int (*db_itr_replace_curr)(I itr, struct V *val);
+    int (*db_itr_del_curr)(I itr);
     void (*db_itr_close)(I itr);
 };
 
@@ -115,6 +117,18 @@ extern I DB_get_itr(H handle);
  * Return the next key/value pair from the iterator.
  */
 extern int DB_itr_next(I itr, struct K *key, struct V *val);
+
+/**
+ * Replace the value currently being pointed at by the iterator
+ * with the supplied value.
+ */
+extern int DB_itr_replace_curr(I itr, struct V *val);
+
+/**
+ * Delete the key/value pair currently being pointed at by
+ * the iterator.
+ */
+extern int DB_itr_del_curr(I itr);
 
 /**
  * Cleanup a used iterator.
