@@ -26,7 +26,7 @@ Blacklist_create(const char *name, const char *message)
     int len;
     T blacklist;
 
-    if((blacklist = (T) malloc(sizeof(*blacklist))) == NULL) {
+    if((blacklist = malloc(sizeof(*blacklist))) == NULL) {
         I_CRIT("Could not create blacklist");
     }
     blacklist->entries = (struct E *) calloc(BLACKLIST_INIT_SIZE,
@@ -36,13 +36,13 @@ Blacklist_create(const char *name, const char *message)
     }
 
     len = strlen(name) + 1;
-    if((blacklist->name = (char *) malloc(len)) == NULL) {
+    if((blacklist->name = malloc(len)) == NULL) {
         I_CRIT("could not malloc blacklist name");
     }
     sstrncpy(blacklist->name, name, len);
 
     len = strlen(message) + 1;
-    if((blacklist->message = (char *) malloc(len)) == NULL) {
+    if((blacklist->message = malloc(len)) == NULL) {
         I_CRIT("could not malloc blacklist message");
     }
     sstrncpy(blacklist->message, message, len);

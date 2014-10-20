@@ -20,7 +20,7 @@ main()
     char *v1 = "value 1", *v2 = "value 2", *v3 = "value 3", *v;
     int i;
 
-    TEST_START(15);
+    TEST_START(16);
 
     list = List_create(NULL);
     TEST_OK((list != NULL), "List created successfully");
@@ -62,33 +62,30 @@ main()
     /*
      * Test list element removal.
      */
-    v = (char *) List_remove_head(list);
+    v = List_remove_head(list);
     TEST_OK((v && strcmp(v, v1) == 0), "Dequeued value is correct");
     TEST_OK((List_size(list) == 2), "List size decremented correctly");
 
-    v = (char *) List_remove_head(list);
+    v = List_remove_head(list);
     TEST_OK((v && strcmp(v, v2) == 0), "Dequeued value is correct");
     TEST_OK((List_size(list) == 1), "List size decremented correctly");
 
-    v = (char *) List_remove_head(list);
+    v = List_remove_head(list);
     TEST_OK((v && strcmp(v, v3) == 0), "Dequeued value is correct");
     TEST_OK((List_size(list) == 0), "List size decremented correctly");
 
     /* Destroy the list. */
     List_destroy(&list);
+    TEST_OK((list == NULL), "List set to NULL after destruction ok");
 
     /* Test list destructor. */
     list = List_create(destroy_string);
 
-    v = (char *) malloc((i = strlen("hello world")) + 1);
+    v = malloc((i = strlen("hello world")) + 1);
     strcpy(v, "hello world");
     v[i] = '\0';
 
-    /*
-     * Rely on valgrind to report if the value's memory is cleaned up correctly
-     * by the destructor.
-     */
-    List_insert_head(list, (void *) v);
+    List_insert_head(list, v);
     List_destroy(&list);
 
     TEST_COMPLETE;

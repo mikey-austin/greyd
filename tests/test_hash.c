@@ -47,52 +47,52 @@ main()
     TEST_OK((hash->num_entries == 0), "Hash number of entries is zero as expected");
 
     /* Test insertion of keys in different orders. */
-    s1 = (char *) malloc(strlen(TEST_VAL1) + 1); strcpy(s1, TEST_VAL1);
-    s2 = (char *) malloc(strlen(TEST_VAL2) + 1); strcpy(s2, TEST_VAL2);
-    s3 = (char *) malloc(strlen(TEST_VAL3) + 1); strcpy(s3, TEST_VAL3);
-    s4 = (char *) malloc(strlen(TEST_VAL4) + 1); strcpy(s4, TEST_VAL4);
-    s5 = (char *) malloc(strlen(TEST_VAL5) + 1); strcpy(s5, TEST_VAL5);
-    s6 = (char *) malloc(strlen(TEST_VAL5) + 1); strcpy(s6, TEST_VAL5);
+    s1 = malloc(strlen(TEST_VAL1) + 1); strcpy(s1, TEST_VAL1);
+    s2 = malloc(strlen(TEST_VAL2) + 1); strcpy(s2, TEST_VAL2);
+    s3 = malloc(strlen(TEST_VAL3) + 1); strcpy(s3, TEST_VAL3);
+    s4 = malloc(strlen(TEST_VAL4) + 1); strcpy(s4, TEST_VAL4);
+    s5 = malloc(strlen(TEST_VAL5) + 1); strcpy(s5, TEST_VAL5);
+    s6 = malloc(strlen(TEST_VAL5) + 1); strcpy(s6, TEST_VAL5);
 
-    Hash_insert(hash, TEST_KEY5, (void *) s5);
-    Hash_insert(hash, TEST_KEY4, (void *) s4);
-    Hash_insert(hash, TEST_KEY3, (void *) s3);
+    Hash_insert(hash, TEST_KEY5, s5);
+    Hash_insert(hash, TEST_KEY4, s4);
+    Hash_insert(hash, TEST_KEY3, s3);
 
     /* Test that the realloc worked. */
     TEST_OK((hash->num_entries == 3), "Hash number of entries is as expected");
     TEST_OK((hash->size == (2 * HASH_SIZE)), "Hash size resized as expected");
 
-    Hash_insert(hash, TEST_KEY2, (void *) s2);
-    Hash_insert(hash, TEST_KEY1, (void *) s1);
+    Hash_insert(hash, TEST_KEY2, s2);
+    Hash_insert(hash, TEST_KEY1, s1);
 
     TEST_OK((hash->num_entries == 5), "Hash size is as expected");
     TEST_OK((hash->size == (2 * 2 * HASH_SIZE)), "Hash size resized as expected");
 
-    s = (char *) Hash_get(hash, TEST_KEY1);
+    s = Hash_get(hash, TEST_KEY1);
     TEST_OK((strcmp(s, TEST_VAL1) == 0), "Hash entry 1 inserted correctly");
 
-    s = (char *) Hash_get(hash, TEST_KEY2);
+    s = Hash_get(hash, TEST_KEY2);
     TEST_OK((strcmp(s, TEST_VAL2) == 0), "Hash entry 2 inserted correctly");
 
-    s = (char *) Hash_get(hash, TEST_KEY3);
+    s = Hash_get(hash, TEST_KEY3);
     TEST_OK((strcmp(s, TEST_VAL3) == 0), "Hash entry 3 inserted correctly");
 
-    s = (char *) Hash_get(hash, TEST_KEY4);
+    s = Hash_get(hash, TEST_KEY4);
     TEST_OK((strcmp(s, TEST_VAL4) == 0), "Hash entry 4 inserted correctly");
 
-    s = (char *) Hash_get(hash, TEST_KEY5);
+    s = Hash_get(hash, TEST_KEY5);
     TEST_OK((strcmp(s, TEST_VAL5) == 0), "Hash entry 5 inserted correctly");
 
     /* Test the ability to overwrite values. */
     i = hash->num_entries;
-    Hash_insert(hash, TEST_KEY1, (void *) s6);
+    Hash_insert(hash, TEST_KEY1, s6);
     TEST_OK((i == hash->num_entries), "No new entry was added as expected");
-    s = (char *) Hash_get(hash, TEST_KEY1);
+    s = Hash_get(hash, TEST_KEY1);
     TEST_OK((strcmp(s, TEST_VAL5) == 0), "Hash entry overwritten correctly");
 
     /* Reset the hash and verify that the last value is no longer present. */
     Hash_reset(hash);
-    s = (char *) Hash_get(hash, TEST_KEY5);
+    s = Hash_get(hash, TEST_KEY5);
     TEST_OK((s == NULL), "Hash reset correctly");
     TEST_OK((hash->num_entries == 0), "Hash number of entries is zero as expected");
 

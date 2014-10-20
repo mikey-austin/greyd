@@ -21,7 +21,7 @@ List_create(void (*destroy)(void *value))
 {
     T list;
 
-    if((list = (T) malloc(sizeof(*list))) == NULL) {
+    if((list = malloc(sizeof(*list))) == NULL) {
         I_CRIT("Could not create an empty list");
     }
 
@@ -36,25 +36,30 @@ List_create(void (*destroy)(void *value))
 extern void
 List_destroy(T *list)
 {
-    struct E *element, *curr;
-
     if(list == NULL || *list == NULL)
         return;
 
-    for(curr = (*list)->head; curr != NULL; ) {
+    List_remove_all(*list);
+    free(*list);
+    *list = NULL;
+}
+
+extern void
+List_remove_all(T list)
+{
+    struct E *element, *curr;
+
+    for(curr = list->head; curr != NULL; ) {
         element = curr;
         curr = curr->next;
 
         /* Destroy the element's value. */
-        if(element->v && (*list)->destroy) {
-            (*list)->destroy(element->v);
+        if(element->v && list->destroy) {
+            list->destroy(element->v);
         }
 
-        List_destroy_element(*list, &element);
+        List_destroy_element(list, &element);
     }
-
-    free(*list);
-    *list = NULL;
 }
 
 extern void
@@ -133,7 +138,7 @@ static struct E
 {
     struct E *element;
 
-    if((element = (struct E *) malloc(sizeof(*element))) == NULL) {
+    if((element = malloc(sizeof(*element))) == NULL) {
         I_CRIT("Could not initialize list element");
     }
 

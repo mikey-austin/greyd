@@ -45,6 +45,11 @@ extern T List_create(void (*destroy)(void *value));
 extern void List_destroy(T *list);
 
 /**
+ * Destroy all elements in a list.
+ */
+extern void List_remove_all(T list);
+
+/**
  * Insert a new element onto the end of the list.
  */
 extern void List_insert_after(T list, void *value);

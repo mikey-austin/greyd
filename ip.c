@@ -40,7 +40,7 @@ IP_range_to_cidr_list(List_T cidrs, u_int32_t start, u_int32_t end)
         diff = max_diff(start, end);
         maxsize = (maxsize > diff ? maxsize : diff);
 
-        if((new = (struct IP_cidr *) malloc(sizeof(*new))) == NULL)
+        if((new = malloc(sizeof(*new))) == NULL)
             I_CRIT("malloc failed");
 
         new->addr = start;

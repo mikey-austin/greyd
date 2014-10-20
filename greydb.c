@@ -24,7 +24,7 @@ DB_open(Config_T config, int flags)
     char *user;
 
     /* Setup the db handle. */
-    if((handle = (H) malloc(sizeof(*handle))) == NULL) {
+    if((handle = malloc(sizeof(*handle))) == NULL) {
         I_CRIT("Could not create db handle");
     }
 
@@ -110,7 +110,7 @@ DB_get_itr(H handle)
     I itr;
 
     /* Setup the iterator. */
-    if((itr = (I) malloc(sizeof(*itr))) == NULL) {
+    if((itr = malloc(sizeof(*itr))) == NULL) {
         I_CRIT("Could not create iterator");
     }
 

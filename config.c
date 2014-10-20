@@ -41,7 +41,7 @@ Config_create()
 {
     T config;
 
-    config = (T) malloc(sizeof(*config));
+    config = malloc(sizeof(*config));
     if(config == NULL) {
         I_CRIT("Could not create configuration");
     }
@@ -138,7 +138,7 @@ Config_load_file(T config, char *file)
         Config_parser_destroy(&parser);
 
         /* Record this file as being "processed". */
-        if((count = (int *) malloc(sizeof(*count))) == NULL) {
+        if((count = malloc(sizeof(*count))) == NULL) {
             I_CRIT("Could not allocate included file count");
         }
 
@@ -179,7 +179,7 @@ Config_add_include(T config, const char *file)
     for(i = 0; i < paths.gl_pathc; i++) {
         if(Hash_get(config->processed_includes, (match = paths.gl_pathv[i])) == NULL) {
             len = strlen(match) + 1;
-            if((include = (char *) malloc(len)) == NULL) {
+            if((include = malloc(len)) == NULL) {
                 I_CRIT("Could not enqueue matched file %s", match);
             }
             sstrncpy(include, match, len);

@@ -51,13 +51,13 @@ Lexer_source_create_from_file(const char *filename)
     T source = source_create();
     struct source_data_file *data;
 
-    data = (struct source_data_file *) malloc(sizeof(*data));
+    data = malloc(sizeof(*data));
     if(data == NULL) {
         I_CRIT("Could not create config source for %s", filename);
     }
     else {
         /* Store the filename. */
-        data->filename = (char *) malloc(flen);
+        data->filename = malloc(flen);
         if(data->filename == NULL) {
             I_CRIT("Could not create file config source");
         }
@@ -85,7 +85,7 @@ Lexer_source_create_from_str(const char *buf, int len)
     T source = source_create();
     struct source_data_str *data;
 
-    data = (struct source_data_str *) malloc(sizeof(*data));
+    data = malloc(sizeof(*data));
     if(data == NULL) {
         I_CRIT("Could not create config source");
     }
@@ -112,7 +112,7 @@ Lexer_source_create_from_gz(gzFile gzf)
     T source = source_create();
     struct source_data_gz *data;
 
-    data = (struct source_data_gz *) malloc(sizeof(*data));
+    data = malloc(sizeof(*data));
     if(data == NULL) {
         I_CRIT("Could not create config source");
     }
@@ -158,7 +158,7 @@ source_create()
 {
     T source;
 
-    source = (T) malloc(sizeof(*source));
+    source = malloc(sizeof(*source));
     if(source == NULL) {
         I_CRIT("Could not create config source");
     }

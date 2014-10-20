@@ -45,7 +45,7 @@ Hash_create(int size, void (*destroy)(struct E *entry))
     int i;
     T new;
 
-    new = (T) malloc(sizeof(*new));
+    new = malloc(sizeof(*new));
     if(!new) {
         I_CRIT("Could not allocate hash");
     }

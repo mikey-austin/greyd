@@ -32,6 +32,7 @@ static void sig_term_children(int sig);
 static int scan_db(G greylister);
 static int push_addr(List_T list, char *addr);
 static int db_addr_state(DB_handle_T db, char *addr);
+static void configure_greyd(G greylister);
 
 G Grey_greylister = NULL;
 
@@ -41,7 +42,7 @@ Grey_setup(Config_T config)
     G greylister = NULL;
     Config_section_T section;
 
-    if((greylister = (G) malloc(sizeof(*greylister))) == NULL) {
+    if((greylister = malloc(sizeof(*greylister))) == NULL) {
         I_CRIT("Could not malloc greylister");
     }
 
@@ -271,16 +272,38 @@ scan_db(G greylister)
         }
     }
 
+    configure_greyd(greylister);
+
     // TODO: Send whitelist IPs to firewall
 
-    // TODO: Send traplist IPs to greyd
-
-    // TODO: Empty lists
+    List_remove_all(greylister->whitelist);
+    List_remove_all(greylister->traplist);
 
 cleanup:
     DB_close_itr(&itr);
     DB_close(&db);
     return ret;
+}
+
+static void
+configure_greyd(G greylister)
+{
+    struct List_entry_T *entry;
+
+    if(List_size(greylister->traplist) > 0) {
+        fprintf(greylister->trap_out, "%s;%s;",
+                greylister->traplist_name,
+                greylister->traplist_msg);
+
+        LIST_FOREACH(greylister->traplist, entry) {
+            fprintf(greylister->trap_out, "%s/32;",
+                    List_entry_value(entry));
+        }
+    }
+    fprintf(greylister->trap_out, "\n");
+
+    if(fflush(greylister->trap_out) == EOF)
+        I_DEBUG("configure_greyd: fflush failed");
 }
 
 /**

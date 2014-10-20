@@ -42,7 +42,7 @@ Config_parser_create(Lexer_T lexer)
 {
     T parser;
 
-    if((parser = (T) malloc(sizeof(*parser))) == NULL) {
+    if((parser = malloc(sizeof(*parser))) == NULL) {
         I_CRIT("Could not create parser");
     }
     else {

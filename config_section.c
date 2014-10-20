@@ -27,13 +27,13 @@ Config_section_create(const char *name)
     T section;
     int nlen = strlen(name) + 1;
 
-    section = (T) malloc(sizeof(*section));
+    section = malloc(sizeof(*section));
     if(section == NULL) {
         I_CRIT("Could not create configuration section");
     }
 
     /* Set the config section name. */
-    section->name = (char *) malloc(nlen);
+    section->name = malloc(nlen);
     if(section->name == NULL) {
         I_CRIT("Could not set configuration section name");
     }
@@ -102,7 +102,7 @@ extern int
 Config_section_get_int(T section, const char *varname, int default_int)
 {
     Config_value_T val;
-    
+
     if((val = Config_section_get(section, varname)) == NULL
        || val->type != CONFIG_VAL_TYPE_INT)
     {
@@ -117,7 +117,7 @@ extern char
 *Config_section_get_str(T section, const char *varname, char *default_str)
 {
     Config_value_T val;
-    
+
     if((val = Config_section_get(section, varname)) == NULL
        || val->type != CONFIG_VAL_TYPE_STR
        || val->v.s == NULL)

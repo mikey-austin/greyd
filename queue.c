@@ -17,7 +17,7 @@ Queue_create(void (*destroy)(void *value))
 {
     T queue;
 
-    if((queue = (T) malloc(sizeof(*queue))) == NULL) {
+    if((queue = malloc(sizeof(*queue))) == NULL) {
         I_CRIT("Could not create an empty queue");
     }
     else {

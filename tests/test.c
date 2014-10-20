@@ -26,7 +26,7 @@ extern struct T
 {
     struct T *plan;
 
-    plan = (struct T *) malloc(sizeof(*plan));
+    plan = malloc(sizeof(*plan));
     if(plan == NULL)
         return NULL;
 
@@ -97,7 +97,7 @@ extern char
 
     /* Allocate space for path. */
     path_len = strlen(cwd) + strlen(TEST_DATA_DIR) + strlen(filename) + 1;
-    if((path = (char *) malloc(path_len)) == NULL) {
+    if((path = malloc(path_len)) == NULL) {
         printf("Could not allocate file path...\n");
         exit(1);
     }

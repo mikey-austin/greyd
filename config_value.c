@@ -24,7 +24,7 @@ Config_value_create(short type)
 {
     T new;
 
-    new = (T) malloc(sizeof(*new));
+    new = malloc(sizeof(*new));
     if(new == NULL) {
         I_CRIT("Could not create new config value");
     }
@@ -53,7 +53,7 @@ Config_value_set_str(T value, const char *data)
     int slen = strlen(data) + 1;
 
     value->type = CONFIG_VAL_TYPE_STR;
-    value->v.s = (char *) malloc(slen);
+    value->v.s = malloc(slen);
     if(value->v.s == NULL) {
         I_CRIT("Could not create string config value");
     }

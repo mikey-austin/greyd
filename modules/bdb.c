@@ -37,7 +37,7 @@ Mod_db_open(DB_handle_T handle, int flags)
     if(ret != 0) {
         I_CRIT("Could not obtain db handle: %s", db_strerror(ret));
     }
-    handle->dbh = (void *) db;
+    handle->dbh = db;
 
     open_flags = (flags & GREYDB_RO ? DB_RDONLY : DB_CREATE);
     ret = db->open(db, NULL, db_path, NULL, DB_HASH, open_flags, 0600);
