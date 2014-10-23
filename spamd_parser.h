@@ -73,14 +73,6 @@ extern T Spamd_parser_create(Lexer_T lexer);
 extern void Spamd_parser_destroy(T *parser);
 
 /**
- * Re-set the parser with a new token stream.
- *
- * @param parser The initialized parser object.
- * @param lexer The initialized token stream.
- */
-extern void Spamd_parser_reset(T parser, Lexer_T lexer);
-
-/**
  * Start parsing the lexer's token stream, and populate the specified
  * blacklist object.
  *

@@ -61,17 +61,6 @@ Spamd_parser_destroy(T *parser)
     *parser = NULL;
 }
 
-extern void
-Spamd_parser_reset(T parser, Lexer_T lexer)
-{
-    /* Destroy the existing lexer. */
-    if(parser->lexer) {
-        Lexer_destroy(&(parser->lexer));
-    }
-
-    parser->lexer = lexer;
-}
-
 extern int
 Spamd_parser_start(T parser, Blacklist_T blacklist, int type)
 {

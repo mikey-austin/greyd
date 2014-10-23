@@ -8,6 +8,9 @@
 #include "failures.h"
 #include "grey.h"
 #include "greydb.h"
+#include "config.h"
+#include "config_lexer.h"
+#include "config_parser.h"
 #include "list.h"
 
 #include <stdio.h>
@@ -33,6 +36,7 @@ static int scan_db(G greylister);
 static int push_addr(List_T list, char *addr);
 static int db_addr_state(DB_handle_T db, char *addr);
 static void configure_greyd(G greylister);
+static void process_message(Config_T message);
 
 G Grey_greylister = NULL;
 
@@ -168,6 +172,42 @@ Grey_finish(G *greylister)
 extern int
 Grey_start_reader(G greylister)
 {
+    Lexer_source_T source;
+    Lexer_T lexer;
+    Config_parser_T parser;
+    Config_T message;
+    int ret, fd;
+
+    fd = fileno(greylister->grey_in);
+    if(fd == -1) {
+        I_WARN("Could not obtain grey in file descriptor");
+        return 0;
+    }
+
+    source = Lexer_source_create_from_fd(fd);
+    lexer = Config_lexer_create(source);
+    parser = Config_parser_create(lexer);
+
+    for(;;) {
+        message = Config_create();
+
+        ret = Config_parser_start(parser, message);
+        switch(ret) {
+        case CONFIG_PARSER_OK:
+            process_message(message);
+            break;
+
+        case CONFIG_PARSER_ERR:
+            goto cleanup;
+        }
+
+        Config_destroy(&message);
+    }
+
+cleanup:
+    Config_destroy(&message);
+    Config_parser_destroy(&parser);
+
     return 0;
 }
 
@@ -368,6 +408,11 @@ push_addr(List_T list, char *addr)
 }
 
 static void
+process_message(Config_T message)
+{
+}
+
+static void
 destroy_address(void *address)
 {
     char *to_destroy = (char *) address;
@@ -389,7 +434,3 @@ sig_term_children(int sig)
 
     _exit(1);
 }
-
-#undef T
-#undef D
-#undef G

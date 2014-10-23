@@ -80,6 +80,36 @@ Lexer_source_create_from_file(const char *filename)
 }
 
 extern T
+Lexer_source_create_from_fd(int fd)
+{
+    T source = source_create();
+    struct source_data_file *data;
+
+    data = malloc(sizeof(*data));
+    if(data == NULL) {
+        I_CRIT("Could not create config source for fd %d", fd);
+    }
+    else {
+        /* Try to open the file. */
+        data->handle = fdopen(fd, "r");
+        if(data->handle == NULL) {
+            I_CRIT("Error opening config file source: %s", strerror(errno));
+        }
+
+        /* No need for a filename. */
+        data->filename = NULL;
+
+        source->type     = LEXER_SOURCE_FILE;
+        source->data     = data;
+        source->_getc    = source_data_file_getc;
+        source->_ungetc  = source_data_file_ungetc;
+        source->_destroy = source_data_file_destroy;
+    }
+
+    return source;
+}
+
+extern T
 Lexer_source_create_from_str(const char *buf, int len)
 {
     T source = source_create();

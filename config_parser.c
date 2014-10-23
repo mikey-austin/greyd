@@ -69,17 +69,6 @@ Config_parser_destroy(T *parser)
     *parser = NULL;
 }
 
-extern void
-Config_parser_reset(T parser, Lexer_T lexer)
-{
-    /* Destroy the existing lexer. */
-    if(parser->lexer) {
-        Lexer_destroy(&(parser->lexer));
-    }
-
-    parser->lexer = lexer;
-}
-
 extern int
 Config_parser_start(T parser, Config_T config)
 {
@@ -89,17 +78,23 @@ Config_parser_start(T parser, Config_T config)
     parser->config = config;
 
     /* Ensure that there is a global config section available. */
-    if((global_section = Config_get_section(config, CONFIG_DEFAULT_SECTION)) == NULL) {
+    if((global_section
+        = Config_get_section(config, CONFIG_DEFAULT_SECTION)) == NULL)
+    {
         global_section = Config_section_create(CONFIG_DEFAULT_SECTION);
         Config_add_section(config, global_section);
     }
 
-    /* Start token stream and consume all EOL tokens at the start of the file. */
+    /*
+     * Start token stream and consume all EOL tokens at the start
+     * of the file.
+     */
     advance(parser);
     accept(parser, CONFIG_LEXER_TOK_EOL);
 
     /* Start the actual parsing. */
-    if((grammar_statement(parser) && grammar_statements(parser) && accept(parser, CONFIG_LEXER_TOK_EOF))
+    if((grammar_statement(parser) && grammar_statements(parser)
+        && accept(parser, CONFIG_LEXER_TOK_EOF))
        || accept(parser, CONFIG_LEXER_TOK_EOF))
     {
         return CONFIG_PARSER_OK;

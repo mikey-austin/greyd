@@ -34,6 +34,11 @@ struct T {
 extern T Lexer_source_create_from_file(const char *filename);
 
 /**
+ * Create a new configuration source from an open file descriptor.
+ */
+extern T Lexer_source_create_from_fd(int fd);
+
+/**
  * Create a new configuration source from a NULL-terminated buffer. Note,
  * the buffer will be copied into the newly created source object.
  */

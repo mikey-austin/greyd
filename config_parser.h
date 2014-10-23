@@ -72,8 +72,8 @@
 
 #define T Config_parser_T
 
-#define CONFIG_PARSER_OK              1
-#define CONFIG_PARSER_ERR             0
+#define CONFIG_PARSER_OK  1
+#define CONFIG_PARSER_ERR 0
 
 /**
  * The main config parser structure.
@@ -104,14 +104,6 @@ extern T Config_parser_create(Lexer_T lexer);
  * @param parser The initialized parser object to be destroyed.
  */
 extern void Config_parser_destroy(T *parser);
-
-/**
- * Re-set the parser with a new token stream.
- *
- * @param parser The initialized parser object.
- * @param lexer The initialized token stream.
- */
-extern void Config_parser_reset(T parser, Lexer_T lexer);
 
 /**
  * Start parsing the lexer's token stream, and populate the specified config object.
