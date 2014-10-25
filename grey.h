@@ -22,6 +22,10 @@
 #define GREY_DB_SCAN_INTERVAL 60
 #define GREY_DB_TRAP_INTERVAL (60 * 10)
 
+#define GREY_MSG_GREY  1
+#define GREY_MSG_TRAP  2
+#define GREY_MSG_WHITE 3
+
 /**< Pass after first retry seen after 25 minutes. */
 #define GREY_PASSTIME (60 * 25)
 

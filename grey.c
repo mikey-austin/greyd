@@ -30,13 +30,15 @@
 #define GREY_DEFAULT_TL_NAME "greyd-greytrap"
 #define GREY_DEFAULT_TL_MSG  "\"Your address %A has mailed to spamtraps here\\n\""
 
-static void destroy_address(void *address);
-static void sig_term_children(int sig);
-static int scan_db(G greylister);
-static int push_addr(List_T list, char *addr);
-static int db_addr_state(DB_handle_T db, char *addr);
-static void configure_greyd(G greylister);
-static void process_message(Config_T message);
+static void destroy_address(void *);
+static void sig_term_children(int);
+static int scan_db(G);
+static int push_addr(List_T, char *);
+static int db_addr_state(DB_handle_T, char *);
+static void configure_greyd(G);
+static void process_message(G, Config_T);
+static void process_grey(G, struct T *, int, char *);
+static void process_tw(G, int, char *, char *, char *);
 
 G Grey_greylister = NULL;
 
@@ -180,7 +182,7 @@ Grey_start_reader(G greylister)
 
     fd = fileno(greylister->grey_in);
     if(fd == -1) {
-        I_WARN("Could not obtain grey in file descriptor");
+        I_WARN("No greylist pipe stream");
         return 0;
     }
 
@@ -194,7 +196,7 @@ Grey_start_reader(G greylister)
         ret = Config_parser_start(parser, message);
         switch(ret) {
         case CONFIG_PARSER_OK:
-            process_message(message);
+            process_message(greylister, message);
             break;
 
         case CONFIG_PARSER_ERR:
@@ -408,8 +410,49 @@ push_addr(List_T list, char *addr)
 }
 
 static void
-process_message(Config_T message)
+process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
 {
+}
+
+static void
+process_tw(G greylister, int type, char *ip, char *source, char *expires)
+{
+}
+
+static void
+process_message(G greylister, Config_T message)
+{
+    Config_section_T section;
+    int type, sync;
+    struct Grey_tuple gt;
+    char *dst_ip;
+
+    section = Config_get_section(message, CONFIG_DEFAULT_SECTION);
+    sync    = Config_section_get_int(section, "sync", 1);
+    type    = Config_section_get_int(section, "type", -1);
+    dst_ip  = Config_section_get_str(section, "dst_ip", NULL);
+
+    switch(type) {
+    case GREY_MSG_GREY:
+        gt.ip   = Config_section_get_str(section, "ip", NULL);
+        gt.helo = Config_section_get_str(section, "helo", NULL);
+        gt.from = Config_section_get_str(section, "from", NULL);
+        gt.to   = Config_section_get_str(section, "to", NULL);
+        process_grey(greylister, &gt, sync, dst_ip);
+        break;
+
+    case GREY_MSG_TRAP:
+    case GREY_MSG_WHITE:
+        process_tw(greylister, type,
+                   Config_section_get_str(section, "ip", NULL),
+                   Config_section_get_str(section, "source", NULL),
+                   Config_section_get_str(section, "expires", NULL));
+        break;
+
+    default:
+        I_WARN("Unknown greylist message type");
+        return;
+    }
 }
 
 static void
