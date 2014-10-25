@@ -16,6 +16,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 static u_int8_t max_diff(u_int32_t a, u_int32_t b);
 static u_int8_t max_block(u_int32_t addr, u_int8_t bits);
@@ -94,6 +96,28 @@ IP_match_addr(struct IP_addr *a, struct IP_addr *m, struct IP_addr *b,
     }
 
     return match;
+}
+
+extern short
+IP_check_addr(const char *addr)
+{
+    sa_family_t sa;
+    struct addrinfo hints, *res;
+
+    sa = (strchr(addr, ':') != NULL ? AF_INET6 : AF_INET);
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = sa;
+    hints.ai_socktype = SOCK_DGRAM;  /* Dummy. */
+    hints.ai_protocol = IPPROTO_UDP; /* Dummy. */
+    hints.ai_flags = AI_NUMERICHOST;
+
+    if(getaddrinfo(addr, NULL, &hints, &res) == 0) {
+        free(res);
+        return sa;
+    }
+
+    return -1;
 }
 
 static u_int8_t

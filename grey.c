@@ -12,6 +12,7 @@
 #include "config_lexer.h"
 #include "config_parser.h"
 #include "list.h"
+#include "ip.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +21,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <netdb.h>
 
 #define T Grey_tuple
 #define D Grey_data
@@ -331,18 +330,29 @@ static void
 configure_greyd(G greylister)
 {
     struct List_entry_T *entry;
+    char *ip;
+    int first = 1;
+    short af;
 
     if(List_size(greylister->traplist) > 0) {
-        fprintf(greylister->trap_out, "%s;%s;",
+        fprintf(greylister->trap_out,
+                "name=\"%s\"\nmessage=\"%s\"\nips=[",
                 greylister->traplist_name,
                 greylister->traplist_msg);
 
         LIST_FOREACH(greylister->traplist, entry) {
-            fprintf(greylister->trap_out, "%s/32;",
-                    List_entry_value(entry));
+            ip = List_entry_value(entry);
+            af = IP_check_addr(ip);
+
+            if(!first)
+                fprintf(greylister->trap_out, ",");
+
+            fprintf(greylister->trap_out, "\"%s/%d\"", ip,
+                    (af == AF_INET ? 32 : 128));
+            first = 0;
         }
     }
-    fprintf(greylister->trap_out, "\n");
+    fprintf(greylister->trap_out, "]\n%%");
 
     if(fflush(greylister->trap_out) == EOF)
         I_DEBUG("configure_greyd: fflush failed");
@@ -390,23 +400,12 @@ db_addr_state(DB_handle_T db, char *addr)
 static int
 push_addr(List_T list, char *addr)
 {
-    struct addrinfo hints, *res;
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;  /* Dummy. */
-    hints.ai_protocol = IPPROTO_UDP; /* Dummy. */
-    hints.ai_flags = AI_NUMERICHOST;
-
-    if(getaddrinfo(addr, NULL, &hints, &res) == 0) {
-        freeaddrinfo(res);
+    if(IP_check_addr(addr) != -1) {
         List_insert_after(list, strdup(addr));
-    }
-    else {
-        return -1;
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 static void

@@ -29,7 +29,7 @@ main()
     struct List_entry_T *entry;
     int i = 0;
 
-    TEST_START(14);
+    TEST_START(19);
 
     start = stoi("192.168.1.0");
     end = stoi("192.168.1.100");
@@ -126,6 +126,21 @@ main()
 
     b.addr32[3] = 0x11223344;
     TEST_OK((IP_match_addr(&a, &m, &b, AF_INET6) == 0), "IPv6 mismatch as expected");
+
+    i = IP_check_addr("123224jhjj");
+    TEST_OK((i == -1), "match fail as expected");
+
+    i = IP_check_addr("1.2.3.4");
+    TEST_OK((i == AF_INET), "match as expected");
+
+    i = IP_check_addr("1.2.3");
+    TEST_OK((i == AF_INET), "match as expected");
+
+    i = IP_check_addr("2001::fad3:1");
+    TEST_OK((i == AF_INET6), "match as expected");
+
+    i = IP_check_addr("fe80::2c0:8cff:fe01:2345");
+    TEST_OK((i == AF_INET6), "match as expected");
 
     TEST_COMPLETE;
 }

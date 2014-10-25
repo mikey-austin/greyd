@@ -70,7 +70,16 @@ extern char *IP_cidr_to_str(const struct IP_cidr *cidr);
  * pre-masked out, we only need to mask b.
  */
 extern int IP_match_addr(struct IP_addr *a, struct IP_addr *m,
-                      struct IP_addr *b, sa_family_t af);
+                         struct IP_addr *b, sa_family_t af);
 
+/**
+ * Check if a supplied NULL-terminated string is a valid
+ * IPv4 or IPv6 address.
+ *
+ * @return AF_INET if the string is a valid IPv4 address.
+ * @return AF_INET6 if the string is a valid IPv4 address.
+ * @return -1 if the string is an invalid address.
+ */
+extern short IP_check_addr(const char *addr);
 
 #endif

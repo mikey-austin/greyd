@@ -9,14 +9,13 @@
 #include "config.h"
 #include "greydb.h"
 #include "grey.h"
+#include "ip.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <ctype.h>
 
 #define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
@@ -110,24 +109,18 @@ db_update(DB_handle_T db, char *ip, int action, int type)
     struct Grey_data gd;
     time_t now;
     int ret, i;
-    struct addrinfo hints, *res;
 
     memset(&gd, 0, sizeof(gd));
     now = time(NULL);
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_NUMERICHOST;
 
     if(action && (type == TYPE_TRAPHIT || type == TYPE_WHITE)) {
         /*
          * We are expecting a numeric IP address.
          */
-        if(getaddrinfo(ip, NULL, &hints, &res) != 0) {
+        if(IP_check_addr(ip) == -1) {
             I_WARN("Invalid IP address %s", ip);
             return 1;
         }
-        freeaddrinfo(res);
 
         key.type = DB_KEY_IP;
     }
