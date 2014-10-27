@@ -59,6 +59,7 @@ struct D {
 typedef struct G *G;
 struct G {
     Config_T  config;
+    char     *low_prio_mx_ip;
     char     *traplist_name;
     char     *traplist_msg;
     List_T    whitelist;
@@ -68,6 +69,10 @@ struct G {
     pid_t     grey_pid;
     pid_t     reader_pid;
     time_t    startup;
+    time_t    grey_exp;
+    time_t    trap_exp;
+    time_t    white_exp;
+    int       sync_send;
 };
 
 /**

@@ -38,6 +38,7 @@ static void configure_greyd(G);
 static void process_message(G, Config_T);
 static void process_grey(G, struct T *, int, char *);
 static void process_tw(G, int, char *, char *, char *);
+static int trap_check(G, char *);
 
 G Grey_greylister = NULL;
 
@@ -58,13 +59,34 @@ Grey_setup(Config_T config)
     greylister->reader_pid = -1;
     greylister->startup    = -1;
 
-    section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
+    /*
+     * Gather configuration from the grey section.
+     */
+    section = Config_get_section(config, "grey");
     if(section) {
         greylister->traplist_name = Config_section_get_str(
             section, "traplist_name", GREY_DEFAULT_TL_NAME);
 
         greylister->traplist_msg = Config_section_get_str(
             section, "traplist_message", GREY_DEFAULT_TL_MSG);
+
+        greylister->grey_exp = Config_section_get_int(
+            section, "grey_expiry", GREY_GREYEXP);
+
+        greylister->white_exp = Config_section_get_int(
+            section, "white_expiry", GREY_WHITEEXP);
+
+        greylister->trap_exp = Config_section_get_int(
+            section, "trap_expiry", GREY_TRAPEXP);
+    }
+
+    section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
+    if(section) {
+        greylister->low_prio_mx_ip = Config_section_get_str(
+            section, "low_prio_mx_ip", NULL);
+
+        greylister->sync_send = Config_section_get_int(
+            section, "sync", 0);
     }
 
     greylister->whitelist = List_create(destroy_address);
@@ -289,7 +311,7 @@ scan_db(G greylister)
 
                 memset(&wval, 0, sizeof(wval));
                 wval.type = DB_VAL_GREY;
-                gd.expire = now + GREY_WHITEEXP;
+                gd.expire = now + greylister->white_exp;
                 wval.data.gd = gd;
 
                 if(DB_put(db, &wkey, &wval) != GREYDB_OK) {
@@ -394,8 +416,10 @@ db_addr_state(DB_handle_T db, char *addr)
 
 /**
  * Validate address as a valid IP address and add to the
- * the specified list, returning 0. If the validation fails,
- * a -1 is returned.
+ * the specified list.
+ *
+ * @return 0  Address validated and added to list.
+ * @return -1 Address was not added to list.
  */
 static int
 push_addr(List_T list, char *addr)
@@ -408,9 +432,163 @@ push_addr(List_T list, char *addr)
     return -1;
 }
 
+/**
+ * Check if the specified to address matches either a trap
+ * address, or does not satisfy the allowed domains (if specified).
+ *
+ * @return 0  Address is a spamtrap.
+ * @return 1  Address doesn't match a known spamtrap.
+ * @return -1 An error occured.
+ */
+static int
+trap_check(G greylister, char *to)
+{
+    struct DB_key key;
+    struct DB_val val;
+    DB_handle_T db;
+    int ret;
+
+    db = DB_open(greylister->config, 0);
+
+    key.type = DB_KEY_MAIL;
+    key.data.s = to;
+    ret = DB_get(db, &key, &val);
+    DB_close(&db);
+
+    switch(ret) {
+    case GREYDB_FOUND:
+        return 0;
+
+    case GREYDB_NOT_FOUND:
+        return 1;
+
+    default:
+        return -1;
+    }
+}
+
 static void
 process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
 {
+    DB_handle_T db;
+    struct DB_key key;
+    struct DB_val val;
+    struct Grey_data gd;
+    time_t now, expire;
+    int spamtrap;
+
+    now = time(NULL);
+    db = DB_open(greylister->config, 0);
+
+    switch(trap_check(greylister, gt->to)) {
+    case 1:
+        /* Do not trap. */
+        spamtrap = 0;
+        expire = greylister->grey_exp;
+        key.type = DB_KEY_TUPLE;
+        key.data.gt = *gt;
+        break;
+
+    case 0:
+        /* Trap address. */
+        spamtrap = 1;
+        expire = greylister->trap_exp;
+        key.type = DB_KEY_IP;
+        key.data.s = gt->ip;
+        break;
+
+    default:
+        goto cleanup;
+        break;
+    }
+
+    switch(DB_get(db, &key, &val)) {
+    case GREYDB_NOT_FOUND:
+        /*
+         * We have a new entry.
+         */
+        if(sync && greylister->low_prio_mx_ip
+           && (strcmp(dst_ip, greylister->low_prio_mx_ip) == 0)
+           && ((greylister->startup + 60) < now))
+        {
+            /*
+             * We haven't seen a greylist entry for this tuple,
+			 * and yet the connection was to a low priority MX
+			 * which we know can't be hit first if the client
+			 * is adhering to the RFC's.
+             */
+            spamtrap = 1;
+            expire = greylister->trap_exp;
+            key.type = DB_KEY_IP;
+            key.data.s = gt->ip;
+            I_DEBUG("Trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
+                    gt->ip, greylister->low_prio_mx_ip,
+                    gt->ip, gt->helo, gt->from, gt->to);
+        }
+
+        gd.first = now;
+        gd.bcount = 1;
+        gd.pcount = (spamtrap ? -1 : 0);
+        gd.pass = now + expire;
+        gd.expire = now + expire;
+        val.type = DB_VAL_GREY;
+        val.data.gd = gd;
+
+        switch(DB_put(db, &key, &val)) {
+        case GREYDB_OK:
+            I_DEBUG("New %sentry %s from %s to %s, helo %s",
+                    (spamtrap ? "greytrap " : ""), gt->ip,
+                    gt->from, gt->to, gt->helo );
+            break;
+
+        default:
+            goto cleanup;
+            break;
+        }
+        break;
+
+    case GREYDB_FOUND:
+        /*
+         * We have a previously seen entry.
+         */
+        gd = val.data.gd;
+        gd.bcount++;
+        gd.pcount = (spamtrap ? -1 : 0);
+        val.data.gd = gd;
+
+        switch(DB_put(db, &key, &val)) {
+        case GREYDB_OK:
+            I_DEBUG("Updated %sentry %s from %s to %s, helo %s",
+                    (spamtrap ? "greytrap " : ""), gt->ip,
+                    gt->from, gt->to, gt->helo );
+            break;
+
+        default:
+            goto cleanup;
+            break;
+        }
+        break;
+
+    default:
+        goto cleanup;
+        break;
+    }
+
+    /*
+     * Entry successfully updated, send out sync message.
+     */
+    if(greylister->sync_send && sync) {
+        if(spamtrap) {
+            I_DEBUG("sync_trap %s", gt->ip);
+            // TODO: sync_trapped(now, now + expire, gt->ip);
+        }
+        else {
+            // TODO: sync_update(now, gt->helo, gt->ip, gt->from, gt->to);
+        }
+    }
+
+cleanup:
+    DB_close(&db);
 }
 
 static void
@@ -427,9 +605,14 @@ process_message(G greylister, Config_T message)
     char *dst_ip;
 
     section = Config_get_section(message, CONFIG_DEFAULT_SECTION);
-    sync    = Config_section_get_int(section, "sync", 1);
     type    = Config_section_get_int(section, "type", -1);
     dst_ip  = Config_section_get_str(section, "dst_ip", NULL);
+
+    /*
+     * If this message isn't a SYNC message from another greyd,
+     * sync future operations.
+     */
+    sync = Config_section_get_int(section, "sync", 1);
 
     switch(type) {
     case GREY_MSG_GREY:
@@ -437,7 +620,8 @@ process_message(G greylister, Config_T message)
         gt.helo = Config_section_get_str(section, "helo", NULL);
         gt.from = Config_section_get_str(section, "from", NULL);
         gt.to   = Config_section_get_str(section, "to", NULL);
-        process_grey(greylister, &gt, sync, dst_ip);
+        if(gt.ip && gt.helo && gt.from && gt.to)
+            process_grey(greylister, &gt, sync, dst_ip);
         break;
 
     case GREY_MSG_TRAP:
