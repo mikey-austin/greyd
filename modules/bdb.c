@@ -274,7 +274,7 @@ pack_key(struct DB_key *key, DBT *dbkey)
     char *buf = NULL, *s;
     int len, slen = 0;
 
-    len = sizeof(int) + (key->type == DB_KEY_TUPLE
+    len = sizeof(short) + (key->type == DB_KEY_TUPLE
                          ? (slen = (strlen(key->data.gt.ip) + 1
                                     + strlen(key->data.gt.helo) + 1
                                     + strlen(key->data.gt.from) + 1
@@ -283,16 +283,16 @@ pack_key(struct DB_key *key, DBT *dbkey)
     if((buf = calloc(sizeof(char), len)) == NULL) {
         I_CRIT("Could not pack key");
     }
-    memcpy(buf, &(key->type), sizeof(int));
+    memcpy(buf, &(key->type), sizeof(short));
 
     switch(key->type) {
     case DB_KEY_IP:
     case DB_KEY_MAIL:
-        memcpy(buf + sizeof(int), key->data.s, slen);
+        memcpy(buf + sizeof(short), key->data.s, slen);
         break;
 
     case DB_KEY_TUPLE:
-        s = buf + sizeof(int);
+        s = buf + sizeof(short);
         memcpy(s, key->data.gt.ip, (slen = (strlen(key->data.gt.ip) + 1)));
         s += slen;
 
@@ -319,21 +319,21 @@ pack_val(struct DB_val *val, DBT *dbval)
     char *buf = NULL;
     int len, slen = 0;
 
-    len = sizeof(int) + (val->type == DB_VAL_GREY
+    len = sizeof(short) + (val->type == DB_VAL_GREY
                          ? sizeof(struct Grey_data)
                          : (slen = strlen(val->data.s) + 1));
     if((buf = calloc(sizeof(char), len)) == NULL) {
         I_CRIT("Could not pack val");
     }
-    memcpy(buf, &(val->type), sizeof(int));
+    memcpy(buf, &(val->type), sizeof(short));
 
     switch(val->type) {
     case DB_VAL_MATCH_SUFFIX:
-        memcpy(buf + sizeof(int), val->data.s, slen);
+        memcpy(buf + sizeof(short), val->data.s, slen);
         break;
 
     case DB_VAL_GREY:
-        memcpy(buf + sizeof(int), &(val->data.gd),
+        memcpy(buf + sizeof(short), &(val->data.gd),
                sizeof(struct Grey_data));
         break;
     }
@@ -349,8 +349,8 @@ unpack_key(struct DB_key *key, DBT *dbkey)
     char *buf = (char *) dbkey->data;
 
     memset(key, 0, sizeof(*key));
-    key->type = *((int *) buf);
-    buf += sizeof(int);
+    key->type = *((short *) buf);
+    buf += sizeof(short);
 
     switch(key->type) {
     case DB_KEY_IP:
@@ -379,8 +379,8 @@ unpack_val(struct DB_val *val, DBT *dbval)
     char *buf = (char *) dbval->data;
 
     memset(val, 0, sizeof(*val));
-    val->type = *((int *) buf);
-    buf += sizeof(int);
+    val->type = *((short *) buf);
+    buf += sizeof(short);
 
     switch(val->type) {
     case DB_VAL_MATCH_SUFFIX:

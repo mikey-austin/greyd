@@ -14,6 +14,7 @@
 #include "list.h"
 #include "ip.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -33,12 +34,12 @@ static void destroy_address(void *);
 static void sig_term_children(int);
 static int scan_db(G);
 static int push_addr(List_T, char *);
-static int db_addr_state(DB_handle_T, char *);
 static void configure_greyd(G);
 static void process_message(G, Config_T);
 static void process_grey(G, struct T *, int, char *);
-static void process_tw(G, int, char *, char *, char *);
-static int trap_check(G, char *);
+static void process_non_grey(G, int, char *, char *, char *);
+static int trap_check(DB_handle_T, char *);
+static int db_addr_state(DB_handle_T, char *);
 
 G Grey_greylister = NULL;
 
@@ -441,19 +442,15 @@ push_addr(List_T list, char *addr)
  * @return -1 An error occured.
  */
 static int
-trap_check(G greylister, char *to)
+trap_check(DB_handle_T db, char *to)
 {
     struct DB_key key;
     struct DB_val val;
-    DB_handle_T db;
     int ret;
-
-    db = DB_open(greylister->config, 0);
 
     key.type = DB_KEY_MAIL;
     key.data.s = to;
     ret = DB_get(db, &key, &val);
-    DB_close(&db);
 
     switch(ret) {
     case GREYDB_FOUND:
@@ -480,7 +477,7 @@ process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
     now = time(NULL);
     db = DB_open(greylister->config, 0);
 
-    switch(trap_check(greylister, gt->to)) {
+    switch(trap_check(db, gt->to)) {
     case 1:
         /* Do not trap. */
         spamtrap = 0;
@@ -556,16 +553,13 @@ process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
         gd.pcount = (spamtrap ? -1 : 0);
         val.data.gd = gd;
 
-        switch(DB_put(db, &key, &val)) {
-        case GREYDB_OK:
+        if(DB_put(db, &key, &val) == GREYDB_OK) {
             I_DEBUG("Updated %sentry %s from %s to %s, helo %s",
                     (spamtrap ? "greytrap " : ""), gt->ip,
                     gt->from, gt->to, gt->helo );
-            break;
-
-        default:
+        }
+        else {
             goto cleanup;
-            break;
         }
         break;
 
@@ -592,8 +586,74 @@ cleanup:
 }
 
 static void
-process_tw(G greylister, int type, char *ip, char *source, char *expires)
+process_non_grey(G greylister, int spamtrap, char *ip, char *source, char *expires)
 {
+    DB_handle_T db;
+    struct DB_key key;
+    struct DB_val val;
+    struct Grey_data gd;
+    time_t now;
+    long expire;
+    char *end;
+
+    now = time(NULL);
+
+	/* Expiry times have to be in the future. */
+    errno = 0;
+    expire = strtol(expires, &end, 10);
+    if(expire == 0 || expires[0] == '\0' || *end != '\0'
+       || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN)))
+    {
+        I_WARN("could not parse expires %s", expires);
+        return;
+    }
+
+    key.type = DB_KEY_IP;
+    key.data.s = ip;
+
+    db = DB_open(greylister->config, 0);
+    switch(DB_get(db, &key, &val)) {
+    case GREYDB_NOT_FOUND:
+        /*
+         * This is a new entry.
+         */
+        gd.first = now;
+        gd.pcount = (spamtrap ? -1 : 0);
+        gd.expire = expire;
+        val.type = DB_VAL_GREY;
+        val.data.gd = gd;
+
+        if(DB_put(db, &key, &val) == GREYDB_OK) {
+            I_DEBUG("new %s from %s for %s, expires %s",
+                    (spamtrap ? "TRAP" : "WHITE"), source, ip,
+                    expires);
+        }
+        break;
+
+    case GREYDB_FOUND:
+        /*
+         * This is an existing entry.
+         */
+        if(spamtrap) {
+            val.data.gd.pcount = -1;
+            val.data.gd.bcount++;
+        }
+        else {
+            val.data.gd.pcount++;
+        }
+
+        if(DB_put(db, &key, &val) == GREYDB_OK) {
+            I_DEBUG("updated %s", ip);
+        }
+        break;
+
+    default:
+        goto cleanup;
+        break;
+    }
+
+cleanup:
+    DB_close(&db);
 }
 
 static void
@@ -626,10 +686,10 @@ process_message(G greylister, Config_T message)
 
     case GREY_MSG_TRAP:
     case GREY_MSG_WHITE:
-        process_tw(greylister, type,
-                   Config_section_get_str(section, "ip", NULL),
-                   Config_section_get_str(section, "source", NULL),
-                   Config_section_get_str(section, "expires", NULL));
+        process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
+                         Config_section_get_str(section, "ip", NULL),
+                         Config_section_get_str(section, "source", NULL),
+                         Config_section_get_str(section, "expires", NULL));
         break;
 
     default:

@@ -38,7 +38,7 @@
  * Keys may be of different types depending on the type of database entry.
  */
 struct K {
-    int type;
+    short type;
     union {
         char *s; /**< May contain IP or MAIL key types. */
         struct Grey_tuple gt;
@@ -46,7 +46,7 @@ struct K {
 };
 
 struct V {
-    int type;
+    short type;
     union {
         char *s;             /**< Allowed domain. */
         struct Grey_data gd; /**< Greylisting counters.h */

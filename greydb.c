@@ -35,7 +35,6 @@ DB_open(Config_T config, int flags)
     handle->config  = config;
     handle->section = section;
 
-    section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
     if((user = Config_section_get_str(section, "user", NULL)) != NULL) {
         if((handle->pw = getpwnam(user)) == NULL) {
             I_CRIT("No such user %s", user);
