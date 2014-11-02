@@ -14,6 +14,9 @@
 #include "../grey.h"
 
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
 
 int
 main()
@@ -32,7 +35,7 @@ main()
     char *conf =
         "section database {\n"
         "  driver = \"../modules/bdb.so\",\n"
-        "  path   = \"/tmp/greyd_test.db\"\n"
+        "  path   = \"/tmp/greyd_test_bdb.db\"\n"
         "}";
 
     TEST_START(47);
@@ -42,6 +45,12 @@ main()
     l = Config_lexer_create(ls);
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
+
+    /* Empty existing database file. */
+    ret = unlink("/tmp/greyd_test_bdb.db");
+    if(ret < 0 && errno != ENOENT) {
+        printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
+    }
 
     db = DB_open(c, GREYDB_RW);
     TEST_OK((db != NULL), "DB handle created successfully");
