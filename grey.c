@@ -518,7 +518,7 @@ process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
             expire = greylister->trap_exp;
             key.type = DB_KEY_IP;
             key.data.s = gt->ip;
-            I_DEBUG("Trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
+            I_DEBUG("trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
                     gt->ip, greylister->low_prio_mx_ip,
                     gt->ip, gt->helo, gt->from, gt->to);
         }
@@ -533,7 +533,7 @@ process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
 
         switch(DB_put(db, &key, &val)) {
         case GREYDB_OK:
-            I_DEBUG("New %sentry %s from %s to %s, helo %s",
+            I_DEBUG("new %sentry %s from %s to %s, helo %s",
                     (spamtrap ? "greytrap " : ""), gt->ip,
                     gt->from, gt->to, gt->helo );
             break;
@@ -554,7 +554,7 @@ process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
         val.data.gd = gd;
 
         if(DB_put(db, &key, &val) == GREYDB_OK) {
-            I_DEBUG("Updated %sentry %s from %s to %s, helo %s",
+            I_DEBUG("updated %sentry %s from %s to %s, helo %s",
                     (spamtrap ? "greytrap " : ""), gt->ip,
                     gt->from, gt->to, gt->helo );
         }
@@ -617,6 +617,7 @@ process_non_grey(G greylister, int spamtrap, char *ip, char *source, char *expir
         /*
          * This is a new entry.
          */
+        memset(&gd, 0, sizeof(gd));
         gd.first = now;
         gd.pcount = (spamtrap ? -1 : 0);
         gd.expire = expire;
@@ -662,7 +663,7 @@ process_message(G greylister, Config_T message)
     Config_section_T section;
     int type, sync;
     struct Grey_tuple gt;
-    char *dst_ip;
+    char *dst_ip, *ip, *source, *expires;
 
     section = Config_get_section(message, CONFIG_DEFAULT_SECTION);
     type    = Config_section_get_int(section, "type", -1);
@@ -686,10 +687,12 @@ process_message(G greylister, Config_T message)
 
     case GREY_MSG_TRAP:
     case GREY_MSG_WHITE:
-        process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
-                         Config_section_get_str(section, "ip", NULL),
-                         Config_section_get_str(section, "source", NULL),
-                         Config_section_get_str(section, "expires", NULL));
+        ip      = Config_section_get_str(section, "ip", NULL);
+        source  = Config_section_get_str(section, "source", NULL);
+        expires = Config_section_get_str(section, "expires", NULL);
+        if(ip && source && expires)
+            process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
+                             ip, source, expires);
         break;
 
     default:

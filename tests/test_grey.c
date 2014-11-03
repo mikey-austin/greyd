@@ -22,6 +22,11 @@
 #include <errno.h>
 #include <sys/wait.h>
 
+static void write_non_grey(int, char *, char *, long, FILE *);
+static void write_grey(char *, char *, char *, char *, char *, FILE *);
+static void write_trap(char *source, char *ip, long expires, FILE *grey_out);
+static void write_white(char *source, char *ip, long expires, FILE *grey_out);
+
 int
 main()
 {
@@ -94,6 +99,9 @@ main()
         fclose(grey_out);
         close(trap[0]);
         close(grey[1]);
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
         exit(0);
         break;
     }
@@ -107,15 +115,36 @@ main()
     greylister->grey_in = NULL;
 
     /* Send the reader entries over the pipe. */
-    fprintf(grey_out,
-            "type = %d\n"
-            "dst_ip = \"2.3.4.5\"\n"
-            "ip = \"1.2.3.4\"\n"
-            "helo = \"jackiemclean.net\"\n"
-            "from = \"mikey@jackiemclean.net\"\n"
-            "to = \"recip@hotmail.com\"\n"
-            "%%\n", GREY_MSG_GREY);
-    fflush(grey_out);
+
+    /* Write some grey entries. */
+    write_grey("2.3.4.5", "1.2.3.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+    write_grey("2.3.1.5", "1.2.4.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+
+    /* Write the duplicate entries. */
+    write_grey("2.3.4.5", "1.2.3.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+    write_grey("2.3.1.5", "1.2.4.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+
+    /* Write some white entries. */
+    write_white("2.3.4.5", "4.3.2.1", time(NULL) + 3600, grey_out);
+    write_white("2.3.4.6", "4.3.2.2", time(NULL) + 3600, grey_out);
+    write_white("2.3.4.7", "4.3.2.3", time(NULL) + 3600, grey_out);
+
+    /* Write duplicate white entries. */
+    write_white("2.3.4.5", "4.3.2.1", time(NULL) + 3600, grey_out);
+    write_white("2.3.4.6", "4.3.2.2", time(NULL) + 3600, grey_out);
+    write_white("2.3.4.7", "4.3.2.3", time(NULL) + 3600, grey_out);
+
+    /* Write some trap entries. */
+    write_trap("3.2.4.5", "3.4.2.1", time(NULL) + 3600, grey_out);
+    write_trap("3.2.4.6", "3.4.2.2", time(NULL) + 3600, grey_out);
+    write_trap("3.2.4.7", "3.4.3.2", time(NULL) + 3600, grey_out);
+
+    /* Write some duplicate trap entries. */
+    write_trap("3.2.4.5", "3.4.2.1", time(NULL) + 3600, grey_out);
+    write_trap("3.2.4.6", "3.4.2.2", time(NULL) + 3600, grey_out);
+    write_trap("3.2.4.7", "3.4.3.2", time(NULL) + 3600, grey_out);
 
     /* Forcing a parse error will kill the reader process. */
     fprintf(grey_out, "==\n");
@@ -133,4 +162,42 @@ cleanup:
     Config_parser_destroy(&cp);
 
     TEST_COMPLETE;
+}
+
+static void
+write_grey(char *dstip, char *ip, char *helo, char *from, char *to, FILE *grey_out)
+{
+    fprintf(grey_out,
+            "type = %d\n"
+            "dst_ip = \"%s\"\n"
+            "ip = \"%s\"\n"
+            "helo = \"%s\"\n"
+            "from = \"%s\"\n"
+            "to = \"%s\"\n"
+            "%%\n", GREY_MSG_GREY, dstip, ip, helo, from, to);
+    fflush(grey_out);
+}
+
+static void
+write_non_grey(int type, char *source, char *ip, long expires, FILE *grey_out)
+{
+    fprintf(grey_out,
+            "type = %d\n"
+            "ip = \"%s\"\n"
+            "source = \"%s\"\n"
+            "expires = \"%ld\"\n"
+            "%%\n", type, ip, source, expires);
+    fflush(grey_out);
+}
+
+static void
+write_white(char *source, char *ip, long expires, FILE *grey_out)
+{
+    write_non_grey(GREY_MSG_WHITE, source, ip, expires, grey_out);
+}
+
+static void
+write_trap(char *source, char *ip, long expires, FILE *grey_out)
+{
+    write_non_grey(GREY_MSG_TRAP, source, ip, expires, grey_out);
 }
