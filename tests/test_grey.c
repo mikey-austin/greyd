@@ -31,7 +31,6 @@ int
 main()
 {
     DB_handle_T db;
-    DB_itr_T itr;
     Lexer_source_T ls;
     Lexer_T l;
     Config_parser_T cp;
@@ -145,6 +144,8 @@ main()
     write_trap("3.2.4.5", "3.4.2.1", time(NULL) + 3600, grey_out);
     write_trap("3.2.4.6", "3.4.2.2", time(NULL) + 3600, grey_out);
     write_trap("3.2.4.7", "3.4.3.2", time(NULL) + 3600, grey_out);
+
+    /* Manually add a spam trap address to test the trap checking for grey entries. */
 
     /* Forcing a parse error will kill the reader process. */
     fprintf(grey_out, "==\n");

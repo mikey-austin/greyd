@@ -4,7 +4,6 @@
 *.so
 *.d
 *.t
-*.pl
 greyd
 greydb
 greyd-setup
