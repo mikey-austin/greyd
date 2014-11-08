@@ -258,7 +258,7 @@ Grey_scan_db(G greylister)
     struct Grey_tuple gt;
     struct Grey_data gd;
     time_t now = time(NULL);
-    int ret = 0, state;
+    int ret = 0;
 
     db = DB_open(greylister->config, 0);
     itr = DB_get_itr(db);
@@ -275,6 +275,13 @@ Grey_scan_db(G greylister)
             if(DB_itr_del_curr(itr) != GREYDB_OK) {
                 ret = -1;
                 goto cleanup;
+            }
+            else {
+                I_DEBUG("deleting expired %sentry %s",
+                        (key.type == DB_KEY_IP
+                         ? (gd.pcount >= 0 ? "white " : "greytrap ")
+                         : "grey "),
+                        (key.type == DB_KEY_IP ? key.data.s : key.data.gt.ip));
             }
             continue;
         }
@@ -297,8 +304,15 @@ Grey_scan_db(G greylister)
 
             if(key.type == DB_KEY_TUPLE) {
                 gt = key.data.gt;
-                if((state = db_addr_state(db, gt.ip)) == 1)
+                switch(db_addr_state(db, gt.ip)) {
+                case 1:
+                    /* Ignore trapped entries. */
                     continue;
+
+                case -1:
+                    ret = -1;
+                    goto cleanup;
+                }
 
                 if((push_addr(greylister->whitelist, gt.ip) == -1)
                    && DB_itr_del_curr(itr) != GREYDB_OK)

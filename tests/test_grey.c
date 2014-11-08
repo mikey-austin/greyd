@@ -29,6 +29,9 @@ static void write_grey(char *, char *, char *, char *, char *, FILE *);
 static void write_trap(char *source, char *ip, long expires, FILE *grey_out);
 static void write_white(char *source, char *ip, long expires, FILE *grey_out);
 static void add_spamtrap(char *trapaddr, Config_T config);
+static void tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey,
+                           int *total_trapped, int *total_spamtrap, int *total_white_passed,
+                           int *total_white_blocked, int *total_grey_passed, int *total_grey_blocked);
 
 int
 main()
@@ -68,7 +71,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(19);
+    TEST_START(28);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -150,9 +153,16 @@ main()
     write_trap("3.2.4.6", "3.4.2.2", time(NULL) + 3600, grey_out);
     write_trap("3.2.4.7", "3.4.3.2", time(NULL) + 3600, grey_out);
 
+    /* Write an expired white & greytrap entry. */
+    write_white("8.8.8.3", "7.7.6.5", time(NULL) - 3600, grey_out);
+    write_trap("8.8.8.5", "7.7.6.6", time(NULL) - 120, grey_out);
+
     /* Check spam trap address to test the trap checking for grey entries. */
     write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "trap@test.com", grey_out);
     write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "trap@test.com", grey_out);
+
+    /* Add a whitelist entry with the same ip as an existing grey entry. */
+    write_white("2.3.4.7", "1.2.3.4", time(NULL) + 3600, grey_out);
 
     /* Trigger a hit to the low-priority MX server. */
     write_grey("192.179.21.3", "1.2.2.34", "jackiemclean.net", "m@jackiemclean.net",
@@ -168,51 +178,45 @@ main()
      * Test the overall database to ensue that the reader process correctly managed
      * the different types of entries.
      */
-    int total_entries = 0, total_grey = 0, total_white = 0, total_trapped = 0, total_spamtrap = 0;
-    int total_white_passed = 0, total_white_blocked = 0;
-    int total_grey_passed = 0, total_grey_blocked = 0;
+    int total_entries, total_grey, total_white, total_trapped, total_spamtrap;
+    int total_white_passed, total_white_blocked;
+    int total_grey_passed, total_grey_blocked;
+    tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
+                   &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
 
-    db = DB_open(c, 0);
-    itr = DB_get_itr(db);
-    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
-        total_entries++;
-
-        switch(key.type) {
-        case DB_KEY_IP:
-            if(val.data.gd.pcount == -1) {
-                total_trapped++;
-            }
-            else {
-                total_white++;
-                total_white_passed += val.data.gd.pcount;
-                total_white_blocked += val.data.gd.bcount;
-            }
-            break;
-
-        case DB_KEY_MAIL:
-            total_spamtrap++;
-            break;
-
-        case DB_KEY_TUPLE:
-            total_grey++;
-            total_grey_passed += val.data.gd.pcount;
-            total_grey_blocked += val.data.gd.bcount;
-            break;
-        }
-    }
-
-    DB_close_itr(&itr);
-    DB_close(&db);
-
-    TEST_OK(total_entries == 12, "Total entries as expected");
-    TEST_OK(total_white == 3, "Total white as expected");
+    TEST_OK(total_entries == 15, "Total entries as expected");
+    TEST_OK(total_white == 5, "Total white as expected");
     TEST_OK(total_grey == 3, "Total grey as expected");
-    TEST_OK(total_trapped == 5, "Total trapped entries as expected");
+    TEST_OK(total_trapped == 6, "Total trapped entries as expected");
     TEST_OK(total_spamtrap == 1, "Total spamtraps as expected");
     TEST_OK(total_white_passed == 3, "Total white passed as expected");
     TEST_OK(total_white_blocked == 0, "Total white blocked as expected");
     TEST_OK(total_grey_passed == 0, "Total grey passed as expected");
     TEST_OK(total_grey_blocked == 6, "Total grey blocked as expected");
+
+    /*
+     * Update some grey entry expiry times to simulate different conditions.
+     */
+    key.type = DB_KEY_TUPLE;
+    key.data.gt.ip = "1.2.2.4";
+    key.data.gt.from = "m@jackiemclean.net";
+    key.data.gt.to = "r@hotmail.com";
+    key.data.gt.helo = "jackiemclean.net";
+
+    db = DB_open(c, 0);
+    if(DB_get(db, &key, &val) == GREYDB_FOUND) {
+        /* Update the expires time. */
+        val.data.gd.expire = time(NULL) - 120;
+        DB_put(db, &key, &val);
+    }
+
+    key.data.gt.ip = "1.2.4.4";
+    if(DB_get(db, &key, &val) == GREYDB_FOUND) {
+        /* Update the pass time. */
+        val.data.gd.pass = time(NULL) - 60;
+        DB_put(db, &key, &val);
+    }
+    DB_close(&db);
 
     /*
      * Test scan db routine for the sending of traplist entries over the
@@ -243,6 +247,19 @@ main()
     TEST_OK(ips != NULL, "Received traplist entries list exists");
     TEST_OK(List_size(ips) == 5, "ips list size is as expected");
 
+    tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
+                   &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
+
+    TEST_OK(total_entries == 13, "Total entries as expected");
+    TEST_OK(total_white == 5, "Total white as expected");
+    TEST_OK(total_grey == 2, "Total grey as expected");
+    TEST_OK(total_trapped == 5, "Total trapped entries as expected");
+    TEST_OK(total_spamtrap == 1, "Total spamtraps as expected");
+    TEST_OK(total_white_passed == 3, "Total white passed as expected");
+    TEST_OK(total_white_blocked == 2, "Total white blocked as expected");
+    TEST_OK(total_grey_passed == 0, "Total grey passed as expected");
+    TEST_OK(total_grey_blocked == 4, "Total grey blocked as expected");
+
 cleanup:
     Grey_finish(&greylister);
     TEST_OK((greylister == NULL), "Greylister destroyed successfully");
@@ -253,6 +270,56 @@ cleanup:
     Config_parser_destroy(&message_parser);
 
     TEST_COMPLETE;
+}
+
+/*
+ * Test the overall database to ensue that the reader process correctly managed
+ * the different types of entries.
+ */
+static void
+tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey,
+              int *total_trapped, int *total_spamtrap, int *total_white_passed,
+              int *total_white_blocked, int *total_grey_passed, int *total_grey_blocked)
+{
+    DB_handle_T db;
+    DB_itr_T itr;
+    struct DB_key key;
+    struct DB_val val;
+
+    *total_entries = *total_white = *total_grey = *total_trapped = *total_spamtrap
+        = *total_white_passed = *total_white_blocked = *total_grey_passed
+        = *total_grey_blocked = 0;
+
+    db = DB_open(c, 0);
+    itr = DB_get_itr(db);
+    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
+        (*total_entries)++;
+
+        switch(key.type) {
+        case DB_KEY_IP:
+            if(val.data.gd.pcount == -1) {
+                (*total_trapped)++;
+            }
+            else {
+                (*total_white)++;
+                (*total_white_passed) += val.data.gd.pcount;
+                (*total_white_blocked) += val.data.gd.bcount;
+            }
+            break;
+
+        case DB_KEY_MAIL:
+            (*total_spamtrap)++;
+            break;
+
+        case DB_KEY_TUPLE:
+            (*total_grey)++;
+            *total_grey_passed += val.data.gd.pcount;
+            *total_grey_blocked += val.data.gd.bcount;
+            break;
+        }
+    }
+    DB_close_itr(&itr);
+    DB_close(&db);
 }
 
 static void
