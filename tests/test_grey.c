@@ -31,6 +31,12 @@ static void add_spamtrap(char *trapaddr, Config_T config);
 int
 main()
 {
+    DB_handle_T db;
+    DB_itr_T itr;
+    struct DB_key key;
+    struct DB_val val;
+    struct Grey_tuple gt;
+    struct Grey_data gd;
     Lexer_source_T ls;
     Lexer_T l;
     Config_parser_T cp;
@@ -57,7 +63,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(5);
+    TEST_START(14);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -162,7 +168,55 @@ main()
     close(grey[1]);
     waitpid(reader_pid, &ret, 0);
 
-    /* Test the state of the database after the reader has died. */
+    /*
+     * Test the overall database to ensue that the reader process correctly managed
+     * the different types of entries.
+     */
+    int total_entries = 0, total_grey = 0, total_white = 0, total_trapped = 0, total_spamtrap = 0;
+    int total_white_passed = 0, total_white_blocked = 0;
+    int total_grey_passed = 0, total_grey_blocked = 0;
+
+    db = DB_open(c, 0);
+    itr = DB_get_itr(db);
+    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
+        total_entries++;
+
+        switch(key.type) {
+        case DB_KEY_IP:
+            if(val.data.gd.pcount == -1) {
+                total_trapped++;
+            }
+            else {
+                total_white++;
+                total_white_passed += val.data.gd.pcount;
+                total_white_blocked += val.data.gd.bcount;
+            }
+            break;
+
+        case DB_KEY_MAIL:
+            total_spamtrap++;
+            break;
+
+        case DB_KEY_TUPLE:
+            total_grey++;
+            total_grey_passed += val.data.gd.pcount;
+            total_grey_blocked += val.data.gd.bcount;
+            break;
+        }
+    }
+
+    DB_close_itr(&itr);
+    DB_close(&db);
+
+    TEST_OK(total_entries == 12, "Total entries as expected");
+    TEST_OK(total_white == 3, "Total white as expected");
+    TEST_OK(total_grey == 3, "Total grey as expected");
+    TEST_OK(total_trapped == 5, "Total trapped entries as expected");
+    TEST_OK(total_spamtrap == 1, "Total spamtraps as expected");
+    TEST_OK(total_white_passed == 3, "Total white passed as expected");
+    TEST_OK(total_white_blocked == 0, "Total white blocked as expected");
+    TEST_OK(total_grey_passed == 0, "Total grey passed as expected");
+    TEST_OK(total_grey_blocked == 6, "Total grey blocked as expected");
 
 cleanup:
     Grey_finish(&greylister);
