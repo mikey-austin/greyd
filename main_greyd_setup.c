@@ -281,8 +281,7 @@ main(int argc, char **argv)
     }
 
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
-    val = Config_section_get(section, "lists");
-    lists = cv_list(val);
+    lists = Config_section_get_list(section, "lists");
     if(lists == NULL || List_size(lists) == 0) {
         I_ERR("no lists configured in %s", config_path);
     }

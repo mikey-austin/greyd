@@ -72,6 +72,7 @@ struct G {
     time_t    grey_exp;
     time_t    trap_exp;
     time_t    white_exp;
+    time_t    pass_time;
     int       sync_send;
 };
 
@@ -103,6 +104,13 @@ extern int Grey_start_reader(G greylister);
  * whitelists and traplists.
  */
 extern void Grey_start_scanner(G greylister);
+
+/**
+ * Scan the grey engine database looking to expire entries,
+ * update firewall whitelists and send trapped IP addresses to
+ * the main greyd process.
+ */
+extern int Grey_scan_db(G greylister);
 
 #undef T
 #undef D

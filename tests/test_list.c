@@ -20,7 +20,7 @@ main()
     char *v1 = "value 1", *v2 = "value 2", *v3 = "value 3", *v;
     int i;
 
-    TEST_START(16);
+    TEST_START(18);
 
     list = List_create(NULL);
     TEST_OK((list != NULL), "List created successfully");
@@ -86,6 +86,16 @@ main()
     v[i] = '\0';
 
     List_insert_head(list, v);
+    List_destroy(&list);
+
+    /* Test the emptying of the list explicitly. */
+    list = List_create(NULL);
+    List_insert_after(list, (void *) v2);
+    List_remove_all(list);
+
+    TEST_OK(List_size(list) == 0, "List size is 0 after emptying");
+    TEST_OK(list->head == NULL, "List head is null after emptying");
+
     List_destroy(&list);
 
     TEST_COMPLETE;

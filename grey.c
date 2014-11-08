@@ -32,7 +32,6 @@
 
 static void destroy_address(void *);
 static void sig_term_children(int);
-static int scan_db(G);
 static int push_addr(List_T, char *);
 static void configure_greyd(G);
 static void process_message(G, Config_T);
@@ -79,6 +78,9 @@ Grey_setup(Config_T config)
 
         greylister->trap_exp = Config_section_get_int(
             section, "trap_expiry", GREY_TRAPEXP);
+
+        greylister->pass_time = Config_section_get_int(
+            section, "pass_time", GREY_PASSTIME);
     }
 
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
@@ -239,15 +241,15 @@ extern void
 Grey_start_scanner(G greylister)
 {
     for(;;) {
-        if(scan_db(greylister) == -1)
+        if(Grey_scan_db(greylister) == -1)
             I_WARN("db scan failed");
         sleep(GREY_DB_SCAN_INTERVAL);
     }
     /* Not reached. */
 }
 
-static int
-scan_db(G greylister)
+extern int
+Grey_scan_db(G greylister)
 {
     DB_handle_T db;
     DB_itr_T itr;
@@ -375,7 +377,7 @@ configure_greyd(G greylister)
             first = 0;
         }
     }
-    fprintf(greylister->trap_out, "]\n%%");
+    fprintf(greylister->trap_out, "]\n%%\n");
 
     if(fflush(greylister->trap_out) == EOF)
         I_DEBUG("configure_greyd: fflush failed");
@@ -551,6 +553,8 @@ process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
         gd = val.data.gd;
         gd.bcount++;
         gd.pcount = (spamtrap ? -1 : 0);
+        if((gd.first + greylister->pass_time) < now)
+            gd.pass = now;
         val.data.gd = gd;
 
         if(DB_put(db, &key, &val) == GREYDB_OK) {
@@ -620,6 +624,7 @@ process_non_grey(G greylister, int spamtrap, char *ip, char *source, char *expir
         memset(&gd, 0, sizeof(gd));
         gd.first = now;
         gd.pcount = (spamtrap ? -1 : 0);
+        gd.pass = (spamtrap ? expire : now);
         gd.expire = expire;
         val.type = DB_VAL_GREY;
         val.data.gd = gd;

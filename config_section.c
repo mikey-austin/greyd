@@ -129,4 +129,18 @@ extern char
     }
 }
 
-#undef T
+extern List_T
+Config_section_get_list(T section, const char *varname)
+{
+    Config_value_T val;
+
+    if((val = Config_section_get(section, varname)) == NULL
+       || val->type != CONFIG_VAL_TYPE_LIST
+       || val->v.l == NULL)
+    {
+        return NULL;
+    }
+    else {
+        return val->v.l;
+    }
+}

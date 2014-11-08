@@ -12,6 +12,8 @@
 #include "../config_parser.h"
 #include "../config_lexer.h"
 #include "../grey.h"
+#include "../list.h"
+#include "../config_value.h"
 
 #include <string.h>
 #include <time.h>
@@ -37,13 +39,16 @@ main()
     struct DB_val val;
     struct Grey_tuple gt;
     struct Grey_data gd;
-    Lexer_source_T ls;
-    Lexer_T l;
-    Config_parser_T cp;
+    struct List_entry_T entry;
+    List_T ips;
+    Lexer_source_T ls, message_source;
+    Lexer_T l, message_lexer;
+    Config_parser_T cp, message_parser;
     Greylister_T greylister;
-    Config_T c;
+    Config_T c, message;
+    Config_section_T section;
     int ret, i = 0, grey[2], trap[2];
-    FILE *grey_in, *grey_out, *trap_in, *trap_out;
+    FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
     char *conf =
         "low_prio_mx_ip = \"192.179.21.3\"\n"
@@ -63,7 +68,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(14);
+    TEST_START(19);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -83,16 +88,12 @@ main()
         "greylister low priority mx ip set correctly");
 
     pipe(grey);
-    pipe(trap);
 
     grey_out = fdopen(grey[1], "w");
     grey_in  = fdopen(grey[0], "r");
-    trap_out = fdopen(trap[1], "w");
-    trap_in  = fdopen(trap[0], "r");
 
     greylister->startup  = time(NULL) - 120; /* Simulate a startup time in the past. */
     greylister->grey_in  = grey_in;
-    greylister->trap_out = trap_out;
 
     /* Start the grey reader child process. */
     switch(reader_pid = fork()) {
@@ -103,9 +104,7 @@ main()
     case 0:
         /* In child. */
         Grey_start_reader(greylister);
-        fclose(trap_in);
         fclose(grey_out);
-        close(trap[0]);
         close(grey[1]);
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
@@ -115,11 +114,8 @@ main()
     }
 
     /* In parent. */
-    fclose(trap_out);
     fclose(grey_in);
-    close(trap[1]);
     close(grey[0]);
-    greylister->trap_out = NULL;
     greylister->grey_in = NULL;
 
     /* Send the reader entries over the pipe. */
@@ -218,12 +214,43 @@ main()
     TEST_OK(total_grey_passed == 0, "Total grey passed as expected");
     TEST_OK(total_grey_blocked == 6, "Total grey blocked as expected");
 
+    /*
+     * Test scan db routine for the sending of traplist entries over the
+     * trap pipe.
+     */
+    pipe(trap);
+    trap_out = fdopen(trap[1], "w");
+    greylister->trap_out = trap_out;
+
+    Grey_scan_db(greylister);
+
+    message_source = Lexer_source_create_from_fd(trap[0]);
+    message_lexer = Config_lexer_create(message_source);
+    message_parser = Config_parser_create(message_lexer);
+    message = Config_create();
+
+    ret = Config_parser_start(message_parser, message);
+    TEST_OK(ret == CONFIG_PARSER_OK, "Parsed traplist message");
+
+    section = Config_get_section(message, CONFIG_DEFAULT_SECTION);
+    TEST_OK(!strcmp(Config_section_get_str(section, "name", "_"),
+                    "test traplist"), "Traplist name received ok");
+
+    TEST_OK(!strcmp(Config_section_get_str(section, "message", "_"),
+                    "you have been trapped"), "Traplist message received ok");
+
+    ips = Config_section_get_list(section, "ips");
+    TEST_OK(ips != NULL, "Received traplist entries list exists");
+    TEST_OK(List_size(ips) == 5, "ips list size is as expected");
+
 cleanup:
     Grey_finish(&greylister);
     TEST_OK((greylister == NULL), "Greylister destroyed successfully");
 
     Config_destroy(&c);
+    Config_destroy(&message);
     Config_parser_destroy(&cp);
+    Config_parser_destroy(&message_parser);
 
     TEST_COMPLETE;
 }

@@ -60,6 +60,9 @@ List_remove_all(T list)
 
         List_destroy_element(list, &element);
     }
+
+    list->size = 0;
+    list->head = NULL;
 }
 
 extern void

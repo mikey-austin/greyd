@@ -9,6 +9,7 @@
 #define CONFIG_SECTION_DEFINED
 
 #include "hash.h"
+#include "list.h"
 #include "config_value.h"
 
 #define T Config_section_T
@@ -71,6 +72,12 @@ extern int Config_section_get_int(T section, const char *varname,
  */
 extern char *Config_section_get_str(T section, const char *varname,
                                     char *default_str);
+
+/**
+ * Explicitly get a list config value. If one does not exist, NULL
+ * is returned.
+ */
+extern List_T Config_section_get_list(T section, const char *varname);
 
 #undef T
 #endif
