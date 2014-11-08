@@ -26,11 +26,11 @@ static void write_non_grey(int, char *, char *, long, FILE *);
 static void write_grey(char *, char *, char *, char *, char *, FILE *);
 static void write_trap(char *source, char *ip, long expires, FILE *grey_out);
 static void write_white(char *source, char *ip, long expires, FILE *grey_out);
+static void add_spamtrap(char *trapaddr, Config_T config);
 
 int
 main()
 {
-    DB_handle_T db;
     Lexer_source_T ls;
     Lexer_T l;
     Config_parser_T cp;
@@ -41,7 +41,6 @@ main()
     pid_t reader_pid;
     char *conf =
         "low_prio_mx_ip = \"192.179.21.3\"\n"
-        "sync = 0\n"
         "section grey {\n"
         "  traplist_name    = \"test traplist\",\n"
         "  traplist_message = \"you have been trapped\",\n"
@@ -58,7 +57,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(4);
+    TEST_START(5);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -66,12 +65,16 @@ main()
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
 
+    add_spamtrap("trap@test.com", c);
+
     greylister = Grey_setup(c);
     TEST_OK((greylister != NULL), "Greylister created successfully");
     TEST_OK(!strcmp(greylister->traplist_name, "test traplist"),
         "greylister name set correctly");
     TEST_OK(!strcmp(greylister->traplist_msg, "you have been trapped"),
         "greylister msg set correctly");
+    TEST_OK(!strcmp(greylister->low_prio_mx_ip, "192.179.21.3"),
+        "greylister low priority mx ip set correctly");
 
     pipe(grey);
     pipe(trap);
@@ -81,7 +84,7 @@ main()
     trap_out = fdopen(trap[1], "w");
     trap_in  = fdopen(trap[0], "r");
 
-    greylister->startup  = time(NULL);
+    greylister->startup  = time(NULL) - 120; /* Simulate a startup time in the past. */
     greylister->grey_in  = grey_in;
     greylister->trap_out = trap_out;
 
@@ -145,7 +148,13 @@ main()
     write_trap("3.2.4.6", "3.4.2.2", time(NULL) + 3600, grey_out);
     write_trap("3.2.4.7", "3.4.3.2", time(NULL) + 3600, grey_out);
 
-    /* Manually add a spam trap address to test the trap checking for grey entries. */
+    /* Check spam trap address to test the trap checking for grey entries. */
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "trap@test.com", grey_out);
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "trap@test.com", grey_out);
+
+    /* Trigger a hit to the low-priority MX server. */
+    write_grey("192.179.21.3", "1.2.2.34", "jackiemclean.net", "m@jackiemclean.net",
+               "notrap@test.com", grey_out);
 
     /* Forcing a parse error will kill the reader process. */
     fprintf(grey_out, "==\n");
@@ -163,6 +172,31 @@ cleanup:
     Config_parser_destroy(&cp);
 
     TEST_COMPLETE;
+}
+
+static void
+add_spamtrap(char *trapaddr, Config_T config)
+{
+    DB_handle_T db;
+    struct DB_key key;
+    struct DB_val val;
+    struct Grey_data gd;
+
+    key.type = DB_KEY_MAIL;
+    key.data.s = trapaddr;
+
+    memset(&gd, 0, sizeof(gd));
+    gd.first = time(NULL);
+    gd.bcount = 1;
+    gd.expire = 0;
+    gd.pcount = -2;
+
+    val.type = DB_VAL_GREY;
+    val.data.gd = gd;
+
+    db = DB_open(config, 0);
+    DB_put(db, &key, &val);
+    DB_close(&db);
 }
 
 static void
