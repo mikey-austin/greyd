@@ -12,9 +12,6 @@
 #include "list.h"
 #include <stdint.h>
 
-#define T Blacklist_T
-#define E Blacklist_entry
-
 #define BL_TYPE_WHITE 0
 #define BL_TYPE_BLACK 1
 
@@ -23,7 +20,7 @@
 /**
  * Internal structure for containing a single blacklist entry.
  */
-struct E {
+struct Blacklist_entry {
     struct IP_addr address;
     struct IP_addr mask;
     int8_t         black;
@@ -33,41 +30,41 @@ struct E {
 /**
  * The main blacklist structure.
  */
-typedef struct T *T;
-struct T {
+typedef struct Blacklist_T *Blacklist_T;
+struct Blacklist_T {
     char     *name;
     char     *message;
-    struct E *entries;
     size_t   size;
     size_t   count;
+    struct Blacklist_entry *entries;
 };
 
 /**
  * Create an empty blacklist.
  */
-extern T Blacklist_create(const char *name, const char *message);
+extern Blacklist_T Blacklist_create(const char *name, const char *message);
 
 /**
  * Destroy a blacklist and cleanup.
  */
-extern void Blacklist_destroy(T *list);
+extern void Blacklist_destroy(Blacklist_T *list);
 
 /**
  * Return 1 if the source address is in the list, otherwise return 0.
  */
-extern int Blacklist_match(T list, struct IP_addr *source, sa_family_t af);
+extern int Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af);
 
 /**
  * Add a single IPv4/IPv6 formatted address to the specified blacklist's
  * list of entries.
  */
-extern int Blacklist_add(T list, const char *address);
+extern int Blacklist_add(Blacklist_T list, const char *address);
 
 /**
  * Add a range of addresses to the blacklist of the specified type. A call to this
  * function will result in two separate entries for the start and end addresses.
  */
-extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type);
+extern void Blacklist_add_range(Blacklist_T list, u_int32_t start, u_int32_t end, int type);
 
 /**
  * "Collapse" a blacklist's entries by removing overlapping regions as well
@@ -75,8 +72,6 @@ extern void Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type
  * CIDR networks is returned, suitable for feeding in printable form to
  * a firewall or greyd.
  */
-extern List_T Blacklist_collapse(T blacklist);
+extern List_T Blacklist_collapse(Blacklist_T blacklist);
 
-#undef T
-#undef E
 #endif

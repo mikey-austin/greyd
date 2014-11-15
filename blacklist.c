@@ -123,7 +123,7 @@ Blacklist_add(T list, const char *address)
         goto parse_error;
     }
     else {
-        //I_DEBUG("Added %s/%u\n", parsed, maskbits);
+        I_DEBUG("Added %s/%u\n", parsed, maskbits);
     }
 
     for(i = 0, j = 0; i < 4; i++)
