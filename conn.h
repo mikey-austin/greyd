@@ -25,38 +25,38 @@ struct Con {
     int last_state;
     short af;
 
-	struct sockaddr_storage ss;
-	void *ia;
-	char src_addr[INET6_ADDRSTRLEN];
-	char dst_addr[INET6_ADDRSTRLEN];
-	char helo[GREY_MAX_MAIL], mail[GREY_MAX_MAIL], rcpt[GREY_MAX_MAIL];
+    struct sockaddr_storage ss;
+    void *ia;
+    char src_addr[INET6_ADDRSTRLEN];
+    char dst_addr[INET6_ADDRSTRLEN];
+    char helo[GREY_MAX_MAIL], mail[GREY_MAX_MAIL], rcpt[GREY_MAX_MAIL];
 
     List_T blacklists;  /* Blacklists containing this src address. */
-	char *lists;        /* Summary of associated blacklists. */
+    char *lists;        /* Summary of associated blacklists. */
 
-	/*
-	 * We will do stuttering by changing these to time_t's of
-	 * now + n, and only advancing when the time is in the past/now.
-	 */
-	time_t r;
-	time_t w;
-	time_t s;
+    /*
+     * We will do stuttering by changing these to time_t's of
+     * now + n, and only advancing when the time is in the past/now.
+     */
+    time_t r;
+    time_t w;
+    time_t s;
 
-	char in_buf[CON_BUF_SIZE];
-	char *in_p;
-	int in_size;
-	char r_end_chars[CON_REMOTE_END_SIZE]; /* Chars causing input termination. */
+    char in_buf[CON_BUF_SIZE];
+    char *in_p;
+    int in_size;
+    char r_end_chars[CON_REMOTE_END_SIZE]; /* Chars causing input termination. */
 
-	char *out_buf;
-	size_t out_size;
-	char *out_p;
+    char *out_buf;
+    size_t out_size;
+    char *out_p;
 
-	int ol;
-	int data_lines;
-	int data_body;
-	int stutter;
-	int badcmd;
-	int seen_cr;
+    int ol;
+    int data_lines;
+    int data_body;
+    int stutter;
+    int badcmd;
+    int seen_cr;
 };
 
 /**
