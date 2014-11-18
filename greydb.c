@@ -11,15 +11,10 @@
 
 #include <stdlib.h>
 
-#define H DB_handle_T
-#define I DB_itr_T
-#define K DB_key
-#define V DB_val
-
-extern H
+extern DB_handle_T
 DB_open(Config_T config, int flags)
 {
-    H handle;
+    DB_handle_T handle;
     Config_section_T section;
     char *user;
 
@@ -47,23 +42,25 @@ DB_open(Config_T config, int flags)
     /* Open the configured driver and extract all required symbols. */
     handle->driver = Mod_open(handle->section, "db");
 
-    handle->db_open = (void (*)(H, int)) Mod_get(handle->driver, "Mod_db_open");
-    handle->db_close = (void (*)(H)) Mod_get(handle->driver, "Mod_db_close");
-    handle->db_put = (int (*)(H, struct K *, struct V *))
+    handle->db_open = (void (*)(DB_handle_T, int))
+        Mod_get(handle->driver, "Mod_db_open");
+    handle->db_close = (void (*)(DB_handle_T))
+        Mod_get(handle->driver, "Mod_db_close");
+    handle->db_put = (int (*)(DB_handle_T, struct DB_key *, struct DB_val *))
         Mod_get(handle->driver, "Mod_db_put");
-    handle->db_get = (int (*)(H, struct K *, struct V *))
+    handle->db_get = (int (*)(DB_handle_T, struct DB_key *, struct DB_val *))
         Mod_get(handle->driver, "Mod_db_get");
-    handle->db_del = (int (*)(H, struct K *))
+    handle->db_del = (int (*)(DB_handle_T, struct DB_key *))
         Mod_get(handle->driver, "Mod_db_del");
-    handle->db_get_itr = (void (*)(I))
+    handle->db_get_itr = (void (*)(DB_itr_T))
         Mod_get(handle->driver, "Mod_db_get_itr");
-    handle->db_itr_next = (int (*)(I, struct K *, struct V *))
+    handle->db_itr_next = (int (*)(DB_itr_T, struct DB_key *, struct DB_val *))
         Mod_get(handle->driver, "Mod_db_itr_next");
-    handle->db_itr_replace_curr = (int (*)(I, struct V *))
+    handle->db_itr_replace_curr = (int (*)(DB_itr_T, struct DB_val *))
         Mod_get(handle->driver, "Mod_db_itr_replace_curr");
-    handle->db_itr_del_curr = (int (*)(I))
+    handle->db_itr_del_curr = (int (*)(DB_itr_T))
         Mod_get(handle->driver, "Mod_db_itr_del_curr");
-    handle->db_itr_close = (void (*)(I))
+    handle->db_itr_close = (void (*)(DB_itr_T))
         Mod_get(handle->driver, "Mod_db_itr_close");
 
     /* Initialize the database driver. */
@@ -73,7 +70,7 @@ DB_open(Config_T config, int flags)
 }
 
 extern void
-DB_close(H *handle)
+DB_close(DB_handle_T *handle)
 {
     if(handle == NULL || *handle == NULL) {
         return;
@@ -86,27 +83,27 @@ DB_close(H *handle)
 }
 
 extern int
-DB_put(H handle, struct K *key, struct V *val)
+DB_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     return handle->db_put(handle, key, val);
 }
 
 extern int
-DB_get(H handle, struct K *key, struct V *val)
+DB_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     return handle->db_get(handle, key, val);
 }
 
 extern int
-DB_del(H handle, struct K *key)
+DB_del(DB_handle_T handle, struct DB_key *key)
 {
     return handle->db_del(handle, key);
 }
 
-extern I
-DB_get_itr(H handle)
+extern DB_itr_T
+DB_get_itr(DB_handle_T handle)
 {
-    I itr;
+    DB_itr_T itr;
 
     /* Setup the iterator. */
     if((itr = malloc(sizeof(*itr))) == NULL) {
@@ -123,25 +120,25 @@ DB_get_itr(H handle)
 }
 
 extern int
-DB_itr_next(I itr, struct K *key, struct V *val)
+DB_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
 {
     return itr->handle->db_itr_next(itr, key, val);
 }
 
 extern int
-DB_itr_replace_curr(I itr, struct V *val)
+DB_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 {
     return itr->handle->db_itr_replace_curr(itr, val);
 }
 
 extern int
-DB_itr_del_curr(I itr)
+DB_itr_del_curr(DB_itr_T itr)
 {
     return itr->handle->db_itr_del_curr(itr);
 }
 
 extern void
-DB_close_itr(I *itr)
+DB_close_itr(DB_itr_T *itr)
 {
     if(itr == NULL || *itr == NULL) {
         return;
@@ -151,8 +148,3 @@ DB_close_itr(I *itr)
     free(*itr);
     *itr = NULL;
 }
-
-#undef K
-#undef V
-#undef H
-#undef I
