@@ -40,7 +40,7 @@ static void usage();
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
 static int file_get(char *url, char *curl_path);
-static void send_blacklist(Blacklist_T blacklist, int greyonly,
+static void send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
                            Config_T config);
 
 /* Global debug variable. */
@@ -205,17 +205,15 @@ get_parser(Config_section_T section, Config_T config)
 }
 
 static void
-send_blacklist(Blacklist_T blacklist, int greyonly, Config_T config)
+send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly, Config_T config)
 {
-    Config_section_T section;
     List_T cidrs;
     int nadded = 0;
 
-    section = Config_get_section(config, "firewall");
     cidrs = Blacklist_collapse(blacklist);
 
     if(!greyonly &&
-       (!section || (nadded = FW_replace_networks(section, cidrs)) < 0))
+       (!fw || (nadded = FW_replace(fw, "greyd", cidrs)) < 0))
     {
         I_CRIT("Could not configure firewall");
     }
@@ -239,6 +237,7 @@ main(int argc, char **argv)
     Config_value_T val;
     List_T lists;
     struct List_entry_T *entry;
+    FW_handle_T fw = NULL;
 
     while((option = getopt(argc, argv, "bdDnc:")) != -1) {
         switch(option) {
@@ -286,10 +285,8 @@ main(int argc, char **argv)
         I_ERR("no lists configured in %s", config_path);
     }
 
-    if(!greyonly && !dryrun) {
-        section = Config_get_section(config, "firewall");
-        FW_init(section);
-    }
+    if(!greyonly && !dryrun)
+        fw = FW_open(config);
 
     /*
      * Loop through lists configured in the configuration.
@@ -305,7 +302,7 @@ main(int argc, char **argv)
              * send it off and destroy it before creating the new one.
              */
             if(blacklist && !dryrun) {
-                send_blacklist(blacklist, greyonly, config);
+                send_blacklist(fw, blacklist, greyonly, config);
             }
             Blacklist_destroy(&blacklist);
 
@@ -353,7 +350,8 @@ main(int argc, char **argv)
      * Send the last blacklist and cleanup the various objects.
      */
     if(blacklist && !dryrun) {
-        send_blacklist(blacklist, greyonly, config);
+        send_blacklist(fw, blacklist, greyonly, config);
+        FW_close(&fw);
     }
     Blacklist_destroy(&blacklist);
     Config_destroy(&config);

@@ -52,11 +52,12 @@ typedef struct DB_handle_T *DB_handle_T;
 typedef struct DB_itr_T *DB_itr_T;
 
 struct DB_handle_T {
+    void *driver;
     void *dbh;                /**< Driver dependent handle reference. */
     Config_T config;          /**< System configuration. */
     Config_section_T section; /**< Module configuration section. */
     struct passwd *pw;        /**< System user/group information. */
-    void *driver;
+
     void (*db_open)(DB_handle_T handle, int);
     void (*db_close)(DB_handle_T handle);
     int (*db_put)(DB_handle_T handle, struct DB_key *key, struct DB_val *val);

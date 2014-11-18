@@ -12,6 +12,56 @@
 
 #include <unistd.h>
 
+extern FW_handle_T
+FW_open(Config_T config)
+{
+    Config_section_T section;
+    FW_handle_T handle;
+
+    /* Setup the firewall handle. */
+    if((handle = malloc(sizeof(*handle))) == NULL) {
+        I_CRIT("Could not create firewall handle");
+    }
+
+    if((section = Config_get_section(config, "firewall")) == NULL) {
+        I_CRIT("Could not find firewall configuration");
+    }
+
+    handle->config  = config;
+    handle->section = section;
+
+    handle->driver = Mod_open(section, "firewall");
+
+    handle->fw_open = (void (*)(FW_handle_T))
+        Mod_get(handle->driver, "Mod_fw_open");
+    handle->fw_close = (void (*)(FW_handle_T))
+        Mod_get(handle->driver, "Mod_fw_close");
+    handle->fw_replace = (int (*)(FW_handle_T, const char *, List_T))
+        Mod_get(handle->driver, "Mod_fw_replace");
+
+    handle->fw_open(handle);
+
+    return handle;
+}
+
+extern void
+FW_close(FW_handle_T *handle)
+{
+    if(handle == NULL || *handle == NULL)
+        return;
+
+    (*handle)->fw_close(*handle);
+    Mod_close((*handle)->driver);
+    free(*handle);
+    *handle = NULL;
+}
+
+extern int
+FW_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
+{
+    return handle->fw_replace(handle, set_name, cidrs);
+}
+
 extern FILE
 *FW_setup_cntl_pipe(char *command, char **argv)
 {
@@ -49,31 +99,4 @@ extern FILE
     }
 
     return out;
-}
-
-extern int
-FW_replace_networks(Config_section_T section, List_T cidrs)
-{
-    void *handle;
-    int (*replace_networks)(Config_section_T section, List_T cidrs), ret;
-
-    handle = Mod_open(section, "firewall");
-    replace_networks = (int (*)(Config_section_T, List_T))
-        Mod_get(handle, "Mod_fw_replace_networks");
-    ret = (*replace_networks)(section, cidrs);
-    Mod_close(handle);
-
-    return ret;
-}
-
-extern void
-FW_init(Config_section_T section)
-{
-    void *handle;
-    void (*init)(Config_section_T section);
-
-    handle = Mod_open(section, "firewall");
-    init = (void (*)(Config_section_T)) Mod_get(handle, "Mod_fw_init");
-    (*init)(section);
-    Mod_close(handle);
 }
