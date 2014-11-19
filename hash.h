@@ -8,19 +8,16 @@
  * to store arbitrary values with the option of integer or NULL terminated
  * key values.
  */
- 
+
 #ifndef HASH_DEFINED
 #define HASH_DEFINED
-
-#define T Hash_T
-#define E Hash_entry
 
 #define MAX_KEY_LEN 45
 
 /**
  * A struct to contain a hash entry's key and value pair.
  */
-struct E {
+struct Hash_entry {
     char  k[MAX_KEY_LEN + 1]; /**< Hash entry key */
     void *v;                  /**< Hash entry value */
 };
@@ -28,40 +25,38 @@ struct E {
 /**
  * The main hash table structure.
  */
-typedef struct T *T;
-struct T {
-    int        size;        /**< The initial hash size. */
-    int        num_entries; /**< The number of set elements. */
-    void     (*destroy)(struct E *entry);
-    struct E  *entries;
+typedef struct Hash_T *Hash_T;
+struct Hash_T {
+    int  size;        /**< The initial hash size. */
+    int  num_entries; /**< The number of set elements. */
+    void (*destroy)(struct Hash_entry *entry);
+    struct Hash_entry  *entries;
 };
 
 /**
  * Create a new hash table.
  */
-extern T Hash_create(int    size,
-                     void (*destroy)(struct E *entry));
+extern Hash_T Hash_create(int size,
+                          void (*destroy)(struct Hash_entry *entry));
 
 /**
  * Destroy a hash table, freeing all elements
  */
-extern void Hash_destroy(T *hash);
+extern void Hash_destroy(Hash_T *hash);
 
 /**
  * Clear out all entries in the table.
  */
-extern void Hash_reset(T hash);
+extern void Hash_reset(Hash_T hash);
 
 /**
  * Insert a new element into the hash table.
  */
-extern void Hash_insert(T hash, const char *key, void *value);
+extern void Hash_insert(Hash_T hash, const char *key, void *value);
 
 /**
  * Fetch an element from the hash table by the specified key.
  */
-extern void *Hash_get(T hash, const char *key);
+extern void *Hash_get(Hash_T hash, const char *key);
 
-#undef T
-#undef E
 #endif

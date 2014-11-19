@@ -12,38 +12,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define T Hash_T
-#define E Hash_entry
-
 /**
  * Lookup a key in the hash table and return an entry pointer. This function
  * contains the logic for linear probing conflict resolution.
  *
  * An entry with a NULL value indicates that the entry is not being used.
  */
-static struct E *Hash_find_entry(T hash, const char *key);
+static struct Hash_entry *Hash_find_entry(Hash_T hash, const char *key);
 
 /**
  * Resize the list of entries if the number of entries equals the configured
  * size.
  */
-static void Hash_resize(T hash, int new_size);
+static void Hash_resize(Hash_T hash, int new_size);
 
 /**
  * Initialise a hash entry safely.
  */
-static void Hash_init_entry(struct E *entry);
+static void Hash_init_entry(struct Hash_entry *entry);
 
 /**
  * The hash function to map a key to an index in the array of hash entries.
  */
 static int Hash_lookup(const char *key);
 
-extern T
-Hash_create(int size, void (*destroy)(struct E *entry))
+extern Hash_T
+Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
 {
     int i;
-    T new;
+    Hash_T new;
 
     new = malloc(sizeof(*new));
     if(!new) {
@@ -54,7 +51,7 @@ Hash_create(int size, void (*destroy)(struct E *entry))
     new->num_entries = 0;
     new->destroy     = destroy;
 
-    new->entries = (struct E*) calloc(sizeof(*(new->entries)), size);
+    new->entries = (struct Hash_entry*) calloc(sizeof(*(new->entries)), size);
     if(!new->entries) {
         free(new);
         new = NULL;
@@ -69,7 +66,7 @@ Hash_create(int size, void (*destroy)(struct E *entry))
 }
 
 extern void
-Hash_destroy(T *hash)
+Hash_destroy(Hash_T *hash)
 {
     int i;
 
@@ -94,7 +91,7 @@ Hash_destroy(T *hash)
 }
 
 extern void
-Hash_reset(T hash)
+Hash_reset(Hash_T hash)
 {
     int i;
 
@@ -108,9 +105,9 @@ Hash_reset(T hash)
 }
 
 extern void
-Hash_insert(T hash, const char *key, void *value)
+Hash_insert(Hash_T hash, const char *key, void *value)
 {
-    struct E *entry;
+    struct Hash_entry *entry;
 
     /* Check if there is space and resize if required. */
     if(hash->num_entries >= hash->size) {
@@ -133,18 +130,18 @@ Hash_insert(T hash, const char *key, void *value)
 }
 
 extern void
-*Hash_get(T hash, const char *key)
+*Hash_get(Hash_T hash, const char *key)
 {
-    struct E *entry;
+    struct Hash_entry *entry;
     entry = Hash_find_entry(hash, key);
     return entry->v;
 }
 
-static struct E
-*Hash_find_entry(T hash, const char *key)
+static struct Hash_entry
+*Hash_find_entry(Hash_T hash, const char *key)
 {
     int i, j;
-    struct E *curr;
+    struct Hash_entry *curr;
 
     i = j = (Hash_lookup(key) % hash->size);
     do {
@@ -160,10 +157,10 @@ static struct E
 }
 
 static void
-Hash_resize(T hash, int new_size)
+Hash_resize(Hash_T hash, int new_size)
 {
     int i, old_size = hash->size;
-    struct E *old_entries = hash->entries;
+    struct Hash_entry *old_entries = hash->entries;
 
     if(new_size <= hash->size) {
         I_WARN("Refusing to resize a hash of %d elements to %d",
@@ -177,7 +174,7 @@ Hash_resize(T hash, int new_size)
      * not very efficient for large hashes, so best to choose an
      * appropriate starting size.
      */
-    hash->entries = (struct E*) calloc(sizeof(*(hash->entries)), new_size);
+    hash->entries = (struct Hash_entry*) calloc(sizeof(*(hash->entries)), new_size);
 
     if(!hash->entries) {
         I_CRIT("Could not resize hash entries of size %d to %d",
@@ -203,7 +200,7 @@ Hash_resize(T hash, int new_size)
 }
 
 static void
-Hash_init_entry(struct E *entry)
+Hash_init_entry(struct Hash_entry *entry)
 {
     /* Ensure that an empty key contains a null byte. */
     *(entry->k) = '\0';
@@ -215,7 +212,3 @@ Hash_lookup(const char *key)
 {
     return strlen(key);
 }
-
-#undef T
-#undef E
-#undef K
