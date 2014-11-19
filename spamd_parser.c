@@ -14,29 +14,27 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#define T Spamd_parser_T
-
 #define SPAMD_ADDR_START 1
 #define SPAMD_ADDR_END   0
 
 /*
  * Parser utility/helper functions.
  */
-static int  tok_accept(T parser, int tok);
-static int  tok_accept_no_advance(T parser, int tok);
-static void advance(T parser);
+static int  tok_accept(Spamd_parser_T parser, int tok);
+static int  tok_accept_no_advance(Spamd_parser_T parser, int tok);
+static void advance(Spamd_parser_T parser);
 
 /*
  * Parser grammar functions.
  */
-static int grammar_entry(T parser);
-static int grammar_entries(T parser);
-static int grammar_address(T parser, int end);
+static int grammar_entry(Spamd_parser_T parser);
+static int grammar_entries(Spamd_parser_T parser);
+static int grammar_address(Spamd_parser_T parser, int end);
 
-extern T
+extern Spamd_parser_T
 Spamd_parser_create(Lexer_T lexer)
 {
-    T parser;
+    Spamd_parser_T parser;
 
     if((parser = malloc(sizeof(*parser))) == NULL) {
         I_CRIT("Could not create parser");
@@ -48,7 +46,7 @@ Spamd_parser_create(Lexer_T lexer)
 }
 
 extern void
-Spamd_parser_destroy(T *parser)
+Spamd_parser_destroy(Spamd_parser_T *parser)
 {
     if(parser == NULL || *parser == NULL)
         return;
@@ -62,7 +60,7 @@ Spamd_parser_destroy(T *parser)
 }
 
 extern int
-Spamd_parser_start(T parser, Blacklist_T blacklist, int type)
+Spamd_parser_start(Spamd_parser_T parser, Blacklist_T blacklist, int type)
 {
     /*
      * Store references to the list to be populated, along with
@@ -87,7 +85,7 @@ Spamd_parser_start(T parser, Blacklist_T blacklist, int type)
 }
 
 static int
-grammar_entry(T parser)
+grammar_entry(Spamd_parser_T parser)
 {
     struct IP_cidr cidr;
     u_int32_t start, end;
@@ -142,7 +140,7 @@ grammar_entry(T parser)
 }
 
 static int
-grammar_entries(T parser)
+grammar_entries(Spamd_parser_T parser)
 {
     if(tok_accept(parser, SPAMD_LEXER_TOK_EOL) && grammar_entry(parser)
        && grammar_entries(parser))
@@ -155,7 +153,7 @@ grammar_entries(T parser)
 }
 
 static int
-grammar_address(T parser, int start)
+grammar_address(Spamd_parser_T parser, int start)
 {
     int i;
 
@@ -186,13 +184,13 @@ grammar_address(T parser, int start)
 }
 
 static int
-tok_accept_no_advance(T parser, int tok)
+tok_accept_no_advance(Spamd_parser_T parser, int tok)
 {
     return (tok == parser->curr);
 }
 
 static int
-tok_accept(T parser, int tok)
+tok_accept(Spamd_parser_T parser, int tok)
 {
     if(tok_accept_no_advance(parser, tok)) {
         /*
@@ -217,9 +215,7 @@ tok_accept(T parser, int tok)
 }
 
 static void
-advance(T parser)
+advance(Spamd_parser_T parser)
 {
     parser->curr = Lexer_next_token(parser->lexer);
 }
-
-#undef T
