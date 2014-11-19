@@ -20,7 +20,7 @@ struct FW_handle_T {
     Config_T config;          /**< System configuration. */
     Config_section_T section; /**< Module configuration section. */
 
-    void (*fw_open)(FW_handle_T handle);
+    int (*fw_open)(FW_handle_T handle);
     void (*fw_close)(FW_handle_T handle);
     int (*fw_replace)(FW_handle_T handle, const char *set_name, List_T cidrs);
 };

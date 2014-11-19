@@ -29,17 +29,22 @@ FW_open(Config_T config)
 
     handle->config  = config;
     handle->section = section;
+    handle->fwh     = NULL;
 
     handle->driver = Mod_open(section, "firewall");
 
-    handle->fw_open = (void (*)(FW_handle_T))
+    handle->fw_open = (int (*)(FW_handle_T))
         Mod_get(handle->driver, "Mod_fw_open");
     handle->fw_close = (void (*)(FW_handle_T))
         Mod_get(handle->driver, "Mod_fw_close");
     handle->fw_replace = (int (*)(FW_handle_T, const char *, List_T))
         Mod_get(handle->driver, "Mod_fw_replace");
 
-    handle->fw_open(handle);
+    if(handle->fw_open(handle) == -1) {
+        Mod_close(handle->driver);
+        free(handle);
+        return NULL;
+    }
 
     return handle;
 }
