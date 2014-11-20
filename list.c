@@ -10,8 +10,8 @@
 
 #include <stdlib.h>
 
-static struct List_entry_T *List_create_element(List_T list, void *value);
-static void      List_destroy_element(List_T list, struct List_entry_T **element);
+static struct List_entry *List_create_element(List_T list, void *value);
+static void List_destroy_element(List_T list, struct List_entry **element);
 
 extern List_T
 List_create(void (*destroy)(void *value))
@@ -44,7 +44,7 @@ List_destroy(List_T *list)
 extern void
 List_remove_all(List_T list)
 {
-    struct List_entry_T *element, *curr;
+    struct List_entry *element, *curr;
 
     for(curr = list->head; curr != NULL; ) {
         element = curr;
@@ -65,7 +65,7 @@ List_remove_all(List_T list)
 extern void
 List_insert_after(List_T list, void *value)
 {
-    struct List_entry_T *element, *curr;
+    struct List_entry *element, *curr;
 
     element = List_create_element(list, value);
     list->size++;
@@ -86,7 +86,7 @@ List_insert_after(List_T list, void *value)
 extern void
 List_insert_head(List_T list, void *value)
 {
-    struct List_entry_T *element;
+    struct List_entry *element;
 
     element = List_create_element(list, value);
     list->size++;
@@ -98,7 +98,7 @@ List_insert_head(List_T list, void *value)
 extern void
 *List_remove_head(List_T list)
 {
-    struct List_entry_T *element;
+    struct List_entry *element;
     void *value;
 
     if((element = list->head) == NULL) {
@@ -125,7 +125,7 @@ List_size(List_T list)
 }
 
 extern void
-*List_entry_value(struct List_entry_T *entry)
+*List_entry_value(struct List_entry *entry)
 {
     if(entry == NULL)
         return NULL;
@@ -133,10 +133,10 @@ extern void
     return entry->v;
 }
 
-static struct List_entry_T
+static struct List_entry
 *List_create_element(List_T list, void *value)
 {
-    struct List_entry_T *element;
+    struct List_entry *element;
 
     if((element = malloc(sizeof(*element))) == NULL) {
         I_CRIT("Could not initialize list element");
@@ -149,7 +149,7 @@ static struct List_entry_T
 }
 
 static void
-List_destroy_element(List_T list, struct List_entry_T **element)
+List_destroy_element(List_T list, struct List_entry **element)
 {
     if(element && *element) {
         free(*element);

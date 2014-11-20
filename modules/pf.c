@@ -29,7 +29,7 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
 	    "-f" "-", NULL };
     char *netblock, *pfctl_path = PATH_PFCTL;
 	static FILE *pf = NULL;
-    struct List_entry_T *entry;
+    struct List_entry *entry;
     struct IP_cidr *cidr;
 
     /*

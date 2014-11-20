@@ -236,7 +236,7 @@ main(int argc, char **argv)
     Blacklist_T blacklist = NULL;
     Config_value_T val;
     List_T lists;
-    struct List_entry_T *entry;
+    struct List_entry *entry;
     FW_handle_T fw = NULL;
 
     while((option = getopt(argc, argv, "bdDnc:")) != -1) {

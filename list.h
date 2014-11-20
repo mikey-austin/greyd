@@ -16,8 +16,8 @@
 /**
  * A struct to contain a list entry's data and links.
  */
-struct List_entry_T {
-    struct List_entry_T *next; /**< List entry next link. */
+struct List_entry {
+    struct List_entry *next; /**< List entry next link. */
     void *v;        /**< List entry value */
 };
 
@@ -28,7 +28,7 @@ typedef struct List_T *List_T;
 struct List_T {
     int        size;        /**< The list size. */
     void     (*destroy)(void *value);
-    struct List_entry_T  *head;
+    struct List_entry  *head;
 };
 
 /**
@@ -69,6 +69,6 @@ extern int List_size(List_T list);
 /**
  * Return the value of this list entry.
  */
-extern void *List_entry_value(struct List_entry_T *entry);
+extern void *List_entry_value(struct List_entry *entry);
 
 #endif

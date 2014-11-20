@@ -26,7 +26,7 @@ main()
     u_int32_t start, end;
     char *s, *s2;
     List_T cidrs;
-    struct List_entry_T *entry;
+    struct List_entry *entry;
     int i = 0;
 
     TEST_START(19);

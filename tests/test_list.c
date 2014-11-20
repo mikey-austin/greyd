@@ -16,7 +16,7 @@ int
 main()
 {
     List_T list;
-    struct List_entry_T *curr;
+    struct List_entry *curr;
     char *v1 = "value 1", *v2 = "value 2", *v3 = "value 3", *v;
     int i;
 

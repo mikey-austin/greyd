@@ -21,7 +21,7 @@ main()
     Config_T c;
     Config_section_T s;
     Config_value_T v, v2;
-    struct List_entry_T *curr;
+    struct List_entry *curr;
     int tok, ret, i;
     char *include;
     char *src =

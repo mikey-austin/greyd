@@ -25,7 +25,7 @@ main()
     char *s, *s2;
     int i = 0;
     List_T cidrs;
-    struct List_entry_T *entry;
+    struct List_entry *entry;
     struct IP_cidr *c;
     struct IP_addr a;
 

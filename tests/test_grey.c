@@ -42,7 +42,7 @@ main()
     struct DB_val val;
     struct Grey_tuple gt;
     struct Grey_data gd;
-    struct List_entry_T entry;
+    struct List_entry entry;
     List_T ips;
     Lexer_source_T ls, message_source;
     Lexer_T l, message_lexer;

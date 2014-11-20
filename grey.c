@@ -368,7 +368,7 @@ cleanup:
 static void
 configure_greyd(G greylister)
 {
-    struct List_entry_T *entry;
+    struct List_entry *entry;
     char *ip;
     int first = 1;
     short af;

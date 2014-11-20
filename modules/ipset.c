@@ -52,7 +52,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
 {
     char *netblock;
     FILE *ipset = handle->fwh;
-    struct List_entry_T *entry;
+    struct List_entry *entry;
     struct IP_cidr *cidr;
     int nadded = 0, hash_size, max_elem;
 
