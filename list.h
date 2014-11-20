@@ -18,7 +18,7 @@
  */
 struct List_entry {
     struct List_entry *next; /**< List entry next link. */
-    void *v;        /**< List entry value */
+    void *v;                 /**< List entry value */
 };
 
 /**
@@ -26,8 +26,8 @@ struct List_entry {
  */
 typedef struct List_T *List_T;
 struct List_T {
-    int        size;        /**< The list size. */
-    void     (*destroy)(void *value);
+    int size;
+    void (*destroy)(void *value);
     struct List_entry  *head;
 };
 
