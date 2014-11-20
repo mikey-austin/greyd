@@ -10,70 +10,65 @@
 
 #include <stdlib.h>
 
-#define T List_T
-#define E List_entry_T
-
 #define LIST_FOREACH(list, curr) \
     for(curr = list->head; curr != NULL; curr = curr->next)
 
 /**
  * A struct to contain a list entry's data and links.
  */
-struct E {
-    struct E *next; /**< List entry next link. */
+struct List_entry_T {
+    struct List_entry_T *next; /**< List entry next link. */
     void *v;        /**< List entry value */
 };
 
 /**
  * The main list structure.
  */
-typedef struct T *T;
-struct T {
+typedef struct List_T *List_T;
+struct List_T {
     int        size;        /**< The list size. */
     void     (*destroy)(void *value);
-    struct E  *head;
+    struct List_entry_T  *head;
 };
 
 /**
  * Create a new list.
  */
-extern T List_create(void (*destroy)(void *value));
+extern List_T List_create(void (*destroy)(void *value));
 
 /**
  * Destroy a list, destroying all elements.
  */
-extern void List_destroy(T *list);
+extern void List_destroy(List_T *list);
 
 /**
  * Destroy all elements in a list.
  */
-extern void List_remove_all(T list);
+extern void List_remove_all(List_T list);
 
 /**
  * Insert a new element onto the end of the list.
  */
-extern void List_insert_after(T list, void *value);
+extern void List_insert_after(List_T list, void *value);
 
 /**
  * Insert a new element onto the front of the list.
  */
-extern void List_insert_head(T list, void *value);
+extern void List_insert_head(List_T list, void *value);
 
 /**
  * Remove the element from the front of the list and return the value.
  */
-extern void *List_remove_head(T list);
+extern void *List_remove_head(List_T list);
 
 /**
  * Return the size of the list.
  */
-extern int List_size(T list);
+extern int List_size(List_T list);
 
 /**
  * Return the value of this list entry.
  */
-extern void *List_entry_value(struct E *entry);
+extern void *List_entry_value(struct List_entry_T *entry);
 
-#undef T
-#undef E
 #endif

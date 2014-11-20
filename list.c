@@ -10,16 +10,13 @@
 
 #include <stdlib.h>
 
-#define T List_T
-#define E List_entry_T
+static struct List_entry_T *List_create_element(List_T list, void *value);
+static void      List_destroy_element(List_T list, struct List_entry_T **element);
 
-static struct E *List_create_element(T list, void *value);
-static void      List_destroy_element(T list, struct E **element);
-
-extern T
+extern List_T
 List_create(void (*destroy)(void *value))
 {
-    T list;
+    List_T list;
 
     if((list = malloc(sizeof(*list))) == NULL) {
         I_CRIT("Could not create an empty list");
@@ -34,7 +31,7 @@ List_create(void (*destroy)(void *value))
 }
 
 extern void
-List_destroy(T *list)
+List_destroy(List_T *list)
 {
     if(list == NULL || *list == NULL)
         return;
@@ -45,9 +42,9 @@ List_destroy(T *list)
 }
 
 extern void
-List_remove_all(T list)
+List_remove_all(List_T list)
 {
-    struct E *element, *curr;
+    struct List_entry_T *element, *curr;
 
     for(curr = list->head; curr != NULL; ) {
         element = curr;
@@ -66,9 +63,9 @@ List_remove_all(T list)
 }
 
 extern void
-List_insert_after(T list, void *value)
+List_insert_after(List_T list, void *value)
 {
-    struct E *element, *curr;
+    struct List_entry_T *element, *curr;
 
     element = List_create_element(list, value);
     list->size++;
@@ -87,9 +84,9 @@ List_insert_after(T list, void *value)
 }
 
 extern void
-List_insert_head(T list, void *value)
+List_insert_head(List_T list, void *value)
 {
-    struct E *element;
+    struct List_entry_T *element;
 
     element = List_create_element(list, value);
     list->size++;
@@ -99,9 +96,9 @@ List_insert_head(T list, void *value)
 }
 
 extern void
-*List_remove_head(T list)
+*List_remove_head(List_T list)
 {
-    struct E *element;
+    struct List_entry_T *element;
     void *value;
 
     if((element = list->head) == NULL) {
@@ -118,7 +115,7 @@ extern void
 }
 
 extern int
-List_size(T list)
+List_size(List_T list)
 {
     if(list) {
         return list->size;
@@ -128,7 +125,7 @@ List_size(T list)
 }
 
 extern void
-*List_entry_value(struct E *entry)
+*List_entry_value(struct List_entry_T *entry)
 {
     if(entry == NULL)
         return NULL;
@@ -136,10 +133,10 @@ extern void
     return entry->v;
 }
 
-static struct E
-*List_create_element(T list, void *value)
+static struct List_entry_T
+*List_create_element(List_T list, void *value)
 {
-    struct E *element;
+    struct List_entry_T *element;
 
     if((element = malloc(sizeof(*element))) == NULL) {
         I_CRIT("Could not initialize list element");
@@ -152,13 +149,10 @@ static struct E
 }
 
 static void
-List_destroy_element(T list, struct E **element)
+List_destroy_element(List_T list, struct List_entry_T **element)
 {
     if(element && *element) {
         free(*element);
         *element = NULL;
     }
 }
-
-#undef T
-#undef E
