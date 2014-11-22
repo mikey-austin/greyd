@@ -43,7 +43,6 @@ extern Greylister_T
 Grey_setup(Config_T config)
 {
     Greylister_T greylister = NULL;
-    Config_section_T section;
 
     if((greylister = malloc(sizeof(*greylister))) == NULL) {
         I_CRIT("Could not malloc greylister");
@@ -63,38 +62,32 @@ Grey_setup(Config_T config)
     /*
      * Gather configuration from the grey section.
      */
-    section = Config_get_section(config, "grey");
-    if(section) {
-        greylister->traplist_name = Config_section_get_str(
-            section, "traplist_name", GREY_DEFAULT_TL_NAME);
+    greylister->traplist_name = Config_get_str(
+        config, "traplist_name", "grey", GREY_DEFAULT_TL_NAME);
 
-        greylister->traplist_msg = Config_section_get_str(
-            section, "traplist_message", GREY_DEFAULT_TL_MSG);
+    greylister->traplist_msg = Config_get_str(
+        config, "traplist_message", "grey", GREY_DEFAULT_TL_MSG);
 
-        greylister->grey_exp = Config_section_get_int(
-            section, "grey_expiry", GREY_GREYEXP);
+    greylister->grey_exp = Config_get_int(
+        config, "grey_expiry", "grey", GREY_GREYEXP);
 
-        greylister->white_exp = Config_section_get_int(
-            section, "white_expiry", GREY_WHITEEXP);
+    greylister->white_exp = Config_get_int(
+        config, "white_expiry", "grey", GREY_WHITEEXP);
 
-        greylister->trap_exp = Config_section_get_int(
-            section, "trap_expiry", GREY_TRAPEXP);
+    greylister->trap_exp = Config_get_int(
+        config, "trap_expiry", "grey", GREY_TRAPEXP);
 
-        greylister->pass_time = Config_section_get_int(
-            section, "pass_time", GREY_PASSTIME);
+    greylister->pass_time = Config_get_int(
+        config, "pass_time", "grey", GREY_PASSTIME);
 
-        greylister->whitelist_name = Config_section_get_str(
-            section, "whitelist_name", GREY_DEFAULT_WL_NAME);
-    }
+    greylister->whitelist_name = Config_get_str(
+        config, "whitelist_name", "grey", GREY_DEFAULT_WL_NAME);
 
-    section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
-    if(section) {
-        greylister->low_prio_mx_ip = Config_section_get_str(
-            section, "low_prio_mx_ip", NULL);
+    greylister->low_prio_mx_ip = Config_get_str(
+        config, "low_prio_mx_ip",NULL , NULL);
 
-        greylister->sync_send = Config_section_get_int(
-            section, "sync", 0);
-    }
+    greylister->sync_send = Config_get_int(
+        config, "sync", NULL, 0);
 
     greylister->whitelist = List_create(destroy_address);
     greylister->traplist  = List_create(destroy_address);
@@ -684,43 +677,41 @@ cleanup:
 static void
 process_message(Greylister_T greylister, Config_T message)
 {
-    Config_section_T section;
     int type, sync;
     struct Grey_tuple gt;
     char *dst_ip, *ip, *source, *expires;
 
-    section = Config_get_section(message, CONFIG_DEFAULT_SECTION);
-    type    = Config_section_get_int(section, "type", -1);
-    dst_ip  = Config_section_get_str(section, "dst_ip", NULL);
+    type   = Config_get_int(message, "type", NULL, -1);
+    dst_ip = Config_get_str(message, "dst_ip", NULL, NULL);
 
     /*
      * If this message isn't a SYNC message from another greyd,
      * sync future operations.
      */
-    sync = Config_section_get_int(section, "sync", 1);
+    sync = Config_get_int(message, "sync", NULL, 1);
 
     switch(type) {
     case GREY_MSG_GREY:
-        gt.ip   = Config_section_get_str(section, "ip", NULL);
-        gt.helo = Config_section_get_str(section, "helo", NULL);
-        gt.from = Config_section_get_str(section, "from", NULL);
-        gt.to   = Config_section_get_str(section, "to", NULL);
+        gt.ip   = Config_get_str(message, "ip", NULL, NULL);
+        gt.helo = Config_get_str(message, "helo", NULL, NULL);
+        gt.from = Config_get_str(message, "from", NULL, NULL);
+        gt.to   = Config_get_str(message, "to", NULL, NULL);
         if(gt.ip && gt.helo && gt.from && gt.to)
             process_grey(greylister, &gt, sync, dst_ip);
         break;
 
     case GREY_MSG_TRAP:
     case GREY_MSG_WHITE:
-        ip      = Config_section_get_str(section, "ip", NULL);
-        source  = Config_section_get_str(section, "source", NULL);
-        expires = Config_section_get_str(section, "expires", NULL);
+        ip      = Config_get_str(message, "ip", NULL, NULL);
+        source  = Config_get_str(message, "source", NULL, NULL);
+        expires = Config_get_str(message, "expires", NULL, NULL);
         if(ip && source && expires)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
                              ip, source, expires);
         break;
 
     default:
-        I_WARN("Unknown greylist message type");
+        I_WARN("Unknown greylist message type %d", type);
         return;
     }
 }

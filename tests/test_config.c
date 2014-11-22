@@ -27,7 +27,7 @@ main()
     Config_value_T v;
     int *count;
 
-    TEST_START(21);
+    TEST_START(25);
 
     c = Config_create();
     TEST_OK((c != NULL), "Config created successfully");
@@ -102,6 +102,16 @@ main()
     TEST_OK((count && (*count == 1)), "Third config include file count as expected");
 
     TEST_OK((Queue_size(c->includes) == 0), "Include file to process queue is empty as expected");
+
+    Config_set_str(c, "mystr1", NULL, "mystr value");
+    Config_set_str(c, "mystr1", "mysection1", "mystr1 value");
+    Config_set_int(c, "myint1", NULL, 4321);
+    Config_set_int(c, "myint1", "mysection2", 1234);
+
+    TEST_OK(!strcmp(Config_get_str(c, "mystr1", NULL, NULL), "mystr value"), "str set/get ok");
+    TEST_OK(!strcmp(Config_get_str(c, "mystr1", "mysection1", NULL), "mystr1 value"), "str set/get ok");
+    TEST_OK(Config_get_int(c, "myint1", NULL, 0) == 4321, "int set/get ok");
+    TEST_OK(Config_get_int(c, "myint1", "mysection2", 0) == 1234, "int set/get ok");
 
     Config_destroy(&c);
 

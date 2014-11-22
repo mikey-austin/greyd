@@ -8,6 +8,7 @@
 #ifndef CON_DEFINED
 #define CON_DEFINED
 
+#include "blacklist.h"
 #include "grey.h"
 #include "list.h"
 #include "ip.h"
@@ -72,7 +73,7 @@ struct Con_list_T {
 /**
  * Initialize a connection's internal state.
  */
-extern void Con_init(struct Con *con);
+extern void Con_init(struct Con *con, int fd, struct sockaddr *sa, Blacklist_T blacklists);
 
 /**
  * Cleanup a connection, to be re-initialized later.
