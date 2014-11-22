@@ -12,8 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define T Config_section_T
-
 #define CONFIG_SEC_INIT_ENTRIES 25 /**< The number of initial hash entries. */
 
 /**
@@ -21,10 +19,10 @@
  */
 static void Config_section_value_destroy(struct Hash_entry *entry);
 
-extern T
+extern Config_section_T
 Config_section_create(const char *name)
 {
-    T section;
+    Config_section_T section;
     int nlen = strlen(name) + 1;
 
     section = malloc(sizeof(*section));
@@ -46,7 +44,7 @@ Config_section_create(const char *name)
 }
 
 extern void
-Config_section_destroy(T *section)
+Config_section_destroy(Config_section_T *section)
 {
     if(section == NULL || *section == NULL)
         return;
@@ -63,19 +61,19 @@ Config_section_destroy(T *section)
 }
 
 extern Config_value_T
-Config_section_get(T section, const char *varname)
+Config_section_get(Config_section_T section, const char *varname)
 {
     return (Config_value_T) Hash_get(section->vars, varname);
 }
 
 extern void
-Config_section_set(T section, const char *varname, Config_value_T value)
+Config_section_set(Config_section_T section, const char *varname, Config_value_T value)
 {
     Hash_insert(section->vars, varname, (Config_value_T) value);
 }
 
 extern void
-Config_section_set_int(T section, const char *varname, int value)
+Config_section_set_int(Config_section_T section, const char *varname, int value)
 {
     Config_value_T new = Config_value_create(CONFIG_VAL_TYPE_INT);
     Config_value_set_int(new, value);
@@ -83,7 +81,7 @@ Config_section_set_int(T section, const char *varname, int value)
 }
 
 extern void
-Config_section_set_str(T section, const char *varname, const char *value)
+Config_section_set_str(Config_section_T section, const char *varname, const char *value)
 {
     Config_value_T new = Config_value_create(CONFIG_VAL_TYPE_STR);
     Config_value_set_str(new, value);
@@ -99,7 +97,7 @@ Config_section_value_destroy(struct Hash_entry *entry)
 }
 
 extern int
-Config_section_get_int(T section, const char *varname, int default_int)
+Config_section_get_int(Config_section_T section, const char *varname, int default_int)
 {
     Config_value_T val;
 
@@ -114,7 +112,7 @@ Config_section_get_int(T section, const char *varname, int default_int)
 }
 
 extern char
-*Config_section_get_str(T section, const char *varname, char *default_str)
+*Config_section_get_str(Config_section_T section, const char *varname, char *default_str)
 {
     Config_value_T val;
 
@@ -130,7 +128,7 @@ extern char
 }
 
 extern List_T
-Config_section_get_list(T section, const char *varname)
+Config_section_get_list(Config_section_T section, const char *varname)
 {
     Config_value_T val;
 

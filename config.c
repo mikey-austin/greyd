@@ -78,40 +78,37 @@ Config_destroy(Config_T *config)
 extern void
 Config_add_section(Config_T config, Config_section_T section)
 {
-    Hash_insert(config->sections, (const char *) section->name,
-                (void *) section);
+    Hash_insert(config->sections, section->name, section);
 }
 
 extern void
 Config_add_blacklist(Config_T config, Config_section_T section)
 {
-    Hash_insert(config->blacklists, (const char *) section->name,
-                (void *) section);
+    Hash_insert(config->blacklists, section->name, section);
 }
 
 extern void
 Config_add_whitelist(Config_T config, Config_section_T section)
 {
-    Hash_insert(config->whitelists, (const char *) section->name,
-                (void *) section);
+    Hash_insert(config->whitelists, section->name, section);
 }
 
 extern Config_section_T
 Config_get_section(Config_T config, const char *section_name)
 {
-    return (Config_section_T) Hash_get(config->sections, section_name);
+    return Hash_get(config->sections, section_name);
 }
 
 extern Config_section_T
 Config_get_blacklist(Config_T config, const char *section_name)
 {
-    return (Config_section_T) Hash_get(config->blacklists, section_name);
+    return Hash_get(config->blacklists, section_name);
 }
 
 extern Config_section_T
 Config_get_whitelist(Config_T config, const char *section_name)
 {
-    return (Config_section_T) Hash_get(config->whitelists, section_name);
+    return Hash_get(config->whitelists, section_name);
 }
 
 extern void
