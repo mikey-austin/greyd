@@ -14,8 +14,6 @@
 #include <string.h>
 #include <errno.h>
 
-#define T Lexer_source_T
-
 struct source_data_file {
     char *filename;
     FILE *handle;
@@ -31,7 +29,7 @@ struct source_data_gz {
     gzFile gzf;
 };
 
-static T     source_create();
+static Lexer_source_T source_create();
 static void  source_data_file_destroy(void *data);
 static int   source_data_file_getc(void *data);
 static void  source_data_file_ungetc(void *data, int c);
@@ -44,11 +42,11 @@ static void  source_data_gz_destroy(void *data);
 static int   source_data_gz_getc(void *data);
 static void  source_data_gz_ungetc(void *data, int c);
 
-extern T
+extern Lexer_source_T
 Lexer_source_create_from_file(const char *filename)
 {
     int flen = strlen(filename) + 1;
-    T source = source_create();
+    Lexer_source_T source = source_create();
     struct source_data_file *data;
 
     data = malloc(sizeof(*data));
@@ -79,10 +77,10 @@ Lexer_source_create_from_file(const char *filename)
     return source;
 }
 
-extern T
+extern Lexer_source_T
 Lexer_source_create_from_fd(int fd)
 {
-    T source = source_create();
+    Lexer_source_T source = source_create();
     struct source_data_file *data;
 
     data = malloc(sizeof(*data));
@@ -109,10 +107,10 @@ Lexer_source_create_from_fd(int fd)
     return source;
 }
 
-extern T
+extern Lexer_source_T
 Lexer_source_create_from_str(const char *buf, int len)
 {
-    T source = source_create();
+    Lexer_source_T source = source_create();
     struct source_data_str *data;
 
     data = malloc(sizeof(*data));
@@ -136,10 +134,10 @@ Lexer_source_create_from_str(const char *buf, int len)
     return source;
 }
 
-extern T
+extern Lexer_source_T
 Lexer_source_create_from_gz(gzFile gzf)
 {
-    T source = source_create();
+    Lexer_source_T source = source_create();
     struct source_data_gz *data;
 
     data = malloc(sizeof(*data));
@@ -161,7 +159,7 @@ Lexer_source_create_from_gz(gzFile gzf)
 }
 
 extern void
-Lexer_source_destroy(T *source)
+Lexer_source_destroy(Lexer_source_T *source)
 {
     if(source == NULL || *source == NULL)
         return;
@@ -172,21 +170,21 @@ Lexer_source_destroy(T *source)
 }
 
 extern int
-Lexer_source_getc(T source)
+Lexer_source_getc(Lexer_source_T source)
 {
     return source->_getc(source->data);
 }
 
 extern void
-Lexer_source_ungetc(T source, int c)
+Lexer_source_ungetc(Lexer_source_T source, int c)
 {
     source->_ungetc(source->data, c);
 }
 
-static T
+static Lexer_source_T
 source_create()
 {
-    T source;
+    Lexer_source_T source;
 
     source = malloc(sizeof(*source));
     if(source == NULL) {
@@ -306,5 +304,3 @@ source_data_gz_ungetc(void *data, int c)
    struct source_data_gz *data_gz = (struct source_data_gz *) data;
    gzungetc(c, data_gz->gzf);
 }
-
-#undef T
