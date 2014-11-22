@@ -12,17 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define T Config_value_T
-
 /**
  * The destructor for config value lists.
  */
 static void Config_value_list_entry_destroy(void *value);
 
-extern T
+extern Config_value_T
 Config_value_create(short type)
 {
-    T new;
+    Config_value_T new;
 
     new = malloc(sizeof(*new));
     if(new == NULL) {
@@ -41,14 +39,14 @@ Config_value_create(short type)
 }
 
 extern void
-Config_value_set_int(T value, int data)
+Config_value_set_int(Config_value_T value, int data)
 {
     value->type = CONFIG_VAL_TYPE_INT;
     value->v.i  = data;
 }
 
 extern void
-Config_value_set_str(T value, const char *data)
+Config_value_set_str(Config_value_T value, const char *data)
 {
     int slen = strlen(data) + 1;
 
@@ -61,7 +59,7 @@ Config_value_set_str(T value, const char *data)
 }
 
 extern void
-Config_value_destroy(T *value)
+Config_value_destroy(Config_value_T *value)
 {
     if(value == NULL || *value == NULL)
         return;
@@ -87,28 +85,28 @@ Config_value_destroy(T *value)
 }
 
 extern char
-*cv_str(T value)
+*cv_str(Config_value_T value)
 {
     return (value && value->type == CONFIG_VAL_TYPE_STR
             ? value->v.s : NULL);
 }
 
 extern int
-cv_int(T value)
+cv_int(Config_value_T value)
 {
     return (value && value->type == CONFIG_VAL_TYPE_INT
             ? value->v.i : -1);
 }
 
 extern List_T
-cv_list(T value)
+cv_list(Config_value_T value)
 {
     return (value && value->type == CONFIG_VAL_TYPE_LIST
             ? value->v.l : NULL);
 }
 
 extern int
-cv_type(T value)
+cv_type(Config_value_T value)
 {
     return value->type;
 }
@@ -116,7 +114,5 @@ cv_type(T value)
 static void
 Config_value_list_entry_destroy(void *value)
 {
-    Config_value_destroy((T *) &value);
+    Config_value_destroy((Config_value_T *) &value);
 }
-
-#undef T

@@ -45,15 +45,11 @@ Config_create()
     }
 
     /* Initialize the hash of sections. */
-    config->sections           = Hash_create(CONFIG_INIT_SECTIONS,
-                                             Config_section_value_destroy);
-    config->blacklists         = Hash_create(CONFIG_INIT_SECTIONS,
-                                             Config_section_value_destroy);
-    config->whitelists         = Hash_create(CONFIG_INIT_SECTIONS,
-                                             Config_section_value_destroy);
-    config->processed_includes = Hash_create(CONFIG_INIT_INCLUDES,
-                                             Config_include_destroy_hash);
-    config->includes           = Queue_create(Config_include_destroy);
+    config->sections = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
+    config->blacklists = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
+    config->whitelists = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
+    config->processed_includes = Hash_create(CONFIG_INIT_INCLUDES, Config_include_destroy_hash);
+    config->includes = Queue_create(Config_include_destroy);
 
     return config;
 }
@@ -138,11 +134,11 @@ Config_load_file(Config_T config, char *file)
         }
 
         *count = 1;
-        Hash_insert(config->processed_includes, file, (void *) count);
+        Hash_insert(config->processed_includes, file, count);
     }
 
     while(Queue_size(config->includes) > 0) {
-        include = (char *) Queue_dequeue(config->includes);
+        include = Queue_dequeue(config->includes);
         if(Hash_get(config->processed_includes, include) == NULL) {
             Config_load_file(config, include);
         }
