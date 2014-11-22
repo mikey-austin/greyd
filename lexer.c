@@ -14,12 +14,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#define T Lexer_T
-
-extern T
-Lexer_create(Lexer_source_T source, int (*next_token)(T lexer))
+extern Lexer_T
+Lexer_create(Lexer_source_T source, int (*next_token)(Lexer_T lexer))
 {
-    T lexer;
+    Lexer_T lexer;
 
     if((lexer = malloc(sizeof(*lexer))) == NULL) {
         I_CRIT("Could not create lexer");
@@ -37,13 +35,13 @@ Lexer_create(Lexer_source_T source, int (*next_token)(T lexer))
 }
 
 extern int
-Lexer_next_token(T lexer)
+Lexer_next_token(Lexer_T lexer)
 {
     return lexer->next_token(lexer);
 }
 
 extern void
-Lexer_destroy(T *lexer)
+Lexer_destroy(Lexer_T *lexer)
 {
     if(lexer == NULL || *lexer == NULL)
         return;
@@ -56,7 +54,7 @@ Lexer_destroy(T *lexer)
 }
 
 extern void
-Lexer_reuse_char(T lexer, int c)
+Lexer_reuse_char(Lexer_T lexer, int c)
 {
     if(c == EOF || c < 0) {
         /* We can't reuse an EOF character. */
@@ -68,7 +66,7 @@ Lexer_reuse_char(T lexer, int c)
 }
 
 extern int
-Lexer_getc(T lexer)
+Lexer_getc(Lexer_T lexer)
 {
     int c;
 
@@ -89,7 +87,7 @@ Lexer_getc(T lexer)
 }
 
 extern void
-Lexer_ungetc(T lexer, int c)
+Lexer_ungetc(Lexer_T lexer, int c)
 {
     if(c == '\n') {
         lexer->current_line--;
@@ -101,5 +99,3 @@ Lexer_ungetc(T lexer, int c)
 
     Lexer_source_ungetc(lexer->source, c);
 }
-
-#undef T

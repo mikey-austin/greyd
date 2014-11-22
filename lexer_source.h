@@ -13,14 +13,12 @@
 
 #include <zlib.h>
 
-#define T Lexer_source_T
-
 #define LEXER_SOURCE_STR  1
 #define LEXER_SOURCE_FILE 2
 #define LEXER_SOURCE_GZ   3
 
-typedef struct T *T;
-struct T {
+typedef struct Lexer_source_T *Lexer_source_T;
+struct Lexer_source_T {
     int    type;
     void  *data;
     int  (*_getc)(void *data);
@@ -31,40 +29,39 @@ struct T {
 /**
  * Create a new configuration source from an absolute path.
  */
-extern T Lexer_source_create_from_file(const char *filename);
+extern Lexer_source_T Lexer_source_create_from_file(const char *filename);
 
 /**
  * Create a new configuration source from an open file descriptor.
  */
-extern T Lexer_source_create_from_fd(int fd);
+extern Lexer_source_T Lexer_source_create_from_fd(int fd);
 
 /**
  * Create a new configuration source from a NULL-terminated buffer. Note,
  * the buffer will be copied into the newly created source object.
  */
-extern T Lexer_source_create_from_str(const char *buf, int len);
+extern Lexer_source_T Lexer_source_create_from_str(const char *buf, int len);
 
 /**
  * Create a new configuration source from a gzipped file.
  */
-extern T Lexer_source_create_from_gz(gzFile gzf);
+extern Lexer_source_T Lexer_source_create_from_gz(gzFile gzf);
 
 /**
  * Destroy a source object and it's data.
  */
-extern void Lexer_source_destroy(T *source);
+extern void Lexer_source_destroy(Lexer_source_T *source);
 
 /**
  * Get the next character from this source's queue. An EOF will be returned
  * upon the end of the stream.
  */
-extern int Lexer_source_getc(T source);
+extern int Lexer_source_getc(Lexer_source_T source);
 
 /**
  * Push a character back onto the front of the source's stream. Note, calling
  * this function multiple times before a getc will yield undefined results.
  */
-extern void Lexer_source_ungetc(T source, int c);
+extern void Lexer_source_ungetc(Lexer_source_T source, int c);
 
-#undef T
 #endif
