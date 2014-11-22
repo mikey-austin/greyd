@@ -10,12 +10,10 @@
 
 #include <stdlib.h>
 
-#define T Queue_T
-
-extern T
+extern Queue_T
 Queue_create(void (*destroy)(void *value))
 {
-    T queue;
+    Queue_T queue;
 
     if((queue = malloc(sizeof(*queue))) == NULL) {
         I_CRIT("Could not create an empty queue");
@@ -28,7 +26,7 @@ Queue_create(void (*destroy)(void *value))
 }
 
 extern void
-Queue_destroy(T *queue)
+Queue_destroy(Queue_T *queue)
 {
     if(queue != NULL && *queue != NULL) {
         List_destroy(&((*queue)->list));
@@ -38,21 +36,19 @@ Queue_destroy(T *queue)
 }
 
 extern void
-Queue_enqueue(T queue, void *value)
+Queue_enqueue(Queue_T queue, void *value)
 {
     List_insert_after(queue->list, value);
 }
 
 extern void
-*Queue_dequeue(T queue)
+*Queue_dequeue(Queue_T queue)
 {
     return List_remove_head(queue->list);
 }
 
 extern int
-Queue_size(T queue)
+Queue_size(Queue_T queue)
 {
     return List_size(queue->list);
 }
-
-#undef T
