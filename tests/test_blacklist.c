@@ -22,11 +22,10 @@ main()
 {
     Blacklist_T bl;
     u_int32_t a1, b1, a2, b2, a3, b3;
-    char *s, *s2;
+    char *s, *s2, *c;
     int i = 0;
     List_T cidrs;
     struct List_entry *entry;
-    struct IP_cidr *c;
     struct IP_addr a;
 
     TEST_START(27);
@@ -88,9 +87,7 @@ main()
             s = "n/a";
         }
 
-        s2 = IP_cidr_to_str(c);
-        TEST_OK((strcmp(s, s2) == 0), "Range to CIDR ok");
-        free(s2);
+        TEST_OK((strcmp(s, c) == 0), "Range to CIDR ok");
         i++;
     }
 

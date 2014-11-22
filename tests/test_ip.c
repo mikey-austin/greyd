@@ -21,10 +21,10 @@ static void cidr_destroy(void *cidr);
 int
 main()
 {
-    struct IP_cidr cidr, *c;
+    struct IP_cidr cidr;
     struct IP_addr a, m, b;
     u_int32_t start, end;
-    char *s, *s2;
+    char *s, *s2, *c;
     List_T cidrs;
     struct List_entry *entry;
     int i = 0;
@@ -85,9 +85,7 @@ main()
             break;
         }
 
-        s2 = IP_cidr_to_str(c);
-        TEST_OK((strcmp(s, s2) == 0), "Range to CIDR ok");
-        free(s2);
+        TEST_OK((strcmp(s, c) == 0), "Range to CIDR ok");
         i++;
     }
 

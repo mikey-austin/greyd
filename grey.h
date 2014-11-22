@@ -8,14 +8,11 @@
 #ifndef GREY_DEFINED
 #define GREY_DEFINED
 
+#include "firewall.h"
 #include "config.h"
 #include "list.h"
 
 #include <stdio.h>
-
-#define T Grey_tuple
-#define D Grey_data
-#define G Greylister_T
 
 #define GREY_MAX_MAIL         1024
 #define GREY_MAX_KEY          45
@@ -38,14 +35,14 @@
 /**< Hitting a spamtrap blacklists for a day. */
 #define GREY_TRAPEXP  (60 * 60 * 24)
 
-struct T {
+struct Grey_tuple {
     char *ip;
     char *helo;
     char *from;
     char *to;
 };
 
-struct D {
+struct Grey_data {
 	int64_t first;  /**< When did we see it first. */
 	int64_t pass;   /**< When was it whitelisted. */
 	int64_t expire; /**< When will we get rid of this entry. */
@@ -56,63 +53,62 @@ struct D {
 /**
  * The greylister holds the state of the greylisting engine.
  */
-typedef struct G *G;
-struct G {
-    Config_T  config;
-    char     *low_prio_mx_ip;
-    char     *traplist_name;
-    char     *traplist_msg;
-    List_T    whitelist;
-    List_T    traplist;
-    FILE     *trap_out;
-    FILE     *grey_in;
-    pid_t     grey_pid;
-    pid_t     reader_pid;
-    time_t    startup;
-    time_t    grey_exp;
-    time_t    trap_exp;
-    time_t    white_exp;
-    time_t    pass_time;
-    int       sync_send;
+typedef struct Greylister_T *Greylister_T;
+struct Greylister_T {
+    Config_T    config;
+    char       *low_prio_mx_ip;
+    char       *traplist_name;
+    char       *traplist_msg;
+    char       *whitelist_name;
+    List_T      whitelist;
+    List_T      traplist;
+    FILE       *trap_out;
+    FILE       *grey_in;
+    pid_t       grey_pid;
+    pid_t       reader_pid;
+    time_t      startup;
+    time_t      grey_exp;
+    time_t      trap_exp;
+    time_t      white_exp;
+    time_t      pass_time;
+    int         sync_send;
+    FW_handle_T fw_handle;
 };
 
 /**
  * Given a configuration structure, setup and initialize and
  * return the greylisting engine state.
  */
-extern G Grey_setup(Config_T config);
+extern Greylister_T Grey_setup(Config_T config);
 
 /**
  * Start the greylisting engine.
  */
-extern void Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out);
+extern void Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out);
 
 /**
  * Stop the greylisting engine and cleanup afterwards.
  */
-extern void Grey_finish(G *greylister);
+extern void Grey_finish(Greylister_T *greylister);
 
 /**
  * Start the child process which reads data from the main
  * greyd server process, and updates the database accordingly.
  */
-extern int Grey_start_reader(G greylister);
+extern int Grey_start_reader(Greylister_T greylister);
 
 /**
  * Start the child process which periodically scans the greyd
  * database to update counters, expire entries, configure
  * whitelists and traplists.
  */
-extern void Grey_start_scanner(G greylister);
+extern void Grey_start_scanner(Greylister_T greylister);
 
 /**
  * Scan the grey engine database looking to expire entries,
  * update firewall whitelists and send trapped IP addresses to
  * the main greyd process.
  */
-extern int Grey_scan_db(G greylister);
+extern int Grey_scan_db(Greylister_T greylister);
 
-#undef T
-#undef D
-#undef G
 #endif

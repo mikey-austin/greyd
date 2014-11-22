@@ -8,7 +8,6 @@
 #include "../firewall.h"
 #include "../config_section.h"
 #include "../list.h"
-#include "../ip.h"
 
 #include <stdio.h>
 
@@ -41,7 +40,6 @@ Mod_fw_close(FW_handle_T handle)
     FILE *ipset = handle->fwh;
 
     if(ipset) {
-        fprintf(ipset, "quit\n");
         fclose(ipset);
         handle->fwh = NULL;
     }
@@ -50,10 +48,9 @@ Mod_fw_close(FW_handle_T handle)
 int
 Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
 {
-    char *netblock;
     FILE *ipset = handle->fwh;
     struct List_entry *entry;
-    struct IP_cidr *cidr;
+    char *cidr;
     int nadded = 0, hash_size, max_elem;
 
     hash_size = Config_section_get_int(
@@ -72,12 +69,9 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
 
     /* Add the netblocks to the temporary set. */
     LIST_FOREACH(cidrs, entry) {
-        cidr = List_entry_value(entry);
-
-        if((netblock = IP_cidr_to_str(cidr)) != NULL) {
-            fprintf(ipset, "add temp-%s %s -exist\n", set_name, netblock);
+        if((cidr = List_entry_value(entry)) != NULL) {
+            fprintf(ipset, "add temp-%s %s -exist\n", set_name, cidr);
             nadded++;
-            free(netblock);
         }
     }
 

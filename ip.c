@@ -35,19 +35,16 @@ IP_range_to_cidr_list(List_T cidrs, u_int32_t start, u_int32_t end)
 {
     int nadded = 0;
     u_int8_t maxsize, diff;
-    struct IP_cidr *new;
+    struct IP_cidr new;
 
     while(end >= start) {
         maxsize = max_block(start, 32);
         diff = max_diff(start, end);
         maxsize = (maxsize > diff ? maxsize : diff);
 
-        if((new = malloc(sizeof(*new))) == NULL)
-            I_CRIT("malloc failed");
-
-        new->addr = start;
-        new->bits = maxsize;
-        List_insert_after(cidrs, (void *) new);
+        new.addr = start;
+        new.bits = maxsize;
+        List_insert_after(cidrs, IP_cidr_to_str(&new));
 
         nadded++;
         start = start + (1 << (32 - maxsize));

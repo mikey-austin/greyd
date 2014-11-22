@@ -23,29 +23,26 @@
 #include <unistd.h>
 #include <string.h>
 
-#define T Grey_tuple
-#define D Grey_data
-#define G Greylister_T
-
 #define GREY_DEFAULT_TL_NAME "greyd-greytrap"
 #define GREY_DEFAULT_TL_MSG  "\"Your address %A has mailed to spamtraps here\\n\""
+#define GREY_DEFAULT_WL_NAME "greyd-whitelist"
 
 static void destroy_address(void *);
 static void sig_term_children(int);
 static int push_addr(List_T, char *);
-static void configure_greyd(G);
-static void process_message(G, Config_T);
-static void process_grey(G, struct T *, int, char *);
-static void process_non_grey(G, int, char *, char *, char *);
+static void configure_greyd(Greylister_T);
+static void process_message(Greylister_T, Config_T);
+static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
+static void process_non_grey(Greylister_T, int, char *, char *, char *);
 static int trap_check(DB_handle_T, char *);
 static int db_addr_state(DB_handle_T, char *);
 
-G Grey_greylister = NULL;
+Greylister_T Grey_greylister = NULL;
 
-extern G
+extern Greylister_T
 Grey_setup(Config_T config)
 {
-    G greylister = NULL;
+    Greylister_T greylister = NULL;
     Config_section_T section;
 
     if((greylister = malloc(sizeof(*greylister))) == NULL) {
@@ -58,6 +55,10 @@ Grey_setup(Config_T config)
     greylister->grey_pid   = -1;
     greylister->reader_pid = -1;
     greylister->startup    = -1;
+
+    if((greylister->fw_handle = FW_open(config)) == NULL) {
+        I_CRIT("Could not create firewall handle");
+    }
 
     /*
      * Gather configuration from the grey section.
@@ -81,6 +82,9 @@ Grey_setup(Config_T config)
 
         greylister->pass_time = Config_section_get_int(
             section, "pass_time", GREY_PASSTIME);
+
+        greylister->whitelist_name = Config_section_get_str(
+            section, "whitelist_name", GREY_DEFAULT_WL_NAME);
     }
 
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
@@ -99,7 +103,7 @@ Grey_setup(Config_T config)
 }
 
 extern void
-Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
+Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
 {
     struct sigaction sa;
 
@@ -123,8 +127,7 @@ Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
          * configuration pipe to the main greyd process.
          */
         fclose(greylister->trap_out);
-
-        // TODO: Close firewall handle here.
+        FW_close(&(greylister->fw_handle));
 
         // TODO: Set proc title to "(greyd db update)".
 
@@ -163,7 +166,7 @@ Grey_start(G greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
 }
 
 extern void
-Grey_finish(G *greylister)
+Grey_finish(Greylister_T *greylister)
 {
     pid_t grey_pid, reader_pid;
 
@@ -172,6 +175,7 @@ Grey_finish(G *greylister)
 
     (*greylister)->config = NULL;
 
+    FW_close(&((*greylister)->fw_handle));
     List_destroy(&((*greylister)->whitelist));
     List_destroy(&((*greylister)->traplist));
 
@@ -196,7 +200,7 @@ Grey_finish(G *greylister)
 }
 
 extern int
-Grey_start_reader(G greylister)
+Grey_start_reader(Greylister_T greylister)
 {
     Lexer_source_T source;
     Lexer_T lexer;
@@ -238,7 +242,7 @@ cleanup:
 }
 
 extern void
-Grey_start_scanner(G greylister)
+Grey_start_scanner(Greylister_T greylister)
 {
     for(;;) {
         if(Grey_scan_db(greylister) == -1)
@@ -249,7 +253,7 @@ Grey_start_scanner(G greylister)
 }
 
 extern int
-Grey_scan_db(G greylister)
+Grey_scan_db(Greylister_T greylister)
 {
     DB_handle_T db;
     DB_itr_T itr;
@@ -354,7 +358,8 @@ Grey_scan_db(G greylister)
 
     configure_greyd(greylister);
 
-    // TODO: Send whitelist IPs to firewall
+    FW_replace(greylister->fw_handle, greylister->whitelist_name,
+               greylister->whitelist);
 
     List_remove_all(greylister->whitelist);
     List_remove_all(greylister->traplist);
@@ -366,7 +371,7 @@ cleanup:
 }
 
 static void
-configure_greyd(G greylister)
+configure_greyd(Greylister_T greylister)
 {
     struct List_entry *entry;
     char *ip;
@@ -481,7 +486,7 @@ trap_check(DB_handle_T db, char *to)
 }
 
 static void
-process_grey(G greylister, struct T *gt, int sync, char *dst_ip)
+process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst_ip)
 {
     DB_handle_T db;
     struct DB_key key;
@@ -604,7 +609,7 @@ cleanup:
 }
 
 static void
-process_non_grey(G greylister, int spamtrap, char *ip, char *source, char *expires)
+process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, char *expires)
 {
     DB_handle_T db;
     struct DB_key key;
@@ -677,7 +682,7 @@ cleanup:
 }
 
 static void
-process_message(G greylister, Config_T message)
+process_message(Greylister_T greylister, Config_T message)
 {
     Config_section_T section;
     int type, sync;
