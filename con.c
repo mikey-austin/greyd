@@ -19,8 +19,8 @@
 #include <unistd.h>
 
 extern void
-Con_init(struct Con *con, int fd, struct sockaddr *sa, Con_list_T cons,
-         List_T blacklists, Config_T config)
+Con_init(struct Con *con, int fd, struct sockaddr *sa,
+         struct Con_list *cons, List_T blacklists, Config_T config)
 {
     time_t now;
     socklen_t sock_len = sizeof *sa;
@@ -77,7 +77,7 @@ Con_init(struct Con *con, int fd, struct sockaddr *sa, Con_list_T cons,
     free(human_time);
 
     con->out_p = con->out_buf;
-    con->ol = strlen(con->out_p);
+    con->out_remaining = strlen(con->out_p);
 
     /* Set the stuttering time values. */
     con->w = now + con->stutter;
@@ -109,7 +109,7 @@ Con_init(struct Con *con, int fd, struct sockaddr *sa, Con_list_T cons,
 }
 
 extern void
-Con_close(struct Con *con, Con_list_T cons, int *slow_until)
+Con_close(struct Con *con, struct Con_list *cons, int *slow_until)
 {
     time_t now;
 
@@ -190,5 +190,112 @@ extern char
         con->out_size += CON_OUT_BUF_SIZE;
         con->out_buf = out_buf;
         return con->out_buf + off;
+    }
+}
+
+extern void
+Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons, int *slow_until)
+{
+    int end = 0, nread;
+
+    if(con->r) {
+        nread = read(con->fd, con->in_p, con->in_size);
+        switch(nread) {
+        case -1:
+            I_WARN("connection read error");
+            /* Fallthrough. */
+
+        case 0:
+            Con_close(con, cons, slow_until);
+            break;
+
+        default:
+            con->in_p[nread] = '\0';
+            if(con->r_end_chars[0] && strpbrk(con->in_p, con->r_end_chars)) {
+                /* The input now contains a designated end char. */
+                end = 1;
+            }
+            con->in_p += nread;
+            con->in_size -= nread;
+            break;
+        }
+    }
+
+    if(end || con->in_size == 0) {
+        /* Replace trailing new lines with a null byte. */
+        while(con->in_p > con->in_buf
+              && (con->in_p[-1] == '\r' || con->in_p[-1] == '\n'))
+        {
+            con->in_p--;
+        }
+        *(con->in_p) = '\0';
+        con->r = 0;
+        // TODO: Con_next_state(con);
+    }
+}
+
+extern void
+Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons, int *slow_until, Config_T config)
+{
+    int nwritten, within_max, to_be_written;
+    int greylist = Config_get_int(config, "enable", "grey", 1);
+    int grey_stutter = Config_get_int(config, "stutter", "grey", CON_GREY_STUTTER);
+
+    /*
+     * Greylisted connections should have their stutter
+     * stopped after initial delay.
+     */
+    if(con->stutter && greylist && List_size(con->blacklists) == 0
+       && (*now - con->s) > grey_stutter)
+    {
+        con->stutter = 0;
+    }
+
+    if(con->w) {
+        if(*(con->out_p) == '\n' && !con->seen_cr) {
+            /* We must write a \r before a \n. */
+            nwritten = write(con->fd, "\r", 1);
+            switch(nwritten) {
+            case -1:
+                I_WARN("connection write error");
+                /* Fallthrough. */
+
+            case 0:
+                Con_close(con, cons, slow_until);
+                goto handled;
+                break;
+            }
+        }
+        con->seen_cr = (*(con->out_p) == '\r' ? 1 : 0);
+
+        /*
+         * Determine whether to write out the remaining output buffer or
+         * continue with a byte at a time.
+         */
+        within_max = (cons->clients + CON_CLIENT_TOLERENCE) < cons->size;
+        to_be_written = (within_max && con->stutter ? 1 : con->out_remaining);
+
+        nwritten = write(con->fd, con->out_p, to_be_written);
+        switch(nwritten) {
+        case -1:
+            I_WARN("connection write error");
+            /* Fallthrough. */
+
+        case 0:
+            Con_close(con, cons, slow_until);
+            break;
+
+        default:
+            con->out_p += nwritten;
+            con->out_remaining -= nwritten;
+            break;
+        }
+    }
+
+handled:
+    con->w = *now + con->stutter;
+    if(con->out_remaining == 0) {
+        con->w = 0;
+        // TODO: Con_next_state(con);
     }
 }
