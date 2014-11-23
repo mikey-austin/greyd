@@ -14,6 +14,8 @@
 #include "config.h"
 #include "ip.h"
 
+#define CON_BL_SUMMARY_LEN  80
+#define CON_BL_SUMMARY_ETC  " ..."
 #define CON_BUF_SIZE        8192
 #define CON_DEFAULT_MAX     800
 #define CON_REMOTE_END_SIZE 5
@@ -49,7 +51,9 @@ struct Con {
     char in_buf[CON_BUF_SIZE];
     char *in_p;
     int in_size;
-    char r_end_chars[CON_REMOTE_END_SIZE]; /* Chars causing input termination. */
+
+    /* Chars causing input termination. */
+    char r_end_chars[CON_REMOTE_END_SIZE];
 
     char *out_buf;
     size_t out_size;
@@ -69,20 +73,21 @@ struct Con {
 typedef struct Con_list_T *Con_list_T;
 struct Con_list_T {
     struct Con *connections;
-    size_t count;
     size_t size;
+    size_t clients;
+    size_t black_clients;
 };
 
 /**
  * Initialize a connection's internal state.
  */
 extern void Con_init(struct Con *con, int fd, struct sockaddr *sa,
-                     List_T blacklists, Config_T config);
+                     Con_list_T cons, List_T blacklists, Config_T config);
 
 /**
  * Cleanup a connection, to be re-initialized later.
  */
-extern void Con_close(struct Con *con);
+extern void Con_close(struct Con *con, Con_list_T cons, int *slow_until);
 
 /**
  * Advance a connection's SMTP state machine.
@@ -135,7 +140,8 @@ extern void Con_build_reply(struct Con *con, char *reply_code);
  * @return Size of appended string.
  * @return -1 on error.
  */
-extern int Con_append_error_string(struct Con *con, size_t off, char *fmt, char *reply_code);
+extern int Con_append_error_string(struct Con *con, size_t off, char *fmt,
+                                   char *reply_code);
 
 /**
  * Increase the size of a connection's output buffer by a fixed

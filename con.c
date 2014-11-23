@@ -16,15 +16,16 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 
 extern void
-Con_init(struct Con *con, int fd, struct sockaddr *sa, List_T blacklists,
-         Config_T config)
+Con_init(struct Con *con, int fd, struct sockaddr *sa, Con_list_T cons,
+         List_T blacklists, Config_T config)
 {
     time_t now;
     socklen_t sock_len = sizeof *sa;
     short greylist, grey_stutter;
-    int ret;
+    int ret, max_black;
     char *human_time;
     struct List_entry *entry;
     Blacklist_T blacklist = NULL;
@@ -93,17 +94,52 @@ Con_init(struct Con *con, int fd, struct sockaddr *sa, List_T blacklists,
         }
     }
 
+    cons->clients++;
     if(List_size(con->blacklists) > 0) {
-        // TODO: set blacklist count
-
+        cons->black_clients++;
         con->lists = Con_summarize_lists(con);
 
-        // TODO: adjust stutter if we are over the max black connections
-        // and we are not in blacklist-only mode.
+        max_black = Config_get_int(config, "max_black", NULL, CON_DEFAULT_MAX);
+        if(greylist && (cons->black_clients > max_black))
+            con->stutter = 0;
     }
     else {
         con->lists = NULL;
     }
+}
+
+extern void
+Con_close(struct Con *con, Con_list_T cons, int *slow_until)
+{
+    time_t now;
+
+    close(con->fd);
+    con->fd = -1;
+    *slow_until = 0;
+
+    time(&now);
+    I_INFO("%s: disconnected after %lld seconds.%s%s",
+           con->src_addr, (long long) (now - con->s),
+           (List_size(con->blacklists) > 0 ? " lists:" : ""),
+           (List_size(con->blacklists) > 0 ? con->lists : ""));
+
+    if(con->lists != NULL) {
+        free(con->lists);
+        con->lists = NULL;
+    }
+
+    if(List_size(con->blacklists) > 0) {
+        List_remove_all(con->blacklists);
+        cons->black_clients--;
+    }
+
+    if(con->out_buf != NULL) {
+        free(con->out_buf);
+        con->out_buf = NULL;
+        con->out_size = 0;
+    }
+
+    cons->clients--;
 }
 
 extern char
@@ -115,5 +151,31 @@ extern char
 extern char
 *Con_summarize_lists(struct Con *con)
 {
-    return NULL;
+    char *lists;
+    int out_size;
+    struct List_entry *entry;
+    Blacklist_T blacklist;
+
+    if(List_size(con->blacklists) == 0)
+        return NULL;
+
+    if((lists = malloc(CON_BL_SUMMARY_LEN + 1)) == NULL)
+        I_CRIT("could not malloc list summary");
+    *lists = '\0';
+
+    out_size = CON_BL_SUMMARY_LEN - strlen(CON_BL_SUMMARY_ETC);
+    LIST_FOREACH(con->blacklists, entry) {
+        blacklist = List_entry_value(entry);
+
+        if(strlen(lists) + strlen(blacklist->name) + 1 >= out_size) {
+            strncat(lists, CON_BL_SUMMARY_ETC, strlen(CON_BL_SUMMARY_ETC));
+            break;
+        }
+        else {
+            strcat(lists, " ");
+            strcat(lists, blacklist->name);
+        }
+    }
+
+    return lists;
 }
