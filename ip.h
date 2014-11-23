@@ -82,4 +82,14 @@ extern int IP_match_addr(struct IP_addr *a, struct IP_addr *m,
  */
 extern short IP_check_addr(const char *addr);
 
+/**
+ * Convert a sockaddr_storage address (from any address family)
+ * into an internal IP_addr address format.
+ *
+ * @return The address family on success
+ * @return -1 on failure
+ */
+extern int IP_sockaddr_to_addr(struct sockaddr_storage *ss,
+                               struct IP_addr *addr);
+
 #endif

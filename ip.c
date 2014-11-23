@@ -117,6 +117,24 @@ IP_check_addr(const char *addr)
     return -1;
 }
 
+extern int
+IP_sockaddr_to_addr(struct sockaddr_storage *ss, struct IP_addr *addr)
+{
+    struct sockaddr *sa = (struct sockaddr *) ss;
+
+    switch(sa->sa_family) {
+    case AF_INET:
+        addr->v4 = ((struct sockaddr_in *) sa)->sin_addr;
+        break;
+
+    case AF_INET6:
+        addr->v6 = ((struct sockaddr_in6 *) sa)->sin6_addr;
+        break;
+    }
+
+    return sa->sa_family;
+}
+
 static u_int8_t
 max_diff(u_int32_t a, u_int32_t b)
 {
