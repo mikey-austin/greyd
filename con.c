@@ -143,12 +143,6 @@ Con_close(struct Con *con, Con_list_T cons, int *slow_until)
 }
 
 extern char
-*Con_grow_out_buf(struct Con *con, int off)
-{
-    return NULL;
-}
-
-extern char
 *Con_summarize_lists(struct Con *con)
 {
     char *lists;
@@ -159,16 +153,16 @@ extern char
     if(List_size(con->blacklists) == 0)
         return NULL;
 
-    if((lists = malloc(CON_BL_SUMMARY_LEN + 1)) == NULL)
+    if((lists = malloc(CON_BL_SUMMARY_SIZE + 1)) == NULL)
         I_CRIT("could not malloc list summary");
     *lists = '\0';
 
-    out_size = CON_BL_SUMMARY_LEN - strlen(CON_BL_SUMMARY_ETC);
+    out_size = CON_BL_SUMMARY_SIZE - strlen(CON_BL_SUMMARY_ETC);
     LIST_FOREACH(con->blacklists, entry) {
         blacklist = List_entry_value(entry);
 
         if(strlen(lists) + strlen(blacklist->name) + 1 >= out_size) {
-            strncat(lists, CON_BL_SUMMARY_ETC, strlen(CON_BL_SUMMARY_ETC));
+            strcat(lists, CON_BL_SUMMARY_ETC);
             break;
         }
         else {
@@ -178,4 +172,23 @@ extern char
     }
 
     return lists;
+}
+
+extern char
+*Con_grow_out_buf(struct Con *con, int off)
+{
+    char *out_buf;
+
+    out_buf = realloc(con->out_buf, con->out_size + CON_OUT_BUF_SIZE);
+    if(out_buf == NULL) {
+        free(con->out_buf);
+        con->out_buf = NULL;
+        con->out_size = 0;
+        return NULL;
+    }
+    else {
+        con->out_size += CON_OUT_BUF_SIZE;
+        con->out_buf = out_buf;
+        return con->out_buf + off;
+    }
 }

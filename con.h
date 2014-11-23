@@ -14,13 +14,14 @@
 #include "config.h"
 #include "ip.h"
 
-#define CON_BL_SUMMARY_LEN  80
+#define CON_BL_SUMMARY_SIZE 80
 #define CON_BL_SUMMARY_ETC  " ..."
 #define CON_BUF_SIZE        8192
 #define CON_DEFAULT_MAX     800
 #define CON_REMOTE_END_SIZE 5
 #define CON_GREY_STUTTER    10
 #define CON_STUTTER         1
+#define CON_OUT_BUF_SIZE    8192
 
 /**
  * Main structure encapsulating the state of a single connection.
