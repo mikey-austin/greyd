@@ -11,11 +11,14 @@
 #include "blacklist.h"
 #include "grey.h"
 #include "list.h"
+#include "config.h"
 #include "ip.h"
 
 #define CON_BUF_SIZE        8192
 #define CON_DEFAULT_MAX     800
 #define CON_REMOTE_END_SIZE 5
+#define CON_GREY_STUTTER    10
+#define CON_STUTTER         1
 
 /**
  * Main structure encapsulating the state of a single connection.
@@ -24,9 +27,9 @@ struct Con {
     int fd;
     int state;
     int last_state;
-    short af;
 
     struct sockaddr_storage ss;
+    short af;
     void *ia;
     char src_addr[INET6_ADDRSTRLEN];
     char dst_addr[INET6_ADDRSTRLEN];
@@ -51,8 +54,8 @@ struct Con {
     char *out_buf;
     size_t out_size;
     char *out_p;
-
     int ol;
+
     int data_lines;
     int data_body;
     int stutter;
@@ -73,7 +76,8 @@ struct Con_list_T {
 /**
  * Initialize a connection's internal state.
  */
-extern void Con_init(struct Con *con, int fd, struct sockaddr *sa, Blacklist_T blacklists);
+extern void Con_init(struct Con *con, int fd, struct sockaddr *sa,
+                     List_T blacklists, Config_T config);
 
 /**
  * Cleanup a connection, to be re-initialized later.
@@ -110,6 +114,9 @@ extern void Con_get_orig_dst_addr(struct Con *con);
  * Return a suitably sized string summarizing the lists containing,
  * this connection's src address. If there are too many lists,
  * the string will be truncated with a trailing "..." appended.
+ *
+ * The returned string must be freed by the caller when it is no
+ * longer needed.
  */
 extern char *Con_summarize_lists(struct Con *con);
 
