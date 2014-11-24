@@ -23,6 +23,7 @@
 #define CON_STUTTER          1
 #define CON_OUT_BUF_SIZE     8192
 #define CON_CLIENT_TOLERENCE 5
+#define CON_ERROR_CODE       "450"
 
 /**
  * Main structure encapsulating the state of a single connection.
@@ -32,9 +33,7 @@ struct Con {
     int state;
     int last_state;
 
-    struct sockaddr_storage ss;
-    short af;
-    void *ia;
+    struct sockaddr_storage src;
     char src_addr[INET6_ADDRSTRLEN];
     char dst_addr[INET6_ADDRSTRLEN];
     char helo[GREY_MAX_MAIL], mail[GREY_MAX_MAIL], rcpt[GREY_MAX_MAIL];
@@ -82,7 +81,7 @@ struct Con_list {
 /**
  * Initialize a connection's internal state.
  */
-extern void Con_init(struct Con *con, int fd, struct sockaddr *sa,
+extern void Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
                      struct Con_list *cons, List_T blacklists,
                      Config_T config);
 
@@ -147,7 +146,7 @@ extern void Con_build_reply(struct Con *con, char *reply_code);
  * @return -1 on error.
  */
 extern int Con_append_error_string(struct Con *con, size_t off, char *fmt,
-                                   char *reply_code);
+                                   char *response_code, int *last_line_cont);
 
 /**
  * Increase the size of a connection's output buffer by a fixed

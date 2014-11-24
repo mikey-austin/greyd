@@ -19,11 +19,10 @@
 #include <unistd.h>
 
 extern void
-Con_init(struct Con *con, int fd, struct sockaddr *sa,
+Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
          struct Con_list *cons, List_T blacklists, Config_T config)
 {
     time_t now;
-    socklen_t sock_len = sizeof *sa;
     short greylist, grey_stutter;
     int ret, max_black;
     char *human_time;
@@ -49,19 +48,14 @@ Con_init(struct Con *con, int fd, struct sockaddr *sa,
     con->blacklists = List_create(NULL);
     con->fd = fd;
 
-    if(sock_len > sizeof con->ss)
-        I_CRIT("sockaddr size mismatch");
-    memcpy(&(con->ss), sa, sock_len);
-    con->af = sa->sa_family;
-    con->ia = &((struct sockaddr_in *) &con->ss)->sin_addr;
-
     greylist = Config_get_int(config, "enable", "grey", 1);
     grey_stutter = Config_get_int(config, "stutter", "grey", CON_GREY_STUTTER);
     con->stutter = (greylist && !grey_stutter && List_size(con->blacklists) == 0)
         ? 0 : Config_get_int(config, "stutter", NULL, CON_STUTTER);
 
-    ret = getnameinfo(sa, sock_len, con->src_addr, sizeof(con->src_addr), NULL, 0,
-                      NI_NUMERICHOST);
+    memcpy(&(con->src), src, sizeof(*src));
+    ret = getnameinfo((struct sockaddr *) src, sizeof(*src), con->src_addr,
+                      sizeof(con->src_addr), NULL, 0, NI_NUMERICHOST);
     if(ret != 0)
         I_CRIT("getnameinfo: %s", gai_strerror(ret));
 
@@ -87,11 +81,10 @@ Con_init(struct Con *con, int fd, struct sockaddr *sa,
     /* Lookup any blacklists based on this client's src IP address. */
     LIST_FOREACH(blacklists, entry) {
         blacklist = List_entry_value(entry);
-        IP_sockaddr_to_addr(&con->ss, &ipaddr);
+        IP_sockaddr_to_addr(&con->src, &ipaddr);
 
-        if(Blacklist_match(blacklist, &ipaddr, con->af)) {
+        if(Blacklist_match(blacklist, &ipaddr, ((struct sockaddr *) &con->src)->sa_family))
             List_insert_after(con->blacklists, blacklist);
-        }
     }
 
     cons->clients++;
@@ -298,4 +291,101 @@ handled:
         con->w = 0;
         // TODO: Con_next_state(con);
     }
+}
+
+extern int
+Con_append_error_string(struct Con *con, size_t off, char *fmt,
+                        char *response_code, int *last_line_cont)
+{
+    char *format = fmt;
+    char *error_str = con->out_buf + off;
+    char saved = '\0';
+    size_t error_str_len = con->out_size - off;
+    int appended = 0;
+    int response_code_len = (strlen(response_code) + 1);
+
+    if(off == 0)
+        *last_line_cont = 0;
+
+    if(*last_line_cont != 0)
+        con->out_buf[*last_line_cont] = '-';
+
+    if(error_str_len < response_code_len
+       && (error_str = Con_grow_out_buf(con, off)) != NULL)
+    {
+        error_str_len = con->out_size - off;
+    }
+
+    snprintf(error_str, error_str_len, "%s ", response_code);
+    appended += strlen(error_str);
+    *last_line_cont = off + appended - 1;
+
+    while(*error_str) {
+        /*
+         * Each iteration must ensure there is enough space
+         * to store a 4 byte response code, a 39 byte IPv6 address,
+         * a saved previous byte.
+         */
+        if(appended >= (error_str_len - (INET6_ADDRSTRLEN + response_code_len + 1))) {
+            if((error_str = Con_grow_out_buf(con, off)) == NULL)
+                return -1;
+            error_str_len = con->out_size - (off + appended);
+        }
+
+        /*
+         * If this line is a continuation, we must insert a dash in the previous
+         * line, and write the response code again at the beginning of the
+         * new line.
+         */
+        if(error_str[appended - 1] == '\n') {
+            if(*last_line_cont)
+                con->out_buf[*last_line_cont] = '-';
+            snprintf(error_str + appended, error_str_len, "%s ", response_code);
+            appended += strlen(error_str);
+            *last_line_cont = off + appended - 1;
+        }
+
+        switch(*format) {
+        case '\\':
+        case '%':
+            if(!saved) {
+                saved = *format;
+            }
+            else {
+                error_str[appended++] = saved;
+                saved = '\0';
+                error_str[appended] = '\0';
+            }
+            break;
+
+        case 'A':
+        case 'n':
+            if(saved == '\\' && *format == 'n') {
+                error_str[appended++] = '\n';
+                saved = '\0';
+                error_str[appended] = '\0';
+                break;
+            }
+            else if(saved == '%' && *format == 'A') {
+                strncpy(error_str + appended, con->src_addr, sizeof(con->src_addr));
+                appended += strlen(error_str + appended);
+                saved = '\0';
+                error_str[appended] = '\0';
+                break;
+            }
+            /* Fallthrough. */
+
+        default:
+            if(saved)
+                error_str[appended++] = saved;
+            error_str[appended++] = *format;
+            saved = '\0';
+            error_str[appended] = '\0';
+            break;
+        }
+
+        format++;
+    }
+
+    return appended;
 }
