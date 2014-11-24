@@ -5,6 +5,8 @@
  * @date   2014
  */
 
+#define _GNU_SOURCE
+
 #include "failures.h"
 #include "con.h"
 #include "blacklist.h"
@@ -388,4 +390,61 @@ Con_append_error_string(struct Con *con, size_t off, char *fmt,
     }
 
     return appended;
+}
+
+extern void
+Con_build_reply(struct Con *con, char *response_code)
+{
+    int off = 0, last_line_cont = 0, remaining, appended;
+    char *reply;
+    struct List_entry *entry;
+    Blacklist_T blacklist;
+
+    if(List_size(con->blacklists) > 0) {
+        LIST_FOREACH(con->blacklists, entry) {
+            blacklist = List_entry_value(entry);
+            appended = 0;
+            reply = con->out_buf + off;
+            remaining = con->out_size - off;
+
+            appended = Con_append_error_string(con, off, blacklist->message,
+                                               response_code, &last_line_cont);
+            if(appended == -1)
+                goto error;
+
+            off += appended;
+            remaining -= appended;
+
+            if(con->out_buf[off - 1] != '\n') {
+                if(remaining < 1 &&
+                   (reply = Con_grow_out_buf(con, off)) == NULL)
+                {
+                    goto error;
+                }
+
+                con->out_buf[off++] = '\n';
+                con->out_buf[off] = '\0';
+            }
+        }
+
+        return;
+    }
+    else {
+        /*
+         * This connection is not on any blacklists, so
+         * give a generic reply.
+         */
+        asprintf(&con->out_buf,
+                 "451 Temporary failure, please try again later.\r\n");
+        con->out_size = (con->out_buf == NULL
+                         ? 0 : strlen(con->out_buf) + 1);
+        return;
+    }
+
+error:
+    if(con->out_buf != NULL) {
+        free(con->out_buf);
+        con->out_buf = NULL;
+        con->out_size = 0;
+    }
 }

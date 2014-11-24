@@ -135,7 +135,7 @@ extern char *Con_summarize_lists(struct Con *con);
  * error string separated by a new line. If there are no associated
  * blacklists, return a generic reply.
  */
-extern void Con_build_reply(struct Con *con, char *reply_code);
+extern void Con_build_reply(struct Con *con, char *response_code);
 
 /**
  * Prepare an error string and append to the supplied connection's
