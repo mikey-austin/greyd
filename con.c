@@ -12,13 +12,19 @@
 #include "blacklist.h"
 #include "list.h"
 #include "utils.h"
+#include "grey.h"
 
+#include <err.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+
+static int match(const char *, const char *);
+static void get_helo(char *, size_t, char *);
+static void set_log(char *, size_t, char *);
 
 extern void
 Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
@@ -189,7 +195,8 @@ extern char
 }
 
 extern void
-Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons, int *slow_until)
+Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons,
+                int *slow_until, Config_T config, FILE *grey_out)
 {
     int end = 0, nread;
 
@@ -225,12 +232,13 @@ Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons, int *slow_u
         }
         *(con->in_p) = '\0';
         con->r = 0;
-        // TODO: Con_next_state(con);
+        Con_next_state(con, now, cons, slow_until, config, grey_out);
     }
 }
 
 extern void
-Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons, int *slow_until, Config_T config)
+Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons,
+                 int *slow_until, Config_T config, FILE *grey_out)
 {
     int nwritten, within_max, to_be_written;
     int greylist = Config_get_int(config, "enable", "grey", 1);
@@ -291,7 +299,262 @@ handled:
     con->w = *now + con->stutter;
     if(con->out_remaining == 0) {
         con->w = 0;
-        // TODO: Con_next_state(con);
+        Con_next_state(con, now, cons, slow_until, config, grey_out);
+    }
+}
+
+extern void
+Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
+               int *slow_until, Config_T config, FILE *grey_out)
+{
+    char *p, *q;
+    char *hostname = Config_get_str(config, "hostname", NULL, NULL);
+    char *error_code = Config_get_str(config, "error_code", NULL, NULL);
+    int greylist = Config_get_int(config, "enable", "grey", 1);
+    int verbose = Config_get_int(config, "verbose", NULL, 0);
+    int window = Config_get_int(config, "window", NULL, 0);
+    int next_state;
+
+    if(match(con->in_buf, "QUIT") && con->state < CON_STATE_CLOSE) {
+        snprintf(con->out_buf, con->out_size, "221 %s\r\n", hostname);
+        con->out_p = con->out_buf;
+        con->out_remaining = strlen(con->out_p);
+        con->w = *now + con->stutter;
+        con->last_state = con->state;
+        con->state = CON_STATE_CLOSE;
+        return;
+    }
+
+    if(match(con->in_buf, "RSET") && con->state > CON_STATE_HELO_OUT
+       && con->state < CON_STATE_DATA_IN)
+    {
+        snprintf(con->out_buf, con->out_size,
+                 "250 2.0.0 Ok\r\n");
+        con->out_p = con->out_buf;
+        con->out_remaining = strlen(con->out_p);
+        con->w = *now + con->stutter;
+        con->last_state = con->state;
+        con->state = CON_STATE_HELO_OUT;
+        return;
+    }
+
+    switch(con->state) {
+    case CON_STATE_BANNER_SENT:
+        con->in_p = con->in_buf;
+        con->in_size = sizeof(con->in_buf) - 1;
+        con->last_state = con->state;
+        con->state = CON_STATE_HELO_IN;
+        con->r = *now;
+        break;
+
+    case CON_STATE_HELO_IN:
+        if(match(con->in_buf, "HELO") || match(con->in_buf, "EHLO")) {
+            next_state = CON_STATE_HELO_OUT;
+            con->helo[0] = '\0';
+            get_helo(con->helo, sizeof(con->helo), con->in_buf);
+            if(*con->helo == '\0') {
+                next_state = CON_STATE_BANNER_SENT;
+                snprintf(con->out_buf, con->out_size,
+                         "501 Syntax: %s hostname\r\n",
+                         match(con->in_buf, "HELO") ? "HELO" : "EHLO");
+            }
+            else {
+                snprintf(con->out_buf, con->out_size, "250 %s\r\n", hostname);
+            }
+            con->out_p = con->out_buf;
+            con->out_remaining = strlen(con->out_p);
+            con->last_state = con->state;
+            con->state = next_state;
+            con->w = *now + con->stutter;
+            break;
+        }
+        goto mail;
+
+    case CON_STATE_HELO_OUT:
+        /* Sent 250 Hello, wait for input. */
+        con->in_p = con->in_buf;
+        con->in_size = sizeof(con->in_buf) - 1;
+        con->last_state = con->state;
+        con->state = CON_STATE_MAIL_IN;
+        con->r = *now;
+        break;
+
+    case CON_STATE_MAIL_IN:
+    mail:
+        if(match(con->in_buf, "MAIL")) {
+            set_log(con->mail, sizeof(con->mail), con->in_buf);
+            snprintf(con->out_buf, con->out_size, "250 2.1.0 Ok\r\n");
+            con->out_p = con->out_buf;
+            con->out_remaining = strlen(con->out_p);
+            con->last_state = con->state;
+            con->state = CON_STATE_MAIL_OUT;
+            con->w = *now + con->stutter;
+            break;
+        }
+        goto rcpt;
+
+    case CON_STATE_MAIL_OUT:
+        /* Sent 250 Sender ok */
+        con->in_p = con->in_buf;
+        con->in_size = sizeof(con->in_buf) - 1;
+        con->last_state = con->state;
+        con->state = CON_STATE_RCPT_IN;
+        con->r = *now;
+        break;
+
+    case CON_STATE_RCPT_IN:
+    rcpt:
+        if(match(con->in_buf, "RCPT")) {
+            set_log(con->rcpt, sizeof(con->rcpt), con->in_buf);
+            snprintf(con->out_buf, con->out_size, "250 2.1.5 Ok\r\n");
+            con->out_p = con->out_buf;
+            con->out_remaining = strlen(con->out_p);
+            con->last_state = con->state;
+            con->state = CON_STATE_RCPT_OUT;
+            con->w = *now + con->stutter;
+
+            if(*con->mail && *con->rcpt) {
+                I_DEBUG("(%s) %s: %s -> %s\n",
+                        List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
+                        con->src_addr, con->mail, con->rcpt);
+
+                if(verbose)
+                    I_INFO("(%s) %s: %s -> %s\n",
+                            List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
+                            con->src_addr, con->mail, con->rcpt);
+
+                if(greylist && List_size(con->blacklists) == 0) {
+                    /*
+                     * Send this information to the greylister.
+                     */
+                    Con_get_orig_dst_addr(con);
+                    fprintf(grey_out,
+                            "type = %d\n"
+                            "dst_ip = \"%s\"\n"
+                            "ip = \"%s\"\n"
+                            "helo = \"%s\"\n"
+                            "from = \"%s\"\n"
+                            "to = \"%s\"\n"
+                            "%%\n", GREY_MSG_GREY, con->dst_addr,
+                            con->src_addr, con->helo,
+                            con->mail, con->rcpt);
+                    fflush(grey_out);
+                }
+            }
+            break;
+        }
+        goto spam;
+
+    case CON_STATE_RCPT_OUT:
+        /* Sent 250. */
+        con->in_p = con->in_buf;
+        con->in_size = sizeof(con->in_buf) - 1;
+        con->last_state = con->state;
+        con->state = CON_STATE_RCPT_IN;
+        con->r = *now;
+        break;
+
+    case CON_STATE_DATA_IN:
+    spam:
+        if(match(con->in_buf, "DATA")) {
+            snprintf(con->out_buf, con->out_size,
+                     "354 End data with <CR><LF>.<CR><LF>\r\n");
+            con->state = CON_STATE_DATA_OUT;
+
+            if(window && setsockopt(con->fd, SOL_SOCKET, SO_RCVBUF,
+                                    &window, sizeof(window)) == -1)
+            {
+                /* Don't fail if the above didn't work. */
+                I_DEBUG("setsockopt failed, window size of %d", window);
+            }
+
+            con->in_p = con->in_buf;
+            con->in_size = sizeof(con->in_buf) - 1;
+            con->out_p = con->out_buf;
+            con->out_remaining = strlen(con->out_p);
+            con->w = *now + con->stutter;
+            if(greylist && List_size(con->blacklists) == 0) {
+                con->last_state = con->state;
+                con->state = CON_STATE_REPLY;
+                goto done;
+            }
+        }
+        else {
+            if(match(con->in_buf, "NOOP")) {
+                snprintf(con->out_buf, con->out_size,
+                         "250 2.0.0 Ok\r\n");
+            }
+            else {
+                snprintf(con->out_buf, con->out_size,
+                         "500 5.5.1 Command unrecognized\r\n");
+                con->bad_cmd++;
+                if(con->bad_cmd > CON_MAX_BAD_CMD) {
+                    con->last_state = con->state;
+                    con->state = CON_STATE_REPLY;
+                    goto done;
+                }
+            }
+
+            con->state = con->last_state;
+            con->in_p = con->in_buf;
+            con->in_size = sizeof(con->in_buf) - 1;
+            con->out_p = con->out_buf;
+            con->out_remaining = strlen(con->out_p);
+            con->w = *now + con->stutter;
+        }
+        break;
+
+    case CON_STATE_DATA_OUT:
+        /* Sent 354. */
+        con->in_p = con->in_buf;
+        con->in_size = sizeof(con->in_buf) - 1;
+        con->last_state = con->state;
+        con->state = CON_STATE_MESSAGE;
+        con->r = *now;
+        break;
+
+    case CON_STATE_MESSAGE:
+        /* Process the message body. */
+        for(p = q = con->in_buf; q <= con->in_p; ++q) {
+            if(*q == '\n' || q == con->in_p) {
+                *q = 0;
+                if(q > p && q[-1] == '\r')
+                    q[-1] = 0;
+                if(!strcmp(p, ".") ||
+                   (con->data_body && ++con->data_lines >= 10)) {
+                    con->last_state = con->state;
+                    con->state = CON_STATE_REPLY;
+                    goto done;
+                }
+
+                if(!con->data_body && !*p)
+                    con->data_body = 1;
+
+                p = ++q;
+            }
+        }
+        con->in_p = con->in_buf;
+        con->in_size = sizeof(con->in_buf) - 1;
+        con->r = *now;
+        break;
+
+    case CON_STATE_REPLY:
+    done:
+        Con_build_reply(con, error_code);
+        con->out_p = con->out_buf;
+        con->out_remaining = strlen(con->out_p);
+        con->w = *now + con->stutter;
+        con->last_state = con->state;
+        con->state = CON_STATE_CLOSE;
+        break;
+
+    case CON_STATE_CLOSE:
+        Con_close(con, cons, slow_until);
+        break;
+
+    default:
+        errx(1, "illegal state %d", con->state);
+        break;
     }
 }
 
@@ -470,4 +733,60 @@ Con_get_orig_dst_addr(struct Con *con)
     {
         con->dst_addr[0] = '\0';
     }
+}
+
+static int
+match(const char *a, const char *b)
+{
+    return (strncasecmp(a, b, strlen(b)) == 0);
+}
+
+static void
+get_helo(char *p, size_t len, char *f)
+{
+    char *s;
+
+    /* Skip HELO/EHLO. */
+    f += 4;
+
+    /* Skip whitespace. */
+    while(*f == ' ' || *f == '\t')
+        f++;
+    s = strsep(&f, " \t");
+    if(s == NULL)
+        return;
+
+    sstrncpy(p, s, len);
+    s = strsep(&p, " \t\n\r");
+    if(s == NULL)
+        return;
+
+    s = strsep(&p, " \t\n\r");
+    if(s)
+        *s = '\0';
+}
+
+static void
+set_log(char *p, size_t len, char *f)
+{
+    char *s;
+
+    s = strsep(&f, ":");
+    if(!f)
+        return;
+
+    while(*f == ' ' || *f == '\t')
+        f++;
+    s = strsep(&f, " \t");
+    if(s == NULL)
+        return;
+
+    sstrncpy(p, s, len);
+    s = strsep(&p, " \t\n\r");
+    if(s == NULL)
+        return;
+
+    s = strsep(&p, " \t\n\r");
+    if(s)
+        *s = '\0';
 }

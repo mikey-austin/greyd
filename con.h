@@ -24,6 +24,23 @@
 #define CON_OUT_BUF_SIZE     8192
 #define CON_CLIENT_TOLERENCE 5
 #define CON_ERROR_CODE       "450"
+#define CON_MAX_BAD_CMD      20
+
+/**
+ * State machine connection states.
+ */
+#define CON_STATE_BANNER_SENT 0
+#define CON_STATE_HELO_IN     1
+#define CON_STATE_HELO_OUT    2
+#define CON_STATE_MAIL_IN     3
+#define CON_STATE_MAIL_OUT    4
+#define CON_STATE_RCPT_IN     5
+#define CON_STATE_RCPT_OUT    6
+#define CON_STATE_DATA_IN     50
+#define CON_STATE_DATA_OUT    60
+#define CON_STATE_MESSAGE     70
+#define CON_STATE_REPLY       98
+#define CON_STATE_CLOSE       99
 
 /**
  * Main structure encapsulating the state of a single connection.
@@ -36,7 +53,9 @@ struct Con {
     struct sockaddr_storage src;
     char src_addr[INET6_ADDRSTRLEN];
     char dst_addr[INET6_ADDRSTRLEN];
-    char helo[GREY_MAX_MAIL], mail[GREY_MAX_MAIL], rcpt[GREY_MAX_MAIL];
+    char helo[GREY_MAX_MAIL];
+    char mail[GREY_MAX_MAIL];
+    char rcpt[GREY_MAX_MAIL];
 
     List_T blacklists;  /* Blacklists containing this src address. */
     char *lists;        /* Summary of associated blacklists. */
@@ -64,7 +83,7 @@ struct Con {
     int data_lines;
     int data_body;
     int stutter;
-    int badcmd;
+    int bad_cmd;
     int seen_cr;
 };
 
@@ -94,15 +113,17 @@ extern void Con_close(struct Con *con, struct Con_list *cons,
 /**
  * Advance a connection's SMTP state machine.
  */
-extern void Con_next_state(struct Con *con);
-
+extern void Con_next_state(struct Con *con, time_t *now,
+                           struct Con_list *cons, int *slow_until,
+                           Config_T config, FILE *grey_out);
 /**
  * Process any connection client input waiting to be
  * read on the connection's file descriptor, then
  * advance the state.
  */
 extern void Con_handle_read(struct Con *con, time_t *now,
-                            struct Con_list *cons, int *slow_until);
+                            struct Con_list *cons, int *slow_until,
+                            Config_T config, FILE *grey_out);
 
 /**
  * According to the current connection state, write the
@@ -112,7 +133,7 @@ extern void Con_handle_read(struct Con *con, time_t *now,
  */
 extern void Con_handle_write(struct Con *con, time_t *now,
                              struct Con_list *cons, int *slow_until,
-                             Config_T config);
+                             Config_T config, FILE *grey_out);
 
 /**
  * Attempt to find and set the address the client originally
