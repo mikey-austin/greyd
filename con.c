@@ -448,3 +448,26 @@ error:
         con->out_size = 0;
     }
 }
+
+extern void
+Con_get_orig_dst_addr(struct Con *con)
+{
+    struct sockaddr_storage dst;
+    socklen_t dst_len = sizeof(dst);
+
+    *con->dst_addr = '\0';
+    if(getsockname(con->fd, (struct sockaddr *) &dst, &dst_len) == -1)
+        return;
+
+    // TODO: as connections are DNAT'ed to greyd, we must perform a
+    // lookup in the NAT table for this connection's source address,
+    // in order to find the original destination address. At the moment,
+    // the below will just return localhost (as it is what greyd is
+    // listening on).
+
+    if(getnameinfo((struct sockaddr *) &dst, dst_len, con->dst_addr,
+                   sizeof(con->dst_addr), NULL, 0, NI_NUMERICHOST) != 0)
+    {
+        con->dst_addr[0] = '\0';
+    }
+}
