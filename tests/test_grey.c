@@ -1,6 +1,6 @@
 /**
- * @file   test_bdb.c
- * @brief  Unit tests for Berkeley DB driver.
+ * @file   test_grey.c
+ * @brief  Unit tests for greylisting engine.
  * @author Mikey Austin
  * @date   2014
  */

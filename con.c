@@ -47,7 +47,7 @@ static void set_log(char *, size_t, char *);
 
 extern void
 Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
-         struct Con_list *cons, List_T blacklists, Config_T config)
+         struct Greyd_state *state)
 {
     time_t now;
     short greylist, grey_stutter;
@@ -75,10 +75,10 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     con->blacklists = List_create(NULL);
     con->fd = fd;
 
-    greylist = Config_get_int(config, "enable", "grey", GREYLISTING_ENABLED);
-    grey_stutter = Config_get_int(config, "stutter", "grey", CON_GREY_STUTTER);
+    greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
+    grey_stutter = Config_get_int(state->config, "stutter", "grey", CON_GREY_STUTTER);
     con->stutter = (greylist && !grey_stutter && List_size(con->blacklists) == 0)
-        ? 0 : Config_get_int(config, "stutter", NULL, CON_STUTTER);
+        ? 0 : Config_get_int(state->config, "stutter", NULL, CON_STUTTER);
 
     memcpy(&(con->src), src, sizeof(*src));
     ret = getnameinfo((struct sockaddr *) src, sizeof(*src), con->src_addr,
@@ -92,8 +92,8 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     /* Replace the newline with a \0. */
     human_time[strlen(human_time) - 1] = '\0';
     snprintf(con->out_buf, con->out_size, "220 %s ESMTP %s; %s\r\n",
-             Config_get_str(config, "hostname", NULL, NULL),
-             Config_get_str(config, "banner", NULL, NULL),
+             Config_get_str(state->config, "hostname", NULL, NULL),
+             Config_get_str(state->config, "banner", NULL, NULL),
              human_time);
     free(human_time);
 
@@ -109,7 +109,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     sstrncpy(con->r_end_chars, "\n", CON_REMOTE_END_SIZE);
 
     /* Lookup any blacklists based on this client's src IP address. */
-    LIST_FOREACH(blacklists, entry) {
+    LIST_FOREACH(state->blacklists, entry) {
         blacklist = List_entry_value(entry);
         IP_sockaddr_to_addr(&con->src, &ipaddr);
 
@@ -117,13 +117,13 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
             List_insert_after(con->blacklists, blacklist);
     }
 
-    cons->clients++;
+    state->clients++;
     if(List_size(con->blacklists) > 0) {
-        cons->black_clients++;
+        state->black_clients++;
         con->lists = Con_summarize_lists(con);
 
-        max_black = Config_get_int(config, "max_black", NULL, CON_DEFAULT_MAX);
-        if(greylist && (cons->black_clients > max_black))
+        max_black = Config_get_int(state->config, "max_black", NULL, CON_DEFAULT_MAX);
+        if(greylist && (state->black_clients > max_black))
             con->stutter = 0;
     }
     else {
@@ -132,13 +132,13 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
 }
 
 extern void
-Con_close(struct Con *con, struct Con_list *cons, int *slow_until)
+Con_close(struct Con *con, struct Greyd_state *state)
 {
     time_t now;
 
     close(con->fd);
     con->fd = -1;
-    *slow_until = 0;
+    state->slow_until = 0;
 
     time(&now);
     I_INFO("%s: disconnected after %lld seconds.%s%s",
@@ -153,7 +153,7 @@ Con_close(struct Con *con, struct Con_list *cons, int *slow_until)
 
     if(List_size(con->blacklists) > 0) {
         List_remove_all(con->blacklists);
-        cons->black_clients--;
+        state->black_clients--;
     }
 
     if(con->out_buf != NULL) {
@@ -162,7 +162,7 @@ Con_close(struct Con *con, struct Con_list *cons, int *slow_until)
         con->out_size = 0;
     }
 
-    cons->clients--;
+    state->clients--;
 }
 
 extern char
@@ -217,8 +217,7 @@ extern char
 }
 
 extern void
-Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons,
-                int *slow_until, Config_T config, FILE *grey_out)
+Con_handle_read(struct Con *con, time_t *now, struct Greyd_state *state)
 {
     int end = 0, nread;
 
@@ -230,7 +229,7 @@ Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons,
             /* Fallthrough. */
 
         case 0:
-            Con_close(con, cons, slow_until);
+            Con_close(con, state);
             break;
 
         default:
@@ -254,17 +253,16 @@ Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons,
         }
         *(con->in_p) = '\0';
         con->r = 0;
-        Con_next_state(con, now, cons, slow_until, config, grey_out);
+        Con_next_state(con, now, state);
     }
 }
 
 extern void
-Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons,
-                 int *slow_until, Config_T config, FILE *grey_out)
+Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
 {
     int nwritten, within_max, to_be_written;
-    int greylist = Config_get_int(config, "enable", "grey", GREYLISTING_ENABLED);
-    int grey_stutter = Config_get_int(config, "stutter", "grey", CON_GREY_STUTTER);
+    int greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
+    int grey_stutter = Config_get_int(state->config, "stutter", "grey", CON_GREY_STUTTER);
 
     /*
      * Greylisted connections should have their stutter
@@ -286,7 +284,7 @@ Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons,
                 /* Fallthrough. */
 
             case 0:
-                Con_close(con, cons, slow_until);
+                Con_close(con, state);
                 goto handled;
                 break;
             }
@@ -297,7 +295,7 @@ Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons,
          * Determine whether to write out the remaining output buffer or
          * continue with a byte at a time.
          */
-        within_max = (cons->clients + CON_CLIENT_TOLERENCE) < cons->size;
+        within_max = (state->clients + CON_CLIENT_TOLERENCE) < state->max_cons;
         to_be_written = (within_max && con->stutter ? 1 : con->out_remaining);
 
         nwritten = write(con->fd, con->out_p, to_be_written);
@@ -307,7 +305,7 @@ Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons,
             /* Fallthrough. */
 
         case 0:
-            Con_close(con, cons, slow_until);
+            Con_close(con, state);
             break;
 
         default:
@@ -321,20 +319,19 @@ handled:
     con->w = *now + con->stutter;
     if(con->out_remaining == 0) {
         con->w = 0;
-        Con_next_state(con, now, cons, slow_until, config, grey_out);
+        Con_next_state(con, now, state);
     }
 }
 
 extern void
-Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
-               int *slow_until, Config_T config, FILE *grey_out)
+Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
 {
     char *p, *q;
-    char *hostname = Config_get_str(config, "hostname", NULL, NULL);
-    char *error_code = Config_get_str(config, "error_code", NULL, NULL);
-    int greylist = Config_get_int(config, "enable", "grey", GREYLISTING_ENABLED);
-    int verbose = Config_get_int(config, "verbose", NULL, 0);
-    int window = Config_get_int(config, "window", NULL, 0);
+    char *hostname = Config_get_str(state->config, "hostname", NULL, NULL);
+    char *error_code = Config_get_str(state->config, "error_code", NULL, NULL);
+    int greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
+    int verbose = Config_get_int(state->config, "verbose", NULL, 0);
+    int window = Config_get_int(state->config, "window", NULL, 0);
     int next_state;
 
     if(match(con->in_buf, "QUIT") && con->state < CON_STATE_CLOSE) {
@@ -450,7 +447,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
                      * Send this information to the greylister.
                      */
                     Con_get_orig_dst_addr(con);
-                    fprintf(grey_out,
+                    fprintf(state->grey_out,
                             "type = %d\n"
                             "dst_ip = \"%s\"\n"
                             "ip = \"%s\"\n"
@@ -460,7 +457,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
                             "%%\n", GREY_MSG_GREY, con->dst_addr,
                             con->src_addr, con->helo,
                             con->mail, con->rcpt);
-                    fflush(grey_out);
+                    fflush(state->grey_out);
                 }
             }
             break;
@@ -571,7 +568,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
         break;
 
     case CON_STATE_CLOSE:
-        Con_close(con, cons, slow_until);
+        Con_close(con, state);
         break;
 
     default:

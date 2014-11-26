@@ -10,6 +10,7 @@
 
 #include "blacklist.h"
 #include "grey.h"
+#include "greyd.h"
 #include "list.h"
 #include "config.h"
 #include "ip.h"
@@ -88,42 +89,29 @@ struct Con {
 };
 
 /**
- * Structure to contain a list of connections.
- */
-struct Con_list {
-    struct Con *connections;
-    size_t size;
-    size_t clients;
-    size_t black_clients;
-};
-
-/**
  * Initialize a connection's internal state.
  */
 extern void Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
-                     struct Con_list *cons, List_T blacklists,
-                     Config_T config);
+                     struct Greyd_state *state);
 
 /**
  * Cleanup a connection, to be re-initialized later.
  */
-extern void Con_close(struct Con *con, struct Con_list *cons,
-                      int *slow_until);
+extern void Con_close(struct Con *con, struct Greyd_state *state);
 
 /**
  * Advance a connection's SMTP state machine.
  */
 extern void Con_next_state(struct Con *con, time_t *now,
-                           struct Con_list *cons, int *slow_until,
-                           Config_T config, FILE *grey_out);
+                           struct Greyd_state *state);
+
 /**
  * Process any connection client input waiting to be
  * read on the connection's file descriptor, then
  * advance the state.
  */
 extern void Con_handle_read(struct Con *con, time_t *now,
-                            struct Con_list *cons, int *slow_until,
-                            Config_T config, FILE *grey_out);
+                            struct Greyd_state *state);
 
 /**
  * According to the current connection state, write the
@@ -132,8 +120,7 @@ extern void Con_handle_read(struct Con *con, time_t *now,
  * state.
  */
 extern void Con_handle_write(struct Con *con, time_t *now,
-                             struct Con_list *cons, int *slow_until,
-                             Config_T config, FILE *grey_out);
+                             struct Greyd_state *state);
 
 /**
  * Attempt to find and set the address the client originally
