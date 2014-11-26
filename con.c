@@ -590,14 +590,14 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
 
 extern int
 Con_append_error_string(struct Con *con, size_t off, char *fmt,
-                        char *response_code, int *last_line_cont)
+                        char *error_code, int *last_line_cont)
 {
     char *format = fmt;
     char *error_str = con->out_buf + off;
     char saved = '\0';
     size_t error_str_len = con->out_size - off;
     int appended = 0;
-    int response_code_len = (strlen(response_code) + 1);
+    int error_code_len = (strlen(error_code) + 1);
 
     if(off == 0)
         *last_line_cont = 0;
@@ -605,23 +605,23 @@ Con_append_error_string(struct Con *con, size_t off, char *fmt,
     if(*last_line_cont != 0)
         con->out_buf[*last_line_cont] = '-';
 
-    if(error_str_len < response_code_len
+    if(error_str_len < error_code_len
        && (error_str = Con_grow_out_buf(con, off)) != NULL)
     {
         error_str_len = con->out_size - off;
     }
 
-    snprintf(error_str, error_str_len, "%s ", response_code);
+    snprintf(error_str, error_str_len, "%s ", error_code);
     appended += strlen(error_str);
     *last_line_cont = off + appended - 1;
 
-    while(*error_str) {
+    while(*format) {
         /*
          * Each iteration must ensure there is enough space
          * to store a 4 byte response code, a 39 byte IPv6 address,
          * a saved previous byte.
          */
-        if(appended >= (error_str_len - (INET6_ADDRSTRLEN + response_code_len + 1))) {
+        if(appended >= (error_str_len - (INET6_ADDRSTRLEN + error_code_len + 1))) {
             if((error_str = Con_grow_out_buf(con, off)) == NULL)
                 return -1;
             error_str_len = con->out_size - (off + appended);
@@ -635,8 +635,8 @@ Con_append_error_string(struct Con *con, size_t off, char *fmt,
         if(error_str[appended - 1] == '\n') {
             if(*last_line_cont)
                 con->out_buf[*last_line_cont] = '-';
-            snprintf(error_str + appended, error_str_len, "%s ", response_code);
-            appended += strlen(error_str);
+            snprintf(error_str + appended, error_str_len, "%s ", error_code);
+            appended += strlen(error_str + appended);
             *last_line_cont = off + appended - 1;
         }
 
@@ -686,7 +686,7 @@ Con_append_error_string(struct Con *con, size_t off, char *fmt,
 }
 
 extern void
-Con_build_reply(struct Con *con, char *response_code)
+Con_build_reply(struct Con *con, char *error_code)
 {
     int off = 0, last_line_cont = 0, remaining, appended;
     char *reply;
@@ -701,7 +701,7 @@ Con_build_reply(struct Con *con, char *response_code)
             remaining = con->out_size - off;
 
             appended = Con_append_error_string(con, off, blacklist->message,
-                                               response_code, &last_line_cont);
+                                               error_code, &last_line_cont);
             if(appended == -1)
                 goto error;
 
@@ -727,8 +727,10 @@ Con_build_reply(struct Con *con, char *response_code)
          * This connection is not on any blacklists, so
          * give a generic reply.
          */
-        asprintf(&con->out_buf,
-                 "451 Temporary failure, please try again later.\r\n");
+        snprintf(con->out_buf, con->out_size,
+                 "%s Temporary failure, please try again later.\r\n",
+                 error_code);
+        con->out_p = con->out_buf;
         con->out_size = (con->out_buf == NULL
                          ? 0 : strlen(con->out_buf) + 1);
         return;

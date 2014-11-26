@@ -62,7 +62,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(29);
+    TEST_START(32);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -81,7 +81,7 @@ main()
     bl1 = Blacklist_create("blacklist_1", "You (%A) are on blacklist 1");
     bl2 = Blacklist_create("blacklist_2", "You (%A) are on blacklist 2");
     bl3 = Blacklist_create("blacklist_3_with_an_enormously_big_long_long_epic_epicly_long_large_name",
-                           "%A\nare on blacklist 3");
+                           "Your address %A\\nis on blacklist 3");
 
     List_insert_after(gs.blacklists, bl1);
     List_insert_after(gs.blacklists, bl2);
@@ -165,6 +165,29 @@ main()
     TEST_OK(gs.clients == 1, "clients ok");
     TEST_OK(gs.black_clients == 1, "blacklisted clients ok");
 
+    /*
+     * Test the rejection message building.
+     */
+    Con_build_reply(&con, "451");
+    TEST_OK(!strcmp(con.out_p,
+                    "451-You (2001::fad3:1) are on blacklist 2\n"
+                    "451-Your address 2001::fad3:1\n"
+                    "451 is on blacklist 3\n"),
+            "Blacklisted error response ok");
+    Con_close(&con, &gs);
+
+    /* Test recycling a connection, which is not on a blacklist. */
+    memset(&src, 0, sizeof(src));
+    ((struct sockaddr_in6 *) &src)->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, "fa40::fad3:1", &((struct sockaddr_in6 *) &src)->sin6_addr);
+
+    Con_init(&con, 0, &src, &gs);
+    TEST_OK(List_size(con.blacklists) == 0, "not on blacklist ok");
+
+    Con_build_reply(&con, "551");
+    TEST_OK(!strcmp(con.out_p,
+                    "551 Temporary failure, please try again later.\r\n"),
+            "greylisted error response ok");
     Con_close(&con, &gs);
 
     /* Cleanup. */
