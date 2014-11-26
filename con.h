@@ -70,7 +70,7 @@ struct Con {
 
     char in_buf[CON_BUF_SIZE];
     char *in_p;   /* This element's position in the struct is significant. */
-    int in_size;
+    int in_remaining;
 
     /* Chars causing input termination. */
     char r_end_chars[CON_REMOTE_END_SIZE];

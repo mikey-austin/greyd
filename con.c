@@ -99,6 +99,9 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     con->out_p = con->out_buf;
     con->out_remaining = strlen(con->out_p);
 
+    con->in_p = con->in_buf;
+    con->in_remaining = 0;
+
     /* Set the stuttering time values. */
     con->w = now + con->stutter;
     con->s = now;
@@ -219,7 +222,7 @@ Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons,
     int end = 0, nread;
 
     if(con->r) {
-        nread = read(con->fd, con->in_p, con->in_size);
+        nread = read(con->fd, con->in_p, con->in_remaining);
         switch(nread) {
         case -1:
             I_WARN("connection read error");
@@ -236,12 +239,12 @@ Con_handle_read(struct Con *con, time_t *now, struct Con_list *cons,
                 end = 1;
             }
             con->in_p += nread;
-            con->in_size -= nread;
+            con->in_remaining -= nread;
             break;
         }
     }
 
-    if(end || con->in_size == 0) {
+    if(end || con->in_remaining == 0) {
         /* Replace trailing new lines with a null byte. */
         while(con->in_p > con->in_buf
               && (con->in_p[-1] == '\r' || con->in_p[-1] == '\n'))
@@ -347,7 +350,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
        && con->state < CON_STATE_DATA_IN)
     {
         snprintf(con->out_buf, con->out_size,
-                 "250 2.0.0 Ok\r\n");
+                 "250 OK\r\n");
         con->out_p = con->out_buf;
         con->out_remaining = strlen(con->out_p);
         con->w = *now + con->stutter;
@@ -359,7 +362,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     switch(con->state) {
     case CON_STATE_BANNER_SENT:
         con->in_p = con->in_buf;
-        con->in_size = sizeof(con->in_buf) - 1;
+        con->in_remaining = sizeof(con->in_buf) - 1;
         con->last_state = con->state;
         con->state = CON_STATE_HELO_IN;
         con->r = *now;
@@ -391,7 +394,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     case CON_STATE_HELO_OUT:
         /* Sent 250 Hello, wait for input. */
         con->in_p = con->in_buf;
-        con->in_size = sizeof(con->in_buf) - 1;
+        con->in_remaining = sizeof(con->in_buf) - 1;
         con->last_state = con->state;
         con->state = CON_STATE_MAIL_IN;
         con->r = *now;
@@ -401,7 +404,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     mail:
         if(match(con->in_buf, "MAIL")) {
             set_log(con->mail, sizeof(con->mail), con->in_buf);
-            snprintf(con->out_buf, con->out_size, "250 2.1.0 Ok\r\n");
+            snprintf(con->out_buf, con->out_size, "250 OK\r\n");
             con->out_p = con->out_buf;
             con->out_remaining = strlen(con->out_p);
             con->last_state = con->state;
@@ -414,7 +417,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     case CON_STATE_MAIL_OUT:
         /* Sent 250 Sender ok */
         con->in_p = con->in_buf;
-        con->in_size = sizeof(con->in_buf) - 1;
+        con->in_remaining = sizeof(con->in_buf) - 1;
         con->last_state = con->state;
         con->state = CON_STATE_RCPT_IN;
         con->r = *now;
@@ -424,7 +427,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     rcpt:
         if(match(con->in_buf, "RCPT")) {
             set_log(con->rcpt, sizeof(con->rcpt), con->in_buf);
-            snprintf(con->out_buf, con->out_size, "250 2.1.5 Ok\r\n");
+            snprintf(con->out_buf, con->out_size, "250 OK\r\n");
             con->out_p = con->out_buf;
             con->out_remaining = strlen(con->out_p);
             con->last_state = con->state;
@@ -466,7 +469,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     case CON_STATE_RCPT_OUT:
         /* Sent 250. */
         con->in_p = con->in_buf;
-        con->in_size = sizeof(con->in_buf) - 1;
+        con->in_remaining = sizeof(con->in_buf) - 1;
         con->last_state = con->state;
         con->state = CON_STATE_RCPT_IN;
         con->r = *now;
@@ -487,7 +490,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
             }
 
             con->in_p = con->in_buf;
-            con->in_size = sizeof(con->in_buf) - 1;
+            con->in_remaining = sizeof(con->in_buf) - 1;
             con->out_p = con->out_buf;
             con->out_remaining = strlen(con->out_p);
             con->w = *now + con->stutter;
@@ -500,11 +503,11 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
         else {
             if(match(con->in_buf, "NOOP")) {
                 snprintf(con->out_buf, con->out_size,
-                         "250 2.0.0 Ok\r\n");
+                         "250 OK\r\n");
             }
             else {
                 snprintf(con->out_buf, con->out_size,
-                         "500 5.5.1 Command unrecognized\r\n");
+                         "500 Command unrecognized\r\n");
                 con->bad_cmd++;
                 if(con->bad_cmd > CON_MAX_BAD_CMD) {
                     con->last_state = con->state;
@@ -515,7 +518,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
 
             con->state = con->last_state;
             con->in_p = con->in_buf;
-            con->in_size = sizeof(con->in_buf) - 1;
+            con->in_remaining = sizeof(con->in_buf) - 1;
             con->out_p = con->out_buf;
             con->out_remaining = strlen(con->out_p);
             con->w = *now + con->stutter;
@@ -525,7 +528,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     case CON_STATE_DATA_OUT:
         /* Sent 354. */
         con->in_p = con->in_buf;
-        con->in_size = sizeof(con->in_buf) - 1;
+        con->in_remaining = sizeof(con->in_buf) - 1;
         con->last_state = con->state;
         con->state = CON_STATE_MESSAGE;
         con->r = *now;
@@ -552,7 +555,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
             }
         }
         con->in_p = con->in_buf;
-        con->in_size = sizeof(con->in_buf) - 1;
+        con->in_remaining = sizeof(con->in_buf) - 1;
         con->r = *now;
         break;
 
