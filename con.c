@@ -694,6 +694,10 @@ Con_build_reply(struct Con *con, char *error_code)
     Blacklist_T blacklist;
 
     if(List_size(con->blacklists) > 0) {
+        /*
+         * For blacklisted connections, expand and output each
+         * blacklist's rejection message, in the SMTP format.
+         */
         LIST_FOREACH(con->blacklists, entry) {
             blacklist = List_entry_value(entry);
             appended = 0;
@@ -725,14 +729,13 @@ Con_build_reply(struct Con *con, char *error_code)
     else {
         /*
          * This connection is not on any blacklists, so
-         * give a generic reply.
+         * give a generic reply. Note, greylisted connections will
+         * always receive a 451.
          */
         snprintf(con->out_buf, con->out_size,
-                 "%s Temporary failure, please try again later.\r\n",
-                 error_code);
+                 "451 Temporary failure, please try again later.\r\n");
         con->out_p = con->out_buf;
-        con->out_size = (con->out_buf == NULL
-                         ? 0 : strlen(con->out_buf) + 1);
+        con->out_remaining = strlen(con->out_p);
         return;
     }
 

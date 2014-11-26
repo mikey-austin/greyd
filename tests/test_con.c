@@ -184,9 +184,13 @@ main()
     Con_init(&con, 0, &src, &gs);
     TEST_OK(List_size(con.blacklists) == 0, "not on blacklist ok");
 
+    /*
+     * Note custom error codes only apply for blacklist connections, so expect
+     * a 451 for this greylisted connections.
+     */
     Con_build_reply(&con, "551");
     TEST_OK(!strcmp(con.out_p,
-                    "551 Temporary failure, please try again later.\r\n"),
+                    "451 Temporary failure, please try again later.\r\n"),
             "greylisted error response ok");
     Con_close(&con, &gs);
 
