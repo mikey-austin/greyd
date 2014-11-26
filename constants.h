@@ -8,6 +8,7 @@
 #ifndef CONSTANTS_DEFINED
 #define CONSTANTS_DEFINED
 
-#define PROG_NAME "greyd"
+#define PROG_NAME           "greyd"
+#define GREYLISTING_ENABLED 1
 
 #endif

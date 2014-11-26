@@ -21,9 +21,12 @@ to `spamd`, `greyd` aims to:
   - Have all of the programs in the `greyd` suite be driven by flexible configuration files,
     in addition to supporting the same command line switches as `spamd` & friends.
 
-  - Have a clean & modularized internal structure, to facilitate unit & regression testing.
+  - Have a clean & modularized internal structure, to facilitate unit & regression testing
+    (there are currently 398 tests).
 
-The `greyd` suite
+  - Be able to import the same blacklists & whitelists that `spamd` can import.
+
+The greyd suite
 -----------------
 
 `greyd` provides analogous versions of each of the `spamd` programs, namely:

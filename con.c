@@ -25,6 +25,7 @@
 
 #define _GNU_SOURCE
 
+#include "constants.h"
 #include "failures.h"
 #include "con.h"
 #include "blacklist.h"
@@ -74,7 +75,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     con->blacklists = List_create(NULL);
     con->fd = fd;
 
-    greylist = Config_get_int(config, "enable", "grey", 1);
+    greylist = Config_get_int(config, "enable", "grey", GREYLISTING_ENABLED);
     grey_stutter = Config_get_int(config, "stutter", "grey", CON_GREY_STUTTER);
     con->stutter = (greylist && !grey_stutter && List_size(con->blacklists) == 0)
         ? 0 : Config_get_int(config, "stutter", NULL, CON_STUTTER);
@@ -262,7 +263,7 @@ Con_handle_write(struct Con *con, time_t *now, struct Con_list *cons,
                  int *slow_until, Config_T config, FILE *grey_out)
 {
     int nwritten, within_max, to_be_written;
-    int greylist = Config_get_int(config, "enable", "grey", 1);
+    int greylist = Config_get_int(config, "enable", "grey", GREYLISTING_ENABLED);
     int grey_stutter = Config_get_int(config, "stutter", "grey", CON_GREY_STUTTER);
 
     /*
@@ -331,7 +332,7 @@ Con_next_state(struct Con *con, time_t *now, struct Con_list *cons,
     char *p, *q;
     char *hostname = Config_get_str(config, "hostname", NULL, NULL);
     char *error_code = Config_get_str(config, "error_code", NULL, NULL);
-    int greylist = Config_get_int(config, "enable", "grey", 1);
+    int greylist = Config_get_int(config, "enable", "grey", GREYLISTING_ENABLED);
     int verbose = Config_get_int(config, "verbose", NULL, 0);
     int window = Config_get_int(config, "window", NULL, 0);
     int next_state;
