@@ -60,12 +60,20 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     time(&now);
 
     /* Free resources before zeroing out this entry. */
-    free(con->out_buf);
-    con->out_buf = NULL;
-    con->out_size = 0;
-    List_destroy(&(con->blacklists));
-    free(con->lists);
-    con->lists = NULL;
+    if(con->out_buf != NULL) {
+        free(con->out_buf);
+        con->out_buf = NULL;
+        con->out_size = 0;
+    }
+
+    if(con->blacklists != NULL)
+        List_destroy(&con->blacklists);
+
+    if(con->lists != NULL) {
+        free(con->lists);
+        con->lists = NULL;
+    }
+
     memset(con, 0, sizeof *con);
 
     /* Start initializing the connection. */
@@ -159,6 +167,7 @@ Con_close(struct Con *con, struct Greyd_state *state)
     if(con->out_buf != NULL) {
         free(con->out_buf);
         con->out_buf = NULL;
+        con->out_p = NULL;
         con->out_size = 0;
     }
 
@@ -169,7 +178,7 @@ extern char
 *Con_summarize_lists(struct Con *con)
 {
     char *lists;
-    int out_size;
+    int out_size, first = 1;
     struct List_entry *entry;
     Blacklist_T blacklist;
 
@@ -177,7 +186,7 @@ extern char
         return NULL;
 
     if((lists = malloc(CON_BL_SUMMARY_SIZE + 1)) == NULL)
-        I_CRIT("could not malloc list summary");
+        err(1, "malloc");
     *lists = '\0';
 
     out_size = CON_BL_SUMMARY_SIZE - strlen(CON_BL_SUMMARY_ETC);
@@ -189,9 +198,11 @@ extern char
             break;
         }
         else {
-            strcat(lists, " ");
+            if(!first)
+                strcat(lists, " ");
             strcat(lists, blacklist->name);
         }
+        first = 0;
     }
 
     return lists;

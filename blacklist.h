@@ -52,7 +52,8 @@ extern void Blacklist_destroy(Blacklist_T *list);
 /**
  * Return 1 if the source address is in the list, otherwise return 0.
  */
-extern int Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af);
+extern int Blacklist_match(Blacklist_T list, struct IP_addr *source,
+                           sa_family_t af);
 
 /**
  * Add a single IPv4/IPv6 formatted address to the specified blacklist's
@@ -61,10 +62,12 @@ extern int Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t
 extern int Blacklist_add(Blacklist_T list, const char *address);
 
 /**
- * Add a range of addresses to the blacklist of the specified type. A call to this
- * function will result in two separate entries for the start and end addresses.
+ * Add a range of addresses to the blacklist of the specified type. A
+ * call to this function will result in two separate entries for the
+ * start and end addresses.
  */
-extern void Blacklist_add_range(Blacklist_T list, u_int32_t start, u_int32_t end, int type);
+extern void Blacklist_add_range(Blacklist_T list, u_int32_t start,
+                                u_int32_t end, int type);
 
 /**
  * "Collapse" a blacklist's entries by removing overlapping regions as well
