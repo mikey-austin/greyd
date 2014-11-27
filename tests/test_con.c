@@ -62,7 +62,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(35);
+    TEST_START(49);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -238,6 +238,65 @@ main()
                     "451 Temporary failure, please try again later.\r\n"),
             "greylisted error response ok");
     Con_close(&con, &gs);
+    List_destroy(&con.blacklists);
+
+    /*
+     * Test the connection reading function.
+     */
+    memset(&src, 0, sizeof(src));
+    ((struct sockaddr_in *) &src)->sin_family = AF_INET;
+    inet_pton(AF_INET, "10.10.10.1", &((struct sockaddr_in *) &src)->sin_addr);
+
+    pipe(con_pipe);
+    memset(&con, 0, sizeof(con));
+    Con_init(&con, con_pipe[0], &src, &gs);
+
+    char *out = "EHLO greyd.org\r\n";
+    write(con_pipe[1], out, strlen(out));
+
+    Con_handle_read(&con, &now, &gs); /* This should change the state. */
+    TEST_OK(con.state == CON_STATE_HELO_IN, "Initial state set ok");
+    Con_handle_read(&con, &now, &gs);
+    TEST_OK(!strcmp(con.in_buf, "EHLO greyd.org"), "con read ok");
+    TEST_OK(!strcmp(con.helo, "greyd.org"), "helo parsed ok");
+    TEST_OK(con.state = CON_STATE_HELO_OUT, "state helo out ok");
+
+    char *mail_from = "MAIL FROM: mikey@greyd.org\r\n";
+    write(con_pipe[1], mail_from, strlen(mail_from));
+
+    Con_next_state(&con, &now, &gs);
+    TEST_OK(con.state = CON_STATE_MAIL_IN, "state mail in ok");
+    Con_handle_read(&con, &now, &gs);
+    TEST_OK(!strcmp(con.mail, "mikey@greyd.org"), "MAIL FROM parsed ok");
+    TEST_OK(con.state = CON_STATE_MAIL_OUT, "state mail out ok");
+
+    char *rcpt = "RCPT TO: info@greyd.org\r\n";
+    write(con_pipe[1], rcpt, strlen(rcpt));
+
+    Con_next_state(&con, &now, &gs);
+    TEST_OK(con.state = CON_STATE_RCPT_IN, "state rcpt in ok");
+    Con_handle_read(&con, &now, &gs);
+    TEST_OK(!strcmp(con.rcpt, "info@greyd.org"), "RCPT parsed ok");
+    TEST_OK(con.state = CON_STATE_RCPT_OUT, "state rcpt out ok");
+
+    char *data = "DATA\r\n";
+    write(con_pipe[1], data, strlen(data));
+
+    Con_next_state(&con, &now, &gs);
+    TEST_OK(con.state = CON_STATE_RCPT_IN, "state rcpt in ok"); /* this will goto spam. */
+    Con_handle_read(&con, &now, &gs);
+    TEST_OK(con.state = CON_STATE_DATA_OUT, "state data out ok");
+
+    char *msg = "This is a spam message\r\ndeliver me!\r\n.\r\n";
+    write(con_pipe[1], msg, strlen(msg));
+
+    Con_next_state(&con, &now, &gs);
+    TEST_OK(con.state = CON_STATE_MESSAGE, "state message ok");
+    Con_handle_read(&con, &now, &gs);
+    TEST_OK(con.state = CON_STATE_CLOSE, "state close ok");
+
+    /* This should close the connection. */
+    Con_next_state(&con, &now, &gs);
 
     /* Cleanup. */
     List_destroy(&con.blacklists);

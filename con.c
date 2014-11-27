@@ -339,7 +339,7 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
 {
     char *p, *q;
     char *hostname = Config_get_str(state->config, "hostname", NULL, NULL);
-    char *error_code = Config_get_str(state->config, "error_code", NULL, NULL);
+    char *error_code = Config_get_str(state->config, "error_code", NULL, CON_ERROR_CODE);
     int greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
     int verbose = Config_get_int(state->config, "verbose", NULL, 0);
     int window = Config_get_int(state->config, "window", NULL, 0);
@@ -551,7 +551,8 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
                 if(q > p && q[-1] == '\r')
                     q[-1] = 0;
                 if(!strcmp(p, ".") ||
-                   (con->data_body && ++con->data_lines >= 10)) {
+                   (con->data_body && ++con->data_lines >= 10))
+                {
                     con->last_state = con->state;
                     con->state = CON_STATE_REPLY;
                     goto done;
@@ -571,8 +572,6 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
     case CON_STATE_REPLY:
     done:
         Con_build_reply(con, error_code);
-        con->out_p = con->out_buf;
-        con->out_remaining = strlen(con->out_p);
         con->w = *now + con->stutter;
         con->last_state = con->state;
         con->state = CON_STATE_CLOSE;
