@@ -62,7 +62,7 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(32);
+    TEST_START(35);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -174,9 +174,54 @@ main()
                     "451-Your address 2001::fad3:1\n"
                     "451 is on blacklist 3\n"),
             "Blacklisted error response ok");
-    Con_close(&con, &gs);
+    TEST_OK(con.out_remaining == 94, "out buf remaining ok");
+
+    /*
+     * Test the writing of the buffer without stuttering.
+     */
+    time_t now = time(NULL);
+    int con_pipe[2], to_write, nread;
+    char in[CON_OUT_BUF_SIZE];
+
+    pipe(con_pipe);
+    con.fd = con_pipe[1];
+    con.w = now;
+    to_write = con.out_remaining;
+    Con_handle_write(&con, &now, &gs);
+    nread = read(con_pipe[0], in, to_write);
+    in[nread] = '\0';
+
+    TEST_OK(!strcmp(in,
+                    "451-You (2001::fad3:1) are on blacklist 2\n"
+                    "451-Your address 2001::fad3:1\n"
+                    "451 is on blacklist 3\n"),
+            "Con write without stuttering ok");
+
+    /*
+     * Test the writing with stuttering. Note the reply is longer due
+     * to the stutering adding in \r before each \n if there isn't one
+     * already.
+     */
+    Con_build_reply(&con, "451");
+    gs.max_cons = 100;
+    con.w = now;
+    while(con.out_remaining > 0) {
+        Con_handle_write(&con, &now, &gs);
+        now += con.stutter + 1;
+    }
+
+    memset(in, 0, sizeof(in));
+    nread = read(con_pipe[0], in, to_write + 3);
+    in[nread] = '\0';
+
+    TEST_OK(!strcmp(in,
+                    "451-You (2001::fad3:1) are on blacklist 2\r\n"
+                    "451-Your address 2001::fad3:1\r\n"
+                    "451 is on blacklist 3\r\n"),
+            "Con write with stuttering ok");
 
     /* Test recycling a connection, which is not on a blacklist. */
+    Con_close(&con, &gs);
     memset(&src, 0, sizeof(src));
     ((struct sockaddr_in6 *) &src)->sin6_family = AF_INET6;
     inet_pton(AF_INET6, "fa40::fad3:1", &((struct sockaddr_in6 *) &src)->sin6_addr);

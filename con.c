@@ -721,6 +721,8 @@ Con_build_reply(struct Con *con, char *error_code)
 
                 con->out_buf[off++] = '\n';
                 con->out_buf[off] = '\0';
+                con->out_p = con->out_buf;
+                con->out_remaining = strlen(con->out_buf);
             }
         }
 
