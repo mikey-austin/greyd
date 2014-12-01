@@ -151,7 +151,7 @@ extern void
 Config_merge(Config_T config, Config_T from)
 {
     List_T keys, section_keys;
-    struct List_entry *entry;
+    struct List_entry *entry, *keys_entry;
     Config_section_T section, from_section;
     Config_value_T from_val, to_val;
     char *key, *section_key;
@@ -172,8 +172,8 @@ Config_merge(Config_T config, Config_T from)
         if((section_keys = Hash_keys(from_section->vars)) == NULL)
             continue;
 
-        LIST_FOREACH(section_keys, entry) {
-            section_key = List_entry_value(entry);
+        LIST_FOREACH(section_keys, keys_entry) {
+            section_key = List_entry_value(keys_entry);
             from_val = Hash_get(from_section->vars, section_key);
             to_val = Config_value_clone(from_val);
             Config_section_set(section, section_key, to_val);

@@ -22,7 +22,7 @@ to `spamd`, `greyd` aims to:
     in addition to supporting the same command line switches as `spamd` & friends.
 
   - Have a clean & modularized internal structure, to facilitate unit & regression testing
-    (there are currently > 440 tests).
+    (there are currently > 450 tests).
 
   - Be able to import the same blacklists & whitelists that `spamd` can import.
 

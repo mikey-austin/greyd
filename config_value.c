@@ -6,7 +6,6 @@
  */
 
 #include "utils.h"
-#include "failures.h"
 #include "config_value.h"
 
 #include <err.h>

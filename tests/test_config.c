@@ -22,12 +22,12 @@
 int
 main()
 {
-    Config_T c;
+    Config_T c, m;
     Config_section_T s1, s2, s;
     Config_value_T v;
     int *count;
 
-    TEST_START(25);
+    TEST_START(29);
 
     c = Config_create();
     TEST_OK((c != NULL), "Config created successfully");
@@ -113,7 +113,20 @@ main()
     TEST_OK(Config_get_int(c, "myint1", NULL, 0) == 4321, "int set/get ok");
     TEST_OK(Config_get_int(c, "myint1", "mysection2", 0) == 1234, "int set/get ok");
 
+    m = Config_create();
+    Config_set_str(m, "mystr1", NULL, "overwritten");
+    Config_set_str(m, "mystr1", "mysection6", "preserved");
+    Config_set_int(m, "myint1", "mysection2", 4);
+    Config_set_int(m, "myint86", NULL, 4);
+    Config_merge(m, c);
+
+    TEST_OK(!strcmp(Config_get_str(m, "mystr1", NULL, NULL), "mystr value"), "str overwritten ok");
+    TEST_OK(!strcmp(Config_get_str(m, "mystr1", "mysection1", NULL), "mystr1 value"), "new str/section ok");
+    TEST_OK(Config_get_int(m, "myint86", NULL, 0) == 4, "new int ok");
+    TEST_OK(Config_get_int(m, "myint1", "mysection2", 0) == 1234, "int overwrite");
+
     Config_destroy(&c);
+    Config_destroy(&m);
 
     TEST_COMPLETE;
 }
