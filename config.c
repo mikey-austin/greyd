@@ -42,7 +42,7 @@ Config_create()
 
     config = malloc(sizeof(*config));
     if(config == NULL) {
-        I_CRIT("Could not create configuration");
+        errx(1, "Could not create configuration");
     }
 
     /* Initialize the hash of sections. */
@@ -187,7 +187,7 @@ Config_add_include(Config_T config, const char *file)
         if(Hash_get(config->processed_includes, (match = paths.gl_pathv[i])) == NULL) {
             len = strlen(match) + 1;
             if((include = malloc(len)) == NULL) {
-                I_CRIT("Could not enqueue matched file %s", match);
+                errx(1, "Could not enqueue matched file %s", match);
             }
             sstrncpy(include, match, len);
 

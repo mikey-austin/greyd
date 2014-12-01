@@ -8,6 +8,7 @@
 #include "failures.h"
 #include "list.h"
 
+#include <err.h>
 #include <stdlib.h>
 
 static struct List_entry *List_create_element(List_T list, void *value);
@@ -18,9 +19,8 @@ List_create(void (*destroy)(void *value))
 {
     List_T list;
 
-    if((list = malloc(sizeof(*list))) == NULL) {
-        I_CRIT("Could not create an empty list");
-    }
+    if((list = malloc(sizeof(*list))) == NULL)
+        errx(1, "Could not create an empty list");
 
     /* Initialize list pointers. */
     list->destroy = destroy;
@@ -138,9 +138,8 @@ static struct List_entry
 {
     struct List_entry *element;
 
-    if((element = malloc(sizeof(*element))) == NULL) {
-        I_CRIT("Could not initialize list element");
-    }
+    if((element = malloc(sizeof(*element))) == NULL)
+        errx(1, "Could not initialize list element");
 
     element->next = NULL;
     element->v    = value;
