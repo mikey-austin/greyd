@@ -7,6 +7,7 @@
 
 #include "test.h"
 #include "../hash.h"
+#include "../list.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,13 +35,15 @@ int
 main()
 {
     Hash_T hash;
-    char *s, *s1, *s2, *s3, *s4, *s5, *s6;
+    List_T keys;
+    struct List_entry *entry;
+    char *s, *s1, *s2, *s3, *s4, *s5, *s6, *key;
     int i;
 
     /* Test hash creation. */
     hash = Hash_create(HASH_SIZE, destroy);
 
-    TEST_START(15);
+    TEST_START(17);
 
     /* Create a hash string keys to string values. */
     TEST_OK((hash->size == HASH_SIZE), "Hash size is set correctly");
@@ -57,6 +60,21 @@ main()
     Hash_insert(hash, TEST_KEY5, s5);
     Hash_insert(hash, TEST_KEY4, s4);
     Hash_insert(hash, TEST_KEY3, s3);
+
+    keys = Hash_keys(hash);
+    TEST_OK(List_size(keys) == 3, "Hash keys list size ok");
+    i = 0;
+    LIST_FOREACH(keys, entry) {
+        key = List_entry_value(entry);
+        if(!strcmp(key, TEST_KEY3))
+            i++;
+        if(!strcmp(key, TEST_KEY4))
+            i++;
+        if(!strcmp(key, TEST_KEY5))
+            i++;
+    }
+    TEST_OK(i == 3, "All expected keys were in keys list");
+    List_destroy(&keys);
 
     /* Test that the realloc worked. */
     TEST_OK((hash->num_entries == 3), "Hash number of entries is as expected");

@@ -5,10 +5,12 @@
  * @date   2014
  */
 
+#include "list.h"
 #include "utils.h"
 #include "hash.h"
 #include "failures.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,7 +46,7 @@ Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
 
     new = malloc(sizeof(*new));
     if(!new) {
-        I_CRIT("Could not allocate hash");
+        errx(1, "Could not allocate hash");
     }
 
     new->size        = size;
@@ -55,7 +57,7 @@ Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
     if(!new->entries) {
         free(new);
         new = NULL;
-        I_CRIT("Could not allocate hash entries of size %d", size);
+        errx(1, "Could not allocate hash entries of size %d", size);
     }
 
     /* Initialise the entries to NULL. */
@@ -137,6 +139,26 @@ extern void
     return entry->v;
 }
 
+extern List_T
+Hash_keys(Hash_T hash)
+{
+    List_T keys = NULL;
+    struct Hash_entry *entry;
+    int i;
+
+    if(hash && hash->num_entries > 0) {
+        keys = List_create(NULL);
+        for(i = 0; i < hash->size; i++) {
+            entry = hash->entries + i;
+            if(entry->k && entry->v != NULL) {
+                List_insert_after(keys, entry->k);
+            }
+        }
+    }
+
+    return keys;
+}
+
 static struct Hash_entry
 *Hash_find_entry(Hash_T hash, const char *key)
 {
@@ -177,8 +199,8 @@ Hash_resize(Hash_T hash, int new_size)
     hash->entries = (struct Hash_entry*) calloc(sizeof(*(hash->entries)), new_size);
 
     if(!hash->entries) {
-        I_CRIT("Could not resize hash entries of size %d to %d",
-               hash->size, new_size);
+        errx(1, "Could not resize hash entries of size %d to %d",
+             hash->size, new_size);
     }
 
     /* Re-initialize the hash entries. */

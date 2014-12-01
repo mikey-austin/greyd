@@ -12,6 +12,8 @@
 #ifndef HASH_DEFINED
 #define HASH_DEFINED
 
+#include "list.h"
+
 #define MAX_KEY_LEN 45
 
 /**
@@ -58,5 +60,11 @@ extern void Hash_insert(Hash_T hash, const char *key, void *value);
  * Fetch an element from the hash table by the specified key.
  */
 extern void *Hash_get(Hash_T hash, const char *key);
+
+/**
+ * Return a list of the set keys in the supplied hash. Note, the
+ * order of the keys in the returned list is undefined.
+ */
+extern List_T Hash_keys(Hash_T hash);
 
 #endif
