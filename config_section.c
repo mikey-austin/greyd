@@ -6,9 +6,9 @@
  */
 
 #include "utils.h"
-#include "failures.h"
 #include "config_section.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,13 +27,13 @@ Config_section_create(const char *name)
 
     section = malloc(sizeof(*section));
     if(section == NULL) {
-        I_CRIT("Could not create configuration section");
+        errx(1, "Could not create configuration section");
     }
 
     /* Set the config section name. */
     section->name = malloc(nlen);
     if(section->name == NULL) {
-        I_CRIT("Could not set configuration section name");
+        errx(1, "Could not set configuration section name");
     }
     sstrncpy(section->name, name, nlen);
 

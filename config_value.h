@@ -33,6 +33,11 @@ struct Config_value_T {
 extern Config_value_T Config_value_create(short type);
 
 /**
+ * Create and return a clone of the supplied value.
+ */
+extern Config_value_T Config_value_clone(Config_value_T value);
+
+/**
  * Set the integer data into the specified value.
  */
 extern void Config_value_set_int(Config_value_T value, int data);

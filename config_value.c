@@ -9,6 +9,7 @@
 #include "failures.h"
 #include "config_value.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,7 +25,7 @@ Config_value_create(short type)
 
     new = malloc(sizeof(*new));
     if(new == NULL) {
-        I_CRIT("Could not create new config value");
+        err(1, "malloc");
     }
     else {
         new->type = type;
@@ -52,9 +53,8 @@ Config_value_set_str(Config_value_T value, const char *data)
 
     value->type = CONFIG_VAL_TYPE_STR;
     value->v.s = malloc(slen);
-    if(value->v.s == NULL) {
-        I_CRIT("Could not create string config value");
-    }
+    if(value->v.s == NULL)
+        err(1, "malloc");
     sstrncpy(value->v.s, data, slen);
 }
 
@@ -82,6 +82,37 @@ Config_value_destroy(Config_value_T *value)
 
     free(*value);
     *value = NULL;
+}
+
+extern Config_value_T
+Config_value_clone(Config_value_T value)
+{
+    Config_value_T clone, value_list_entry, entry_clone;
+    struct List_entry *entry;
+
+    if(value == NULL)
+        return NULL;
+
+    clone = Config_value_create(value->type);
+    switch(clone->type) {
+    case CONFIG_VAL_TYPE_INT:
+        Config_value_set_int(clone, value->v.i);
+        break;
+
+    case CONFIG_VAL_TYPE_STR:
+        Config_value_set_str(clone, value->v.s);
+        break;
+
+    case CONFIG_VAL_TYPE_LIST:
+        LIST_FOREACH(value->v.l, entry) {
+            value_list_entry = List_entry_value(entry);
+            entry_clone = Config_value_clone(value_list_entry);
+            List_insert_after(clone->v.l, entry_clone);
+        }
+        break;
+    }
+
+    return clone;
 }
 
 extern char

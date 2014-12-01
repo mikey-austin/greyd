@@ -150,15 +150,36 @@ Config_load_file(Config_T config, char *file)
 extern void
 Config_merge(Config_T config, Config_T from)
 {
-    List_T keys;
+    List_T keys, section_keys;
     struct List_entry *entry;
-    char *key;
+    Config_section_T section, from_section;
+    Config_value_T from_val, to_val;
+    char *key, *section_key;
 
     if(!config || !from || (keys = Hash_keys(from->sections)) == NULL)
         return;
 
     LIST_FOREACH(keys, entry) {
         key = List_entry_value(entry);
+
+        /* Create the section if it doesn't exist. */
+        if((section = Hash_get(config->sections, key)) == NULL) {
+            section = Config_section_create(key);
+            Config_add_section(config, section);
+        }
+
+        from_section = Hash_get(from->sections, key);
+        if((section_keys = Hash_keys(from_section->vars)) == NULL)
+            continue;
+
+        LIST_FOREACH(section_keys, entry) {
+            section_key = List_entry_value(entry);
+            from_val = Hash_get(from_section->vars, section_key);
+            to_val = Config_value_clone(from_val);
+            Config_section_set(section, section_key, to_val);
+        }
+
+        List_destroy(&section_keys);
     }
 
     List_destroy(&keys);
