@@ -73,7 +73,8 @@ extern Config_section_T Config_get_whitelist(Config_T config, const char *sectio
 extern void Config_load_file(Config_T config, char *file);
 
 /**
- * Merge the "from" configuration into the "config" configuration.
+ * Merge the "from" configuration into the "config" configuration. Only
+ * the "sections" variables are merged (ie no blacklists, whitelists, etc.).
  */
 extern void Config_merge(Config_T config, Config_T from);
 

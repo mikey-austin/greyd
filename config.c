@@ -150,6 +150,18 @@ Config_load_file(Config_T config, char *file)
 extern void
 Config_merge(Config_T config, Config_T from)
 {
+    List_T keys;
+    struct List_entry *entry;
+    char *key;
+
+    if(!config || !from || (keys = Hash_keys(from->sections)) == NULL)
+        return;
+
+    LIST_FOREACH(keys, entry) {
+        key = List_entry_value(entry);
+    }
+
+    List_destroy(&keys);
 }
 
 
