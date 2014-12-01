@@ -12,6 +12,7 @@
 #include "config.h"
 #include "config_parser.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glob.h>
@@ -121,17 +122,15 @@ Config_load_file(Config_T config, char *file)
         lexer = Config_lexer_create(source);
         parser = Config_parser_create(lexer);
 
-        if(Config_parser_start(parser, config) != CONFIG_PARSER_OK) {
-            I_CRIT("Parse error encountered when processing %s", file);
-        }
+        if(Config_parser_start(parser, config) != CONFIG_PARSER_OK)
+            errx(1, "Parse error encountered while processing %s", file);
 
         /* Clean up the parser & friends. */
         Config_parser_destroy(&parser);
 
         /* Record this file as being "processed". */
-        if((count = malloc(sizeof(*count))) == NULL) {
-            I_CRIT("Could not allocate included file count");
-        }
+        if((count = malloc(sizeof(*count))) == NULL)
+            err(1, "malloc");
 
         *count = 1;
         Hash_insert(config->processed_includes, file, count);
@@ -139,15 +138,20 @@ Config_load_file(Config_T config, char *file)
 
     while(Queue_size(config->includes) > 0) {
         include = Queue_dequeue(config->includes);
-        if(Hash_get(config->processed_includes, include) == NULL) {
+        if(Hash_get(config->processed_includes, include) == NULL)
             Config_load_file(config, include);
-        }
 
         /* Cleanup the dequeued include. */
         free(include);
         include = NULL;
     }
 }
+
+extern void
+Config_merge(Config_T config, Config_T from)
+{
+}
+
 
 extern void
 Config_add_include(Config_T config, const char *file)

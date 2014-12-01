@@ -73,6 +73,11 @@ extern Config_section_T Config_get_whitelist(Config_T config, const char *sectio
 extern void Config_load_file(Config_T config, char *file);
 
 /**
+ * Merge the "from" configuration into the "config" configuration.
+ */
+extern void Config_merge(Config_T config, Config_T from);
+
+/**
  * Add the specified file to the list of include files to process if it
  * hasn't been processed already.
  */

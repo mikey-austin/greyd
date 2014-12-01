@@ -94,9 +94,8 @@ main(int argc, char **argv)
         case 'B':
             i = atoi(optarg);
             if (i > state.max_files) {
-                warnx(
-                    "%d > system max of %lu connections",
-                        i, state.max_files);
+                warnx("%d > system max of %lu connections",
+                      i, state.max_files);
                 usage();
             }
             state.max_black = i;
@@ -105,9 +104,8 @@ main(int argc, char **argv)
         case 'c':
             i = atoi(optarg);
             if (i > state.max_files) {
-                warnx(
-                    "%d > system max of %lu connections",
-                    i, state.max_files);
+                warnx("%d > system max of %lu connections",
+                      i, state.max_files);
                 usage();
             }
             state.max_cons = i;
@@ -145,7 +143,7 @@ main(int argc, char **argv)
             if(sstrncpy(hostname, optarg, sizeof(hostname)) >=
                sizeof(hostname))
             {
-                errx(1, "-h arg too long");
+                warnx("-h arg too long");
                 usage();
             }
             Config_set_str(opts, "hostname", NULL, hostname);
@@ -201,8 +199,7 @@ main(int argc, char **argv)
     if(config_file != NULL) {
         config = Config_create();
         Config_load_file(config, config_file);
-
-        // TODO: merge opts with parsed config file.
+        Config_merge(config, opts);
         Config_destroy(&opts);
         state.config = config;
     }
