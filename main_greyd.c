@@ -21,6 +21,9 @@
 #include <unistd.h>
 #include <time.h>
 #include <ctype.h>
+#include <signal.h>
+#include <sys/resource.h>
+#include <pwd.h>
 
 static void usage(void);
 static int max_files(void);
@@ -51,8 +54,15 @@ main(int argc, char **argv)
     struct Greyd_state state;
     Config_T config, opts;
     char *config_file = NULL, hostname[MAX_HOST_NAME];
-    int option, i;
+    char *bind_addr, *bind_addr6;
+    int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
+    u_short port, cfg_port, sync_port;
     long long grey_time, white_time, pass_time;
+    struct rlimit limit;
+    struct sockaddr_in main_addr, cfg_addr;
+    struct sockaddr_in6 main_addr6;
+    struct passwd *main_pw, *db_pw;
+    char *main_user, *db_user;
 
     tzset();
 
@@ -72,7 +82,7 @@ main(int argc, char **argv)
                       ? state.max_files : CON_DEFAULT_MAX);
 
     while((option =
-           getopt(argc, argv, "45l:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1)
+           getopt(argc, argv, "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1)
     {
         switch(option) {
         case 'f':
@@ -87,8 +97,16 @@ main(int argc, char **argv)
             Config_set_str(opts, "error_code", NULL, "550");
             break;
 
+        case '6':
+            Config_set_int(opts, "enable_ipv6", NULL, 1);
+            break;
+
         case 'l':
             Config_set_str(opts, "bind_address", NULL, optarg);
+            break;
+
+        case 'L':
+            Config_set_str(opts, "bind_address_ipv6", NULL, optarg);
             break;
 
         case 'B':
@@ -205,5 +223,118 @@ main(int argc, char **argv)
     }
     else {
         state.config = opts;
+    }
+
+    if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED))
+        state.max_black = state.max_cons;
+    else if(state.max_black > state.max_cons)
+        usage();
+
+    limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
+    if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
+        err(1, "setrlimit");
+
+    state.cons = calloc(state.max_cons, sizeof(*state.cons));
+    if(state.cons == NULL)
+        err(1, "calloc");
+
+    signal(SIGPIPE, SIG_IGN);
+
+    port = Config_get_int(state.config, "port", NULL, GREYD_PORT);
+    cfg_port = Config_get_int(state.config, "config_port", NULL, GREYD_CFG_PORT);
+    sync_port = Config_get_int(state.config, "port", "sync", GREYD_SYNC_PORT);
+
+    /*
+     * Setup the main IPv4 socket.
+     */
+    if((main_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        err(1, "socket");
+
+    if(setsockopt(main_sock, SOL_SOCKET, SO_REUSEADDR, &sock_val,
+                  sizeof(sock_val)) == -1)
+    {
+        err(1, "setsockopt");
+    }
+
+    bind_addr = Config_get_str(state.config, "bind_address", NULL, NULL);
+    memset(&main_addr, 0, sizeof(main_addr));
+    if(bind_addr != NULL) {
+        if(inet_pton(AF_INET, bind_addr, &main_addr.sin_addr) != 1)
+            err(1, "inet_pton");
+    }
+    else {
+        main_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+    main_addr.sin_family = AF_INET;
+    main_addr.sin_port = htons(port);
+
+    if(bind(main_sock, (struct sockaddr *) &main_addr, sizeof(main_addr)) == -1)
+        err(1, "bind");
+
+    /*
+     * Setup the main IPv6 socket if explicitly enabled.
+     */
+    if(Config_get_int(state.config, "enable_ipv6", NULL, IPV6_ENABLED)) {
+        if((main_sock6 = socket(AF_INET6, SOCK_STREAM, 0)) == -1)
+            err(1, "socket");
+
+        if(setsockopt(main_sock6, SOL_SOCKET, SO_REUSEADDR, &sock_val,
+                      sizeof(sock_val)) == -1)
+        {
+            err(1, "setsockopt");
+        }
+
+        bind_addr6 = Config_get_str(state.config, "bind_address_ipv6", NULL, NULL);
+        memset(&main_addr6, 0, sizeof(main_addr6));
+        if(bind_addr6 != NULL) {
+            if(inet_pton(AF_INET6, bind_addr6, &main_addr6.sin6_addr) != 1)
+                err(1, "inet_pton");
+        }
+        else {
+            main_addr6.sin6_addr = in6addr_any;
+        }
+        main_addr6.sin6_family = AF_INET6;
+        main_addr6.sin6_port = htons(port);
+
+        if(bind(main_sock6, (struct sockaddr *) &main_addr6, sizeof(main_addr6)) == -1)
+            err(1, "bind IPv6");
+    }
+
+    /*
+     * Setup the configuration socket to only listen for connections on loopback.
+     */
+    if((cfg_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        err(1, "socket");
+
+    if(setsockopt(cfg_sock, SOL_SOCKET, SO_REUSEADDR, &sock_val,
+                  sizeof(sock_val)) == -1)
+    {
+        err(1, "setsockopt");
+    }
+
+    memset(&cfg_addr, 0, sizeof(cfg_addr));
+    cfg_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    cfg_addr.sin_family = AF_INET;
+    cfg_addr.sin_port = htons(cfg_port);
+
+    if(bind(cfg_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
+        err(1, "bind local");
+
+    main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
+    if((main_pw = getpwnam(main_user)) == NULL)
+        errx(1, "no such user %s", main_user);
+
+    if(!Config_get_int(state.config, "debug", NULL, 0)) {
+        if(daemon(1, 1) == -1)
+            err(1, "daemon");
+    }
+
+    if(Config_get_int(state.config, "enable", "grey", 0)) {
+        /*
+         * The greylisting child processes run as a separate user.
+         */
+        db_user = Config_get_str(state.config, "user", "grey", GREYD_DB_USER);
+        if((db_pw = getpwnam(db_user)) == NULL)
+            errx(1, "no such user %s", db_user);
     }
 }
