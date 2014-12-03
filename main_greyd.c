@@ -5,6 +5,8 @@
  * @date   2014
  */
 
+#define _GNU_SOURCE
+
 #include "failures.h"
 #include "config.h"
 #include "constants.h"
@@ -24,6 +26,8 @@
 #include <signal.h>
 #include <sys/resource.h>
 #include <pwd.h>
+#include <sys/types.h>
+#include <grp.h>
 
 static void usage(void);
 static int max_files(void);
@@ -52,17 +56,22 @@ int
 main(int argc, char **argv)
 {
     struct Greyd_state state;
+    Greylister_T greylister;
     Config_T config, opts;
     char *config_file = NULL, hostname[MAX_HOST_NAME];
     char *bind_addr, *bind_addr6;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
+    int grey_pipe[2], trap_pipe[2];
     u_short port, cfg_port, sync_port;
     long long grey_time, white_time, pass_time;
     struct rlimit limit;
     struct sockaddr_in main_addr, cfg_addr;
     struct sockaddr_in6 main_addr6;
-    struct passwd *main_pw, *db_pw;
-    char *main_user, *db_user;
+    struct passwd *main_pw;
+    char *main_user;
+    pid_t grey_pid;
+    FILE *grey_in, *trap_out;
+    char *chroot_dir;
 
     tzset();
 
@@ -112,7 +121,7 @@ main(int argc, char **argv)
         case 'B':
             i = atoi(optarg);
             if (i > state.max_files) {
-                warnx("%d > system max of %lu connections",
+                warnx("%d > system max of %d connections",
                       i, state.max_files);
                 usage();
             }
@@ -122,7 +131,7 @@ main(int argc, char **argv)
         case 'c':
             i = atoi(optarg);
             if (i > state.max_files) {
-                warnx("%d > system max of %lu connections",
+                warnx("%d > system max of %d connections",
                       i, state.max_files);
                 usage();
             }
@@ -330,11 +339,87 @@ main(int argc, char **argv)
     }
 
     if(Config_get_int(state.config, "enable", "grey", 0)) {
-        /*
-         * The greylisting child processes run as a separate user.
-         */
-        db_user = Config_get_str(state.config, "user", "grey", GREYD_DB_USER);
-        if((db_pw = getpwnam(db_user)) == NULL)
-            errx(1, "no such user %s", db_user);
+        /* Ensure that the the grey connections outweigh the blacklisted. */
+        state.max_black = (state.max_black >= state.max_cons
+                           ? state.max_cons - 100 : state.max_black);
+        if(state.max_black < 0) {
+            I_WARN("maximum blacklisted connections is 0");
+            state.max_black = 0;
+        }
+
+        if(pipe(grey_pipe) == -1)
+            I_CRIT("grey pipe: %m");
+
+        if(pipe(trap_pipe) == -1)
+            I_CRIT("trap pipe: %m");
+
+        grey_pid = fork();
+        switch(grey_pid) {
+        case -1:
+            I_ERR("fork greylister: %m");
+
+        case 0:
+            /* In child. */
+            signal(SIGPIPE, SIG_IGN);
+
+            if((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
+                I_CRIT("fdopen: %m");
+            close(grey_pipe[0]);
+
+            if((state.trap_in = fdopen(trap_pipe[0], "r")) == NULL)
+                I_CRIT("fdopen: %m");
+            close(trap_pipe[1]);
+
+            goto jail;
+        }
+
+        /* In parent. Run the greylisting engine. */
+        greylister = Grey_setup(state.config);
+
+        if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
+            I_CRIT("fdopen: %m");
+        close(grey_pipe[1]);
+
+        if((trap_out = fdopen(trap_pipe[1], "w")) == NULL)
+            I_CRIT("fdopen: %m");
+        close(trap_pipe[0]);
+
+        Grey_start(greylister, grey_pid, grey_in, trap_out);
+        /* Not reached. */
     }
+
+jail:
+    if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
+        chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
+                                    GREYD_CHROOT_DIR);
+        if(chroot(chroot_dir) == -1)
+            I_CRIT("cannot chroot to %s", chroot_dir);
+    }
+
+    if(main_pw) {
+        if(setgroups(1, &main_pw->pw_gid)
+           || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
+           || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
+        {
+            I_CRIT("failed to drop privileges");
+        }
+    }
+
+    if(listen(main_sock, GREYD_BACKLOG) == -1)
+        I_CRIT("listen: %m");
+
+    if(listen(cfg_sock, GREYD_BACKLOG) == -1)
+        I_CRIT("listen: %m");
+
+    if(main_sock6 > 0) {
+        if(listen(main_sock6, GREYD_BACKLOG) == -1)
+            I_CRIT("listen: %m");
+    }
+
+    I_WARN("listening for incoming connections");
+
+    for(;;) {
+    }
+
+    /* Not reached. */
 }

@@ -5,6 +5,7 @@
  * @date   2014
  */
 
+#include "constants.h"
 #include "failures.h"
 #include "grey.h"
 #include "greydb.h"
@@ -99,8 +100,15 @@ extern void
 Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
 {
     struct sigaction sa;
+    char *db_user;
+    struct passwd *db_pw;
 
-    // TODO: setup the database and drop privileges.
+    db_user = Config_get_str(greylister->config, "user", "grey",
+                             GREYD_DB_USER);
+    if((db_pw = getpwnam(db_user)) == NULL)
+        I_CRIT("no such user %s", db_user);
+
+    // TODO: drop privs and setup database.
 
     greylister->grey_pid = grey_pid;
     greylister->startup  = time(NULL);

@@ -17,11 +17,11 @@ struct Greyd_state {
     int slow_until;
 
     struct Con *cons;
-    size_t max_files;
-    size_t max_cons;
-    size_t max_black;
-    size_t clients;
-    size_t black_clients;
+    int max_files;
+    int max_cons;
+    int max_black;
+    int clients;
+    int black_clients;
 
     FILE *grey_out;
     FILE *trap_in;

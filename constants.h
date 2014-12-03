@@ -18,5 +18,8 @@
 #define GREYD_CFG_PORT      8026
 #define GREYD_MAIN_USER     "greyd"
 #define GREYD_DB_USER       "greydb"
+#define GREYD_CHROOT        1
+#define GREYD_CHROOT_DIR    "/var/empty"
+#define GREYD_BACKLOG       10
 
 #endif

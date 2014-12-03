@@ -84,7 +84,8 @@ extern Greylister_T Grey_setup(Config_T config);
 /**
  * Start the greylisting engine.
  */
-extern void Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out);
+extern void Grey_start(Greylister_T greylister, pid_t grey_pid,
+                       FILE *grey_in, FILE *trap_out);
 
 /**
  * Stop the greylisting engine and cleanup afterwards.
