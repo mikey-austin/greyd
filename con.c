@@ -272,8 +272,10 @@ extern void
 Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
 {
     int nwritten, within_max, to_be_written;
-    int greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
-    int grey_stutter = Config_get_int(state->config, "stutter", "grey", CON_GREY_STUTTER);
+    int greylist = Config_get_int(state->config, "enable", "grey",
+                                  GREYLISTING_ENABLED);
+    int grey_stutter = Config_get_int(state->config, "stutter", "grey",
+                                      CON_GREY_STUTTER);
 
     /*
      * Greylisted connections should have their stutter
@@ -306,7 +308,8 @@ Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
          * Determine whether to write out the remaining output buffer or
          * continue with a byte at a time.
          */
-        within_max = (state->clients + CON_CLIENT_TOLERENCE) < state->max_cons;
+        within_max = (state->clients + CON_CLIENT_TOLERENCE)
+            < state->max_cons;
         to_be_written = (within_max && con->stutter ? 1 : con->out_remaining);
 
         nwritten = write(con->fd, con->out_p, to_be_written);

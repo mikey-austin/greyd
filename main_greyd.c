@@ -17,6 +17,7 @@
 #include "greyd.h"
 
 #include <err.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,6 +29,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <grp.h>
+#include <sys/select.h>
 
 static void usage(void);
 static int max_files(void);
@@ -72,17 +74,21 @@ main(int argc, char **argv)
     char *config_file = NULL, hostname[MAX_HOST_NAME];
     char *bind_addr, *bind_addr6;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
-    int grey_pipe[2], trap_pipe[2];
+    int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
     u_short port, cfg_port, sync_port;
     long long grey_time, white_time, pass_time;
     struct rlimit limit;
-    struct sockaddr_in main_addr, cfg_addr;
-    struct sockaddr_in6 main_addr6;
+    struct sockaddr_in main_addr, cfg_addr, main_in_addr;
+    struct sockaddr_in6 main_addr6, main_in_addr6;
+    socklen_t main_addr_len, main_addr6_len;
     struct passwd *main_pw;
     char *main_user;
     pid_t grey_pid;
     FILE *grey_in, *trap_out;
     char *chroot_dir;
+    time_t now;
+    int prev_max_fd = 0;
+    fd_set *fds_r = NULL, *fds_w = NULL;
 
     tzset();
 
@@ -258,6 +264,9 @@ main(int argc, char **argv)
     if(state.cons == NULL)
         err(1, "calloc");
 
+    for(i = 0; i < state.max_cons; i++)
+        state.cons[i].fd = -1;
+
     signal(SIGPIPE, SIG_IGN);
 
     port = Config_get_int(state.config, "port", NULL, GREYD_PORT);
@@ -377,6 +386,7 @@ main(int argc, char **argv)
                 I_CRIT("fdopen: %m");
             close(grey_pipe[0]);
 
+            trap_fd = trap_pipe[0];
             if((state.trap_in = fdopen(trap_pipe[0], "r")) == NULL)
                 I_CRIT("fdopen: %m");
             close(trap_pipe[1]);
@@ -396,6 +406,7 @@ main(int argc, char **argv)
         close(trap_pipe[0]);
 
         Grey_start(greylister, grey_pid, grey_in, trap_out);
+
         /* Not reached. */
     }
 
@@ -430,7 +441,167 @@ jail:
     I_WARN("listening for incoming connections");
 
     for(;;) {
+        struct timeval tv, *tvp;
+        int max_fd, writers;
+        struct Con *con;
+
+        max_fd = MAX(main_sock, cfg_sock);
+        if(main_sock6)
+            max_fd = MAX(max_fd, main_sock6);
+        max_fd = MAX(max_fd, trap_fd);
+
+        time(&now);
+        for(i = 0; i < state.max_cons; i++) {
+            if(state.cons[i].fd != -1)
+                max_fd = MAX(max_fd, state.cons[i].fd);
+        }
+
+        if(max_fd > prev_max_fd) {
+            /*
+             * We have more fds than the previous iteration, so ensure
+             * there is enough space.
+             */
+            free(fds_r);
+            fds_r = NULL;
+            free(fds_w);
+            fds_w = NULL;
+            fds_r = calloc(howmany(max_fd + 1, NFDBITS), sizeof(fd_mask));
+
+            if(fds_r == NULL)
+                I_CRIT("calloc: %m");
+
+            fds_w = calloc(howmany(max_fd + 1, NFDBITS), sizeof(fd_mask));
+            if(fds_w == NULL)
+                I_CRIT("calloc: %m");
+
+            prev_max_fd = max_fd;
+        }
+        else {
+            memset(fds_r, 0, howmany(max_fd + 1, NFDBITS) * sizeof(fd_mask));
+            memset(fds_w, 0, howmany(max_fd + 1, NFDBITS) * sizeof(fd_mask));
+        }
+
+        writers = 0;
+        for(i = 0; i < state.max_cons; i++) {
+            con = &state.cons[i];
+
+            if(con->fd != -1 && con->r) {
+                if(con->r + MAX_TIME <= now) {
+                    Con_close(con, &state);
+                    continue;
+                }
+                FD_SET(con->fd, fds_r);
+            }
+
+            if(con->fd != -1 && con->w) {
+                if(con->w + MAX_TIME <= now) {
+                    Con_close(con, &state);
+                    continue;
+                }
+                if(con->w <= now)
+                    FD_SET(con->fd, fds_w);
+                writers = 1;
+            }
+        }
+
+        if(state.slow_until == 0) {
+            FD_SET(main_sock, fds_r);
+
+            /* Only allow one config connection at a time. */
+            if(cfg_fd == -1)
+                FD_SET(cfg_sock, fds_r);
+            else
+                FD_SET(cfg_fd, fds_r);
+        }
+
+        /*
+         * If we are not listening, ensure we wake up at least once
+         * a second to progress the suttered writers.
+         */
+        if(writers == 0 && state.slow_until == 0) {
+            /* Just sleep until a connection arrives. */
+            tvp = NULL;
+        }
+        else {
+            tv.tv_sec = 1;
+            tv.tv_usec = 0;
+            tvp = &tv;
+        }
+
+        if(select(max_fd + 1, fds_r, fds_w, NULL, tvp) == -1) {
+            if(errno != EINTR)
+                I_CRIT("select: %m");
+            continue;
+        }
+
+        /* Check if we can stop throttling connections. */
+        if(state.slow_until && state.slow_until <= now)
+            state.slow_until = 0;
+
+        /* Handle any accepted clients in progress. */
+        for(i = 0; i < state.max_cons; i++) {
+            con = &state.cons[i];
+
+            if(con->fd != -1 && FD_ISSET(con->fd, fds_r))
+                Con_handle_read(con, &now, &state);
+
+            if(con->fd != -1 && FD_ISSET(con->fd, fds_w))
+                Con_handle_write(con, &now, &state);
+        }
+
+        /* Handle the main IPv4 socket. */
+        if(FD_ISSET(main_sock, fds_r)) {
+            int main_accept_fd;
+
+            main_addr_len = sizeof(main_in_addr);
+            main_accept_fd = accept(
+                main_sock, (struct sockaddr *) &main_in_addr,
+                &main_addr_len);
+            if(main_accept_fd == -1) {
+                switch(errno) {
+                case EINTR:
+                case ECONNABORTED:
+                    break;
+
+                case EMFILE:
+                case ENFILE:
+                    state.slow_until = time(NULL) + 1;
+                    break;
+
+                default:
+                    I_CRIT("main socket accept failure");
+                }
+            }
+            else {
+                /* Ensure we don't hit the configured fd limit. */
+                for(i = 0; i < state.max_cons; i++) {
+                    if(state.cons[i].fd == -1)
+                        break;
+                }
+
+                if(i == state.max_cons) {
+                    close(main_accept_fd);
+                    state.slow_until = 0;
+                }
+                else {
+                    con = &state.cons[i];
+                    Con_init(con, main_accept_fd,
+                             (struct sockaddr_storage *) &main_in_addr,
+                             &state);
+                    I_INFO("%s: connected (%d/%d)%s%s",
+                           con->src_addr, state.clients, state.black_clients,
+                           (con->lists == NULL ? "" : ", lists:"),
+                           (con->lists == NULL ? "" : con->lists));
+                }
+            }
+        }
     }
+
+    // TODO: Handle the optional IPv6 connection here.
+
+    // TODO: Handle the config connections here.
+
+    // TODO: Handle inbound data on the trap pipe here.
 
     /* Not reached. */
 }

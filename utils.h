@@ -26,6 +26,8 @@
 
 #include <stdlib.h>
 
+#define MAX(a, b) (((a) >= (b)) ? (a) : (b))
+
 /**
  * Appends src to string dst of size dsize (unlike strncat, dsize is the
  * full size of dst, not space left).  At most dsize-1 characters
