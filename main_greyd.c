@@ -49,7 +49,18 @@ usage(void)
 static int
 max_files(void)
 {
-    return 1000; // TODO
+    int max_files = CON_DEFAULT_MAX;
+
+#ifdef __linux
+    FILE *file_max = fopen("/proc/sys/fs/file-max", "r");
+    if(file_max == NULL)
+        err(1, "fopen");
+
+    if(fscanf(file_max, "%d", &max_files) == EOF)
+        err(1, "fscanf");
+#endif
+
+    return max_files;
 }
 
 int
