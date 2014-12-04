@@ -53,11 +53,8 @@ max_files(void)
 
 #ifdef __linux
     FILE *file_max = fopen("/proc/sys/fs/file-max", "r");
-    if(file_max == NULL)
+    if(file_max == NULL || fscanf(file_max, "%d", &max_files) == EOF)
         return max_files;
-
-    if(fscanf(file_max, "%d", &max_files) == EOF)
-        err(1, "fscanf");
 #endif
 
     if((max_files - MAX_FILES_THRESHOLD) < 10)
