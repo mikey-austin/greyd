@@ -60,7 +60,10 @@ max_files(void)
         err(1, "fscanf");
 #endif
 
-    return max_files;
+    if((max_files - MAX_FILES_THRESHOLD) < 10)
+        errx(1, "max files is only %d, refusing to continue", max_files);
+    else
+        return (max_files - MAX_FILES_THRESHOLD);
 }
 
 int

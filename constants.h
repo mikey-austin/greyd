@@ -21,5 +21,6 @@
 #define GREYD_CHROOT        1
 #define GREYD_CHROOT_DIR    "/var/empty"
 #define GREYD_BACKLOG       10
+#define MAX_FILES_THRESHOLD 200
 
 #endif
