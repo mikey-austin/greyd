@@ -29,7 +29,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <grp.h>
-#include <sys/select.h>
+#include <poll.h>
 
 static void usage(void);
 static int max_files(void);
@@ -88,7 +88,7 @@ main(int argc, char **argv)
     char *chroot_dir;
     time_t now;
     int prev_max_fd = 0;
-    fd_set *fds_r = NULL, *fds_w = NULL;
+    struct pollfd *fds = NULL;
 
     tzset();
 
@@ -418,7 +418,7 @@ jail:
             I_CRIT("cannot chroot to %s", chroot_dir);
     }
 
-    if(main_pw) {
+    if(main_pw && Config_get_int(state.config, "drop_privs", NULL, 1)) {
         if(setgroups(1, &main_pw->pw_gid)
            || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
            || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
@@ -440,9 +440,11 @@ jail:
 
     I_WARN("listening for incoming connections");
 
+    state.slow_until = 0;
+    state.blacklists = List_create(NULL);
+
     for(;;) {
-        struct timeval tv, *tvp;
-        int max_fd, writers;
+        int max_fd, writers, timeout;
         struct Con *con;
 
         max_fd = MAX(main_sock, cfg_sock);
@@ -461,24 +463,16 @@ jail:
              * We have more fds than the previous iteration, so ensure
              * there is enough space.
              */
-            free(fds_r);
-            fds_r = NULL;
-            free(fds_w);
-            fds_w = NULL;
-            fds_r = calloc(howmany(max_fd + 1, NFDBITS), sizeof(fd_mask));
-
-            if(fds_r == NULL)
-                I_CRIT("calloc: %m");
-
-            fds_w = calloc(howmany(max_fd + 1, NFDBITS), sizeof(fd_mask));
-            if(fds_w == NULL)
+            free(fds);
+            fds = NULL;
+            fds = calloc(max_fd + 1, sizeof(*fds));
+            if(fds == NULL)
                 I_CRIT("calloc: %m");
 
             prev_max_fd = max_fd;
         }
         else {
-            memset(fds_r, 0, howmany(max_fd + 1, NFDBITS) * sizeof(fd_mask));
-            memset(fds_w, 0, howmany(max_fd + 1, NFDBITS) * sizeof(fd_mask));
+            memset(fds, 0, (max_fd * sizeof(*fds)) + 1);
         }
 
         writers = 0;
@@ -490,7 +484,8 @@ jail:
                     Con_close(con, &state);
                     continue;
                 }
-                FD_SET(con->fd, fds_r);
+                fds[con->fd].fd = con->fd;
+                fds[con->fd].events = POLLIN;
             }
 
             if(con->fd != -1 && con->w) {
@@ -498,20 +493,28 @@ jail:
                     Con_close(con, &state);
                     continue;
                 }
-                if(con->w <= now)
-                    FD_SET(con->fd, fds_w);
+
+                if(con->w <= now) {
+                    fds[con->fd].fd = con->fd;
+                    fds[con->fd].events |= POLLOUT;
+                }
                 writers = 1;
             }
         }
 
         if(state.slow_until == 0) {
-            FD_SET(main_sock, fds_r);
+            fds[main_sock].fd = main_sock;
+            fds[main_sock].events = POLLIN;
 
             /* Only allow one config connection at a time. */
-            if(cfg_fd == -1)
-                FD_SET(cfg_sock, fds_r);
-            else
-                FD_SET(cfg_fd, fds_r);
+            if(cfg_fd == -1) {
+                fds[cfg_sock].fd = cfg_sock;
+                fds[cfg_sock].events = POLLIN;
+            }
+            else {
+                fds[cfg_fd].fd = cfg_fd;
+                fds[cfg_fd].events = POLLIN;
+            }
         }
 
         /*
@@ -520,17 +523,15 @@ jail:
          */
         if(writers == 0 && state.slow_until == 0) {
             /* Just sleep until a connection arrives. */
-            tvp = NULL;
+            timeout = -1;
         }
         else {
-            tv.tv_sec = 1;
-            tv.tv_usec = 0;
-            tvp = &tv;
+            timeout = POLL_TIMEOUT;
         }
 
-        if(select(max_fd + 1, fds_r, fds_w, NULL, tvp) == -1) {
+        if(poll(fds, max_fd, timeout) == -1) {
             if(errno != EINTR)
-                I_CRIT("select: %m");
+                I_CRIT("poll: %m");
             continue;
         }
 
@@ -542,15 +543,15 @@ jail:
         for(i = 0; i < state.max_cons; i++) {
             con = &state.cons[i];
 
-            if(con->fd != -1 && FD_ISSET(con->fd, fds_r))
+            if(con->fd != -1 && (fds[con->fd].revents & POLLIN))
                 Con_handle_read(con, &now, &state);
 
-            if(con->fd != -1 && FD_ISSET(con->fd, fds_w))
+            if(con->fd != -1 && (fds[con->fd].revents & POLLOUT))
                 Con_handle_write(con, &now, &state);
         }
 
         /* Handle the main IPv4 socket. */
-        if(FD_ISSET(main_sock, fds_r)) {
+        if(fds[main_sock].revents & POLLIN) {
             int main_accept_fd;
 
             main_addr_len = sizeof(main_in_addr);

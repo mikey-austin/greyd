@@ -23,5 +23,6 @@
 #define GREYD_BACKLOG       10
 #define MAX_FILES_THRESHOLD 200
 #define MAX_TIME            400
+#define POLL_TIMEOUT        1000 /* In milliseconds. */
 
 #endif
