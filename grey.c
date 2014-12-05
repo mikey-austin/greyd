@@ -108,7 +108,9 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
     if((db_pw = getpwnam(db_user)) == NULL)
         I_CRIT("no such user %s", db_user);
 
-    // TODO: drop privs and setup database.
+    if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)) {
+        // TODO: drop privs and setup database.
+    }
 
     greylister->grey_pid = grey_pid;
     greylister->startup  = time(NULL);

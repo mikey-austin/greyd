@@ -358,7 +358,7 @@ main(int argc, char **argv)
             err(1, "daemon");
     }
 
-    if(Config_get_int(state.config, "enable", "grey", 0)) {
+    if(Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
         /* Ensure that the the grey connections outweigh the blacklisted. */
         state.max_black = (state.max_black >= state.max_cons
                            ? state.max_cons - 100 : state.max_black);
