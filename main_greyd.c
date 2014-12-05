@@ -666,7 +666,7 @@ jail:
             if(con->fd != -1 && (fds[con->fd].revents & POLLOUT))
                 Con_handle_write(con, &now, &state);
         }
-        /*  */
+
         /* Handle the main IPv4 socket. */
         if(fds[main_sock].revents & POLLIN) {
             memset(&main_in_addr, 0, sizeof(main_in_addr));
