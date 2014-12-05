@@ -101,7 +101,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     human_time[strlen(human_time) - 1] = '\0';
     snprintf(con->out_buf, con->out_size, "220 %s ESMTP %s; %s\r\n",
              Config_get_str(state->config, "hostname", NULL, NULL),
-             Config_get_str(state->config, "banner", NULL, NULL),
+             Config_get_str(state->config, "banner", NULL, GREYD_BANNER),
              human_time);
     free(human_time);
 
