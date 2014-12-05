@@ -14,6 +14,7 @@
 #include "../config_lexer.h"
 #include "../grey.h"
 #include "../list.h"
+#include "../hash.h"
 #include "../blacklist.h"
 
 #include <string.h>
@@ -76,16 +77,16 @@ main()
     memset(&gs, 0, sizeof(gs));
     gs.config = c;
     gs.max_cons = 4;
-    gs.blacklists = List_create(NULL);
+    gs.blacklists = Hash_create(5, NULL);
 
     bl1 = Blacklist_create("blacklist_1", "You (%A) are on blacklist 1");
     bl2 = Blacklist_create("blacklist_2", "You (%A) are on blacklist 2");
     bl3 = Blacklist_create("blacklist_3_with_an_enormously_big_long_long_epic_epicly_long_large_name",
                            "Your address %A\\nis on blacklist 3");
 
-    List_insert_after(gs.blacklists, bl1);
-    List_insert_after(gs.blacklists, bl2);
-    List_insert_after(gs.blacklists, bl3);
+    Hash_insert(gs.blacklists, bl1->name, bl1);
+    Hash_insert(gs.blacklists, bl2->name, bl2);
+    Hash_insert(gs.blacklists, bl3->name, bl3);
 
     Blacklist_add(bl1, "10.10.10.1/32");
     Blacklist_add(bl1, "10.10.10.2/32");
@@ -300,7 +301,7 @@ main()
 
     /* Cleanup. */
     List_destroy(&con.blacklists);
-    List_destroy(&gs.blacklists);
+    Hash_destroy(&gs.blacklists);
     Blacklist_destroy(&bl1);
     Blacklist_destroy(&bl2);
     Blacklist_destroy(&bl3);

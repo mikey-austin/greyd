@@ -25,5 +25,6 @@
 #define MAX_TIME            400
 #define POLL_TIMEOUT        1000 /* In milliseconds. */
 #define GREYD_BANNER        "greyd IP-based SPAM blocker"
+#define NUM_BLACKLISTS      10
 
 #endif

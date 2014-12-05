@@ -15,6 +15,8 @@
 #include "utils.h"
 #include "con.h"
 #include "greyd.h"
+#include "hash.h"
+#include "config_parser.h"
 
 #include <err.h>
 #include <errno.h>
@@ -34,6 +36,8 @@
 static void usage(void);
 static int max_files(void);
 static void accept_connection(int, struct sockaddr_storage *, struct Greyd_state *);
+static void accept_config(int, struct Greyd_state *);
+static void destroy_blacklist(struct Hash_entry *entry);
 
 static void
 usage(void)
@@ -107,6 +111,64 @@ accept_connection(int fd, struct sockaddr_storage *addr,
                    (con->lists == NULL ? "" : ", lists:"),
                    (con->lists == NULL ? "" : con->lists));
         }
+    }
+}
+
+static void
+accept_config(int fd, struct Greyd_state *state)
+{
+    Config_T message;
+    Config_value_T value;
+    Lexer_source_T source;
+    Lexer_T lexer;
+    Config_parser_T parser;
+    Blacklist_T blacklist;
+    char *bl_name, *bl_msg, *addr;
+    List_T ips;
+    struct List_entry *entry;
+    int read_fd;
+
+    /*
+     * Duplicate the descriptor so that the incoming fd isn't closed
+     * upon destroying the lexer source.
+     */
+    read_fd = dup(fd);
+    source = Lexer_source_create_from_fd(read_fd);
+    lexer = Config_lexer_create(source);
+    parser = Config_parser_create(lexer);
+    message = Config_create();
+
+    if(Config_parser_start(parser, message) == CONFIG_PARSER_OK) {
+        /*
+         * Create a new blacklist and overwrite any existing.
+         */
+        bl_name = Config_get_str(message, "name", NULL, NULL);
+        bl_msg = Config_get_str(message, "message", NULL, NULL);
+        ips = Config_get_list(message, "ips", NULL);
+        if(bl_name && bl_msg && ips) {
+            blacklist = Blacklist_create(bl_name, bl_msg);
+            LIST_FOREACH(ips, entry) {
+                value = List_entry_value(entry);
+                if((addr = cv_str(value)) != NULL)
+                    Blacklist_add(blacklist, addr);
+            }
+            Hash_insert(state->blacklists, bl_name, blacklist);
+            I_DEBUG("refreshing blacklist \"%s\"", bl_name);
+        }
+    }
+    else {
+        I_WARN("config message parse error");
+    }
+
+    Config_destroy(&message);
+    Config_parser_destroy(&parser);
+}
+
+static void
+destroy_blacklist(struct Hash_entry *entry)
+{
+    if(entry && entry->v) {
+        Blacklist_destroy((Blacklist_T *) &entry->v);
     }
 }
 
@@ -431,8 +493,6 @@ main(int argc, char **argv)
             close(grey_pipe[0]);
 
             trap_fd = trap_pipe[0];
-            if((state.trap_in = fdopen(trap_pipe[0], "r")) == NULL)
-                I_CRIT("fdopen: %m");
             close(trap_pipe[1]);
 
             goto jail;
@@ -486,12 +546,12 @@ jail:
 
     state.slow_until = 0;
     state.clients = state.black_clients = 0;
-    state.blacklists = List_create(NULL);
+    state.blacklists = Hash_create(NUM_BLACKLISTS, destroy_blacklist);
 
     for(;;) {
         int max_fd, writers, timeout;
         struct Con *con;
-        int main_accept_fd;
+        int accept_fd;
         socklen_t main_addr_len, main_addr6_len;
 
         max_fd = MAX(main_sock, cfg_sock);
@@ -519,7 +579,7 @@ jail:
             prev_max_fd = max_fd;
         }
         else {
-            memset(fds, 0, (max_fd * sizeof(*fds)) + 1);
+            memset(fds, 0, (max_fd + 1) * sizeof(*fds));
         }
 
         writers = 0;
@@ -569,6 +629,11 @@ jail:
             }
         }
 
+        if(trap_fd > 0) {
+            fds[trap_fd].fd = trap_fd;
+            fds[trap_fd].events = POLLIN;
+        }
+
         /*
          * If we are not listening, ensure we wake up at least once
          * a second to progress the suttered writers.
@@ -601,35 +666,71 @@ jail:
             if(con->fd != -1 && (fds[con->fd].revents & POLLOUT))
                 Con_handle_write(con, &now, &state);
         }
-
+        /*  */
         /* Handle the main IPv4 socket. */
         if(fds[main_sock].revents & POLLIN) {
+            memset(&main_in_addr, 0, sizeof(main_in_addr));
             main_addr_len = sizeof(main_in_addr);
-            main_accept_fd = accept(
-                main_sock, (struct sockaddr *) &main_in_addr,
-                &main_addr_len);
-            accept_connection(main_accept_fd,
+            accept_fd = accept(main_sock,
+                               (struct sockaddr *) &main_in_addr,
+                               &main_addr_len);
+            accept_connection(accept_fd,
                               (struct sockaddr_storage *) &main_in_addr,
                               &state);
         }
 
         /* Handle the main IPv6 socket. */
         if(main_sock6 > 0 && fds[main_sock6].revents & POLLIN) {
+            memset(&main_in_addr6, 0, sizeof(main_in_addr6));
             main_addr6_len = sizeof(main_in_addr6);
-            main_accept_fd = accept(
-                main_sock6, (struct sockaddr *) &main_in_addr6,
-                &main_addr6_len);
-            accept_connection(main_accept_fd,
+            accept_fd = accept(main_sock6,
+                               (struct sockaddr *) &main_in_addr6,
+                               &main_addr6_len);
+            accept_connection(accept_fd,
                               (struct sockaddr_storage *) &main_in_addr6,
                               &state);
         }
+
+        /* Handle the configuration socket. */
+        if(fds[cfg_sock].revents & POLLIN) {
+            memset(&main_in_addr, 0, sizeof(main_in_addr));
+            main_addr_len = sizeof(main_in_addr);
+            cfg_fd = accept(cfg_sock,
+                               (struct sockaddr *) &main_in_addr,
+                            &main_addr_len);
+            if(cfg_fd == -1) {
+                switch (errno) {
+                case EINTR:
+                case ECONNABORTED:
+                    break;
+
+                case EMFILE:
+                case ENFILE:
+                    state.slow_until = time(NULL) + 1;
+                    break;
+
+                default:
+                    I_ERR("accept: %m");
+                }
+            }
+            else if(ntohs(main_in_addr.sin_port) >= IPPORT_RESERVED) {
+                close(cfg_fd);
+                cfg_fd = -1;
+                state.slow_until = 0;
+            }
+        }
+        else if(cfg_fd > 0 && fds[cfg_fd].revents & POLLIN) {
+            accept_config(cfg_fd, &state);
+            close(cfg_fd);
+            cfg_fd = -1;
+            state.slow_until = 0;
+        }
+
+        /* Handle the trap pipe input. */
+        if(trap_fd > 0 && fds[trap_fd].revents & POLLIN) {
+            accept_config(trap_fd, &state);
+        }
     }
-
-    // TODO: Handle the optional IPv6 connection here.
-
-    // TODO: Handle the config connections here.
-
-    // TODO: Handle inbound data on the trap pipe here.
 
     /* Not reached. */
 }

@@ -14,7 +14,7 @@
 
 #include "list.h"
 
-#define MAX_KEY_LEN 45
+#define MAX_KEY_LEN 255
 
 /**
  * A struct to contain a hash entry's key and value pair.

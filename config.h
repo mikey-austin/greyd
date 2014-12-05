@@ -100,7 +100,8 @@ extern int Config_get_int(Config_T config, const char *varname,
 /**
  * Same as the string version, but without the default value.
  */
-extern List_T Config_get_list(Config_T config, const char *varname, const char *section_name);
+extern List_T Config_get_list(Config_T config, const char *varname,
+                              const char *section_name);
 
 /**
  * Set an integer value. If the section doesn't exist, it is created.

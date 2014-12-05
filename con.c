@@ -30,6 +30,7 @@
 #include "con.h"
 #include "blacklist.h"
 #include "list.h"
+#include "hash.h"
 #include "utils.h"
 #include "grey.h"
 
@@ -52,9 +53,10 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     time_t now;
     short greylist, grey_stutter;
     int ret, max_black;
-    char *human_time;
+    char *human_time, *bl_name;
     struct List_entry *entry;
     Blacklist_T blacklist = NULL;
+    List_T bl_names;
     struct IP_addr ipaddr;
 
     time(&now);
@@ -117,12 +119,16 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     sstrncpy(con->r_end_chars, "\n", CON_REMOTE_END_SIZE);
 
     /* Lookup any blacklists based on this client's src IP address. */
-    LIST_FOREACH(state->blacklists, entry) {
-        blacklist = List_entry_value(entry);
-        IP_sockaddr_to_addr(&con->src, &ipaddr);
+    if((bl_names = Hash_keys(state->blacklists)) != NULL) {
+        LIST_FOREACH(bl_names, entry) {
+            bl_name = List_entry_value(entry);
+            blacklist = Hash_get(state->blacklists, bl_name);
+            IP_sockaddr_to_addr(&con->src, &ipaddr);
 
-        if(Blacklist_match(blacklist, &ipaddr, ((struct sockaddr *) &con->src)->sa_family))
-            List_insert_after(con->blacklists, blacklist);
+            if(Blacklist_match(blacklist, &ipaddr, ((struct sockaddr *) &con->src)->sa_family))
+                List_insert_after(con->blacklists, blacklist);
+        }
+        List_destroy(&bl_names);
     }
 
     state->clients++;

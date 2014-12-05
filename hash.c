@@ -76,8 +76,10 @@ Hash_destroy(Hash_T *hash)
         return;
     }
 
-    for(i=0; i < (*hash)->size; i++) {
-        (*hash)->destroy(((*hash)->entries + i));
+    if((*hash)->destroy) {
+        for(i=0; i < (*hash)->size; i++) {
+            (*hash)->destroy(((*hash)->entries + i));
+        }
     }
 
     if(*hash && (*hash)->entries) {

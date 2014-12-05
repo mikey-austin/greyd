@@ -25,7 +25,7 @@
 #include <string.h>
 
 #define GREY_DEFAULT_TL_NAME "greyd-greytrap"
-#define GREY_DEFAULT_TL_MSG  "\"Your address %A has mailed to spamtraps here\\n\""
+#define GREY_DEFAULT_TL_MSG  "Your address %A has mailed to spamtraps here\\n"
 #define GREY_DEFAULT_WL_NAME "greyd-whitelist"
 
 static void destroy_address(void *);

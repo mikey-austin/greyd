@@ -8,6 +8,8 @@
 #ifndef GREYD_DEFINED
 #define GREYD_DEFINED
 
+#include "hash.h"
+
 /**
  * Structure to encapsulate the state of the main
  * greyd process.
@@ -24,9 +26,8 @@ struct Greyd_state {
     int black_clients;
 
     FILE *grey_out;
-    FILE *trap_in;
 
-    List_T blacklists;
+    Hash_T blacklists;
 };
 
 #endif
