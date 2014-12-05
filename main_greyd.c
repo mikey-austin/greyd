@@ -33,6 +33,7 @@
 
 static void usage(void);
 static int max_files(void);
+static void accept_connection(int, struct sockaddr_storage *, struct Greyd_state *);
 
 static void
 usage(void)
@@ -65,6 +66,50 @@ max_files(void)
         return (max_files - MAX_FILES_THRESHOLD);
 }
 
+static void
+accept_connection(int fd, struct sockaddr_storage *addr,
+                  struct Greyd_state *state)
+{
+    int i;
+    struct Con *con;
+
+    if(fd == -1) {
+        switch(errno) {
+        case EINTR:
+        case ECONNABORTED:
+            break;
+
+        case EMFILE:
+        case ENFILE:
+            state->slow_until = time(NULL) + 1;
+            break;
+
+        default:
+            I_CRIT("main socket accept failure");
+        }
+    }
+    else {
+        /* Ensure we don't hit the configured fd limit. */
+        for(i = 0; i < state->max_cons; i++) {
+            if(state->cons[i].fd == -1)
+                break;
+        }
+
+        if(i == state->max_cons) {
+            close(fd);
+            state->slow_until = 0;
+        }
+        else {
+            con = &state->cons[i];
+            Con_init(con, fd, addr, state);
+            I_INFO("%s: connected (%d/%d)%s%s",
+                   con->src_addr, state->clients, state->black_clients,
+                   (con->lists == NULL ? "" : ", lists:"),
+                   (con->lists == NULL ? "" : con->lists));
+        }
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -80,7 +125,6 @@ main(int argc, char **argv)
     struct rlimit limit;
     struct sockaddr_in main_addr, cfg_addr, main_in_addr;
     struct sockaddr_in6 main_addr6, main_in_addr6;
-    socklen_t main_addr_len, main_addr6_len;
     struct passwd *main_pw;
     char *main_user;
     pid_t grey_pid;
@@ -447,9 +491,11 @@ jail:
     for(;;) {
         int max_fd, writers, timeout;
         struct Con *con;
+        int main_accept_fd;
+        socklen_t main_addr_len, main_addr6_len;
 
         max_fd = MAX(main_sock, cfg_sock);
-        if(main_sock6)
+        if(main_sock6 > 0)
             max_fd = MAX(max_fd, main_sock6);
         max_fd = MAX(max_fd, trap_fd);
 
@@ -507,6 +553,11 @@ jail:
             fds[main_sock].fd = main_sock;
             fds[main_sock].events = POLLIN;
 
+            if(main_sock6 > 0) {
+                fds[main_sock6].fd = main_sock6;
+                fds[main_sock6].events = POLLIN;
+            }
+
             /* Only allow one config connection at a time. */
             if(cfg_fd == -1) {
                 fds[cfg_sock].fd = cfg_sock;
@@ -553,49 +604,24 @@ jail:
 
         /* Handle the main IPv4 socket. */
         if(fds[main_sock].revents & POLLIN) {
-            int main_accept_fd;
-
             main_addr_len = sizeof(main_in_addr);
             main_accept_fd = accept(
                 main_sock, (struct sockaddr *) &main_in_addr,
                 &main_addr_len);
-            if(main_accept_fd == -1) {
-                switch(errno) {
-                case EINTR:
-                case ECONNABORTED:
-                    break;
+            accept_connection(main_accept_fd,
+                              (struct sockaddr_storage *) &main_in_addr,
+                              &state);
+        }
 
-                case EMFILE:
-                case ENFILE:
-                    state.slow_until = time(NULL) + 1;
-                    break;
-
-                default:
-                    I_CRIT("main socket accept failure");
-                }
-            }
-            else {
-                /* Ensure we don't hit the configured fd limit. */
-                for(i = 0; i < state.max_cons; i++) {
-                    if(state.cons[i].fd == -1)
-                        break;
-                }
-
-                if(i == state.max_cons) {
-                    close(main_accept_fd);
-                    state.slow_until = 0;
-                }
-                else {
-                    con = &state.cons[i];
-                    Con_init(con, main_accept_fd,
-                             (struct sockaddr_storage *) &main_in_addr,
-                             &state);
-                    I_INFO("%s: connected (%d/%d)%s%s",
-                           con->src_addr, state.clients, state.black_clients,
-                           (con->lists == NULL ? "" : ", lists:"),
-                           (con->lists == NULL ? "" : con->lists));
-                }
-            }
+        /* Handle the main IPv6 socket. */
+        if(main_sock6 > 0 && fds[main_sock6].revents & POLLIN) {
+            main_addr6_len = sizeof(main_in_addr6);
+            main_accept_fd = accept(
+                main_sock6, (struct sockaddr *) &main_in_addr6,
+                &main_addr6_len);
+            accept_connection(main_accept_fd,
+                              (struct sockaddr_storage *) &main_in_addr6,
+                              &state);
         }
     }
 
