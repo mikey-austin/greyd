@@ -441,6 +441,7 @@ jail:
     I_WARN("listening for incoming connections");
 
     state.slow_until = 0;
+    state.clients = state.black_clients = 0;
     state.blacklists = List_create(NULL);
 
     for(;;) {
@@ -529,7 +530,7 @@ jail:
             timeout = POLL_TIMEOUT;
         }
 
-        if(poll(fds, max_fd, timeout) == -1) {
+        if(poll(fds, max_fd + 1, timeout) == -1) {
             if(errno != EINTR)
                 I_CRIT("poll: %m");
             continue;
