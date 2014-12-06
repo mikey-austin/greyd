@@ -30,4 +30,10 @@ struct Greyd_state {
     Hash_T blacklists;
 };
 
+/**
+ * Process configuration input, and add resulting blacklist to the
+ * state's list.
+ */
+extern void Greyd_process_config(int fd, struct Greyd_state *state);
+
 #endif

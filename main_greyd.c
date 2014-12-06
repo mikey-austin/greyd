@@ -35,8 +35,6 @@
 
 static void usage(void);
 static int max_files(void);
-static void accept_connection(int, struct sockaddr_storage *, struct Greyd_state *);
-static void accept_config(int, struct Greyd_state *);
 static void destroy_blacklist(struct Hash_entry *entry);
 
 static void
@@ -70,52 +68,8 @@ max_files(void)
         return (max_files - MAX_FILES_THRESHOLD);
 }
 
-static void
-accept_connection(int fd, struct sockaddr_storage *addr,
-                  struct Greyd_state *state)
-{
-    int i;
-    struct Con *con;
-
-    if(fd == -1) {
-        switch(errno) {
-        case EINTR:
-        case ECONNABORTED:
-            break;
-
-        case EMFILE:
-        case ENFILE:
-            state->slow_until = time(NULL) + 1;
-            break;
-
-        default:
-            I_CRIT("main socket accept failure");
-        }
-    }
-    else {
-        /* Ensure we don't hit the configured fd limit. */
-        for(i = 0; i < state->max_cons; i++) {
-            if(state->cons[i].fd == -1)
-                break;
-        }
-
-        if(i == state->max_cons) {
-            close(fd);
-            state->slow_until = 0;
-        }
-        else {
-            con = &state->cons[i];
-            Con_init(con, fd, addr, state);
-            I_INFO("%s: connected (%d/%d)%s%s",
-                   con->src_addr, state->clients, state->black_clients,
-                   (con->lists == NULL ? "" : ", lists:"),
-                   (con->lists == NULL ? "" : con->lists));
-        }
-    }
-}
-
-static void
-accept_config(int fd, struct Greyd_state *state)
+extern void
+Greyd_process_config(int fd, struct Greyd_state *state)
 {
     Config_T message;
     Config_value_T value;
@@ -132,7 +86,8 @@ accept_config(int fd, struct Greyd_state *state)
      * Duplicate the descriptor so that the incoming fd isn't closed
      * upon destroying the lexer source.
      */
-    read_fd = dup(fd);
+    if((read_fd = dup(fd)) == -1)
+        I_CRIT("dup: %m");
     source = Lexer_source_create_from_fd(read_fd);
     lexer = Config_lexer_create(source);
     parser = Config_parser_create(lexer);
@@ -155,9 +110,6 @@ accept_config(int fd, struct Greyd_state *state)
             Hash_insert(state->blacklists, bl_name, blacklist);
             I_DEBUG("refreshing blacklist \"%s\"", bl_name);
         }
-    }
-    else {
-        I_WARN("config message parse error");
     }
 
     Config_destroy(&message);
@@ -674,9 +626,8 @@ jail:
             accept_fd = accept(main_sock,
                                (struct sockaddr *) &main_in_addr,
                                &main_addr_len);
-            accept_connection(accept_fd,
-                              (struct sockaddr_storage *) &main_in_addr,
-                              &state);
+            Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr,
+                       &state);
         }
 
         /* Handle the main IPv6 socket. */
@@ -686,9 +637,8 @@ jail:
             accept_fd = accept(main_sock6,
                                (struct sockaddr *) &main_in_addr6,
                                &main_addr6_len);
-            accept_connection(accept_fd,
-                              (struct sockaddr_storage *) &main_in_addr6,
-                              &state);
+            Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr6,
+                       &state);
         }
 
         /* Handle the configuration socket. */
@@ -720,7 +670,7 @@ jail:
             }
         }
         else if(cfg_fd > 0 && fds[cfg_fd].revents & POLLIN) {
-            accept_config(cfg_fd, &state);
+            Greyd_process_config(cfg_fd, &state);
             close(cfg_fd);
             cfg_fd = -1;
             state.slow_until = 0;
@@ -728,7 +678,7 @@ jail:
 
         /* Handle the trap pipe input. */
         if(trap_fd > 0 && fds[trap_fd].revents & POLLIN) {
-            accept_config(trap_fd, &state);
+            Greyd_process_config(trap_fd, &state);
         }
     }
 
