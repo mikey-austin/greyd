@@ -38,8 +38,8 @@ static int db_update(DB_handle_T db, char *ip, int action, int type);
 static void
 usage()
 {
-    fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys] "
-                    "[-c config]\n", PROGNAME);
+    fprintf(stderr, "usage: %s [-c config] [[-Tt] -a keys] [[-Tt] -d keys] \n",
+            PROGNAME);
     exit(1);
 }
 

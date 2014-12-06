@@ -309,8 +309,12 @@ main(int argc, char **argv)
     struct List_entry *entry;
     FW_handle_T fw = NULL;
 
-    while((option = getopt(argc, argv, "bdDnc:")) != -1) {
+    while((option = getopt(argc, argv, "f:bdDn")) != -1) {
         switch(option) {
+        case 'f':
+            config_path = optarg;
+            break;
+
         case 'n':
             dryrun = 1;
             break;
@@ -325,10 +329,6 @@ main(int argc, char **argv)
 
         case 'D':
             daemonize = 1;
-            break;
-
-        case 'c':
-            config_path = optarg;
             break;
 
         default:
