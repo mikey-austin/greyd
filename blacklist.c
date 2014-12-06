@@ -29,8 +29,8 @@ Blacklist_create(const char *name, const char *message)
     if((blacklist = malloc(sizeof(*blacklist))) == NULL) {
         I_CRIT("Could not create blacklist");
     }
-    blacklist->entries = (struct E *) calloc(BLACKLIST_INIT_SIZE,
-                                             sizeof(struct E));
+    blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
+                                sizeof(struct E));
     if(blacklist->entries == NULL) {
         I_CRIT("Could not create blacklist entries");
     }

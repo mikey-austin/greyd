@@ -46,6 +46,7 @@
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
 static void set_log(char *, size_t, char *);
+static void destroy_blacklist(void *);
 
 extern void
 Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
@@ -56,7 +57,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     int ret, max_black;
     char *human_time, *bl_name;
     struct List_entry *entry;
-    Blacklist_T blacklist = NULL;
+    Blacklist_T blacklist = NULL, con_blacklist;
     List_T bl_names;
     struct IP_addr ipaddr;
 
@@ -83,7 +84,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     if(Con_grow_out_buf(con, 0) == NULL)
         I_CRIT("could not grow connection out buf");
 
-    con->blacklists = List_create(NULL);
+    con->blacklists = List_create(destroy_blacklist);
     con->fd = fd;
 
     greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
@@ -126,8 +127,13 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
             blacklist = Hash_get(state->blacklists, bl_name);
             IP_sockaddr_to_addr(&con->src, &ipaddr);
 
-            if(Blacklist_match(blacklist, &ipaddr, ((struct sockaddr *) &con->src)->sa_family))
-                List_insert_after(con->blacklists, blacklist);
+            if(Blacklist_match(blacklist, &ipaddr,
+                               ((struct sockaddr *) &con->src)->sa_family))
+            {
+                /* Make a local copy for the connection (excluding the entries). */
+                con_blacklist = Blacklist_create(bl_name, blacklist->message);
+                List_insert_after(con->blacklists, con_blacklist);
+            }
         }
         List_destroy(&bl_names);
     }
@@ -454,7 +460,7 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
             con->w = *now + con->stutter;
 
             if(*con->mail && *con->rcpt) {
-                I_DEBUG("(%s) %s: %s -> %s\n",
+                I_DEBUG("(%s) %s: %s -> %s",
                         List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
                         con->src_addr, con->mail, con->rcpt);
 
@@ -878,4 +884,13 @@ set_log(char *p, size_t len, char *f)
     s = strsep(&p, " \t\n\r");
     if(s)
         *s = '\0';
+}
+
+static void
+destroy_blacklist(void *value)
+{
+    Blacklist_T bl = (Blacklist_T) value;
+    if(bl) {
+        Blacklist_destroy(&bl);
+    }
 }
