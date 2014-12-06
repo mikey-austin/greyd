@@ -122,9 +122,6 @@ Blacklist_add(T list, const char *address)
     if((ret = inet_pton(af, parsed, n)) != 1) {
         goto parse_error;
     }
-    else {
-        I_DEBUG("Added %s/%u", parsed, maskbits);
-    }
 
     for(i = 0, j = 0; i < 4; i++)
         m->addr32[i] = 0;
