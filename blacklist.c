@@ -13,24 +13,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define T Blacklist_T
-#define E Blacklist_entry
-
 static int cmp_ipv4_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
-static void grow_entries(T list);
+static void grow_entries(Blacklist_T list);
 
-extern T
+extern Blacklist_T
 Blacklist_create(const char *name, const char *message)
 {
     int len;
-    T blacklist;
+    Blacklist_T blacklist;
 
     if((blacklist = malloc(sizeof(*blacklist))) == NULL) {
         I_CRIT("Could not create blacklist");
     }
     blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
-                                sizeof(struct E));
+                                sizeof(struct Blacklist_entry));
     if(blacklist->entries == NULL) {
         I_CRIT("Could not create blacklist entries");
     }
@@ -54,7 +51,7 @@ Blacklist_create(const char *name, const char *message)
 }
 
 extern void
-Blacklist_destroy(T *list)
+Blacklist_destroy(Blacklist_T *list)
 {
     if(list == NULL || *list == NULL) {
         return;
@@ -80,7 +77,7 @@ Blacklist_destroy(T *list)
 }
 
 extern int
-Blacklist_match(T list, struct IP_addr *source, sa_family_t af)
+Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 {
     int i;
     struct IP_addr *a, *m;
@@ -98,7 +95,7 @@ Blacklist_match(T list, struct IP_addr *source, sa_family_t af)
 }
 
 extern int
-Blacklist_add(T list, const char *address)
+Blacklist_add(Blacklist_T list, const char *address)
 {
     int ret, maskbits, af, i, j;
     char parsed[INET6_ADDRSTRLEN];
@@ -149,7 +146,7 @@ parse_error:
 }
 
 extern void
-Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
+Blacklist_add_range(Blacklist_T list, u_int32_t start, u_int32_t end, int type)
 {
     int i;
 
@@ -185,7 +182,7 @@ Blacklist_add_range(T list, u_int32_t start, u_int32_t end, int type)
 }
 
 extern List_T
-Blacklist_collapse(T blacklist)
+Blacklist_collapse(Blacklist_T blacklist)
 {
     int i, bs = 0, ws = 0, state = 0, laststate;
     u_int32_t addr, bstart = 0;
@@ -194,7 +191,7 @@ Blacklist_collapse(T blacklist)
     if(blacklist->count == 0)
         return NULL;
 
-    qsort(blacklist->entries, blacklist->count, sizeof(struct E),
+    qsort(blacklist->entries, blacklist->count, sizeof(struct Blacklist_entry),
           cmp_ipv4_entry);
     cidrs = List_create(cidr_destroy);
 
@@ -236,7 +233,7 @@ Blacklist_collapse(T blacklist)
 }
 
 static void
-grow_entries(T list)
+grow_entries(Blacklist_T list)
 {
     if(list->count >= (list->size - 2)) {
         list->entries = realloc(
@@ -253,14 +250,14 @@ grow_entries(T list)
 static int
 cmp_ipv4_entry(const void *a, const void *b)
 {
-    if(((struct E *) a)->address.v4.s_addr
-       > ((struct E *) b)->address.v4.s_addr)
+    if(((struct Blacklist_entry *) a)->address.v4.s_addr
+       > ((struct Blacklist_entry *) b)->address.v4.s_addr)
     {
         return 1;
     }
 
-    if(((struct E *) a)->address.v4.s_addr
-       < ((struct E *) b)->address.v4.s_addr)
+    if(((struct Blacklist_entry *) a)->address.v4.s_addr
+       < ((struct Blacklist_entry *) b)->address.v4.s_addr)
     {
         return -1;
     }
@@ -276,6 +273,3 @@ cidr_destroy(void *cidr)
         cidr = NULL;
     }
 }
-
-#undef T
-#undef E
