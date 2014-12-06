@@ -32,7 +32,6 @@
 
 #define _GNU_SOURCE
 
-#include "failures.h"
 #include "utils.h"
 #include "config.h"
 #include "list.h"
@@ -160,7 +159,7 @@ get_parser(Config_section_T section, Config_T config)
     method = Config_section_get_str(section, "method", NULL);
     if((file = Config_section_get_str(section, "file", NULL)) == NULL)
     {
-        I_WARN("No file configuration variables set");
+        warnx("No file configuration variables set");
         return NULL;
     }
 
@@ -184,7 +183,7 @@ get_parser(Config_section_T section, Config_T config)
 
         asprintf(&url, "%s://%s", method, file);
         if(url == NULL) {
-            I_WARN("Could not create URL");
+            warnx("Could not create URL");
             return NULL;
         }
 
@@ -199,9 +198,8 @@ get_parser(Config_section_T section, Config_T config)
          * a command invocation.
          */
         len = strlen(file);
-        if((argv = calloc(len, sizeof(char *))) == NULL) {
-            I_ERR("malloc failed");
-        }
+        if((argv = calloc(len, sizeof(char *))) == NULL)
+            err(1, "calloc");
 
         for(ap = argv; ap < &argv[len - 1] &&
                 (*ap = strsep(&file, " \t")) != NULL;)
@@ -216,7 +214,7 @@ get_parser(Config_section_T section, Config_T config)
         argv = NULL;
     }
     else {
-        I_WARN("Unknown method %s", method);
+        warnx("Unknown method %s", method);
         return NULL;
     }
 
@@ -224,7 +222,7 @@ get_parser(Config_section_T section, Config_T config)
      * Now run the appropriate file descriptor through zlib.
      */
     if((gzf = gzdopen(fd, "r")) == NULL) {
-        I_WARN("gzdopen");
+        warnx("gzdopen");
         return NULL;
     }
 
@@ -352,7 +350,7 @@ main(int argc, char **argv)
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
     lists = Config_section_get_list(section, "lists");
     if(lists == NULL || List_size(lists) == 0) {
-        I_ERR("no lists configured in %s", config_path);
+        errx(1, "no lists configured in %s", config_path);
     }
 
     if(!greyonly && !dryrun)
@@ -395,7 +393,7 @@ main(int argc, char **argv)
         }
 
         if((parser = get_parser(section, config)) == NULL) {
-            I_WARN("Ignoring list %s", list_name);
+            warnx("Ignoring list %s", list_name);
             continue;
         }
 
@@ -405,7 +403,7 @@ main(int argc, char **argv)
         count = blacklist->count;
         res = Spamd_parser_start(parser, blacklist, bltype);
         if(res != SPAMD_PARSER_OK) {
-            I_WARN("Blacklist parse error");
+            warnx("Blacklist parse error");
         }
 
         if(debug) {

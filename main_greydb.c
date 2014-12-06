@@ -5,12 +5,12 @@
  * @date   2014
  */
 
-#include "failures.h"
 #include "config.h"
 #include "greydb.h"
 #include "grey.h"
 #include "ip.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,7 +38,7 @@ static int db_update(DB_handle_T db, char *ip, int action, int type);
 static void
 usage()
 {
-    fprintf(stderr, "usage: %s [-c config] [[-Tt] -a keys] [[-Tt] -d keys] \n",
+    fprintf(stderr, "usage: %s [-f config] [[-Tt] -a keys] [[-Tt] -d keys] \n",
             PROGNAME);
     exit(1);
 }
@@ -118,7 +118,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
          * We are expecting a numeric IP address.
          */
         if(IP_check_addr(ip) == -1) {
-            I_WARN("Invalid IP address %s", ip);
+            warnx("Invalid IP address %s", ip);
             return 1;
         }
 
@@ -132,7 +132,7 @@ db_update(DB_handle_T db, char *ip, int action, int type)
         key.type = DB_KEY_MAIL;
 
         if(strchr(ip, '@') == NULL) {
-            I_WARN("Not an email address: %s", ip);
+            warnx("Not an email address: %s", ip);
             return 1;
         }
 
@@ -148,11 +148,11 @@ db_update(DB_handle_T db, char *ip, int action, int type)
         ret = DB_del(db, &key);
         switch(ret) {
         case GREYDB_NOT_FOUND:
-            I_WARN("No entry for %s", ip);
+            warnx("No entry for %s", ip);
             return 1;
 
         case GREYDB_ERR:
-            I_WARN("Deletion failed");
+            warnx("Deletion failed");
             return 1;
         }
     }
@@ -191,14 +191,14 @@ db_update(DB_handle_T db, char *ip, int action, int type)
                 break;
 
             default:
-                I_WARN("unknown type %d", type);
+                warnx("unknown type %d", type);
                 return 1;
             }
 
             val.type = DB_VAL_GREY;
             val.data.gd = gd;
             if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
-                I_WARN("Put failed");
+                warnx("Put failed");
                 return 1;
             }
             break;
@@ -227,14 +227,14 @@ db_update(DB_handle_T db, char *ip, int action, int type)
                 break;
 
             default:
-                I_WARN("Unknown type %d", type);
+                warnx("Unknown type %d", type);
                 return 1;
             }
 
             val.type = DB_VAL_GREY;
             val.data.gd = gd;
             if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
-                I_WARN("Put failed");
+                warnx("Put failed");
                 return 1;
             }
             break;
@@ -256,7 +256,7 @@ main(int argc, char **argv)
     Config_T config;
     DB_handle_T db;
 
-    while((option = getopt(argc, argv, "adtTc:")) != -1) {
+    while((option = getopt(argc, argv, "adtTf:")) != -1) {
         switch(option) {
         case 'a':
             action = ACTION_ADD;
@@ -274,7 +274,7 @@ main(int argc, char **argv)
             type = TYPE_SPAMTRAP;
             break;
 
-        case 'c':
+        case 'f':
             config_path = optarg;
             break;
 
@@ -307,12 +307,12 @@ main(int argc, char **argv)
         }
 
         if(c == 0) {
-            I_WARN("No addresses specified");
+            warnx("No addresses specified");
         }
         break;
 
     default:
-        I_WARN("Bad action specified");
+        warnx("Bad action specified");
     }
 
     DB_close(&db);
