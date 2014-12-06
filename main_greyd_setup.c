@@ -40,7 +40,10 @@
 #include "blacklist.h"
 #include "spamd_parser.h"
 #include "firewall.h"
+#include "greyd.h"
+#include "constants.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -49,6 +52,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <zlib.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
 #define DEFAULT_CURL   "/bin/curl"
@@ -66,7 +72,7 @@ static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
 static int file_get(char *url, char *curl_path);
 static void send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
-                           Config_T config);
+                           Config_T config, int final_list, List_T all_cidrs);
 
 /* Global debug variable. */
 static int debug = 0;
@@ -230,22 +236,61 @@ get_parser(Config_section_T section, Config_T config)
 }
 
 static void
-send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly, Config_T config)
+send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
+               Config_T config, int final_list, List_T all_cidrs)
 {
     List_T cidrs;
-    int nadded = 0;
+    struct List_entry *entry;
+    char *cidr;
+    int nadded = 0, priv_sock, reserved_port = IPPORT_RESERVED - 1;
+    int cfg_port = Config_get_int(config, "config_port", NULL,
+                                  GREYD_CFG_PORT);
+    struct sockaddr_in cfg_addr;
+    FILE *cfg_out;
 
     cidrs = Blacklist_collapse(blacklist);
 
-    if(!greyonly &&
-       (!fw || (nadded = FW_replace(fw, "greyd", cidrs)) < 0))
-    {
-        I_CRIT("Could not configure firewall");
-    }
-    else if(debug) {
-        fprintf(stderr, "%d entries added to firewall\n", nadded);
+    if(!greyonly) {
+        /* Append this blacklist's cidrs to the global list. */
+        LIST_FOREACH(cidrs, entry) {
+            cidr = List_entry_value(entry);
+            List_insert_after(all_cidrs, cidr);
+        }
+
+        /*
+         * If this is the final list, we send all of the collected CIDRs
+         * to the firewall in one hit.
+         */
+        if(final_list && (!fw || (nadded = FW_replace(fw, "greyd", all_cidrs)) < 0)) {
+            errx(1, "Could not configure firewall");
+            if(debug)
+                warnx("%d entries added to firewall", nadded);
+        }
     }
 
+    /*
+     * Send this blacklist's information to greyd over the config connection. The
+     * source port must be in the privileged ranged.
+     */
+    priv_sock = rresvport(&reserved_port);
+    if(priv_sock == -1)
+        err(1, "could not bind privileged source port");
+
+    memset(&cfg_addr, 0, sizeof(cfg_addr));
+    cfg_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    cfg_addr.sin_family = AF_INET;
+    cfg_addr.sin_port = htons(cfg_port);
+
+    if(connect(priv_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
+        err(1, "could not connect to greyd-config");
+
+    if((cfg_out = fdopen(priv_sock, "w")) == NULL)
+        err(1, "could not write to greyd-config");
+
+    Greyd_send_config(cfg_out, blacklist->name, blacklist->message, cidrs);
+
+    fclose(cfg_out);
+    close(priv_sock);
     List_destroy(&cidrs);
 }
 
@@ -260,7 +305,7 @@ main(int argc, char **argv)
     Config_section_T section;
     Blacklist_T blacklist = NULL;
     Config_value_T val;
-    List_T lists;
+    List_T lists, all_cidrs;
     struct List_entry *entry;
     FW_handle_T fw = NULL;
 
@@ -313,6 +358,8 @@ main(int argc, char **argv)
     if(!greyonly && !dryrun)
         fw = FW_open(config);
 
+    all_cidrs = List_create(NULL);
+
     /*
      * Loop through lists configured in the configuration.
      */
@@ -327,7 +374,7 @@ main(int argc, char **argv)
              * send it off and destroy it before creating the new one.
              */
             if(blacklist && !dryrun) {
-                send_blacklist(fw, blacklist, greyonly, config);
+                send_blacklist(fw, blacklist, greyonly, config, 0, all_cidrs);
             }
             Blacklist_destroy(&blacklist);
 
@@ -375,7 +422,7 @@ main(int argc, char **argv)
      * Send the last blacklist and cleanup the various objects.
      */
     if(blacklist && !dryrun) {
-        send_blacklist(fw, blacklist, greyonly, config);
+        send_blacklist(fw, blacklist, greyonly, config, 1, all_cidrs);
         FW_close(&fw);
     }
     Blacklist_destroy(&blacklist);

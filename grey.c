@@ -8,6 +8,7 @@
 #include "constants.h"
 #include "failures.h"
 #include "grey.h"
+#include "greyd.h"
 #include "greydb.h"
 #include "config.h"
 #include "config_lexer.h"
@@ -31,7 +32,6 @@
 static void destroy_address(void *);
 static void sig_term_children(int);
 static int push_addr(List_T, char *);
-static void configure_greyd(Greylister_T);
 static void process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *);
@@ -359,7 +359,10 @@ Grey_scan_db(Greylister_T greylister)
         }
     }
 
-    configure_greyd(greylister);
+    Greyd_send_config(greylister->trap_out,
+                      greylister->traplist_name,
+                      greylister->traplist_msg,
+                      greylister->traplist);
 
     FW_replace(greylister->fw_handle, greylister->whitelist_name,
                greylister->whitelist);
@@ -371,38 +374,6 @@ cleanup:
     DB_close_itr(&itr);
     DB_close(&db);
     return ret;
-}
-
-static void
-configure_greyd(Greylister_T greylister)
-{
-    struct List_entry *entry;
-    char *ip;
-    int first = 1;
-    short af;
-
-    if(List_size(greylister->traplist) > 0) {
-        fprintf(greylister->trap_out,
-                "name=\"%s\"\nmessage=\"%s\"\nips=[",
-                greylister->traplist_name,
-                greylister->traplist_msg);
-
-        LIST_FOREACH(greylister->traplist, entry) {
-            ip = List_entry_value(entry);
-            af = IP_check_addr(ip);
-
-            if(!first)
-                fprintf(greylister->trap_out, ",");
-
-            fprintf(greylister->trap_out, "\"%s/%d\"", ip,
-                    (af == AF_INET ? 32 : 128));
-            first = 0;
-        }
-    }
-    fprintf(greylister->trap_out, "]\n%%\n");
-
-    if(fflush(greylister->trap_out) == EOF)
-        I_DEBUG("configure_greyd: fflush failed");
 }
 
 /**

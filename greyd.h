@@ -38,4 +38,9 @@ struct Greyd_state {
  */
 extern void Greyd_process_config(int fd, struct Greyd_state *state);
 
+/**
+ * Send blacklist configuration to the specified file descriptor.
+ */
+extern void Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips);
+
 #endif

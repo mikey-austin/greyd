@@ -9,6 +9,7 @@
 #include "config.h"
 #include "greyd.h"
 #include "hash.h"
+#include "ip.h"
 #include "list.h"
 #include "config_parser.h"
 #include "blacklist.h"
@@ -59,4 +60,30 @@ Greyd_process_config(int fd, struct Greyd_state *state)
 
     Config_destroy(&message);
     Config_parser_destroy(&parser);
+}
+
+extern void
+Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
+{
+    struct List_entry *entry;
+    char *ip;
+    int first = 1;
+    short af;
+
+    if(List_size(ips) > 0) {
+        fprintf(out, "name=\"%s\"\nmessage=\"%s\"\nips=[",
+                bl_name, bl_msg);
+
+        LIST_FOREACH(ips, entry) {
+            ip = List_entry_value(entry);
+            af = IP_check_addr(ip);
+            fprintf(out, "%s\"%s/%d\"", (first ? "" : ","),
+                    ip, (af == AF_INET ? 32 : 128));
+            first = 0;
+        }
+    }
+    fprintf(out, "]\n%%\n");
+
+    if(fflush(out) == EOF)
+        I_DEBUG("configure_greyd: fflush failed");
 }
