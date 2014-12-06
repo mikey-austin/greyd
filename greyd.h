@@ -10,6 +10,8 @@
 
 #include "hash.h"
 
+#include <stdio.h>
+
 /**
  * Structure to encapsulate the state of the main
  * greyd process.
