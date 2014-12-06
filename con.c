@@ -34,6 +34,7 @@
 #include "utils.h"
 #include "grey.h"
 
+#include <errno.h>
 #include <err.h>
 #include <time.h>
 #include <stdlib.h>
@@ -777,6 +778,49 @@ Con_get_orig_dst_addr(struct Con *con)
                    sizeof(con->dst_addr), NULL, 0, NI_NUMERICHOST) != 0)
     {
         con->dst_addr[0] = '\0';
+    }
+}
+
+extern void
+Con_accept(int fd, struct sockaddr_storage *addr, struct Greyd_state *state)
+{
+    int i;
+    struct Con *con;
+
+    if(fd == -1) {
+        switch(errno) {
+        case EINTR:
+        case ECONNABORTED:
+            break;
+
+        case EMFILE:
+        case ENFILE:
+            state->slow_until = time(NULL) + 1;
+            break;
+
+        default:
+            I_CRIT("accept failure");
+        }
+    }
+    else {
+        /* Ensure we don't hit the configured fd limit. */
+        for(i = 0; i < state->max_cons; i++) {
+            if(state->cons[i].fd == -1)
+                break;
+        }
+
+        if(i == state->max_cons) {
+            close(fd);
+            state->slow_until = 0;
+        }
+        else {
+            con = &state->cons[i];
+            Con_init(con, fd, addr, state);
+            I_INFO("%s: connected (%d/%d)%s%s",
+                   con->src_addr, state->clients, state->black_clients,
+                   (con->lists == NULL ? "" : ", lists:"),
+                   (con->lists == NULL ? "" : con->lists));
+        }
     }
 }
 
