@@ -126,7 +126,7 @@ extern void Con_handle_write(struct Con *con, time_t *now,
  * Attempt to find and set the address the client originally
  * connected to.
  */
-extern void Con_get_orig_dst_addr(struct Con *con);
+extern void Con_get_orig_dst(struct Con *con, struct Greyd_state *state);
 
 /**
  * Return a suitably sized string summarizing the lists containing,

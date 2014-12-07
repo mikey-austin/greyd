@@ -418,6 +418,10 @@ main(int argc, char **argv)
     }
 
 jail:
+    /* Setup the firewall handle before dropping privileges. */
+    if((state.fw_handle = FW_open(state.config)) == NULL)
+        I_CRIT("could not obtain firewall handle");
+
     if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
         chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
                                     GREYD_CHROOT_DIR);

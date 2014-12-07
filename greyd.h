@@ -9,6 +9,7 @@
 #define GREYD_DEFINED
 
 #include "hash.h"
+#include "firewall.h"
 
 #include <stdio.h>
 
@@ -30,6 +31,7 @@ struct Greyd_state {
     FILE *grey_out;
 
     Hash_T blacklists;
+    FW_handle_T fw_handle;
 };
 
 /**

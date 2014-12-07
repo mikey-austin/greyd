@@ -5,6 +5,8 @@
  * @date   2014
  */
 
+#define _GNU_SOURCE
+
 #include "constants.h"
 #include "failures.h"
 #include "grey.h"
@@ -24,6 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <grp.h>
 
 #define GREY_DEFAULT_TL_NAME "greyd-greytrap"
 #define GREY_DEFAULT_TL_MSG  "Your address %A has mailed to spamtraps here"
@@ -109,7 +112,12 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
         I_CRIT("no such user %s", db_user);
 
     if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)) {
-        // TODO: drop privs and setup database.
+        if(setgroups(1, &db_pw->pw_gid)
+           || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
+           || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
+        {
+            I_CRIT("failed to drop privileges");
+        }
     }
 
     greylister->grey_pid = grey_pid;

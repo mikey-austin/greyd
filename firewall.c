@@ -39,6 +39,9 @@ FW_open(Config_T config)
         Mod_get(handle->driver, "Mod_fw_close");
     handle->fw_replace = (int (*)(FW_handle_T, const char *, List_T))
         Mod_get(handle->driver, "Mod_fw_replace");
+    handle->fw_lookup_orig_dst =
+        (int (*)(FW_handle_T, struct sockaddr *, struct sockaddr *, struct sockaddr *))
+        Mod_get(handle->driver, "Mod_fw_lookup_orig_dst");
 
     if(handle->fw_open(handle) == -1) {
         Mod_close(handle->driver);
@@ -65,6 +68,13 @@ extern int
 FW_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
 {
     return handle->fw_replace(handle, set_name, cidrs);
+}
+
+extern int
+FW_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
+                   struct sockaddr *proxy, struct sockaddr *orig_dst)
+{
+    return handle->fw_lookup_orig_dst(handle, src, proxy, orig_dst);
 }
 
 extern FILE
