@@ -65,13 +65,13 @@ static int cb_data(const struct nlmsghdr *, void *);
 int
 Mod_fw_open(FW_handle_T handle)
 {
-	struct mnl_socket *nl;
+    struct mnl_socket *nl;
     cap_value_t cap_values[] = { CAP_NET_ADMIN };
     cap_t caps;
 
-	nl = mnl_socket_open(NETLINK_NETFILTER);
-	if(nl == NULL) {
-		warn("mnl_socket_open");
+    nl = mnl_socket_open(NETLINK_NETFILTER);
+    if(nl == NULL) {
+        warn("mnl_socket_open");
     }
     else {
         if (mnl_socket_bind(nl, 0, MNL_SOCKET_AUTOPID) < 0)
@@ -154,13 +154,13 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 {
     struct mnl_socket *nl = handle->fwh;
     struct cb_data_arg data;
-	struct nlmsghdr *nlh;
-	struct nfgenmsg *nfh;
-	char buf[MNL_SOCKET_BUFFER_SIZE];
-	unsigned int seq, portid;
-	struct nf_conntrack *ct;
+    struct nlmsghdr *nlh;
+    struct nfgenmsg *nfh;
+    char buf[MNL_SOCKET_BUFFER_SIZE];
+    unsigned int seq, portid;
+    struct nf_conntrack *ct;
     sa_family_t af;
-	int ret;
+    int ret;
     cap_value_t cap_values[] = { CAP_NET_ADMIN };
     cap_t caps;
 
@@ -176,26 +176,26 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     memcpy(data.orig_dst, proxy, sizeof(*data.orig_dst));
 
     af = data.filter.src->sa_family;
-	portid = mnl_socket_get_portid(nl);
+    portid = mnl_socket_get_portid(nl);
 
-	nlh = mnl_nlmsg_put_header(buf);
-	nlh->nlmsg_type = (NFNL_SUBSYS_CTNETLINK << 8) | IPCTNL_MSG_CT_GET;
-	nlh->nlmsg_flags = NLM_F_REQUEST|NLM_F_DUMP;
-	nlh->nlmsg_seq = seq = time(NULL);
+    nlh = mnl_nlmsg_put_header(buf);
+    nlh->nlmsg_type = (NFNL_SUBSYS_CTNETLINK << 8) | IPCTNL_MSG_CT_GET;
+    nlh->nlmsg_flags = NLM_F_REQUEST|NLM_F_DUMP;
+    nlh->nlmsg_seq = seq = time(NULL);
 
-	nfh = mnl_nlmsg_put_extra_header(nlh, sizeof(struct nfgenmsg));
-	nfh->nfgen_family = af;
-	nfh->version = NFNETLINK_V0;
-	nfh->res_id = 0;
+    nfh = mnl_nlmsg_put_extra_header(nlh, sizeof(struct nfgenmsg));
+    nfh->nfgen_family = af;
+    nfh->version = NFNETLINK_V0;
+    nfh->res_id = 0;
 
-	ct = nfct_new();
-	if(ct == NULL) {
+    ct = nfct_new();
+    if(ct == NULL) {
         warn("nfct_new");
-		return 0;
-	}
+        return 0;
+    }
 
-	nfct_set_attr_u8(ct, ATTR_L3PROTO, af);
-	nfct_set_attr_u8(ct, ATTR_L4PROTO, IPPROTO_TCP);
+    nfct_set_attr_u8(ct, ATTR_L3PROTO, af);
+    nfct_set_attr_u8(ct, ATTR_L4PROTO, IPPROTO_TCP);
     if(af == AF_INET) {
         nfct_set_attr_u32(ct, ATTR_REPL_IPV4_DST,
                           ((struct sockaddr_in *) src)->sin_addr.s_addr);
@@ -217,7 +217,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
                           ((struct sockaddr_in6 *) proxy)->sin6_port);
     }
 
-	nfct_nlmsg_build(nlh, ct);
+    nfct_nlmsg_build(nlh, ct);
 
     /* Set the effective capabilities. */
     caps = cap_get_proc();
@@ -226,20 +226,20 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     cap_set_proc(caps);
     cap_free(caps);
 
-	ret = mnl_socket_sendto(nl, nlh, nlh->nlmsg_len);
-	if(ret == -1)
-		warn("mnl_socket_sendto");
+    ret = mnl_socket_sendto(nl, nlh, nlh->nlmsg_len);
+    if(ret == -1)
+        warn("mnl_socket_sendto");
 
     ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
-	while(ret > 0) {
-		ret = mnl_cb_run(buf, ret, seq, portid, cb_data, &data);
-		if(ret <= MNL_CB_STOP)
-			break;
-		ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
-	}
+    while(ret > 0) {
+        ret = mnl_cb_run(buf, ret, seq, portid, cb_data, &data);
+        if(ret <= MNL_CB_STOP)
+            break;
+        ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
+    }
 
-	if(ret == -1)
-		I_WARN("mnl_socket_recvfrom");
+    if(ret == -1)
+        I_WARN("mnl_socket_recvfrom");
 
     return 0;
 }
@@ -248,7 +248,7 @@ static int
 cb_data(const struct nlmsghdr *nlh, void *arg)
 {
     struct cb_data_arg *data = (struct cb_data_arg *) arg;
-	struct nf_conntrack *ct;
+    struct nf_conntrack *ct;
     u_int32_t ct_src[IPV6_ADDR_PARTS], ct_proxy[IPV6_ADDR_PARTS];
     u_int32_t ct_orig_dst[IPV6_ADDR_PARTS];
     u_int32_t *cti32, *pp, *sp;
@@ -257,11 +257,11 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
     sa_family_t af;
     int i;
 
-	ct = nfct_new();
-	if(ct == NULL)
-		return MNL_CB_OK;
+    ct = nfct_new();
+    if(ct == NULL)
+        return MNL_CB_OK;
 
-	nfct_nlmsg_parse(nlh, ct);
+    nfct_nlmsg_parse(nlh, ct);
 
     af = data->filter.src->sa_family;
     if(af == AF_INET) {
@@ -324,9 +324,9 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
         }
     }
 
-	nfct_destroy(ct);
+    nfct_destroy(ct);
 
-	return MNL_CB_OK;
+    return MNL_CB_OK;
 }
 
 static int
