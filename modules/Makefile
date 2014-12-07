@@ -13,7 +13,7 @@ pf.so: pf.o
 	$(CC) $(CFLAGS) -shared -o pf.so pf.o
 
 ipset.so: ipset.o
-	$(CC) $(CFLAGS) -shared -o ipset.so ipset.o -lnetfilter_conntrack -lmnl -lcap
+	$(CC) $(CFLAGS) -shared -o ipset.so ipset.o -lnetfilter_conntrack -lmnl -lcap -lipset
 
 fw_dummy.so: fw_dummy.o
 	$(CC) $(CFLAGS) -shared -o fw_dummy.so fw_dummy.o

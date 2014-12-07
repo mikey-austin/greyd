@@ -3,6 +3,10 @@
  * @brief  Pluggable IPset firewall interface.
  * @author Mikey Austin
  * @date   2014
+ *
+ * This firewall driver makes use of libipset for the set management
+ * and libnetfilter_conntrack for the DNAT original destination
+ * lookups.
  */
 
 #include "../failures.h"
@@ -24,6 +28,9 @@
 #include <libmnl/libmnl.h>
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #include <linux/netfilter/nf_conntrack_tcp.h>
+#include <libipset/types.h>
+#include <libipset/session.h>
+#include <libipset/data.h>
 
 #define DEFAULT_SET     "greyd"
 #define MAX_ELEM        200000
@@ -40,7 +47,20 @@ struct cb_data_arg {
     struct sockaddr *orig_dst;
 };
 
-static int cb_data(const struct nlmsghdr *nlh, void *);
+/**
+ * libipset management convenience functions.
+ */
+static int ipset_create(struct mnl_socket *, const char *, int, int);
+static int ipset_add(struct mnl_socket *, const char *, char *);
+static int ipset_swap_and_destroy(struct mnl_socket *, const char *, const char *);
+
+/**
+ * This is the libnetfilter_conntrack data callback, called for each
+ * conntrack object returned from the netlink socket. We need to do
+ * filtering here as well to ensure the desired conntrack object is
+ * used.
+ */
+static int cb_data(const struct nlmsghdr *, void *);
 
 int
 Mod_fw_open(FW_handle_T handle)
@@ -91,8 +111,41 @@ Mod_fw_close(FW_handle_T handle)
 int
 Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
 {
+    struct mnl_socket *nl = handle->fwh;
+    struct List_entry *entry;
+    char *cidr;
+    int nadded = 0, hash_size, max_elem;
 
-    return 0;
+    if(nl == NULL)
+        return -1;
+
+    hash_size = Config_section_get_int(
+        handle->section, "hash_size", HASH_SIZE);
+    max_elem = Config_section_get_int(
+        handle->section, "max_elements", MAX_ELEM);
+
+    // create stage hash:net hashsize %d maxelem %d -exist
+    if(ipset_create(nl, "stage", hash_size, max_elem) == -1)
+        return -1;
+
+    LIST_FOREACH(cidrs, entry) {
+        if((cidr = List_entry_value(entry)) != NULL) {
+            // add stage %s -exist
+            if(ipset_add(nl, "stage", cidr) == -1)
+                return -1;
+            nadded++;
+        }
+    }
+
+    // create stage hash:net hashsize %d maxelem %d -exist
+    if(ipset_create(nl, set_name, hash_size, max_elem) == -1)
+        return -1;
+
+    // swap %s stage
+    // destroy stage
+    ipset_swap_and_destroy(nl, set_name, "stage");
+
+    return nadded;
 }
 
 int
@@ -191,12 +244,6 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     return 0;
 }
 
-/*
- * This is the libnetfilter_conntrack data callback, called for each
- * conntrack object returned from the netlink socket. We need to do
- * filtering here as well to ensure the desired conntrack object is
- * used.
- */
 static int
 cb_data(const struct nlmsghdr *nlh, void *arg)
 {
@@ -280,4 +327,23 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
 	nfct_destroy(ct);
 
 	return MNL_CB_OK;
+}
+
+static int
+ipset_create(struct mnl_socket *nl, const char *set_name, int hash_size, int max_elem)
+{
+    return 0;
+}
+
+static int
+ipset_add(struct mnl_socket *nl, const char *set_name, char *cidr)
+{
+    return 0;
+}
+
+static int
+ipset_swap_and_destroy(struct mnl_socket *nl, const char *set_name,
+                       const char *stage_set_name)
+{
+    return 0;
 }
