@@ -782,8 +782,9 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
         return;
     }
 
-    if(getnameinfo((struct sockaddr *) &orig_dst, proxy_len, con->dst_addr,
-                   sizeof(con->dst_addr), NULL, 0, NI_NUMERICHOST) != 0)
+    if(getnameinfo((struct sockaddr *) &orig_dst, sizeof(orig_dst),
+                   con->dst_addr, sizeof(con->dst_addr),
+                   NULL, 0, NI_NUMERICHOST) != 0)
     {
         con->dst_addr[0] = '\0';
     }
