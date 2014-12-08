@@ -280,7 +280,7 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
         {
             /* This is the conntrack object we are after. */
             *ct_orig_dst = nfct_get_attr_u32(ct, ATTR_IPV4_DST);
-            memset(data->orig_dst, 0, sizeof(*data->orig_dst));
+            memset(data->orig_dst, 0, sizeof(*((struct sockaddr_in *) data->orig_dst)));
             data->orig_dst->sa_family = af;
             ((struct sockaddr_in *) data->orig_dst)->sin_port = reply_src_port;
             ((struct sockaddr_in *) data->orig_dst)->sin_addr.s_addr = *ct_orig_dst;
