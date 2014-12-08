@@ -55,16 +55,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
-#define DEFAULT_CURL   "/bin/curl"
-#define DEFAULT_MSG    "You have been blacklisted..."
-#define PROGNAME       "greyd-setup"
-#define MAX_PLEN       1024
-#define METHOD_FTP     "ftp"
-#define METHOD_HTTP    "http"
-#define METHOD_EXEC    "exec"
-#define METHOD_FILE    "file"
-#define INIT_BL        10
+#define DEFAULT_CONFIG  "/etc/greyd/greyd.conf"
+#define DEFAULT_CURL    "/bin/curl"
+#define DEFAULT_MSG     "You have been blacklisted..."
+#define PROGNAME        "greyd-setup"
+#define MAX_PLEN        1024
+#define METHOD_FTP      "ftp"
+#define METHOD_HTTP     "http"
+#define METHOD_EXEC     "exec"
+#define METHOD_FILE     "file"
+#define INIT_BL         10
+#define GREYD_BLACKLIST "greyd-blacklist"
 
 static void usage();
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
@@ -259,7 +260,9 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
          * If this is the final list, we send all of the collected CIDRs
          * to the firewall in one hit.
          */
-        if(final_list && (!fw || (nadded = FW_replace(fw, "greyd", all_cidrs)) < 0)) {
+        if(final_list
+           && (!fw || (nadded = FW_replace(fw, GREYD_BLACKLIST, all_cidrs, AF_INET)) < 0))
+        {
             errx(1, "Could not configure firewall");
             if(debug)
                 warnx("%d entries added to firewall", nadded);
@@ -268,7 +271,7 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
 
     /*
      * Send this blacklist's information to greyd over the config connection. The
-     * source port must be in the privileged ranged.
+     * source port must be in the privileged range.
      */
     priv_sock = rresvport(&reserved_port);
     if(priv_sock == -1)

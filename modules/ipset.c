@@ -13,6 +13,7 @@
 #include "../firewall.h"
 #include "../config_section.h"
 #include "../list.h"
+#include "../ip.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,12 +48,17 @@ struct cb_data_arg {
     struct sockaddr *orig_dst;
 };
 
+struct fw_handle {
+    struct mnl_socket *nl;
+    struct ipset_session *session;
+};
+
 /**
  * libipset management convenience functions.
  */
-static int ipset_create(struct mnl_socket *, const char *, int, int);
-static int ipset_add(struct mnl_socket *, const char *, char *);
-static int ipset_swap_and_destroy(struct mnl_socket *, const char *, const char *);
+static int ipset_create(struct ipset_session *, const char *, int, int, short);
+static int ipset_add(struct ipset_session *, const char *, char *, short);
+static int ipset_swap_and_destroy(struct ipset_session *, const char *, const char *);
 
 /**
  * This is the libnetfilter_conntrack data callback, called for each
@@ -65,23 +71,28 @@ static int cb_data(const struct nlmsghdr *, void *);
 int
 Mod_fw_open(FW_handle_T handle)
 {
-    struct mnl_socket *nl;
+    struct fw_handle *fwh;
     cap_value_t cap_values[] = { CAP_NET_ADMIN };
     cap_t caps;
 
-    nl = mnl_socket_open(NETLINK_NETFILTER);
-    if(nl == NULL) {
+    if((fwh = malloc(sizeof(*fwh))) == NULL)
+        err(1, "malloc");
+    handle->fwh = fwh;
+
+    fwh->nl = mnl_socket_open(NETLINK_NETFILTER);
+    if(fwh->nl == NULL) {
         warn("mnl_socket_open");
     }
     else {
-        if (mnl_socket_bind(nl, 0, MNL_SOCKET_AUTOPID) < 0)
+        if (mnl_socket_bind(fwh->nl, 0, MNL_SOCKET_AUTOPID) < 0)
             warn("mnl_socket_bind");
     }
 
-    /*
-     * Store the netlink socket in the handle.
-     */
-    handle->fwh = nl;
+    ipset_load_types();
+    fwh->session = ipset_session_init(printf);
+    ipset_envopt_parse(fwh->session, IPSET_ENV_EXIST, NULL);
+    if(fwh->session == NULL)
+        warn("ipset_session_init");
 
     /*
      * Try to keep capabilities so that the above socket can
@@ -100,59 +111,21 @@ Mod_fw_open(FW_handle_T handle)
 void
 Mod_fw_close(FW_handle_T handle)
 {
-    struct mnl_socket *nl = handle->fwh;
+    struct fw_handle *fwh = handle->fwh;
 
-    if(nl) {
-        mnl_socket_close(nl);
+    if(fwh) {
+        mnl_socket_close(fwh->nl);
+        ipset_session_fini(fwh->session);
+        free(fwh);
         handle->fwh = NULL;
     }
-}
-
-int
-Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
-{
-    struct mnl_socket *nl = handle->fwh;
-    struct List_entry *entry;
-    char *cidr;
-    int nadded = 0, hash_size, max_elem;
-
-    if(nl == NULL)
-        return -1;
-
-    hash_size = Config_section_get_int(
-        handle->section, "hash_size", HASH_SIZE);
-    max_elem = Config_section_get_int(
-        handle->section, "max_elements", MAX_ELEM);
-
-    // create stage hash:net hashsize %d maxelem %d -exist
-    if(ipset_create(nl, "stage", hash_size, max_elem) == -1)
-        return -1;
-
-    LIST_FOREACH(cidrs, entry) {
-        if((cidr = List_entry_value(entry)) != NULL) {
-            // add stage %s -exist
-            if(ipset_add(nl, "stage", cidr) == -1)
-                return -1;
-            nadded++;
-        }
-    }
-
-    // create stage hash:net hashsize %d maxelem %d -exist
-    if(ipset_create(nl, set_name, hash_size, max_elem) == -1)
-        return -1;
-
-    // swap %s stage
-    // destroy stage
-    ipset_swap_and_destroy(nl, set_name, "stage");
-
-    return nadded;
 }
 
 int
 Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
                        struct sockaddr *proxy, struct sockaddr *orig_dst)
 {
-    struct mnl_socket *nl = handle->fwh;
+    struct mnl_socket *nl = ((struct fw_handle *) handle->fwh)->nl;
     struct cb_data_arg data;
     struct nlmsghdr *nlh;
     struct nfgenmsg *nfh;
@@ -329,21 +302,135 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
     return MNL_CB_OK;
 }
 
-static int
-ipset_create(struct mnl_socket *nl, const char *set_name, int hash_size, int max_elem)
+int
+Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 {
-    return 0;
+    struct ipset_session *session = ((struct fw_handle *) handle->fwh)->session;
+    struct List_entry *entry;
+    char *cidr;
+    int nadded = 0, hash_size, max_elem;
+
+    if(session == NULL)
+        return -1;
+
+    hash_size = Config_section_get_int(
+        handle->section, "hash_size", HASH_SIZE);
+    max_elem = Config_section_get_int(
+        handle->section, "max_elements", MAX_ELEM);
+
+    if(ipset_create(session, "stage", hash_size, max_elem, af) == -1)
+        return -1;
+
+    LIST_FOREACH(cidrs, entry) {
+        if((cidr = List_entry_value(entry)) != NULL) {
+            if(ipset_add(session, "stage", cidr, af) == -1)
+                return -1;
+            nadded++;
+        }
+    }
+
+    if(ipset_create(session, set_name, hash_size, max_elem, af) == -1)
+        return -1;
+
+    if(ipset_swap_and_destroy(session, set_name, "stage") == -1)
+        return -1;
+
+    return nadded;
 }
 
 static int
-ipset_add(struct mnl_socket *nl, const char *set_name, char *cidr)
+ipset_create(struct ipset_session *session, const char *set_name,
+             int hash_size, int max_elem, short af)
 {
-    return 0;
+    u_int8_t family;
+    const struct ipset_type *type;
+    u_int32_t timeout = 0;   /* Unlimited. */
+
+    if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0)
+        return -1;
+
+    ipset_session_data_set(session, IPSET_OPT_TYPENAME, "hash:net");
+
+    if((type = ipset_type_get(session, IPSET_CMD_CREATE)) == NULL)
+        return -1;
+
+    family = (af == AF_INET6 ? NFPROTO_IPV6 : NFPROTO_IPV4);
+    ipset_session_data_set(session, IPSET_OPT_FAMILY, &family);
+    ipset_session_data_set(session, IPSET_OPT_MAXELEM, &max_elem);
+    ipset_session_data_set(session, IPSET_OPT_HASHSIZE, &hash_size);
+    ipset_session_data_set(session, IPSET_OPT_TYPE, type);
+    ipset_session_data_set(session, IPSET_OPT_EXIST, NULL);
+    ipset_session_data_set(session, IPSET_OPT_TIMEOUT, &timeout);
+
+    return ipset_cmd(session, IPSET_CMD_CREATE, 0);
 }
 
 static int
-ipset_swap_and_destroy(struct mnl_socket *nl, const char *set_name,
+ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
+          short af)
+{
+    u_int8_t family;
+    int maskbits;
+    char parsed[INET6_ADDRSTRLEN];
+    const struct ipset_type *type;
+    struct sockaddr_storage addr;
+
+    if(sscanf(cidr, "%39[^/]/%u", parsed, &maskbits) != 2
+       || maskbits == 0 || maskbits > IP_MAX_MASKBITS)
+    {
+        return -1;
+    }
+
+    if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0)
+        return -1;
+
+    if((type = ipset_type_get(session, IPSET_CMD_ADD)) == NULL)
+        return -1;
+
+    family = (af == AF_INET6 ? NFPROTO_IPV6 : NFPROTO_IPV4);
+    ipset_session_data_set(session, IPSET_OPT_FAMILY, &family);
+    ipset_session_data_set(session, IPSET_OPT_CIDR, &maskbits);
+    ipset_session_data_set(session, IPSET_OPT_EXIST, NULL);
+
+    memset(&addr, 0, sizeof(addr));
+    if(af == AF_INET6) {
+        if(inet_pton(af, parsed, &((struct sockaddr_in6 *) &addr)->sin6_addr) == -1)
+            return -1;
+        ipset_session_data_set(session, IPSET_OPT_IP,
+                               &((struct sockaddr_in6 *) &addr)->sin6_addr);
+    }
+    else {
+        if(inet_pton(af, parsed, &((struct sockaddr_in *) &addr)->sin_addr) == -1)
+            return -1;
+        ipset_session_data_set(session, IPSET_OPT_IP,
+                               &((struct sockaddr_in *) &addr)->sin_addr);
+    }
+
+    return ipset_cmd(session, IPSET_CMD_ADD, 0);
+}
+
+static int
+ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
                        const char *stage_set_name)
 {
+    if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0)
+        return -1;
+
+    if(ipset_session_data_set(session, IPSET_OPT_SETNAME2, stage_set_name) != 0)
+        return -1;
+
+    if(ipset_cmd(session, IPSET_CMD_SWAP, 0) != 0)
+        return -1;
+
+    /*
+     * As we just swapped, the stage set is under the old name, so
+     * deleting the set under the stage set's name is what we want.
+     */
+    if(ipset_session_data_set(session, IPSET_SETNAME, stage_set_name) != 0)
+        return -1;
+
+    if(ipset_cmd(session, IPSET_CMD_DESTROY, 0) != 0)
+        return -1;
+
     return 0;
 }

@@ -23,7 +23,7 @@ struct FW_handle_T {
 
     int (*fw_open)(FW_handle_T);
     void (*fw_close)(FW_handle_T);
-    int (*fw_replace)(FW_handle_T, const char *, List_T);
+    int (*fw_replace)(FW_handle_T, const char *, List_T, short);
     int (*fw_lookup_orig_dst)(FW_handle_T, struct sockaddr *,
                               struct sockaddr *, struct sockaddr *);
 };
@@ -42,7 +42,7 @@ extern void FW_close(FW_handle_T *handle);
  * For the supplied IP set/table name, replace with the supplied list if
  * network blocks.
  */
-extern int FW_replace(FW_handle_T handle, const char *set, List_T cidrs);
+extern int FW_replace(FW_handle_T handle, const char *set, List_T cidrs, short af);
 
 /**
  * As connections are redirected to greyd by way of a DNAT, consult

@@ -28,9 +28,10 @@
 #include <string.h>
 #include <grp.h>
 
-#define GREY_DEFAULT_TL_NAME "greyd-greytrap"
-#define GREY_DEFAULT_TL_MSG  "Your address %A has mailed to spamtraps here"
-#define GREY_DEFAULT_WL_NAME "greyd-whitelist"
+#define GREY_TRAP_NAME       "greyd-greytrap"
+#define GREY_TRAP_MSG        "Your address %A has mailed to spamtraps here"
+#define GREY_WHITE_NAME      "greyd-whitelist"
+#define GREY_WHITE_NAME_IPV6 "greyd-whitelist-ipv6"
 
 static void destroy_address(void *);
 static void sig_term_children(int);
@@ -67,10 +68,16 @@ Grey_setup(Config_T config)
      * Gather configuration from the grey section.
      */
     greylister->traplist_name = Config_get_str(
-        config, "traplist_name", "grey", GREY_DEFAULT_TL_NAME);
+        config, "traplist_name", "grey", GREY_TRAP_NAME);
 
     greylister->traplist_msg = Config_get_str(
-        config, "traplist_message", "grey", GREY_DEFAULT_TL_MSG);
+        config, "traplist_message", "grey", GREY_TRAP_MSG);
+
+    greylister->whitelist_name = Config_get_str(
+        config, "whitelist_name", "grey", GREY_WHITE_NAME);
+
+    greylister->whitelist_name_ipv6 = Config_get_str(
+        config, "whitelist_name_ipv6", "grey", GREY_WHITE_NAME_IPV6);
 
     greylister->grey_exp = Config_get_int(
         config, "grey_expiry", "grey", GREY_GREYEXP);
@@ -84,17 +91,15 @@ Grey_setup(Config_T config)
     greylister->pass_time = Config_get_int(
         config, "pass_time", "grey", GREY_PASSTIME);
 
-    greylister->whitelist_name = Config_get_str(
-        config, "whitelist_name", "grey", GREY_DEFAULT_WL_NAME);
-
     greylister->low_prio_mx_ip = Config_get_str(
         config, "low_prio_mx_ip",NULL , NULL);
 
     greylister->sync_send = Config_get_int(
         config, "sync", NULL, 0);
 
-    greylister->whitelist = List_create(destroy_address);
-    greylister->traplist  = List_create(destroy_address);
+    greylister->whitelist      = List_create(destroy_address);
+    greylister->whitelist_ipv6 = List_create(destroy_address);
+    greylister->traplist       = List_create(destroy_address);
 
     return greylister;
 }
@@ -188,6 +193,7 @@ Grey_finish(Greylister_T *greylister)
 
     FW_close(&((*greylister)->fw_handle));
     List_destroy(&((*greylister)->whitelist));
+    List_destroy(&((*greylister)->whitelist_ipv6));
     List_destroy(&((*greylister)->traplist));
 
     if((*greylister)->trap_out != NULL)
@@ -272,6 +278,7 @@ Grey_scan_db(Greylister_T greylister)
     struct DB_val val, wval;
     struct Grey_tuple gt;
     struct Grey_data gd;
+    List_T list;
     time_t now = time(NULL);
     int ret = 0;
 
@@ -329,7 +336,11 @@ Grey_scan_db(Greylister_T greylister)
                     goto cleanup;
                 }
 
-                if((push_addr(greylister->whitelist, gt.ip) == -1)
+                list = (IP_check_addr(key.data.s) == AF_INET6
+                        ? greylister->whitelist_ipv6
+                        : greylister->whitelist);
+
+                if((push_addr(list, gt.ip) == -1)
                    && DB_itr_del_curr(itr) != GREYDB_OK)
                 {
                     ret = -1;
@@ -357,7 +368,11 @@ Grey_scan_db(Greylister_T greylister)
                 /*
                  * This must be a whitelist entry.
                  */
-                if((push_addr(greylister->whitelist, key.data.s) == -1)
+                list = (IP_check_addr(key.data.s) == AF_INET6
+                        ? greylister->whitelist_ipv6
+                        : greylister->whitelist);
+
+                if((push_addr(list, key.data.s) == -1)
                    && DB_itr_del_curr(itr) != GREYDB_OK)
                 {
                     ret = -1;
@@ -373,9 +388,13 @@ Grey_scan_db(Greylister_T greylister)
                       greylister->traplist);
 
     FW_replace(greylister->fw_handle, greylister->whitelist_name,
-               greylister->whitelist);
+               greylister->whitelist, AF_INET);
+
+    FW_replace(greylister->fw_handle, greylister->whitelist_name_ipv6,
+               greylister->whitelist_ipv6, AF_INET6);
 
     List_remove_all(greylister->whitelist);
+    List_remove_all(greylister->whitelist_ipv6);
     List_remove_all(greylister->traplist);
 
 cleanup:

@@ -37,7 +37,7 @@ FW_open(Config_T config)
         Mod_get(handle->driver, "Mod_fw_open");
     handle->fw_close = (void (*)(FW_handle_T))
         Mod_get(handle->driver, "Mod_fw_close");
-    handle->fw_replace = (int (*)(FW_handle_T, const char *, List_T))
+    handle->fw_replace = (int (*)(FW_handle_T, const char *, List_T, short))
         Mod_get(handle->driver, "Mod_fw_replace");
     handle->fw_lookup_orig_dst =
         (int (*)(FW_handle_T, struct sockaddr *, struct sockaddr *, struct sockaddr *))
@@ -65,9 +65,9 @@ FW_close(FW_handle_T *handle)
 }
 
 extern int
-FW_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
+FW_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 {
-    return handle->fw_replace(handle, set_name, cidrs);
+    return handle->fw_replace(handle, set_name, cidrs, af);
 }
 
 extern int

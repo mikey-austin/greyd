@@ -27,7 +27,7 @@ Mod_fw_close(FW_handle_T handle)
 }
 
 int
-Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs)
+Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 {
     return List_size(cidrs);
 }

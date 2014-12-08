@@ -60,7 +60,9 @@ struct Greylister_T {
     char       *traplist_name;
     char       *traplist_msg;
     char       *whitelist_name;
+    char       *whitelist_name_ipv6;
     List_T      whitelist;
+    List_T      whitelist_ipv6;
     List_T      traplist;
     FILE       *trap_out;
     FILE       *grey_in;
