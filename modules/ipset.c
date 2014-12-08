@@ -14,6 +14,7 @@
 #include "../config_section.h"
 #include "../list.h"
 #include "../ip.h"
+#include "../utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +38,7 @@
 #define MAX_ELEM        200000
 #define HASH_SIZE       (1024 * 1024)
 #define IPV6_ADDR_PARTS 4  /* 4 32 bit parts. */
+#define MAX_STAGE_NAME  256
 
 struct cb_filter {
     struct sockaddr *src;
@@ -301,8 +303,11 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 {
     struct ipset_session *session = ((struct fw_handle *) handle->fwh)->session;
     struct List_entry *entry;
-    char *cidr;
+    char *cidr, stage_set_name[MAX_STAGE_NAME];
     int nadded = 0, hash_size, max_elem;
+
+    sstrncpy(stage_set_name, set_name, sizeof(stage_set_name));
+    sstrncat(stage_set_name, "-stage", sizeof(stage_set_name));
 
     set_effective_caps();
 
@@ -314,13 +319,15 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     max_elem = Config_section_get_int(
         handle->section, "max_elements", MAX_ELEM);
 
-    if(ipset_create(session, "stage", hash_size, max_elem, af) == -1)
+    if(ipset_create(session, stage_set_name, hash_size, max_elem, af) == -1)
         return -1;
 
     LIST_FOREACH(cidrs, entry) {
         if((cidr = List_entry_value(entry)) != NULL) {
-            if(ipset_add(session, "stage", cidr, af) == -1)
+            if(ipset_add(session, stage_set_name, cidr, af) == -1) {
+                warnx("invalid cidr %s", cidr);
                 return -1;
+            }
             nadded++;
         }
     }
@@ -328,7 +335,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     if(ipset_create(session, set_name, hash_size, max_elem, af) == -1)
         return -1;
 
-    if(ipset_swap_and_destroy(session, set_name, "stage") == -1)
+    if(ipset_swap_and_destroy(session, set_name, stage_set_name) == -1)
         return -1;
 
     return nadded;
