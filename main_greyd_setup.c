@@ -71,6 +71,7 @@ static void usage();
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
 static int file_get(char *url, char *curl_path);
+static void free_cidr(void *);
 static void send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
                            Config_T config, int final_list, List_T all_cidrs);
 
@@ -82,6 +83,13 @@ usage()
 {
     fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROGNAME);
     exit(1);
+}
+
+static void
+free_cidr(void *value)
+{
+    if(value)
+        free(value);
 }
 
 static int
@@ -253,7 +261,7 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
         /* Append this blacklist's cidrs to the global list. */
         LIST_FOREACH(cidrs, entry) {
             cidr = List_entry_value(entry);
-            List_insert_after(all_cidrs, cidr);
+            List_insert_after(all_cidrs, strdup(cidr));
         }
 
         /*
@@ -359,7 +367,7 @@ main(int argc, char **argv)
     if(!greyonly && !dryrun)
         fw = FW_open(config);
 
-    all_cidrs = List_create(NULL);
+    all_cidrs = List_create(free_cidr);
 
     /*
      * Loop through lists configured in the configuration.
