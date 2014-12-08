@@ -390,8 +390,12 @@ Grey_scan_db(Greylister_T greylister)
     FW_replace(greylister->fw_handle, greylister->whitelist_name,
                greylister->whitelist, AF_INET);
 
-    FW_replace(greylister->fw_handle, greylister->whitelist_name_ipv6,
-               greylister->whitelist_ipv6, AF_INET6);
+    if(Config_get_int(greylister->config, "enable_ipv6", NULL,
+                      IPV6_ENABLED))
+    {
+        FW_replace(greylister->fw_handle, greylister->whitelist_name_ipv6,
+                   greylister->whitelist_ipv6, AF_INET6);
+    }
 
     List_remove_all(greylister->whitelist);
     List_remove_all(greylister->whitelist_ipv6);

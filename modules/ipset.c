@@ -59,6 +59,7 @@ struct fw_handle {
 static int ipset_create(struct ipset_session *, const char *, int, int, short);
 static int ipset_add(struct ipset_session *, const char *, char *, short);
 static int ipset_swap_and_destroy(struct ipset_session *, const char *, const char *);
+static void set_effective_caps(void);
 
 /**
  * This is the libnetfilter_conntrack data callback, called for each
@@ -134,8 +135,8 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     struct nf_conntrack *ct;
     sa_family_t af;
     int ret;
-    cap_value_t cap_values[] = { CAP_NET_ADMIN };
-    cap_t caps;
+
+    set_effective_caps();
 
     if(nl == NULL)
         return 0;
@@ -191,13 +192,6 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     }
 
     nfct_nlmsg_build(nlh, ct);
-
-    /* Set the effective capabilities. */
-    caps = cap_get_proc();
-    if(cap_set_flag(caps, CAP_EFFECTIVE, 1, cap_values, CAP_SET) == -1)
-        warn("cap_set_flag");
-    cap_set_proc(caps);
-    cap_free(caps);
 
     ret = mnl_socket_sendto(nl, nlh, nlh->nlmsg_len);
     if(ret == -1)
@@ -310,6 +304,8 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     char *cidr;
     int nadded = 0, hash_size, max_elem;
 
+    set_effective_caps();
+
     if(session == NULL)
         return -1;
 
@@ -346,23 +342,35 @@ ipset_create(struct ipset_session *session, const char *set_name,
     const struct ipset_type *type;
     u_int32_t timeout = 0;   /* Unlimited. */
 
-    if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0)
+    if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0) {
+        warnx("ipset create %s: %s", set_name,
+              ipset_session_error(session));
         return -1;
+    }
 
     ipset_session_data_set(session, IPSET_OPT_TYPENAME, "hash:net");
 
-    if((type = ipset_type_get(session, IPSET_CMD_CREATE)) == NULL)
+    if((type = ipset_type_get(session, IPSET_CMD_CREATE)) == NULL) {
+        warnx("ipset type get %s: %s", set_name,
+              ipset_session_error(session));
         return -1;
+    }
+    ipset_session_data_set(session, IPSET_OPT_TYPE, type);
 
     family = (af == AF_INET6 ? NFPROTO_IPV6 : NFPROTO_IPV4);
     ipset_session_data_set(session, IPSET_OPT_FAMILY, &family);
     ipset_session_data_set(session, IPSET_OPT_MAXELEM, &max_elem);
     ipset_session_data_set(session, IPSET_OPT_HASHSIZE, &hash_size);
-    ipset_session_data_set(session, IPSET_OPT_TYPE, type);
     ipset_session_data_set(session, IPSET_OPT_EXIST, NULL);
     ipset_session_data_set(session, IPSET_OPT_TIMEOUT, &timeout);
 
-    return ipset_cmd(session, IPSET_CMD_CREATE, 0);
+    if(ipset_cmd(session, IPSET_CMD_CREATE, 0) == -1) {
+        warnx("ipset create %s: %s", set_name,
+              ipset_session_error(session));
+        return -1;
+    }
+
+    return 0;
 }
 
 static int
@@ -370,16 +378,19 @@ ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
           short af)
 {
     u_int8_t family;
-    int maskbits;
+    int maskbits = 0;
     char parsed[INET6_ADDRSTRLEN];
     const struct ipset_type *type;
     struct sockaddr_storage addr;
 
-    if(sscanf(cidr, "%39[^/]/%u", parsed, &maskbits) != 2
-       || maskbits == 0 || maskbits > IP_MAX_MASKBITS)
+    if(sscanf(cidr, "%39[^/]/%u", parsed, &maskbits) < 1
+       || maskbits > IP_MAX_MASKBITS)
     {
         return -1;
     }
+
+    if(maskbits == 0)
+        maskbits = (af == AF_INET6 ? 128 : 32);
 
     if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0)
         return -1;
@@ -406,7 +417,13 @@ ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
                                &((struct sockaddr_in *) &addr)->sin_addr);
     }
 
-    return ipset_cmd(session, IPSET_CMD_ADD, 0);
+    if(ipset_cmd(session, IPSET_CMD_ADD, 0) == -1) {
+        warnx("ipset add %s: %s", set_name,
+              ipset_session_error(session));
+        return -1;
+    }
+
+    return 0;
 }
 
 static int
@@ -419,8 +436,11 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
     if(ipset_session_data_set(session, IPSET_OPT_SETNAME2, stage_set_name) != 0)
         return -1;
 
-    if(ipset_cmd(session, IPSET_CMD_SWAP, 0) != 0)
+    if(ipset_cmd(session, IPSET_CMD_SWAP, 0) != 0) {
+        warnx("ipset swap %s <-> %s: %s", set_name, stage_set_name,
+              ipset_session_error(session));
         return -1;
+    }
 
     /*
      * As we just swapped, the stage set is under the old name, so
@@ -429,8 +449,25 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
     if(ipset_session_data_set(session, IPSET_SETNAME, stage_set_name) != 0)
         return -1;
 
-    if(ipset_cmd(session, IPSET_CMD_DESTROY, 0) != 0)
+    if(ipset_cmd(session, IPSET_CMD_DESTROY, 0) == -1) {
+        warnx("ipset destroy %s: %s", stage_set_name,
+              ipset_session_error(session));
         return -1;
+    }
 
     return 0;
+}
+
+static void
+set_effective_caps()
+{
+    cap_value_t cap_values[] = { CAP_NET_ADMIN };
+    cap_t caps;
+
+    /* Set the effective capabilities. */
+    caps = cap_get_proc();
+    if(cap_set_flag(caps, CAP_EFFECTIVE, 1, cap_values, CAP_SET) == -1)
+        warn("cap_set_flag");
+    cap_set_proc(caps);
+    cap_free(caps);
 }
