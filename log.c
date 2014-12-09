@@ -34,15 +34,15 @@ Log_write(int severity, const char *msg, va_list args)
     va_list syslog_args;
 
     if(Log_debug || (!Log_debug && severity < LOG_DEBUG)) {
-        if(Log_syslog)
+        if(Log_syslog) {
             va_copy(syslog_args, args);
+            vsyslog(severity, msg, syslog_args);
+            va_end(syslog_args);
+        }
 
         /* Always write to console. */
         printf("%s[%d]: ", PROG_NAME, getpid());
         vprintf(msg, args);
         printf("\n");
-
-        if(Log_syslog)
-            vsyslog(severity, msg, syslog_args);
     }
 }
