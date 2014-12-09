@@ -115,6 +115,7 @@ void
 Mod_fw_close(FW_handle_T handle)
 {
     struct fw_handle *fwh = handle->fwh;
+    cap_t caps;
 
     if(fwh) {
         mnl_socket_close(fwh->nl);
@@ -123,7 +124,13 @@ Mod_fw_close(FW_handle_T handle)
         handle->fwh = NULL;
     }
 
-    // TODO: drop all permitted & effective capabilities here.
+    /* Clear all capabilities upon closing the firewall handle. */
+    caps = cap_get_proc();
+    cap_clear(caps);
+    cap_set_proc(caps);
+    if(prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == -1)
+        warn("prctl");
+    cap_free(caps);
 }
 
 int
