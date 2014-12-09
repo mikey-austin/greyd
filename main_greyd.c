@@ -16,6 +16,7 @@
 #include "con.h"
 #include "greyd.h"
 #include "hash.h"
+#include "log.h"
 
 #include <err.h>
 #include <errno.h>
@@ -263,6 +264,8 @@ main(int argc, char **argv)
         state.config = opts;
     }
 
+    Log_setup(state.config);
+
     if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED))
         state.max_black = state.max_cons;
     else if(state.max_black > state.max_cons)
@@ -446,12 +449,13 @@ jail:
     if(listen(cfg_sock, GREYD_BACKLOG) == -1)
         i_critical("listen: %m");
 
+    i_warning("listening for incoming connections");
+
     if(main_sock6 > 0) {
         if(listen(main_sock6, GREYD_BACKLOG) == -1)
             i_critical("listen: %m");
+        i_warning("listening for incoming IPv6 connections");
     }
-
-    i_warning("listening for incoming connections");
 
     state.slow_until = 0;
     state.clients = state.black_clients = 0;
