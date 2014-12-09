@@ -361,6 +361,9 @@ main(int argc, char **argv)
         daemon(0, 0);
     }
 
+    /* Don't drop privileges. */
+    Config_set_int(config, "drop_privs", NULL, 0);
+
     section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
     lists = Config_section_get_list(section, "lists");
     if(lists == NULL || List_size(lists) == 0) {

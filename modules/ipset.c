@@ -97,16 +97,18 @@ Mod_fw_open(FW_handle_T handle)
     if(fwh->session == NULL)
         warn("ipset_session_init");
 
-    /*
-     * Try to keep capabilities so that the above socket can
-     * be used after privileges are dropped.
-     */
-    caps = cap_get_proc();
-    cap_set_flag(caps, CAP_PERMITTED, 1, cap_values, CAP_SET);
-    cap_set_proc(caps);
-    if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) == -1)
-        warn("prctl");
-    cap_free(caps);
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1)) {
+        /*
+         * Try to keep capabilities so that the above socket can
+         * be used after privileges are dropped.
+         */
+        caps = cap_get_proc();
+        cap_set_flag(caps, CAP_PERMITTED, 1, cap_values, CAP_SET);
+        cap_set_proc(caps);
+        if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) == -1)
+            warn("prctl");
+        cap_free(caps);
+    }
 
     return 0;
 }
@@ -124,13 +126,15 @@ Mod_fw_close(FW_handle_T handle)
         handle->fwh = NULL;
     }
 
-    /* Clear all capabilities upon closing the firewall handle. */
-    caps = cap_get_proc();
-    cap_clear(caps);
-    cap_set_proc(caps);
-    if(prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == -1)
-        warn("prctl");
-    cap_free(caps);
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1)) {
+        /* Clear all capabilities upon closing the firewall handle. */
+        caps = cap_get_proc();
+        cap_clear(caps);
+        cap_set_proc(caps);
+        if(prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == -1)
+            warn("prctl");
+        cap_free(caps);
+    }
 }
 
 int
@@ -147,7 +151,8 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     sa_family_t af;
     int ret;
 
-    set_effective_caps();
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
+        set_effective_caps();
 
     if(nl == NULL)
         return 0;
@@ -318,7 +323,8 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     sstrncpy(stage_set_name, set_name, sizeof(stage_set_name));
     sstrncat(stage_set_name, "-stage", sizeof(stage_set_name));
 
-    set_effective_caps();
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
+        set_effective_caps();
 
     if(session == NULL)
         return -1;
