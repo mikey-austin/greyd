@@ -271,10 +271,11 @@ main(int argc, char **argv)
     else if(state.max_black > state.max_cons)
         usage();
 
+/*
     limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
     if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
         err(1, "setrlimit");
-
+*/
     state.cons = calloc(state.max_cons, sizeof(*state.cons));
     if(state.cons == NULL)
         err(1, "calloc");
@@ -504,8 +505,8 @@ jail:
                     Con_close(con, &state);
                     continue;
                 }
-                fds[con->fd].fd = con->fd;
-                fds[con->fd].events = POLLIN;
+                fds[con->fd % max_fd].fd = con->fd;
+                fds[con->fd % max_fd].events = POLLIN;
             }
 
             if(con->fd != -1 && con->w) {
@@ -515,36 +516,36 @@ jail:
                 }
 
                 if(con->w <= now) {
-                    fds[con->fd].fd = con->fd;
-                    fds[con->fd].events |= POLLOUT;
+                    fds[con->fd % max_fd].fd = con->fd;
+                    fds[con->fd % max_fd].events |= POLLOUT;
                 }
                 writers = 1;
             }
         }
 
         if(state.slow_until == 0) {
-            fds[main_sock].fd = main_sock;
-            fds[main_sock].events = POLLIN;
+            fds[main_sock % max_fd].fd = main_sock;
+            fds[main_sock % max_fd].events = POLLIN;
 
             if(main_sock6 > 0) {
-                fds[main_sock6].fd = main_sock6;
-                fds[main_sock6].events = POLLIN;
+                fds[main_sock6 % max_fd].fd = main_sock6;
+                fds[main_sock6 % max_fd].events = POLLIN;
             }
 
             /* Only allow one config connection at a time. */
             if(cfg_fd == -1) {
-                fds[cfg_sock].fd = cfg_sock;
-                fds[cfg_sock].events = POLLIN;
+                fds[cfg_sock % max_fd].fd = cfg_sock;
+                fds[cfg_sock % max_fd].events = POLLIN;
             }
             else {
-                fds[cfg_fd].fd = cfg_fd;
-                fds[cfg_fd].events = POLLIN;
+                fds[cfg_fd % max_fd].fd = cfg_fd;
+                fds[cfg_fd % max_fd].events = POLLIN;
             }
         }
 
         if(trap_fd > 0) {
-            fds[trap_fd].fd = trap_fd;
-            fds[trap_fd].events = POLLIN;
+            fds[trap_fd % max_fd].fd = trap_fd;
+            fds[trap_fd % max_fd].events = POLLIN;
         }
 
         /*
@@ -573,15 +574,15 @@ jail:
         for(i = 0; i < state.max_cons; i++) {
             con = &state.cons[i];
 
-            if(con->fd != -1 && (fds[con->fd].revents & POLLIN))
+            if(con->fd != -1 && (fds[con->fd % max_fd].revents & POLLIN))
                 Con_handle_read(con, &now, &state);
 
-            if(con->fd != -1 && (fds[con->fd].revents & POLLOUT))
+            if(con->fd != -1 && (fds[con->fd % max_fd].revents & POLLOUT))
                 Con_handle_write(con, &now, &state);
         }
 
         /* Handle the main IPv4 socket. */
-        if(fds[main_sock].revents & POLLIN) {
+        if(fds[main_sock % max_fd].revents & POLLIN) {
             memset(&main_in_addr, 0, sizeof(main_in_addr));
             main_addr_len = sizeof(main_in_addr);
             accept_fd = accept(main_sock,
@@ -592,7 +593,7 @@ jail:
         }
 
         /* Handle the main IPv6 socket. */
-        if(main_sock6 > 0 && fds[main_sock6].revents & POLLIN) {
+        if(main_sock6 > 0 && fds[main_sock6 % max_fd].revents & POLLIN) {
             memset(&main_in_addr6, 0, sizeof(main_in_addr6));
             main_addr6_len = sizeof(main_in_addr6);
             accept_fd = accept(main_sock6,
@@ -603,7 +604,7 @@ jail:
         }
 
         /* Handle the configuration socket. */
-        if(fds[cfg_sock].revents & POLLIN) {
+        if(fds[cfg_sock % max_fd].revents & POLLIN) {
             memset(&main_in_addr, 0, sizeof(main_in_addr));
             main_addr_len = sizeof(main_in_addr);
             cfg_fd = accept(cfg_sock,
@@ -630,7 +631,7 @@ jail:
                 state.slow_until = 0;
             }
         }
-        else if(cfg_fd > 0 && fds[cfg_fd].revents & POLLIN) {
+        else if(cfg_fd > 0 && fds[cfg_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(cfg_fd, &state);
             close(cfg_fd);
             cfg_fd = -1;
@@ -638,7 +639,7 @@ jail:
         }
 
         /* Handle the trap pipe input. */
-        if(trap_fd > 0 && fds[trap_fd].revents & POLLIN) {
+        if(trap_fd > 0 && fds[trap_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(trap_fd, &state);
         }
     }
