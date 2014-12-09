@@ -207,13 +207,13 @@ extern char
         blacklist = List_entry_value(entry);
 
         if(strlen(lists) + strlen(blacklist->name) + 1 >= out_size) {
-            strcat(lists, CON_BL_SUMMARY_ETC);
+            sstrncat(lists, CON_BL_SUMMARY_ETC, CON_BL_SUMMARY_SIZE + 1);
             break;
         }
         else {
             if(!first)
-                strcat(lists, " ");
-            strcat(lists, blacklist->name);
+                sstrncat(lists, " ", CON_BL_SUMMARY_SIZE + 1);
+            sstrncat(lists, blacklist->name, CON_BL_SUMMARY_SIZE + 1);
         }
         first = 0;
     }
