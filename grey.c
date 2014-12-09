@@ -497,7 +497,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     struct DB_key key;
     struct DB_val val;
     struct Grey_data gd;
-    time_t now, expire;
+    time_t now, expire, pass_time;
     int spamtrap;
 
     now = time(NULL);
@@ -508,6 +508,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         /* Do not trap. */
         spamtrap = 0;
         expire = greylister->grey_exp;
+        pass_time = greylister->pass_time;
         key.type = DB_KEY_TUPLE;
         key.data.gt = *gt;
         break;
@@ -516,6 +517,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         /* Trap address. */
         spamtrap = 1;
         expire = greylister->trap_exp;
+        pass_time = greylister->trap_exp;
         key.type = DB_KEY_IP;
         key.data.s = gt->ip;
         break;
@@ -552,7 +554,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         gd.first = now;
         gd.bcount = 1;
         gd.pcount = (spamtrap ? -1 : 0);
-        gd.pass = now + expire;
+        gd.pass = now + pass_time;
         gd.expire = now + expire;
         val.type = DB_VAL_GREY;
         val.data.gd = gd;
