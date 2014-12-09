@@ -482,6 +482,9 @@ set_effective_caps()
 
     /* Set the effective capabilities. */
     caps = cap_get_proc();
+    cap_clear(caps);
+    if(cap_set_flag(caps, CAP_PERMITTED, 1, cap_values, CAP_SET) == -1)
+        warn("cap_set_flag");
     if(cap_set_flag(caps, CAP_EFFECTIVE, 1, cap_values, CAP_SET) == -1)
         warn("cap_set_flag");
     cap_set_proc(caps);
