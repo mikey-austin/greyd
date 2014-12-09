@@ -271,11 +271,13 @@ main(int argc, char **argv)
     else if(state.max_black > state.max_cons)
         usage();
 
-/*
-    limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
-    if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
-        err(1, "setrlimit");
-*/
+
+    if(!Config_get_int(state.config, "debug", NULL, 0)) {
+        limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
+        if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
+            err(1, "setrlimit");
+    }
+
     state.cons = calloc(state.max_cons, sizeof(*state.cons));
     if(state.cons == NULL)
         err(1, "calloc");
