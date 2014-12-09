@@ -122,6 +122,8 @@ Mod_fw_close(FW_handle_T handle)
         free(fwh);
         handle->fwh = NULL;
     }
+
+    // TODO: drop all permitted & effective capabilities here.
 }
 
 int
