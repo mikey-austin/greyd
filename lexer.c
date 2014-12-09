@@ -20,7 +20,7 @@ Lexer_create(Lexer_source_T source, int (*next_token)(Lexer_T lexer))
     Lexer_T lexer;
 
     if((lexer = malloc(sizeof(*lexer))) == NULL) {
-        I_CRIT("Could not create lexer");
+        i_critical("Could not create lexer");
     }
 
     lexer->source           = source;

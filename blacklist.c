@@ -24,23 +24,23 @@ Blacklist_create(const char *name, const char *message)
     Blacklist_T blacklist;
 
     if((blacklist = malloc(sizeof(*blacklist))) == NULL) {
-        I_CRIT("Could not create blacklist");
+        i_critical("Could not create blacklist");
     }
     blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
                                 sizeof(struct Blacklist_entry));
     if(blacklist->entries == NULL) {
-        I_CRIT("Could not create blacklist entries");
+        i_critical("Could not create blacklist entries");
     }
 
     len = strlen(name) + 1;
     if((blacklist->name = malloc(len)) == NULL) {
-        I_CRIT("could not malloc blacklist name");
+        i_critical("could not malloc blacklist name");
     }
     sstrncpy(blacklist->name, name, len);
 
     len = strlen(message) + 1;
     if((blacklist->message = malloc(len)) == NULL) {
-        I_CRIT("could not malloc blacklist message");
+        i_critical("could not malloc blacklist message");
     }
     sstrncpy(blacklist->message, message, len);
 
@@ -97,7 +97,8 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 extern int
 Blacklist_add(Blacklist_T list, const char *address)
 {
-    int ret, maskbits, af, i, j;
+    int ret, af, i, j;
+    unsigned int maskbits;
     char parsed[INET6_ADDRSTRLEN];
     struct IP_addr *m, *n;
 
@@ -141,7 +142,7 @@ Blacklist_add(Blacklist_T list, const char *address)
     return 0;
 
 parse_error:
-    I_DEBUG("Error parsing address %s", address);
+    i_debug("Error parsing address %s", address);
     return -1;
 }
 
@@ -240,7 +241,7 @@ grow_entries(Blacklist_T list)
             list->entries, list->size + BLACKLIST_INIT_SIZE);
 
         if(list->entries == NULL) {
-            I_CRIT("realloc failed");
+            i_critical("realloc failed");
         }
 
         list->size += BLACKLIST_INIT_SIZE;

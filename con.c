@@ -82,7 +82,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
 
     /* Start initializing the connection. */
     if(Con_grow_out_buf(con, 0) == NULL)
-        I_CRIT("could not grow connection out buf");
+        i_critical("could not grow connection out buf");
 
     con->blacklists = List_create(destroy_blacklist);
     con->fd = fd;
@@ -96,10 +96,10 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
     ret = getnameinfo((struct sockaddr *) src, sizeof(*src), con->src_addr,
                       sizeof(con->src_addr), NULL, 0, NI_NUMERICHOST);
     if(ret != 0)
-        I_CRIT("getnameinfo: %s", gai_strerror(ret));
+        i_critical("getnameinfo: %s", gai_strerror(ret));
 
     if((human_time = strdup(ctime(&now))) == NULL)
-        I_CRIT("strdup failed");
+        i_critical("strdup failed");
 
     /* Replace the newline with a \0. */
     human_time[strlen(human_time) - 1] = '\0';
@@ -162,7 +162,7 @@ Con_close(struct Con *con, struct Greyd_state *state)
     state->slow_until = 0;
 
     time(&now);
-    I_INFO("%s: disconnected after %lld seconds.%s%s",
+    i_info("%s: disconnected after %lld seconds.%s%s",
            con->src_addr, (long long) (now - con->s),
            (List_size(con->blacklists) > 0 ? " lists:" : ""),
            (List_size(con->blacklists) > 0 ? con->lists : ""));
@@ -249,7 +249,7 @@ Con_handle_read(struct Con *con, time_t *now, struct Greyd_state *state)
         nread = read(con->fd, con->in_p, con->in_remaining);
         switch(nread) {
         case -1:
-            I_WARN("connection read error");
+            i_warning("connection read error");
             /* Fallthrough. */
 
         case 0:
@@ -306,7 +306,7 @@ Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
             nwritten = write(con->fd, "\r", 1);
             switch(nwritten) {
             case -1:
-                I_WARN("connection write error");
+                i_warning("connection write error");
                 /* Fallthrough. */
 
             case 0:
@@ -328,7 +328,7 @@ Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
         nwritten = write(con->fd, con->out_p, to_be_written);
         switch(nwritten) {
         case -1:
-            I_WARN("connection write error");
+            i_warning("connection write error");
             /* Fallthrough. */
 
         case 0:
@@ -460,12 +460,12 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
             con->w = *now + con->stutter;
 
             if(*con->mail && *con->rcpt) {
-                I_DEBUG("(%s) %s: %s -> %s",
+                i_debug("(%s) %s: %s -> %s",
                         List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
                         con->src_addr, con->mail, con->rcpt);
 
                 if(verbose)
-                    I_INFO("(%s) %s: %s -> %s\n",
+                    i_info("(%s) %s: %s -> %s\n",
                             List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
                             con->src_addr, con->mail, con->rcpt);
 
@@ -511,7 +511,7 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
                                     &window, sizeof(window)) == -1)
             {
                 /* Don't fail if the above didn't work. */
-                I_DEBUG("setsockopt failed, window size of %d", window);
+                i_debug("setsockopt failed, window size of %d", window);
             }
 
             con->in_p = con->in_buf;
@@ -808,7 +808,7 @@ Con_accept(int fd, struct sockaddr_storage *addr, struct Greyd_state *state)
             break;
 
         default:
-            I_CRIT("accept failure");
+            i_critical("accept failure");
         }
     }
     else {
@@ -825,7 +825,7 @@ Con_accept(int fd, struct sockaddr_storage *addr, struct Greyd_state *state)
         else {
             con = &state->cons[i];
             Con_init(con, fd, addr, state);
-            I_INFO("%s: connected (%d/%d)%s%s",
+            i_info("%s: connected (%d/%d)%s%s",
                    con->src_addr, state->clients, state->black_clients,
                    (con->lists == NULL ? "" : ", lists:"),
                    (con->lists == NULL ? "" : con->lists));

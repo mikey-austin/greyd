@@ -20,11 +20,11 @@ DB_open(Config_T config, int flags)
 
     /* Setup the db handle. */
     if((handle = malloc(sizeof(*handle))) == NULL) {
-        I_CRIT("Could not create db handle");
+        i_critical("Could not create db handle");
     }
 
     if((section = Config_get_section(config, "database")) == NULL) {
-        I_CRIT("Could not find database configuration");
+        i_critical("Could not find database configuration");
     }
 
     handle->config  = config;
@@ -32,7 +32,7 @@ DB_open(Config_T config, int flags)
 
     if((user = Config_section_get_str(section, "user", NULL)) != NULL) {
         if((handle->pw = getpwnam(user)) == NULL) {
-            I_CRIT("No such user %s", user);
+            i_critical("No such user %s", user);
         }
     }
     else {
@@ -107,7 +107,7 @@ DB_get_itr(DB_handle_T handle)
 
     /* Setup the iterator. */
     if((itr = malloc(sizeof(*itr))) == NULL) {
-        I_CRIT("Could not create iterator");
+        i_critical("Could not create iterator");
     }
 
     itr->handle  = handle;

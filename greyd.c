@@ -33,7 +33,7 @@ Greyd_process_config(int fd, struct Greyd_state *state)
      * upon destroying the lexer source.
      */
     if((read_fd = dup(fd)) == -1)
-        I_CRIT("dup: %m");
+        i_critical("dup: %m");
     source = Lexer_source_create_from_fd(read_fd);
     lexer = Config_lexer_create(source);
     parser = Config_parser_create(lexer);
@@ -54,7 +54,7 @@ Greyd_process_config(int fd, struct Greyd_state *state)
                     Blacklist_add(blacklist, addr);
             }
             Hash_insert(state->blacklists, bl_name, blacklist);
-            I_DEBUG("refreshing blacklist \"%s\"", bl_name);
+            i_debug("refreshing blacklist \"%s\"", bl_name);
         }
     }
 
@@ -85,5 +85,5 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
     fprintf(out, "]\n%%\n");
 
     if(fflush(out) == EOF)
-        I_DEBUG("configure_greyd: fflush failed");
+        i_debug("configure_greyd: fflush failed");
 }

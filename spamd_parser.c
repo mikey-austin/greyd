@@ -37,7 +37,7 @@ Spamd_parser_create(Lexer_T lexer)
     Spamd_parser_T parser;
 
     if((parser = malloc(sizeof(*parser))) == NULL) {
-        I_CRIT("Could not create parser");
+        i_critical("Could not create parser");
     }
 
     parser->lexer   = lexer;

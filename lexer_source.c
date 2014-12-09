@@ -51,20 +51,20 @@ Lexer_source_create_from_file(const char *filename)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        I_CRIT("Could not create config source for %s", filename);
+        i_critical("Could not create config source for %s", filename);
     }
     else {
         /* Store the filename. */
         data->filename = malloc(flen);
         if(data->filename == NULL) {
-            I_CRIT("Could not create file config source");
+            i_critical("Could not create file config source");
         }
         sstrncpy(data->filename, filename, flen);
 
         /* Try to open the file. */
         data->handle = fopen(filename, "r");
         if(data->handle == NULL) {
-            I_CRIT("Error opening config file source: %s", strerror(errno));
+            i_critical("Error opening config file source: %s", strerror(errno));
         }
 
         source->type     = LEXER_SOURCE_FILE;
@@ -85,13 +85,13 @@ Lexer_source_create_from_fd(int fd)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        I_CRIT("Could not create config source for fd %d", fd);
+        i_critical("Could not create config source for fd %d", fd);
     }
     else {
         /* Try to open the file. */
         data->handle = fdopen(fd, "r");
         if(data->handle == NULL) {
-            I_CRIT("Error opening config file source: %s", strerror(errno));
+            i_critical("Error opening config file source: %s", strerror(errno));
         }
 
         /* No need for a filename. */
@@ -115,7 +115,7 @@ Lexer_source_create_from_str(const char *buf, int len)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        I_CRIT("Could not create config source");
+        i_critical("Could not create config source");
     }
     else {
         /* Copy the buffer into the new source object. */
@@ -142,7 +142,7 @@ Lexer_source_create_from_gz(gzFile gzf)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        I_CRIT("Could not create config source");
+        i_critical("Could not create config source");
     }
     else {
         /* Store the reference to the gz file handle. */
@@ -188,7 +188,7 @@ source_create()
 
     source = malloc(sizeof(*source));
     if(source == NULL) {
-        I_CRIT("Could not create config source");
+        i_critical("Could not create config source");
     }
     else {
         /* Initialize object. */
@@ -214,7 +214,7 @@ source_data_file_destroy(void *data)
 
     /* Try to close the handle. */
     if(fclose(data_file->handle) == EOF) {
-        I_WARN("Error closing config source: %s", strerror(errno));
+        i_warning("Error closing config source: %s", strerror(errno));
     }
 
     free(data_file);
@@ -284,7 +284,7 @@ source_data_gz_destroy(void *data)
         return;
 
     if(data_gz->gzf && ((ret = gzclose(data_gz->gzf)) != Z_OK)) {
-        I_WARN("gzclose returned an unexpected %d", ret);
+        i_warning("gzclose returned an unexpected %d", ret);
     }
 
     free(data_gz);

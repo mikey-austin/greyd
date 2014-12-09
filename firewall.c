@@ -20,11 +20,11 @@ FW_open(Config_T config)
 
     /* Setup the firewall handle. */
     if((handle = malloc(sizeof(*handle))) == NULL) {
-        I_CRIT("Could not create firewall handle");
+        i_critical("Could not create firewall handle");
     }
 
     if((section = Config_get_section(config, "firewall")) == NULL) {
-        I_CRIT("Could not find firewall configuration");
+        i_critical("Could not find firewall configuration");
     }
 
     handle->config  = config;

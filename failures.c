@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define SEV_CRIT  "CRITICAL"
 #define SEV_ERR   "ERROR"
@@ -21,66 +23,66 @@
 #define RETURN_CRIT 1
 #define RETURN_ERR  2
 
-static void vlog(const char *severity, const char *file, const int line, const char *msg, va_list args);
+static void vlog(const char *severity, const char *msg, va_list args);
 
 extern void
-i_critical(const char *file, const int line, const char *msg, ...)
+i_critical(const char *msg, ...)
 {
     va_list args;
 
     va_start(args, msg);
-    vlog(SEV_CRIT, file, line, msg, args);
+    vlog(SEV_CRIT, msg, args);
     va_end(args);
 
     exit(RETURN_CRIT);
 }
 
 extern void
-i_error(const char *file, const int line, const char *msg, ...)
+i_error(const char *msg, ...)
 {
     va_list args;
 
     va_start(args, msg);
-    vlog(SEV_ERR, file, line, msg, args);
+    vlog(SEV_ERR, msg, args);
     va_end(args);
 
     exit(RETURN_ERR);
 }
 
 extern void
-i_warning(const char *file, const int line, const char *msg, ...)
+i_warning(const char *msg, ...)
 {
     va_list args;
 
     va_start(args, msg);
-    vlog(SEV_WARN, file, line, msg, args);
+    vlog(SEV_WARN, msg, args);
     va_end(args);
 }
 
 extern void
-i_info(const char *file, const int line, const char *msg, ...)
+i_info(const char *msg, ...)
 {
     va_list args;
 
     va_start(args, msg);
-    vlog(SEV_INFO, file, line, msg, args);
+    vlog(SEV_INFO, msg, args);
     va_end(args);
 }
 
 extern void
-i_debug(const char *file, const int line, const char *msg, ...)
+i_debug(const char *msg, ...)
 {
     va_list args;
 
     va_start(args, msg);
-    vlog(SEV_DEBUG, file, line, msg, args);
+    vlog(SEV_DEBUG, msg, args);
     va_end(args);
 }
 
 void
-vlog(const char *severity, const char *file, const int line, const char *msg, va_list args)
+vlog(const char *severity, const char *msg, va_list args)
 {
-    printf("%s (at %s:%d): ", severity, file, line);
+    printf("%s[%d]: ", PROG_NAME, getpid());
     vprintf(msg, args);
-    printf("\n");
+    printf(" (%s)\n", severity);
 }

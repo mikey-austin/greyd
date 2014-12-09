@@ -5,7 +5,7 @@
 SRC = pf.c ipset.c bdb.c
 OBJ = $(SRC:.c=.o)
 CC  = clang
-CFLAGS = -g -O0 -Wall -pedantic -fpic -Wno-gnu-zero-variadic-macro-arguments
+CFLAGS = -g -O0 -Wall -pedantic -fpic
 
 all: pf.so ipset.so fw_dummy.so bdb.so
 

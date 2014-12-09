@@ -32,6 +32,9 @@
 #include <grp.h>
 #include <poll.h>
 
+extern char *optarg;
+extern int optind, opterr, optopt;
+
 static void usage(void);
 static int max_files(void);
 static void destroy_blacklist(struct Hash_entry *entry);
@@ -85,8 +88,8 @@ main(int argc, char **argv)
     char *bind_addr, *bind_addr6;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
     int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
-    u_short port, cfg_port, sync_port;
-    long long grey_time, white_time, pass_time;
+    u_short port, cfg_port;
+    unsigned long long grey_time, white_time, pass_time;
     struct rlimit limit;
     struct sockaddr_in main_addr, cfg_addr, main_in_addr;
     struct sockaddr_in6 main_addr6, main_in_addr6;
@@ -177,7 +180,7 @@ main(int argc, char **argv)
             break;
 
         case 'G':
-            if (sscanf(optarg, "%lld:%lld:%lld", &pass_time, &grey_time,
+            if (sscanf(optarg, "%llu:%llu:%llu", &pass_time, &grey_time,
                        &white_time) != 3)
             {
                 usage();
@@ -236,11 +239,11 @@ main(int argc, char **argv)
             break;
 
         case 'Y':
-            // TODO
+            /* TODO */
             break;
 
         case 'y':
-            // TODO
+            /* TODO */
             break;
 
         default:
@@ -280,7 +283,6 @@ main(int argc, char **argv)
 
     port = Config_get_int(state.config, "port", NULL, GREYD_PORT);
     cfg_port = Config_get_int(state.config, "config_port", NULL, GREYD_CFG_PORT);
-    sync_port = Config_get_int(state.config, "port", "sync", GREYD_SYNC_PORT);
 
     /*
      * Setup the main IPv4 socket.
@@ -372,27 +374,27 @@ main(int argc, char **argv)
         state.max_black = (state.max_black >= state.max_cons
                            ? state.max_cons - 100 : state.max_black);
         if(state.max_black < 0) {
-            I_WARN("maximum blacklisted connections is 0");
+            i_warning("maximum blacklisted connections is 0");
             state.max_black = 0;
         }
 
         if(pipe(grey_pipe) == -1)
-            I_CRIT("grey pipe: %m");
+            i_critical("grey pipe: %m");
 
         if(pipe(trap_pipe) == -1)
-            I_CRIT("trap pipe: %m");
+            i_critical("trap pipe: %m");
 
         grey_pid = fork();
         switch(grey_pid) {
         case -1:
-            I_ERR("fork greylister: %m");
+            i_error("fork greylister: %m");
 
         case 0:
             /* In child. */
             signal(SIGPIPE, SIG_IGN);
 
             if((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
-                I_CRIT("fdopen: %m");
+                i_critical("fdopen: %m");
             close(grey_pipe[0]);
 
             trap_fd = trap_pipe[0];
@@ -405,11 +407,11 @@ main(int argc, char **argv)
         greylister = Grey_setup(state.config);
 
         if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
-            I_CRIT("fdopen: %m");
+            i_critical("fdopen: %m");
         close(grey_pipe[1]);
 
         if((trap_out = fdopen(trap_pipe[1], "w")) == NULL)
-            I_CRIT("fdopen: %m");
+            i_critical("fdopen: %m");
         close(trap_pipe[0]);
 
         Grey_start(greylister, grey_pid, grey_in, trap_out);
@@ -420,13 +422,13 @@ main(int argc, char **argv)
 jail:
     /* Setup the firewall handle before dropping privileges. */
     if((state.fw_handle = FW_open(state.config)) == NULL)
-        I_CRIT("could not obtain firewall handle");
+        i_critical("could not obtain firewall handle");
 
     if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
         chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
                                     GREYD_CHROOT_DIR);
         if(chroot(chroot_dir) == -1)
-            I_CRIT("cannot chroot to %s", chroot_dir);
+            i_critical("cannot chroot to %s", chroot_dir);
     }
 
     if(main_pw && Config_get_int(state.config, "drop_privs", NULL, 1)) {
@@ -434,22 +436,22 @@ jail:
            || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
            || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
         {
-            I_CRIT("failed to drop privileges");
+            i_critical("failed to drop privileges");
         }
     }
 
     if(listen(main_sock, GREYD_BACKLOG) == -1)
-        I_CRIT("listen: %m");
+        i_critical("listen: %m");
 
     if(listen(cfg_sock, GREYD_BACKLOG) == -1)
-        I_CRIT("listen: %m");
+        i_critical("listen: %m");
 
     if(main_sock6 > 0) {
         if(listen(main_sock6, GREYD_BACKLOG) == -1)
-            I_CRIT("listen: %m");
+            i_critical("listen: %m");
     }
 
-    I_WARN("listening for incoming connections");
+    i_warning("listening for incoming connections");
 
     state.slow_until = 0;
     state.clients = state.black_clients = 0;
@@ -481,7 +483,7 @@ jail:
             fds = NULL;
             fds = calloc(max_fd + 1, sizeof(*fds));
             if(fds == NULL)
-                I_CRIT("calloc: %m");
+                i_critical("calloc: %m");
 
             prev_max_fd = max_fd;
         }
@@ -555,7 +557,7 @@ jail:
 
         if(poll(fds, max_fd + 1, timeout) == -1) {
             if(errno != EINTR)
-                I_CRIT("poll: %m");
+                i_critical("poll: %m");
             continue;
         }
 
@@ -615,7 +617,7 @@ jail:
                     break;
 
                 default:
-                    I_ERR("accept: %m");
+                    i_error("accept: %m");
                 }
             }
             else if(ntohs(main_in_addr.sin_port) >= IPPORT_RESERVED) {

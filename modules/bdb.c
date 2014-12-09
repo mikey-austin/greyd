@@ -35,7 +35,7 @@ Mod_db_open(DB_handle_T handle, int flags)
 
     ret = db_create(&db, NULL, 0);
     if(ret != 0) {
-        I_CRIT("Could not obtain db handle: %s", db_strerror(ret));
+        i_critical("Could not obtain db handle: %s", db_strerror(ret));
     }
     handle->dbh = db;
 
@@ -49,7 +49,7 @@ Mod_db_open(DB_handle_T handle, int flags)
              */
             i = open(db_path, O_RDWR|O_CREAT, 0644);
             if(i == -1) {
-                I_CRIT("Create %s failed (%m)", db_path, strerror(errno));
+                i_critical("Create %s failed (%m)", db_path, strerror(errno));
             }
 
             /*
@@ -58,14 +58,14 @@ Mod_db_open(DB_handle_T handle, int flags)
             if(handle->pw && (fchown(i, handle->pw->pw_uid,
                                      handle->pw->pw_gid) == -1))
             {
-                I_CRIT("chown %s failed (%m)", db_path, db_strerror(ret));
+                i_critical("chown %s failed (%m)", db_path, db_strerror(ret));
             }
 
             close(i);
             return;
 
         default:
-            I_CRIT("Create %s failed (%m)", db_path, db_strerror(ret));
+            i_critical("Create %s failed (%m)", db_path, db_strerror(ret));
         }
     }
 }
@@ -102,7 +102,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         return GREYDB_OK;
 
     default:
-        I_ERR("Error putting record: %s", db_strerror(ret));
+        i_error("Error putting record: %s", db_strerror(ret));
     }
 
     return GREYDB_ERR;
@@ -134,7 +134,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     default:
         val = NULL;
-        I_ERR("Error retrieving record: %s", db_strerror(ret));
+        i_error("Error retrieving record: %s", db_strerror(ret));
     }
 
     return GREYDB_ERR;
@@ -161,7 +161,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
         return GREYDB_NOT_FOUND;
 
     default:
-        I_ERR("Error deleting record: %s", db_strerror(ret));
+        i_error("Error deleting record: %s", db_strerror(ret));
     }
 
     return GREYDB_ERR;
@@ -176,7 +176,7 @@ Mod_db_get_itr(DB_itr_T itr)
 
     ret = db->cursor(db, NULL, &cursor, 0);
     if(ret != 0) {
-        I_CRIT("Could not create cursor (%s)", db_strerror(ret));
+        i_critical("Could not create cursor (%s)", db_strerror(ret));
     }
     else {
         itr->dbi = (void *) cursor;
@@ -191,7 +191,7 @@ Mod_db_itr_close(DB_itr_T itr)
 
     ret = cursor->close(cursor);
     if(ret != 0) {
-        I_WARN("Could not close cursor (%s)", db_strerror(ret));
+        i_warning("Could not close cursor (%s)", db_strerror(ret));
     }
     else {
         itr->dbi = NULL;
@@ -220,7 +220,7 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
         return GREYDB_NOT_FOUND;
 
     default:
-        I_ERR("Error retrieving next record: %s", db_strerror(ret));
+        i_error("Error retrieving next record: %s", db_strerror(ret));
     }
 
     return GREYDB_ERR;
@@ -244,7 +244,7 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
         return GREYDB_OK;
 
     default:
-        I_ERR("Error replacing record: %s", db_strerror(ret));
+        i_error("Error replacing record: %s", db_strerror(ret));
     }
 
     return GREYDB_ERR;
@@ -262,7 +262,7 @@ Mod_db_itr_del_curr(DB_itr_T itr)
         return GREYDB_OK;
 
     default:
-        I_ERR("Error deleting current record: %s", db_strerror(ret));
+        i_error("Error deleting current record: %s", db_strerror(ret));
     }
 
     return GREYDB_ERR;
@@ -281,7 +281,7 @@ pack_key(struct DB_key *key, DBT *dbkey)
                                     + strlen(key->data.gt.to) + 1))
                          : (slen = strlen(key->data.s) + 1));
     if((buf = calloc(sizeof(char), len)) == NULL) {
-        I_CRIT("Could not pack key");
+        i_critical("Could not pack key");
     }
     memcpy(buf, &(key->type), sizeof(short));
 
@@ -323,7 +323,7 @@ pack_val(struct DB_val *val, DBT *dbval)
                          ? sizeof(struct Grey_data)
                          : (slen = strlen(val->data.s) + 1));
     if((buf = calloc(sizeof(char), len)) == NULL) {
-        I_CRIT("Could not pack val");
+        i_critical("Could not pack val");
     }
     memcpy(buf, &(val->type), sizeof(short));
 

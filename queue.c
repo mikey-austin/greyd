@@ -16,7 +16,7 @@ Queue_create(void (*destroy)(void *value))
     Queue_T queue;
 
     if((queue = malloc(sizeof(*queue))) == NULL) {
-        I_CRIT("Could not create an empty queue");
+        i_critical("Could not create an empty queue");
     }
     else {
         queue->list = List_create(destroy);

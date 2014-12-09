@@ -89,7 +89,7 @@ Hash_destroy(Hash_T *hash)
         *hash = NULL;
     }
     else {
-        I_ERR("Tried to free NULL hash (hash %d, entries %d)",
+        i_error("Tried to free NULL hash (hash %d, entries %d)",
               *hash, (*hash ? (*hash)->entries : 0x0));
     }
 }
@@ -187,7 +187,7 @@ Hash_resize(Hash_T hash, int new_size)
     struct Hash_entry *old_entries = hash->entries;
 
     if(new_size <= hash->size) {
-        I_WARN("Refusing to resize a hash of %d elements to %d",
+        i_warning("Refusing to resize a hash of %d elements to %d",
                hash->size, new_size);
         return;
     }

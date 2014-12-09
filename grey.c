@@ -50,7 +50,7 @@ Grey_setup(Config_T config)
     Greylister_T greylister = NULL;
 
     if((greylister = malloc(sizeof(*greylister))) == NULL) {
-        I_CRIT("Could not malloc greylister");
+        i_critical("Could not malloc greylister");
     }
 
     greylister->config     = config;
@@ -61,7 +61,7 @@ Grey_setup(Config_T config)
     greylister->startup    = -1;
 
     if((greylister->fw_handle = FW_open(config)) == NULL) {
-        I_CRIT("Could not create firewall handle");
+        i_critical("Could not create firewall handle");
     }
 
     /*
@@ -114,14 +114,14 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
     db_user = Config_get_str(greylister->config, "user", "grey",
                              GREYD_DB_USER);
     if((db_pw = getpwnam(db_user)) == NULL)
-        I_CRIT("no such user %s", db_user);
+        i_critical("no such user %s", db_user);
 
     if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)) {
         if(setgroups(1, &db_pw->pw_gid)
            || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
            || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
         {
-            I_CRIT("failed to drop privileges");
+            i_critical("failed to drop privileges");
         }
     }
 
@@ -133,7 +133,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
     switch((greylister->reader_pid = fork()))
     {
     case -1:
-        I_CRIT("Could not fork greyd reader");
+        i_critical("Could not fork greyd reader");
         exit(1);
 
     case 0:
@@ -145,10 +145,10 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
         fclose(greylister->trap_out);
         FW_close(&(greylister->fw_handle));
 
-        // TODO: Set proc title to "(greyd db update)".
+        /* TODO: Set proc title to "(greyd db update)". */
 
         if(Grey_start_reader(greylister) == -1) {
-            I_CRIT("Greyd reader failed to start");
+            i_critical("Greyd reader failed to start");
             exit(1);
         }
         _exit(0);
@@ -174,7 +174,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
 
-    // TODO: Set proc title "(greyd fw whitelist update)".
+    /* TODO: Set proc title "(greyd fw whitelist update)". */
 
     Grey_start_scanner(greylister);
 
@@ -227,7 +227,7 @@ Grey_start_reader(Greylister_T greylister)
 
     fd = fileno(greylister->grey_in);
     if(fd == -1) {
-        I_WARN("No greylist pipe stream");
+        i_warning("No greylist pipe stream");
         return 0;
     }
 
@@ -263,7 +263,7 @@ Grey_start_scanner(Greylister_T greylister)
 {
     for(;;) {
         if(Grey_scan_db(greylister) == -1)
-            I_WARN("db scan failed");
+            i_warning("db scan failed");
         sleep(GREY_DB_SCAN_INTERVAL);
     }
     /* Not reached. */
@@ -299,7 +299,7 @@ Grey_scan_db(Greylister_T greylister)
                 goto cleanup;
             }
             else {
-                I_DEBUG("deleting expired %sentry %s",
+                i_debug("deleting expired %sentry %s",
                         (key.type == DB_KEY_IP
                          ? (gd.pcount >= 0 ? "white " : "greytrap ")
                          : "grey "),
@@ -362,7 +362,7 @@ Grey_scan_db(Greylister_T greylister)
                     goto cleanup;
                 }
 
-                I_DEBUG("whitelisting %s", gt.ip);
+                i_debug("whitelisting %s", gt.ip);
             }
             else if(key.type == DB_KEY_IP) {
                 /*
@@ -544,7 +544,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
             expire = greylister->trap_exp;
             key.type = DB_KEY_IP;
             key.data.s = gt->ip;
-            I_DEBUG("trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
+            i_debug("trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
                     gt->ip, greylister->low_prio_mx_ip,
                     gt->ip, gt->helo, gt->from, gt->to);
         }
@@ -559,7 +559,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
 
         switch(DB_put(db, &key, &val)) {
         case GREYDB_OK:
-            I_DEBUG("new %sentry %s from %s to %s, helo %s",
+            i_debug("new %sentry %s from %s to %s, helo %s",
                     (spamtrap ? "greytrap " : ""), gt->ip,
                     gt->from, gt->to, gt->helo );
             break;
@@ -582,7 +582,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         val.data.gd = gd;
 
         if(DB_put(db, &key, &val) == GREYDB_OK) {
-            I_DEBUG("updated %sentry %s from %s to %s, helo %s",
+            i_debug("updated %sentry %s from %s to %s, helo %s",
                     (spamtrap ? "greytrap " : ""), gt->ip,
                     gt->from, gt->to, gt->helo );
         }
@@ -601,11 +601,11 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
      */
     if(greylister->sync_send && sync) {
         if(spamtrap) {
-            I_DEBUG("sync_trap %s", gt->ip);
-            // TODO: sync_trapped(now, now + expire, gt->ip);
+            i_debug("sync_trap %s", gt->ip);
+            /* TODO: sync_trapped(now, now + expire, gt->ip); */
         }
         else {
-            // TODO: sync_update(now, gt->helo, gt->ip, gt->from, gt->to);
+            /* TODO: sync_update(now, gt->helo, gt->ip, gt->from, gt->to); */
         }
     }
 
@@ -632,7 +632,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
     if(expire == 0 || expires[0] == '\0' || *end != '\0'
        || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN)))
     {
-        I_WARN("could not parse expires %s", expires);
+        i_warning("could not parse expires %s", expires);
         return;
     }
 
@@ -654,7 +654,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
         val.data.gd = gd;
 
         if(DB_put(db, &key, &val) == GREYDB_OK) {
-            I_DEBUG("new %s from %s for %s, expires %s",
+            i_debug("new %s from %s for %s, expires %s",
                     (spamtrap ? "TRAP" : "WHITE"), source, ip,
                     expires);
         }
@@ -673,7 +673,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
         }
 
         if(DB_put(db, &key, &val) == GREYDB_OK) {
-            I_DEBUG("updated %s", ip);
+            i_debug("updated %s", ip);
         }
         break;
 
@@ -723,7 +723,7 @@ process_message(Greylister_T greylister, Config_T message)
         break;
 
     default:
-        I_WARN("Unknown greylist message type %d", type);
+        i_warning("Unknown greylist message type %d", type);
         return;
     }
 }

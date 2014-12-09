@@ -67,6 +67,9 @@
 #define INIT_BL         10
 #define GREYD_BLACKLIST "greyd-blacklist"
 
+extern char *optarg;
+extern int optind, opterr, optopt;
+
 static void usage();
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);

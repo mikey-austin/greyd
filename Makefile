@@ -6,7 +6,7 @@ SRC		= $(wildcard *.c)
 MAINS   = main_greyd.o main_greyd_setup.o main_greydb.o
 OBJ		= $(SRC:.c=.o)
 CC		= clang
-CFLAGS	= -g -O0 -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments
+CFLAGS	= -g -O0 -Wall -pedantic
 LIBS    = -lz -ldl
 TESTS   = tests
 

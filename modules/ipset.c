@@ -217,7 +217,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     }
 
     if(ret == -1)
-        I_WARN("mnl_socket_recvfrom");
+        i_warning("mnl_socket_recvfrom");
 
     return 0;
 }
@@ -394,7 +394,7 @@ ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
           short af)
 {
     u_int8_t family;
-    int maskbits = 0;
+    unsigned int maskbits = 0;
     char parsed[INET6_ADDRSTRLEN];
     const struct ipset_type *type;
     struct sockaddr_storage addr;

@@ -31,6 +31,9 @@
 #define ACTION_DEL  1
 #define ACTION_ADD  2
 
+extern char *optarg;
+extern int optind, opterr, optopt;
+
 static void usage();
 static int db_list(DB_handle_T db);
 static int db_update(DB_handle_T db, char *ip, int action, int type);
