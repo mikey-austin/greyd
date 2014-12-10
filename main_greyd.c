@@ -554,7 +554,7 @@ jail:
 
         /*
          * If we are not listening, ensure we wake up at least once
-         * a second to progress the suttered writers.
+         * a second to progress the stuttered writers.
          */
         if(writers == 0 && state.slow_until == 0) {
             /* Just sleep until a connection arrives. */
