@@ -6,8 +6,8 @@
  */
 
 #include "test.h"
-#include "../hash.h"
-#include "../list.h"
+#include <hash.h>
+#include <list.h>
 
 #include <stdio.h>
 #include <stdlib.h>

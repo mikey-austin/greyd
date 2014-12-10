@@ -6,7 +6,7 @@
  */
 
 #include "test.h"
-#include "../config_parser.h"
+#include <config_parser.h>
 
 #include <stdio.h>
 #include <string.h>

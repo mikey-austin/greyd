@@ -6,7 +6,7 @@
  */
 
 #include "test.h"
-#include "../config_section.h"
+#include <config_section.h>
 
 #include <string.h>
 

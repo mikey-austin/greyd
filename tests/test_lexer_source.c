@@ -6,7 +6,7 @@
  */
 
 #include "test.h"
-#include "../lexer_source.h"
+#include <lexer_source.h>
 
 #include <string.h>
 #include <stdlib.h>

@@ -6,7 +6,7 @@
  */
 
 #include "test.h"
-#include "../queue.h"
+#include <queue.h>
 
 #include <string.h>
 

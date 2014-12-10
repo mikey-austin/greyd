@@ -4,8 +4,7 @@
 
 SRC = pf.c ipset.c bdb.c
 OBJ = $(SRC:.c=.o)
-CC  = clang
-CFLAGS = -g -O0 -Wall -pedantic -fpic
+CFLAGS += -fpic
 
 all: pf.so ipset.so fw_dummy.so bdb.so
 

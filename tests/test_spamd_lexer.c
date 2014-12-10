@@ -6,7 +6,7 @@
  */
 
 #include "test.h"
-#include "../spamd_lexer.h"
+#include <spamd_lexer.h>
 
 #include <stdio.h>
 #include <stdlib.h>

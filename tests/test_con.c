@@ -6,16 +6,16 @@
  */
 
 #include "test.h"
-#include "../con.h"
-#include "../greyd.h"
-#include "../config.h"
-#include "../lexer.h"
-#include "../config_parser.h"
-#include "../config_lexer.h"
-#include "../grey.h"
-#include "../list.h"
-#include "../hash.h"
-#include "../blacklist.h"
+#include <con.h>
+#include <greyd.h>
+#include <config.h>
+#include <lexer.h>
+#include <config_parser.h>
+#include <config_lexer.h>
+#include <grey.h>
+#include <list.h>
+#include <hash.h>
+#include <blacklist.h>
 
 #include <string.h>
 #include <time.h>

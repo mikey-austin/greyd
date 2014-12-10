@@ -6,10 +6,10 @@
  */
 
 #include "test.h"
-#include "../greyd.h"
-#include "../blacklist.h"
-#include "../hash.h"
-#include "../list.h"
+#include <greyd.h>
+#include <blacklist.h>
+#include <hash.h>
+#include <list.h>
 
 #include <string.h>
 #include <unistd.h>

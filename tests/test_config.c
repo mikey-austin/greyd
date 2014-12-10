@@ -6,8 +6,8 @@
  */
 
 #include "test.h"
-#include "../config.h"
-#include "../config_parser.h"
+#include <config.h>
+#include <config_parser.h>
 
 #include <string.h>
 

@@ -6,12 +6,12 @@
  */
 
 #include "test.h"
-#include "../greydb.h"
-#include "../config.h"
-#include "../lexer.h"
-#include "../config_parser.h"
-#include "../config_lexer.h"
-#include "../grey.h"
+#include <greydb.h>
+#include <config.h>
+#include <lexer.h>
+#include <config_parser.h>
+#include <config_lexer.h>
+#include <grey.h>
 
 #include <string.h>
 #include <unistd.h>
@@ -34,7 +34,7 @@ main()
     int ret, i = 0;
     char *conf =
         "section database {\n"
-        "  driver = \"../modules/bdb.so\",\n"
+        "  driver = \"../src/modules/bdb.so\",\n"
         "  path   = \"/tmp/greyd_test_bdb.db\"\n"
         "}";
 

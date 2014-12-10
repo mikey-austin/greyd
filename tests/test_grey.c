@@ -6,14 +6,14 @@
  */
 
 #include "test.h"
-#include "../greydb.h"
-#include "../config.h"
-#include "../lexer.h"
-#include "../config_parser.h"
-#include "../config_lexer.h"
-#include "../grey.h"
-#include "../list.h"
-#include "../config_value.h"
+#include <greydb.h>
+#include <config.h>
+#include <lexer.h>
+#include <config_parser.h>
+#include <config_lexer.h>
+#include <grey.h>
+#include <list.h>
+#include <config_value.h>
 
 #include <string.h>
 #include <time.h>
@@ -61,10 +61,10 @@ main()
         "  grey_expiry      = 3600\n"
         "}\n"
         "section firewall {\n"
-        "  driver = \"../modules/fw_dummy.so\"\n"
+        "  driver = \"../src/modules/fw_dummy.so\"\n"
         "}\n"
         "section database {\n"
-        "  driver = \"../modules/bdb.so\",\n"
+        "  driver = \"../src/modules/bdb.so\",\n"
         "  path   = \"/tmp/greyd_test_grey.db\"\n"
         "}";
 

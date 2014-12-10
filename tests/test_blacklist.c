@@ -6,8 +6,8 @@
  */
 
 #include "test.h"
-#include "../blacklist.h"
-#include "../list.h"
+#include <blacklist.h>
+#include <list.h>
 
 #include <stdio.h>
 #include <string.h>
