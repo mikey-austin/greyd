@@ -153,6 +153,7 @@ main(int argc, char **argv)
     }
 
 shutdown:
+    i_info("exiting");
     FW_end_log_capture(fw_handle);
     FW_close(&fw_handle);
     DB_close(&db_handle);
