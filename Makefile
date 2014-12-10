@@ -3,14 +3,14 @@
 #
 
 SRC		= $(wildcard *.c)
-MAINS   = main_greyd.o main_greyd_setup.o main_greydb.o
+MAINS   = main_greyd.o main_greyd_setup.o main_greydb.o main_greylogd.o
 OBJ		= $(SRC:.c=.o)
 CC		= clang
 CFLAGS	= -g -O0 -Wall -pedantic
 LIBS    = -lz -ldl
 TESTS   = tests
 
-all: greyd greyd-setup greydb modules
+all: greyd greyd-setup greydb greylogd modules
 
 greyd-setup: $(OBJ)
 	$(CC) $(CFLAGS) -Wl,-E -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
@@ -20,6 +20,9 @@ greydb: $(OBJ)
 
 greyd: $(OBJ)
 	$(CC) $(CFLAGS) -Wl,-E -o greyd main_greyd.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
+
+greylogd: $(OBJ)
+	$(CC) $(CFLAGS) -Wl,-E -o greylogd main_greylogd.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
 
 #
 # Generate the object file header dependencies.
@@ -41,6 +44,6 @@ test: $(OBJ) modules
 .PHONY: clean
 
 clean:
-	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup greydb greyd
+	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup greydb greyd greylogd
 	cd $(TESTS) && $(MAKE) clean
 	cd modules && $(MAKE) clean

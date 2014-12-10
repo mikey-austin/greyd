@@ -32,11 +32,22 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     return List_size(cidrs);
 }
 
-int
-Mod_fw_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *), void *arg)
+void
+Mod_fw_init_log_capture(FW_handle_T handle)
 {
     /* noop */
-    return 0;
+}
+
+void
+Mod_fw_end_log_capture(FW_handle_T handle)
+{
+    /* noop */
+}
+
+char *
+Mod_fw_capture_log(FW_handle_T handle)
+{
+    return NULL;
 }
 
 int

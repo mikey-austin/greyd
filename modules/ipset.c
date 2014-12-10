@@ -314,10 +314,20 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
     return MNL_CB_OK;
 }
 
-int
-Mod_fw_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *), void *arg)
+void
+Mod_fw_init_log_capture(FW_handle_T handle)
 {
-    return 0;
+}
+
+void
+Mod_fw_end_log_capture(FW_handle_T handle)
+{
+}
+
+char *
+Mod_fw_capture_log(FW_handle_T handle)
+{
+    return NULL;
 }
 
 int

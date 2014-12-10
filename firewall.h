@@ -24,8 +24,9 @@ struct FW_handle_T {
     int (*fw_open)(FW_handle_T);
     void (*fw_close)(FW_handle_T);
     int (*fw_replace)(FW_handle_T, const char *, List_T, short);
-    int (*fw_log_capture_loop)(FW_handle_T, void (*callback)(char *, void *),
-                               void *);
+    void (*fw_init_log_capture)(FW_handle_T);
+    void (*fw_end_log_capture)(FW_handle_T);
+    char *(*fw_capture_log)(FW_handle_T);
     int (*fw_lookup_orig_dst)(FW_handle_T, struct sockaddr *,
                               struct sockaddr *, struct sockaddr *);
 };
@@ -47,12 +48,20 @@ extern void FW_close(FW_handle_T *handle);
 extern int FW_replace(FW_handle_T handle, const char *set, List_T cidrs, short af);
 
 /**
- * Loop to receive messages from the firewall via it's internal mechanism, looking
- * for SMTP connections. When such a connection is witnessed, the supplied callback
- * will be called with the IP address to whitelist and the supplied arg as arguments.
+ * Initialize the log capture machinery.
  */
-extern int FW_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *),
-                               void *arg);
+extern void FW_init_log_capture(FW_handle_T handle);
+
+/**
+ * Stop the log capture machinery and clean up.
+ */
+extern void FW_end_log_capture(FW_handle_T handle);
+
+/**
+ * Wait until a suitable log message arrives, then extract and return
+ * the IP address (IPv4 or IPv6) as a NUL-terminated string.
+ */
+extern char *FW_capture_log(FW_handle_T handle);
 
 /**
  * As connections are redirected to greyd by way of a DNAT, consult

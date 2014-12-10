@@ -42,9 +42,12 @@ FW_open(Config_T config)
     handle->fw_lookup_orig_dst =
         (int (*)(FW_handle_T, struct sockaddr *, struct sockaddr *, struct sockaddr *))
         Mod_get(handle->driver, "Mod_fw_lookup_orig_dst");
-    handle->fw_log_capture_loop =
-        (int (*)(FW_handle_T, void (*callback)(char *, void *), void *))
-        Mod_get(handle->driver, "Mod_fw_log_capture_loop");
+    handle->fw_init_log_capture =
+        (void (*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_init_log_capture");
+    handle->fw_init_log_capture =
+        (void (*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_end_log_capture");
+    handle->fw_capture_log =
+        (char *(*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_capture_log");
 
     if(handle->fw_open(handle) == -1) {
         Mod_close(handle->driver);
@@ -80,8 +83,20 @@ FW_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     return handle->fw_lookup_orig_dst(handle, src, proxy, orig_dst);
 }
 
-extern int
-FW_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *), void *arg)
+extern void
+FW_init_log_capture(FW_handle_T handle)
 {
-    return handle->fw_log_capture_loop(handle, callback, arg);
+    handle->fw_init_log_capture(handle);
+}
+
+extern void
+FW_end_log_capture(FW_handle_T handle)
+{
+    handle->fw_end_log_capture(handle);
+}
+
+extern char
+*FW_capture_log(FW_handle_T handle)
+{
+    return handle->fw_capture_log(handle);
 }
