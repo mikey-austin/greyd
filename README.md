@@ -39,8 +39,7 @@ The greyd suite
 Development Status
 ------------------
 
-`greyd` is currently under active development and is around 85% complete. The `greyd-setup` and `greydb`
-programs are complete, with the main `greyd` and `greylogd` on the way.
+`greyd` is currently under active development and is around 85% complete. With the exception of syncronization support, `greyd`, `greyd-setup` and `greydb` programs are complete, with `greylogd` on the way.
 
 I also aim to autotool-ize the project after the main components are complete. All development
 is currently happening on Fedora.
