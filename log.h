@@ -12,7 +12,7 @@
 /**
  * Setup the logging framework.
  */
-extern void Log_setup(Config_T config);
+extern void Log_setup(Config_T config, const char *prog_name);
 
 /**
  * Write a message to the logging system.

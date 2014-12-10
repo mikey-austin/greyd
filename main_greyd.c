@@ -33,6 +33,8 @@
 #include <grp.h>
 #include <poll.h>
 
+#define PROG_NAME "greyd"
+
 extern char *optarg;
 extern int optind, opterr, optopt;
 
@@ -264,7 +266,7 @@ main(int argc, char **argv)
         state.config = opts;
     }
 
-    Log_setup(state.config);
+    Log_setup(state.config, PROG_NAME);
 
     if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED))
         state.max_black = state.max_cons;

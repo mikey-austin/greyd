@@ -15,16 +15,18 @@
 
 static short Log_debug  = 0;
 static short Log_syslog = 0;
+static const char *Log_ident = NULL;
 
 extern void
-Log_setup(Config_T config)
+Log_setup(Config_T config, const char *prog_name)
 {
+    Log_ident = prog_name;
     Log_debug = Config_get_int(config, "debug", NULL, 0);
 
     if(Config_get_int(config, "syslog_enable", NULL, 1))
     {
         Log_syslog = 1;
-        openlog(PROG_NAME, LOG_PID | LOG_NDELAY, LOG_DAEMON);
+        openlog(Log_ident, LOG_PID | LOG_NDELAY, LOG_DAEMON);
     }
 }
 
@@ -41,7 +43,7 @@ Log_write(int severity, const char *msg, va_list args)
         }
 
         /* Always write to console. */
-        printf("%s[%d]: ", PROG_NAME, getpid());
+        printf("%s[%d]: ", Log_ident, getpid());
         vprintf(msg, args);
         printf("\n");
     }
