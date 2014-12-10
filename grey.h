@@ -56,7 +56,7 @@ struct Grey_data {
 typedef struct Greylister_T *Greylister_T;
 struct Greylister_T {
     Config_T    config;
-    char       *low_prio_mx_ip;
+    char       *low_prio_mx;
     char       *traplist_name;
     char       *traplist_msg;
     char       *whitelist_name;

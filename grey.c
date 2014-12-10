@@ -91,8 +91,8 @@ Grey_setup(Config_T config)
     greylister->pass_time = Config_get_int(
         config, "pass_time", "grey", GREY_PASSTIME);
 
-    greylister->low_prio_mx_ip = Config_get_str(
-        config, "low_prio_mx_ip",NULL , NULL);
+    greylister->low_prio_mx = Config_get_str(
+        config, "low_prio_mx",NULL , NULL);
 
     greylister->sync_send = Config_get_int(
         config, "sync", NULL, 0);
@@ -532,8 +532,8 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         /*
          * We have a new entry.
          */
-        if(sync && greylister->low_prio_mx_ip
-           && (strcmp(dst_ip, greylister->low_prio_mx_ip) == 0)
+        if(sync && greylister->low_prio_mx
+           && (strcmp(dst_ip, greylister->low_prio_mx) == 0)
            && ((greylister->startup + 60) < now))
         {
             /*
@@ -547,7 +547,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
             key.type = DB_KEY_IP;
             key.data.s = gt->ip;
             i_debug("trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
-                    gt->ip, greylister->low_prio_mx_ip,
+                    gt->ip, greylister->low_prio_mx,
                     gt->ip, gt->helo, gt->from, gt->to);
         }
 

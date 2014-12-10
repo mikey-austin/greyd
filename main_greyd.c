@@ -221,7 +221,7 @@ main(int argc, char **argv)
             break;
 
         case 'M':
-            Config_set_str(opts, "low_prio_mx_ip", NULL, optarg);
+            Config_set_str(opts, "low_prio_mx", NULL, optarg);
             break;
 
         case 'n':

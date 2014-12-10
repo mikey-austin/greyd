@@ -54,7 +54,7 @@ main()
     FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
     char *conf =
-        "low_prio_mx_ip = \"192.179.21.3\"\n"
+        "low_prio_mx = \"192.179.21.3\"\n"
         "section grey {\n"
         "  traplist_name    = \"test traplist\",\n"
         "  traplist_message = \"you have been trapped\",\n"
@@ -90,7 +90,7 @@ main()
         "greylister name set correctly");
     TEST_OK(!strcmp(greylister->traplist_msg, "you have been trapped"),
         "greylister msg set correctly");
-    TEST_OK(!strcmp(greylister->low_prio_mx_ip, "192.179.21.3"),
+    TEST_OK(!strcmp(greylister->low_prio_mx, "192.179.21.3"),
         "greylister low priority mx ip set correctly");
 
     pipe(grey);
