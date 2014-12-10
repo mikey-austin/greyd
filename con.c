@@ -577,6 +577,16 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
                 if(!con->data_body && !*p)
                     con->data_body = 1;
 
+                if(verbose && con->data_body && *p) {
+                    i_info("%s: Body: %s", con->src_addr, p);
+                }
+                else if(verbose
+                        && (match(p, "FROM:") || match(p, "TO:")
+                            || match(p, "SUBJECT:")))
+                {
+                    i_info("%s: %s", con->src_addr, p);
+                }
+
                 p = ++q;
             }
         }
