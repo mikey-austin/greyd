@@ -42,6 +42,9 @@ FW_open(Config_T config)
     handle->fw_lookup_orig_dst =
         (int (*)(FW_handle_T, struct sockaddr *, struct sockaddr *, struct sockaddr *))
         Mod_get(handle->driver, "Mod_fw_lookup_orig_dst");
+    handle->fw_log_capture_loop =
+        (int (*)(FW_handle_T, void (*callback)(char *, void *), void *))
+        Mod_get(handle->driver, "Mod_fw_log_capture_loop");
 
     if(handle->fw_open(handle) == -1) {
         Mod_close(handle->driver);
@@ -77,41 +80,8 @@ FW_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     return handle->fw_lookup_orig_dst(handle, src, proxy, orig_dst);
 }
 
-extern FILE
-*FW_setup_cntl_pipe(char *command, char **argv)
+extern int
+FW_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *), void *arg)
 {
-    int pdes[2];
-    FILE *out;
-
-    if(pipe(pdes) != 0)
-        return NULL;
-
-    switch(fork()) {
-    case -1:
-        close(pdes[0]);
-        close(pdes[1]);
-        return NULL;
-
-    case 0:
-        /* Close all output in child. */
-        close(pdes[1]);
-        close(STDERR_FILENO);
-        close(STDOUT_FILENO);
-        if(pdes[0] != STDIN_FILENO) {
-            dup2(pdes[0], STDIN_FILENO);
-            close(pdes[0]);
-        }
-        execvp(command, argv);
-        _exit(1);
-    }
-
-    /* parent */
-    close(pdes[0]);
-    out = fdopen(pdes[1], "w");
-    if(out == NULL) {
-        close(pdes[1]);
-        return NULL;
-    }
-
-    return out;
+    return handle->fw_log_capture_loop(handle, callback, arg);
 }

@@ -16,6 +16,11 @@
 #define PATH_PFCTL    "/sbin/pfctl"
 #define DEFAULT_TABLE "greyd"
 
+/**
+ * Setup a pipe for communication with the control command.
+ */
+FILE *Mod_setup_cntl_pipe(char *command, char **argv);
+
 void
 Mod_fw_init(Config_section_T section)
 {
@@ -27,10 +32,9 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
 {
 	char *argv[9] = { "pfctl", "-q", "-t", DEFAULT_TABLE, "-T", "replace",
 	    "-f" "-", NULL };
-    char *netblock, *pfctl_path = PATH_PFCTL;
+    char *cidr, *pfctl_path = PATH_PFCTL;
 	static FILE *pf = NULL;
     struct List_entry *entry;
-    struct IP_cidr *cidr;
 
     /*
      * Pull out the custom paths and/or table names from the config section.
@@ -38,18 +42,55 @@ Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
     pfctl_path = Config_section_get_str(section, "pfctl_path", PATH_PFCTL);
     argv[3]    = Config_section_get_str(section, "table_name", DEFAULT_TABLE);
 
-    if((pf = FW_setup_cntl_pipe(pfctl_path, argv)) == NULL) {
+    if((pf = Mod_setup_cntl_pipe(pfctl_path, argv)) == NULL) {
         return -1;
     }
 
     LIST_FOREACH(cidrs, entry) {
         cidr = List_entry_value(entry);
-
-        if((netblock = IP_cidr_to_str(cidr)) != NULL) {
-            fprintf(pf, "%s\n", netblock);
-            free(netblock);
+        if(cidr != NULL) {
+            fprintf(pf, "%s\n", cidr);
         }
     }
 
     return 0;
+}
+
+FILE
+*Mod_setup_cntl_pipe(char *command, char **argv)
+{
+    int pdes[2];
+    FILE *out;
+
+    if(pipe(pdes) != 0)
+        return NULL;
+
+    switch(fork()) {
+    case -1:
+        close(pdes[0]);
+        close(pdes[1]);
+        return NULL;
+
+    case 0:
+        /* Close all output in child. */
+        close(pdes[1]);
+        close(STDERR_FILENO);
+        close(STDOUT_FILENO);
+        if(pdes[0] != STDIN_FILENO) {
+            dup2(pdes[0], STDIN_FILENO);
+            close(pdes[0]);
+        }
+        execvp(command, argv);
+        _exit(1);
+    }
+
+    /* parent */
+    close(pdes[0]);
+    out = fdopen(pdes[1], "w");
+    if(out == NULL) {
+        close(pdes[1]);
+        return NULL;
+    }
+
+    return out;
 }

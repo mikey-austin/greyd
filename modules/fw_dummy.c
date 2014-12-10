@@ -33,6 +33,13 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 }
 
 int
+Mod_fw_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *), void *arg)
+{
+    /* noop */
+    return 0;
+}
+
+int
 Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
                        struct sockaddr *proxy, struct sockaddr *orig_dst)
 {

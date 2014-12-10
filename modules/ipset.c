@@ -315,6 +315,12 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
 }
 
 int
+Mod_fw_log_capture_loop(FW_handle_T handle, void (*callback)(char *, void *), void *arg)
+{
+    return 0;
+}
+
+int
 Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 {
     struct ipset_session *session = ((struct fw_handle *) handle->fwh)->session;
