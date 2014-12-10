@@ -146,13 +146,12 @@ main(int argc, char **argv)
 
     for(;;) {
         if(Greylogd_shutdown)
-            goto shutdown;
+            break;
 
         ip = FW_capture_log(fw_handle);
         free(ip);
     }
 
-shutdown:
     i_info("exiting");
     FW_end_log_capture(fw_handle);
     FW_close(&fw_handle);
