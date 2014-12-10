@@ -464,11 +464,6 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
                         List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
                         con->src_addr, con->mail, con->rcpt);
 
-                if(verbose)
-                    i_info("(%s) %s: %s -> %s\n",
-                            List_size(con->blacklists) > 0 ? "BLACK" : "GREY",
-                            con->src_addr, con->mail, con->rcpt);
-
                 if(greylist && List_size(con->blacklists) == 0) {
                     /*
                      * Send this information to the greylister.

@@ -69,7 +69,7 @@ static void set_effective_caps(void);
  * filtering here as well to ensure the desired conntrack object is
  * used.
  */
-static int cb_data(const struct nlmsghdr *, void *);
+static int conntrack_callback(const struct nlmsghdr *, void *);
 
 int
 Mod_fw_open(FW_handle_T handle)
@@ -216,7 +216,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 
     ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
     while(ret > 0) {
-        ret = mnl_cb_run(buf, ret, seq, portid, cb_data, &data);
+        ret = mnl_cb_run(buf, ret, seq, portid, conntrack_callback, &data);
         if(ret <= MNL_CB_STOP)
             break;
         ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
@@ -230,7 +230,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 }
 
 static int
-cb_data(const struct nlmsghdr *nlh, void *arg)
+conntrack_callback(const struct nlmsghdr *nlh, void *arg)
 {
     struct cb_data_arg *data = (struct cb_data_arg *) arg;
     struct nf_conntrack *ct;
@@ -240,11 +240,11 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
     u_int16_t src_port, reply_src_port;
     u_int16_t ct_src_port, ct_reply_src_port;
     sa_family_t af;
-    int i;
+    int i, ret = MNL_CB_OK;
 
     ct = nfct_new();
     if(ct == NULL)
-        return MNL_CB_OK;
+        return ret;
 
     nfct_nlmsg_parse(nlh, ct);
 
@@ -311,7 +311,7 @@ cb_data(const struct nlmsghdr *nlh, void *arg)
 
     nfct_destroy(ct);
 
-    return MNL_CB_OK;
+    return ret;
 }
 
 void
