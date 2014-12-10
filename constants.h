@@ -8,7 +8,6 @@
 #ifndef CONSTANTS_DEFINED
 #define CONSTANTS_DEFINED
 
-#define PROG_NAME           "greyd"
 #define GREYLISTING_ENABLED 1
 #define IPV6_ENABLED        0
 #define DEFAULT_CONFIG      "/etc/greyd/greyd.conf"
