@@ -221,6 +221,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
             break;
         ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
     }
+    nfct_destroy(ct);
 
     if(ret == -1)
         i_warning("mnl_socket_recvfrom");
