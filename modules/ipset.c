@@ -168,6 +168,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     af = data.filter.src->sa_family;
     portid = mnl_socket_get_portid(nl);
 
+    memset(buf, 0, sizeof(buf));
     nlh = mnl_nlmsg_put_header(buf);
     nlh->nlmsg_type = (NFNL_SUBSYS_CTNETLINK << 8) | IPCTNL_MSG_CT_GET;
     nlh->nlmsg_flags = NLM_F_REQUEST|NLM_F_DUMP;
