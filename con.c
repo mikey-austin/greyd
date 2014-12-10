@@ -837,7 +837,7 @@ Con_accept(int fd, struct sockaddr_storage *addr, struct Greyd_state *state)
             Con_init(con, fd, addr, state);
             i_info("%s: connected (%d/%d)%s%s",
                    con->src_addr, state->clients, state->black_clients,
-                   (con->lists == NULL ? "" : ", lists:"),
+                   (con->lists == NULL ? "" : ", lists: "),
                    (con->lists == NULL ? "" : con->lists));
         }
     }
