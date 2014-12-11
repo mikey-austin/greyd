@@ -54,11 +54,12 @@ int
 main(int argc, char **argv)
 {
     Config_T config, opts;
-    char *config_file = NULL, *db_user, *ip;
+    char *config_file = NULL, *db_user;
     struct passwd *db_pw;
     int option, white_time;
     FW_handle_T fw_handle;
     DB_handle_T db_handle;
+    struct FW_log_entry *entry;
 
     tzset();
     opts = Config_create();
@@ -148,8 +149,8 @@ main(int argc, char **argv)
         if(Greylogd_shutdown)
             break;
 
-        ip = FW_capture_log(fw_handle);
-        free(ip);
+        entry = FW_capture_log(fw_handle);
+        free(entry);
     }
 
     i_info("exiting");

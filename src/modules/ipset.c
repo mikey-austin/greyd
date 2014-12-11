@@ -15,6 +15,7 @@
 #include "../list.h"
 #include "../ip.h"
 #include "../utils.h"
+#include "../constants.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,7 @@
 #include <arpa/inet.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
+#include <poll.h>
 
 #include <libmnl/libmnl.h>
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
@@ -33,12 +35,16 @@
 #include <libipset/types.h>
 #include <libipset/session.h>
 #include <libipset/data.h>
+#include <libnetfilter_log/libipulog.h>
+#include <libnetfilter_log/libnetfilter_log.h>
 
-#define DEFAULT_SET     "greyd"
 #define MAX_ELEM        200000
 #define HASH_SIZE       (1024 * 1024)
-#define IPV6_ADDR_PARTS 4  /* 4 32 bit parts. */
+#define IPV6_ADDR_PARTS 4    /* 4 32 bit parts. */
 #define MAX_STAGE_NAME  256
+#define NFLOG_GROUP     155
+#define NFLOG_BUF       1024
+#define NFLOG_TIMEOUT   1500
 
 struct cb_filter {
     struct sockaddr *src;
@@ -50,9 +56,20 @@ struct cb_data_arg {
     struct sockaddr *orig_dst;
 };
 
+struct log_handle {
+    struct nflog_handle *handle;
+    struct nflog_handle *handle_ipv6;
+    struct nflog_g_handle *group;
+    struct nflog_g_handle *group_ipv6;
+    int fds[2];
+    char *out_addr;
+    char *out_addr_ipv6;
+};
+
 struct fw_handle {
     struct mnl_socket *nl;
     struct ipset_session *session;
+    struct log_handle *log;
 };
 
 /**
@@ -70,6 +87,14 @@ static void set_effective_caps(void);
  * used.
  */
 static int conntrack_callback(const struct nlmsghdr *, void *);
+
+/**
+ * nflog management functions.
+ */
+static void setup_nflog_handle(struct nflog_handle *, struct nflog_g_handle *,
+                               int, short);
+static int log_callback(struct nflog_g_handle *, struct nfgenmsg *,
+                        struct nflog_data *, void *);
 
 int
 Mod_fw_open(FW_handle_T handle)
@@ -90,6 +115,9 @@ Mod_fw_open(FW_handle_T handle)
         if (mnl_socket_bind(fwh->nl, 0, MNL_SOCKET_AUTOPID) < 0)
             warn("mnl_socket_bind");
     }
+
+    /* Log handle initialized when needed. */
+    fwh->log = NULL;
 
     ipset_load_types();
     fwh->session = ipset_session_init(printf);
@@ -317,15 +345,50 @@ conntrack_callback(const struct nlmsghdr *nlh, void *arg)
 void
 Mod_fw_init_log_capture(FW_handle_T handle)
 {
+    struct fw_handle *fwh = handle->fwh;
+    struct log_handle *lh;
+    int group;
+
+    group = Config_get_int(handle->config, "log_group", "firewall", NFLOG_GROUP);
+
+    if((lh = malloc(sizeof(*lh))) == NULL)
+        err(1, "malloc");
+    fwh->log = lh;
+
+    setup_nflog_handle(lh->handle, lh->group, group, AF_INET);
+    nflog_callback_register(lh->group, &log_callback, lh);
+
+    if(Config_get_int(handle->config, "enable_ipv6", NULL, 0)) {
+        setup_nflog_handle(lh->handle_ipv6, lh->group_ipv6, group, AF_INET6);
+        nflog_callback_register(lh->group_ipv6, &log_callback, lh);
+    }
+    else {
+        lh->handle_ipv6 = NULL;
+        lh->group_ipv6 = NULL;
+    }
 }
 
 void
 Mod_fw_end_log_capture(FW_handle_T handle)
 {
+    struct fw_handle *fwh = handle->fwh;
+    struct log_handle *lh = fwh->log;
+
+    if(lh) {
+        nflog_unbind_group(lh->group);
+        nflog_close(lh->handle);
+
+        if(lh->handle_ipv6 != NULL) {
+            nflog_unbind_group(lh->group_ipv6);
+            nflog_close(lh->handle_ipv6);
+        }
+
+        free(lh);
+    }
 }
 
-char *
-Mod_fw_capture_log(FW_handle_T handle)
+struct FW_log_entry
+*Mod_fw_capture_log(FW_handle_T handle)
 {
     return NULL;
 }
@@ -495,6 +558,36 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
         return -1;
     }
 
+    return 0;
+}
+
+static void
+setup_nflog_handle(struct nflog_handle *handle, struct nflog_g_handle *group,
+                   int group_num, short af)
+{
+    if((handle = nflog_open()) == NULL)
+        err(1, "nflog_open");
+
+    if(nflog_bind_pf(handle, af) < 0)
+        err(1, "nflog_bind_pf");
+
+    if((group = nflog_bind_group(handle, group_num)) == NULL)
+        err(1, "nflog_bind_group");
+
+    if(nflog_set_mode(group, NFULNL_COPY_PACKET, 0xffff) < 0)
+        err(1, "nflog_set_mode");
+
+    if(nflog_set_nlbufsiz(group, NFLOG_BUF) < 0)
+        err(1, "nflog_set_nlbufsize");
+
+    if(nflog_set_timeout(group, NFLOG_TIMEOUT) < 0)
+        err(1, "nflog_set_timeout");
+}
+
+static int
+log_callback(struct nflog_g_handle *group, struct nfgenmsg *msg,
+               struct nflog_data *data, void *arg)
+{
     return 0;
 }
 

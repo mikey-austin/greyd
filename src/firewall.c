@@ -47,7 +47,7 @@ FW_open(Config_T config)
     handle->fw_init_log_capture =
         (void (*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_end_log_capture");
     handle->fw_capture_log =
-        (char *(*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_capture_log");
+        (struct FW_log_entry *(*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_capture_log");
 
     if(handle->fw_open(handle) == -1) {
         Mod_close(handle->driver);
@@ -95,7 +95,7 @@ FW_end_log_capture(FW_handle_T handle)
     handle->fw_end_log_capture(handle);
 }
 
-extern char
+extern struct FW_log_entry
 *FW_capture_log(FW_handle_T handle)
 {
     return handle->fw_capture_log(handle);
