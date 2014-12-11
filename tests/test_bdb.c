@@ -27,7 +27,7 @@ main()
     Lexer_T l;
     Config_parser_T cp;
     Config_T c;
-    struct DB_key key1, key2;
+    struct DB_key key1;
     struct DB_val val1, val2;
     struct Grey_tuple gt;
     struct Grey_data gd, gd2;

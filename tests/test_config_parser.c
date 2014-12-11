@@ -22,7 +22,7 @@ main()
     Config_section_T s;
     Config_value_T v, v2;
     struct List_entry *curr;
-    int tok, ret, i;
+    int ret, i;
     char *include;
     char *src =
         "# This is a test config file\n\n\n"

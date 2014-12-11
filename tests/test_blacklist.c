@@ -22,7 +22,7 @@ main()
 {
     Blacklist_T bl;
     u_int32_t a1, b1, a2, b2, a3, b3;
-    char *s, *s2, *c;
+    char *s, *c;
     int i = 0;
     List_T cidrs;
     struct List_entry *entry;

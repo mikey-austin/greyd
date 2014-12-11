@@ -19,7 +19,7 @@ main()
     Lexer_T lexer;
     Spamd_parser_T parser;
     Blacklist_T bl;
-    int tok, ret;
+    int ret;
     char *src =
         "192.168.12.1/32 # This is a test CIDR address\n"
         "10.10.10.0 # A single address\n"

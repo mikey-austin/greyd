@@ -25,7 +25,7 @@ main()
     struct IP_cidr cidr;
     struct IP_addr a, m, b;
     u_int32_t start, end;
-    char *s, *s2, *c;
+    char *s, *c;
     List_T cidrs;
     struct List_entry *entry;
     int i = 0;

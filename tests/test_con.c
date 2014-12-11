@@ -33,7 +33,6 @@ main()
     Lexer_T l;
     Config_parser_T cp;
     Config_T c;
-    Config_section_T section;
     struct Greyd_state gs;
     struct Con con;
     Blacklist_T bl1, bl2, bl3;

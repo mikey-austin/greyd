@@ -37,12 +37,8 @@ int
 main()
 {
     DB_handle_T db;
-    DB_itr_T itr;
     struct DB_key key;
     struct DB_val val;
-    struct Grey_tuple gt;
-    struct Grey_data gd;
-    struct List_entry entry;
     List_T ips;
     Lexer_source_T ls, message_source;
     Lexer_T l, message_lexer;
@@ -50,7 +46,7 @@ main()
     Greylister_T greylister;
     Config_T c, message;
     Config_section_T section;
-    int ret, i = 0, grey[2], trap[2];
+    int ret, grey[2], trap[2];
     FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
     char *conf =
