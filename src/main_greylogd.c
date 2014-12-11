@@ -64,7 +64,7 @@ main(int argc, char **argv)
     tzset();
     opts = Config_create();
 
-    while((option = getopt(argc, argv, "DIW:Y:")) != -1) {
+    while((option = getopt(argc, argv, "DIW:Y:f:")) != -1) {
         switch (option) {
         case 'f':
             config_file = optarg;
@@ -149,8 +149,9 @@ main(int argc, char **argv)
         if(Greylogd_shutdown)
             break;
 
-        entry = FW_capture_log(fw_handle);
-        free(entry);
+        if((entry = FW_capture_log(fw_handle)) != NULL) {
+            free(entry);
+        }
     }
 
     i_info("exiting");

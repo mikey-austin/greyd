@@ -37,14 +37,16 @@
 #include <libipset/data.h>
 #include <libnetfilter_log/libipulog.h>
 #include <libnetfilter_log/libnetfilter_log.h>
+#include <linux/ip.h>
 
-#define MAX_ELEM        200000
-#define HASH_SIZE       (1024 * 1024)
-#define IPV6_ADDR_PARTS 4    /* 4 32 bit parts. */
-#define MAX_STAGE_NAME  256
-#define NFLOG_GROUP     155
-#define NFLOG_BUF       1024
-#define NFLOG_TIMEOUT   1500
+#define MAX_ELEM           200000
+#define HASH_SIZE          (1024 * 1024)
+#define IPV6_ADDR_PARTS    4    /* 4 32 bit parts. */
+#define MAX_STAGE_NAME     256
+#define NFLOG_GROUP        155
+#define NFLOG_BUF          1024
+#define NFLOG_TIMEOUT      1500
+#define NFLOG_WHOLE_PACKET 0xffff
 
 struct cb_filter {
     struct sockaddr *src;
@@ -61,9 +63,7 @@ struct log_handle {
     struct nflog_handle *handle_ipv6;
     struct nflog_g_handle *group;
     struct nflog_g_handle *group_ipv6;
-    int fds[2];
-    char *out_addr;
-    char *out_addr_ipv6;
+    struct FW_log_entry entry;
 };
 
 struct fw_handle {
@@ -91,7 +91,7 @@ static int conntrack_callback(const struct nlmsghdr *, void *);
 /**
  * nflog management functions.
  */
-static void setup_nflog_handle(struct nflog_handle *, struct nflog_g_handle *,
+static void setup_nflog_handle(struct nflog_handle **, struct nflog_g_handle **,
                                int, short);
 static int log_callback(struct nflog_g_handle *, struct nfgenmsg *,
                         struct nflog_data *, void *);
@@ -355,11 +355,12 @@ Mod_fw_init_log_capture(FW_handle_T handle)
         err(1, "malloc");
     fwh->log = lh;
 
-    setup_nflog_handle(lh->handle, lh->group, group, AF_INET);
-    nflog_callback_register(lh->group, &log_callback, lh);
+    memset(lh, 0, sizeof(*lh));
+    setup_nflog_handle(&lh->handle, &lh->group, group, AF_INET);
+    nflog_callback_register(lh->group, log_callback, lh);
 
     if(Config_get_int(handle->config, "enable_ipv6", NULL, 0)) {
-        setup_nflog_handle(lh->handle_ipv6, lh->group_ipv6, group, AF_INET6);
+        setup_nflog_handle(&lh->handle_ipv6, &lh->group_ipv6, group, AF_INET6);
         nflog_callback_register(lh->group_ipv6, &log_callback, lh);
     }
     else {
@@ -390,7 +391,50 @@ Mod_fw_end_log_capture(FW_handle_T handle)
 struct FW_log_entry
 *Mod_fw_capture_log(FW_handle_T handle)
 {
-    return NULL;
+    struct fw_handle *fwh = handle->fwh;
+    struct log_handle *lh = fwh->log;
+    char buf[NFLOG_BUF];
+    struct pollfd fds[2];
+    struct FW_log_entry *entry = NULL;
+    int i, size;
+
+    memset(fds, 0, sizeof(*fds) * 2);
+    memset(buf, 0, sizeof(buf));
+
+    fds[0].fd = nflog_fd(lh->handle);
+    fds[0].events = POLLIN;
+
+    if(lh->handle_ipv6) {
+        fds[1].fd = nflog_fd(lh->handle_ipv6);
+        fds[1].events = POLLIN;
+    }
+
+    if(poll(fds, 2, POLL_TIMEOUT) == -1) {
+        if(errno != EINTR)
+            i_critical("poll: %m");
+        return NULL;
+    }
+
+    memset(&lh->entry, 0, sizeof(lh->entry));
+    for(i = 0; i < 2; i++) {
+        if(fds[i].revents & POLLIN) {
+            if((size = recv(fds[i].fd, buf, NFLOG_BUF, 0)) == -1) {
+                if(errno != EINTR)
+                    i_critical("poll: %m");
+                return NULL;
+            }
+
+            nflog_handle_packet(
+                (i == 0 ? lh->handle : lh->handle_ipv6),
+                buf, size);
+        }
+    }
+
+    if((entry = malloc(sizeof(*entry))) == NULL)
+        err(1, "malloc");
+    *entry = lh->entry;
+
+    return entry;
 }
 
 int
@@ -562,25 +606,25 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
 }
 
 static void
-setup_nflog_handle(struct nflog_handle *handle, struct nflog_g_handle *group,
+setup_nflog_handle(struct nflog_handle **handle, struct nflog_g_handle **group,
                    int group_num, short af)
 {
-    if((handle = nflog_open()) == NULL)
+    if((*handle = nflog_open()) == NULL)
         err(1, "nflog_open");
 
-    if(nflog_bind_pf(handle, af) < 0)
+    if(nflog_bind_pf(*handle, af) < 0)
         err(1, "nflog_bind_pf");
 
-    if((group = nflog_bind_group(handle, group_num)) == NULL)
+    if((*group = nflog_bind_group(*handle, group_num)) == NULL)
         err(1, "nflog_bind_group");
 
-    if(nflog_set_mode(group, NFULNL_COPY_PACKET, 0xffff) < 0)
+    if(nflog_set_mode(*group, NFULNL_COPY_PACKET, NFLOG_WHOLE_PACKET) < 0)
         err(1, "nflog_set_mode");
 
-    if(nflog_set_nlbufsiz(group, NFLOG_BUF) < 0)
+    if(nflog_set_nlbufsiz(*group, NFLOG_BUF) < 0)
         err(1, "nflog_set_nlbufsize");
 
-    if(nflog_set_timeout(group, NFLOG_TIMEOUT) < 0)
+    if(nflog_set_timeout(*group, NFLOG_TIMEOUT) < 0)
         err(1, "nflog_set_timeout");
 }
 
@@ -588,6 +632,32 @@ static int
 log_callback(struct nflog_g_handle *group, struct nfgenmsg *msg,
                struct nflog_data *data, void *arg)
 {
+	char *payload, saddr[INET6_ADDRSTRLEN], daddr[INET6_ADDRSTRLEN];
+	int payload_len = nflog_get_payload(data, &payload);
+
+	u_int32_t indev = nflog_get_indev(data);
+	u_int32_t outdev = nflog_get_outdev(data);
+
+    if(payload_len <= 0 || payload_len < sizeof(struct iphdr)) {
+        i_warning("invalid payload length of %d", payload_len);
+        return 0;
+    }
+
+    /* Extract the IP addresses from the payload. */
+    switch(msg->nfgen_family) {
+    case AF_INET:
+        inet_ntop(AF_INET, &((struct iphdr *) payload)->saddr, saddr, sizeof(saddr));
+        inet_ntop(AF_INET, &((struct iphdr *) payload)->daddr, daddr, sizeof(daddr));
+
+        i_debug("packet received: indev = %d, outdev = %d, saddr = %s, daddr = %s",
+                indev, outdev, saddr, daddr);
+
+        break;
+
+    case AF_INET6:
+        break;
+    }
+
     return 0;
 }
 

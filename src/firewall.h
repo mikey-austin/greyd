@@ -32,8 +32,8 @@ struct FW_handle_T {
 };
 
 struct FW_log_entry {
-    char *ipv4;
-    char *ipv6;
+    char ipv4[INET6_ADDRSTRLEN];
+    char ipv6[INET6_ADDRSTRLEN];
 };
 
 /**
