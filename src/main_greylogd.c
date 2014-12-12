@@ -59,7 +59,7 @@ main(int argc, char **argv)
     int option, white_time;
     FW_handle_T fw_handle;
     DB_handle_T db_handle;
-    struct FW_log_entry *entry;
+    List_T entries;
 
     tzset();
     opts = Config_create();
@@ -79,7 +79,7 @@ main(int argc, char **argv)
             break;
 
         case 'I':
-            Config_set_int(opts, "inbound", "greylogd", 1);
+            Config_set_int(opts, "inbound", "firewall", 1);
             break;
 
         case 'W':
@@ -94,7 +94,7 @@ main(int argc, char **argv)
 
         default:
             usage();
-            /* NOTREACHED */
+            /* Not Reached. */
         }
     }
 
@@ -111,15 +111,17 @@ main(int argc, char **argv)
     Log_setup(config, PROG_NAME);
 
     i_debug("Listening, %s",
-            Config_get_int(config, "inbound", "greylogd", TRACK_INBOUND)
+            Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
             ? "in both directions"
-            : "inbound direction only");
+            : "outbound direction only");
 
     if((fw_handle = FW_open(config)) == NULL)
         i_critical("could not obtain firewall handle");
 
     if((db_handle = DB_open(config, 0)) == NULL)
         i_critical("could not obtain database handle");
+
+    FW_init_log_capture(fw_handle);
 
     signal(SIGINT , sighandler_shutdown);
     signal(SIGQUIT, sighandler_shutdown);
@@ -143,14 +145,12 @@ main(int argc, char **argv)
         }
     }
 
-    FW_init_log_capture(fw_handle);
-
     for(;;) {
         if(Greylogd_shutdown)
             break;
 
-        if((entry = FW_capture_log(fw_handle)) != NULL) {
-            free(entry);
+        if((entries = FW_capture_log(fw_handle)) != NULL) {
+            /* Update whitelists in database. */
         }
     }
 

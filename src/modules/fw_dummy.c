@@ -44,8 +44,8 @@ Mod_fw_end_log_capture(FW_handle_T handle)
     /* noop */
 }
 
-struct FW_log_entry
-*Mod_fw_capture_log(FW_handle_T handle)
+List_T
+Mod_fw_capture_log(FW_handle_T handle)
 {
     return NULL;
 }
