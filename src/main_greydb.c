@@ -56,6 +56,7 @@ db_list(DB_handle_T db)
     struct Grey_tuple gt;
     struct Grey_data gd;
 
+    DB_start_txn(db);
     itr = DB_get_itr(db);
     while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         gd = val.data.gd;
@@ -100,6 +101,7 @@ db_list(DB_handle_T db)
         }
     }
 
+    DB_commit_txn(db);
     DB_close_itr(&itr);
 
     return 0;
@@ -147,17 +149,19 @@ db_update(DB_handle_T db, char *ip, int action, int type)
         }
     }
 
+    DB_start_txn(db);
+
     key.data.s = ip;
     if(action == ACTION_DEL) {
         ret = DB_del(db, &key);
         switch(ret) {
         case GREYDB_NOT_FOUND:
             warnx("No entry for %s", ip);
-            return 1;
+            goto rollback;
 
         case GREYDB_ERR:
             warnx("Deletion failed");
-            return 1;
+            goto rollback;
         }
     }
     else {
@@ -170,12 +174,6 @@ db_update(DB_handle_T db, char *ip, int action, int type)
             /*
              * Update the existing entry in the database.
              */
-            if(val.type != DB_VAL_GREY) {
-                /* Not expecting this, so delete it. */
-                DB_del(db, &key);
-                return 1;
-            }
-
             gd = val.data.gd;
             gd.pcount++;
             switch(type) {
@@ -196,14 +194,14 @@ db_update(DB_handle_T db, char *ip, int action, int type)
 
             default:
                 warnx("unknown type %d", type);
-                return 1;
+                goto rollback;
             }
 
             val.type = DB_VAL_GREY;
             val.data.gd = gd;
             if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
                 warnx("Put failed");
-                return 1;
+                goto rollback;
             }
             break;
 
@@ -232,24 +230,31 @@ db_update(DB_handle_T db, char *ip, int action, int type)
 
             default:
                 warnx("Unknown type %d", type);
-                return 1;
+                goto rollback;
             }
 
             val.type = DB_VAL_GREY;
             val.data.gd = gd;
             if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
                 warnx("Put failed");
-                return 1;
+                goto rollback;
             }
             break;
 
         default:
         case GREYDB_ERR:
-            return 1;
+            goto rollback;
         }
     }
 
+    DB_commit_txn(db);
+
     return 0;
+
+rollback:
+    DB_rollback_txn(db);
+
+    return 1;
 }
 
 int
@@ -292,7 +297,6 @@ main(int argc, char **argv)
         usage();
     }
 
-
     config = Config_create();
     Config_load_file(config, config_path);
 
@@ -300,7 +304,8 @@ main(int argc, char **argv)
     Config_set_int(config, "syslog_enable", NULL, 0);
     Log_setup(config, PROG_NAME);
 
-    db = DB_open(config, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
+    db = DB_init(config);
+    DB_open(db, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
 
     switch(action) {
     case ACTION_LIST:

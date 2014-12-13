@@ -282,7 +282,9 @@ Grey_scan_db(Greylister_T greylister)
     time_t now = time(NULL);
     int ret = 0;
 
-    db = DB_open(greylister->config, 0);
+    db = DB_init(greylister->config);
+    DB_open(db, 0);
+    DB_start_txn(db);
     itr = DB_get_itr(db);
 
     while(DB_itr_next(itr, &key, &val) == GREYDB_FOUND) {
@@ -382,6 +384,7 @@ Grey_scan_db(Greylister_T greylister)
         }
     }
 
+    DB_commit_txn(db);
     Greyd_send_config(greylister->trap_out,
                       greylister->traplist_name,
                       greylister->traplist_msg,
@@ -402,8 +405,11 @@ Grey_scan_db(Greylister_T greylister)
     List_remove_all(greylister->traplist);
 
 cleanup:
+    if(ret < 0)
+        DB_rollback_txn(db);
     DB_close_itr(&itr);
     DB_close(&db);
+
     return ret;
 }
 
@@ -476,16 +482,20 @@ trap_check(DB_handle_T db, char *to)
 
     key.type = DB_KEY_MAIL;
     key.data.s = to;
-    ret = DB_get(db, &key, &val);
 
+    DB_start_txn(db);
+    ret = DB_get(db, &key, &val);
     switch(ret) {
     case GREYDB_FOUND:
+        DB_commit_txn(db);
         return 0;
 
     case GREYDB_NOT_FOUND:
+        DB_commit_txn(db);
         return 1;
 
     default:
+        DB_rollback_txn(db);
         return -1;
     }
 }
@@ -501,7 +511,8 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     int spamtrap;
 
     now = time(NULL);
-    db = DB_open(greylister->config, 0);
+    db = DB_init(greylister->config);
+    DB_open(db, 0);
 
     switch(trap_check(db, gt->to)) {
     case 1:
@@ -523,10 +534,11 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         break;
 
     default:
-        goto cleanup;
+        goto rollback;
         break;
     }
 
+    DB_start_txn(db);
     switch(DB_get(db, &key, &val)) {
     case GREYDB_NOT_FOUND:
         /*
@@ -567,7 +579,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
             break;
 
         default:
-            goto cleanup;
+            goto rollback;
             break;
         }
         break;
@@ -589,12 +601,12 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
                     gt->from, gt->to, gt->helo );
         }
         else {
-            goto cleanup;
+            goto rollback;
         }
         break;
 
     default:
-        goto cleanup;
+        goto rollback;
         break;
     }
 
@@ -611,7 +623,12 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         }
     }
 
-cleanup:
+    DB_commit_txn(db);
+    DB_close(&db);
+    return;
+
+rollback:
+    DB_rollback_txn(db);
     DB_close(&db);
 }
 
@@ -641,7 +658,10 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
     key.type = DB_KEY_IP;
     key.data.s = ip;
 
-    db = DB_open(greylister->config, 0);
+    db = DB_init(greylister->config);
+    DB_open(db, 0);
+    DB_start_txn(db);
+
     switch(DB_get(db, &key, &val)) {
     case GREYDB_NOT_FOUND:
         /*
@@ -680,11 +700,16 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
         break;
 
     default:
-        goto cleanup;
+        goto rollback;
         break;
     }
 
-cleanup:
+    DB_commit_txn(db);
+    DB_close(&db);
+    return;
+
+rollback:
+    DB_rollback_txn(db);
     DB_close(&db);
 }
 

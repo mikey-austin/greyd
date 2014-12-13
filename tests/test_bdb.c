@@ -52,7 +52,8 @@ main()
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    db = DB_open(c, GREYDB_RW);
+    db = DB_init(c);
+    DB_open(db, GREYDB_RW);
     TEST_OK((db != NULL), "DB handle created successfully");
     TEST_OK((db->dbh != NULL), "BDB handle created successfully");
 
@@ -133,7 +134,9 @@ main()
 
     key1.data.gt = gt;
     val1.data.gd = gd;
+    DB_start_txn(db);
     DB_put(db, &key1, &val1);
+    DB_commit_txn(db);
 
     /* Iterate over the 3 key/value pairs. */
     itr = DB_get_itr(db);

@@ -123,7 +123,7 @@ main(int argc, char **argv)
     if((fw_handle = FW_open(config)) == NULL)
         i_critical("could not obtain firewall handle");
 
-    if((db_handle = DB_open(config, 0)) == NULL)
+    if((db_handle = DB_init(config)) == NULL)
         i_critical("could not obtain database handle");
 
     signal(SIGINT , sighandler_shutdown);
@@ -154,6 +154,7 @@ main(int argc, char **argv)
     }
 
     white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
+    DB_open(db_handle, 0);
     FW_start_log_capture(fw_handle);
 
     while(!Greylogd_shutdown) {
@@ -165,6 +166,7 @@ main(int argc, char **argv)
                 key.data.s = List_entry_value(entry);
                 key.type = DB_KEY_IP;
 
+                DB_start_txn(db_handle);
                 switch(DB_get(db_handle, &key, &val)) {
                 case GREYDB_NOT_FOUND:
                     /* Create new entry. */
@@ -180,6 +182,7 @@ main(int argc, char **argv)
                     val.data.gd.expire = now + white_expiry;
                     if(DB_put(db_handle, &key, &val) != GREYDB_OK) {
                         i_warning("error putting %s", key.data.s);
+                        DB_rollback_txn(db_handle);
                         goto shutdown;
                     }
                     else {
@@ -189,8 +192,11 @@ main(int argc, char **argv)
 
                 default:
                     i_warning("error querying database for %s", key.data.s);
+                    DB_rollback_txn(db_handle);
                     goto shutdown;
                 }
+
+                DB_commit_txn(db_handle);
             }
         }
     }

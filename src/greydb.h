@@ -57,7 +57,11 @@ struct DB_handle_T {
     Config_T config;          /**< System configuration. */
     struct passwd *pw;        /**< System user/group information. */
 
+    void (*db_init)(DB_handle_T handle);
     void (*db_open)(DB_handle_T handle, int);
+    int (*db_start_txn)(DB_handle_T handle);
+    int (*db_commit_txn)(DB_handle_T handle);
+    int (*db_rollback_txn)(DB_handle_T handle);
     void (*db_close)(DB_handle_T handle);
     int (*db_put)(DB_handle_T handle, struct DB_key *key, struct DB_val *val);
     int (*db_get)(DB_handle_T handle, struct DB_key *key, struct DB_val *val);
@@ -77,9 +81,29 @@ struct DB_itr_T {
 };
 
 /**
+ * Initialize and return a database handle and configured database driver.
+ */
+extern DB_handle_T DB_init(Config_T config);
+
+/**
  * Open a connection to the configured database based on the configuration.
  */
-extern DB_handle_T DB_open(Config_T config, int flags);
+extern void DB_open(DB_handle_T handle, int flags);
+
+/**
+ * Start a new database transaction.
+ */
+extern int DB_start_txn(DB_handle_T handle);
+
+/**
+ * Commit a database transaction.
+ */
+extern int DB_commit_txn(DB_handle_T handle);
+
+/**
+ * Rollback a database transaction.
+ */
+extern int DB_rollback_txn(DB_handle_T handle);
 
 /**
  * Close a database connection.

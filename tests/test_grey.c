@@ -202,7 +202,8 @@ main()
     key.data.gt.to = "r@hotmail.com";
     key.data.gt.helo = "jackiemclean.net";
 
-    db = DB_open(c, 0);
+    db = DB_init(c);
+    DB_open(db, 0);
     if(DB_get(db, &key, &val) == GREYDB_FOUND) {
         /* Update the expires time. */
         val.data.gd.expire = time(NULL) - 120;
@@ -289,8 +290,11 @@ tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey
         = *total_white_passed = *total_white_blocked = *total_grey_passed
         = *total_grey_blocked = 0;
 
-    db = DB_open(c, 0);
+    db = DB_init(c);
+    DB_open(db, 0);
+    DB_start_txn(db);
     itr = DB_get_itr(db);
+
     while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         (*total_entries)++;
 
@@ -317,6 +321,8 @@ tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey
             break;
         }
     }
+
+    DB_commit_txn(db);
     DB_close_itr(&itr);
     DB_close(&db);
 }
@@ -341,7 +347,8 @@ add_spamtrap(char *trapaddr, Config_T config)
     val.type = DB_VAL_GREY;
     val.data.gd = gd;
 
-    db = DB_open(config, 0);
+    db = DB_init(config);
+    DB_open(db, 0);
     DB_put(db, &key, &val);
     DB_close(&db);
 }

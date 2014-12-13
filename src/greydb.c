@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 extern DB_handle_T
-DB_open(Config_T config, int flags)
+DB_init(Config_T config)
 {
     DB_handle_T handle;
     Config_section_T section;
@@ -41,8 +41,16 @@ DB_open(Config_T config, int flags)
     /* Open the configured driver and extract all required symbols. */
     handle->driver = Mod_open(section, "db");
 
+    handle->db_init = (void (*)(DB_handle_T))
+        Mod_get(handle->driver, "Mod_db_init");
     handle->db_open = (void (*)(DB_handle_T, int))
         Mod_get(handle->driver, "Mod_db_open");
+    handle->db_start_txn = (int (*)(DB_handle_T))
+        Mod_get(handle->driver, "Mod_db_start_txn");
+    handle->db_commit_txn = (int (*)(DB_handle_T))
+        Mod_get(handle->driver, "Mod_db_commit_txn");
+    handle->db_rollback_txn = (int (*)(DB_handle_T))
+        Mod_get(handle->driver, "Mod_db_rollback_txn");
     handle->db_close = (void (*)(DB_handle_T))
         Mod_get(handle->driver, "Mod_db_close");
     handle->db_put = (int (*)(DB_handle_T, struct DB_key *, struct DB_val *))
@@ -63,9 +71,33 @@ DB_open(Config_T config, int flags)
         Mod_get(handle->driver, "Mod_db_itr_close");
 
     /* Initialize the database driver. */
-    handle->db_open(handle, flags);
+    handle->db_init(handle);
 
     return handle;
+}
+
+extern void
+DB_open(DB_handle_T handle, int flags)
+{
+    handle->db_open(handle, flags);
+}
+
+extern int
+DB_start_txn(DB_handle_T handle)
+{
+    return handle->db_start_txn(handle);
+}
+
+extern int
+DB_commit_txn(DB_handle_T handle)
+{
+    return handle->db_commit_txn(handle);
+}
+
+extern int
+DB_rollback_txn(DB_handle_T handle)
+{
+    return handle->db_rollback_txn(handle);
 }
 
 extern void
