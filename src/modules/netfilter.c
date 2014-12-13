@@ -262,7 +262,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 }
 
 void
-Mod_fw_init_log_capture(FW_handle_T handle)
+Mod_fw_start_log_capture(FW_handle_T handle)
 {
     struct fw_handle *fwh = handle->fwh;
     struct log_handle *lh;

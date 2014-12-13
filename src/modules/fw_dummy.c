@@ -33,7 +33,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 }
 
 void
-Mod_fw_init_log_capture(FW_handle_T handle)
+Mod_fw_start_log_capture(FW_handle_T handle)
 {
     /* noop */
 }

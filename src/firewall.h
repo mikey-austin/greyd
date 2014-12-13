@@ -24,7 +24,7 @@ struct FW_handle_T {
     int (*fw_open)(FW_handle_T);
     void (*fw_close)(FW_handle_T);
     int (*fw_replace)(FW_handle_T, const char *, List_T, short);
-    void (*fw_init_log_capture)(FW_handle_T);
+    void (*fw_start_log_capture)(FW_handle_T);
     void (*fw_end_log_capture)(FW_handle_T);
     List_T (*fw_capture_log)(FW_handle_T);
     int (*fw_lookup_orig_dst)(FW_handle_T, struct sockaddr *,
@@ -50,7 +50,7 @@ extern int FW_replace(FW_handle_T handle, const char *set, List_T cidrs, short a
 /**
  * Initialize the log capture machinery.
  */
-extern void FW_init_log_capture(FW_handle_T handle);
+extern void FW_start_log_capture(FW_handle_T handle);
 
 /**
  * Stop the log capture machinery and clean up.

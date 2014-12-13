@@ -43,8 +43,8 @@ FW_open(Config_T config)
     handle->fw_lookup_orig_dst =
         (int (*)(FW_handle_T, struct sockaddr *, struct sockaddr *, struct sockaddr *))
         Mod_get(handle->driver, "Mod_fw_lookup_orig_dst");
-    handle->fw_init_log_capture =
-        (void (*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_init_log_capture");
+    handle->fw_start_log_capture =
+        (void (*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_start_log_capture");
     handle->fw_end_log_capture =
         (void (*)(FW_handle_T)) Mod_get(handle->driver, "Mod_fw_end_log_capture");
     handle->fw_capture_log =
@@ -85,9 +85,9 @@ FW_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 }
 
 extern void
-FW_init_log_capture(FW_handle_T handle)
+FW_start_log_capture(FW_handle_T handle)
 {
-    handle->fw_init_log_capture(handle);
+    handle->fw_start_log_capture(handle);
 }
 
 extern void

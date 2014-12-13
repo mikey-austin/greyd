@@ -2,7 +2,7 @@
 # Makefile for pluggable firewall modules.
 #
 
-SRC = pf.c netfilter.c bdb.c
+SRC = pf.c netfilter.c bdb.c fw_dummy.c
 OBJ = $(SRC:.c=.o)
 CFLAGS += -fpic
 

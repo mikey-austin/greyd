@@ -143,7 +143,7 @@ main(int argc, char **argv)
         }
     }
 
-    FW_init_log_capture(fw_handle);
+    FW_start_log_capture(fw_handle);
 
     for(;;) {
         if(Greylogd_shutdown)
