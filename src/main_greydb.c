@@ -9,6 +9,7 @@
 #include "greydb.h"
 #include "grey.h"
 #include "ip.h"
+#include "log.h"
 
 #include <err.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@
 #include <ctype.h>
 
 #define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
-#define PROGNAME       "greydb"
+#define PROG_NAME       "greydb"
 
 /* Types. */
 #define TYPE_WHITE    0
@@ -42,7 +43,7 @@ static void
 usage()
 {
     fprintf(stderr, "usage: %s [-f config] [[-Tt] -a keys] [[-Tt] -d keys] \n",
-            PROGNAME);
+            PROG_NAME);
     exit(1);
 }
 
@@ -291,8 +292,14 @@ main(int argc, char **argv)
         usage();
     }
 
+
     config = Config_create();
     Config_load_file(config, config_path);
+
+    /* Ensure syslog output is disabled. */
+    Config_set_int(config, "syslog_enable", NULL, 0);
+    Log_setup(config, PROG_NAME);
+
     db = DB_open(config, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
 
     switch(action) {
