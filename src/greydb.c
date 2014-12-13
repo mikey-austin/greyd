@@ -29,7 +29,9 @@ DB_init(Config_T config)
     }
 
     handle->config  = config;
-    if((user = Config_get_str(config, "user", "grey", GREYD_DB_USER)) != NULL) {
+    if(Config_get_int(config, "drop_privs", NULL, 1)
+       && (user = Config_get_str(config, "user", "grey", GREYD_DB_USER)) != NULL)
+    {
         if((handle->pw = getpwnam(user)) == NULL) {
             i_critical("No such user %s", user);
         }

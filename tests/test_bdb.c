@@ -33,9 +33,11 @@ main()
     struct Grey_data gd, gd2;
     int ret, i = 0;
     char *conf =
+        "drop_privs = 0\n"
         "section database {\n"
         "  driver = \"../src/modules/bdb.so\",\n"
-        "  path   = \"/tmp/greyd_test_bdb.db\"\n"
+        "  path   = \"/tmp/greyd\",\n"
+        "  db_name = \"test_bdb.db\"\n"
         "}";
 
     TEST_START(47);

@@ -50,6 +50,7 @@ main()
     FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
     char *conf =
+        "drop_privs = 0\n"
         "low_prio_mx = \"192.179.21.3\"\n"
         "section grey {\n"
         "  traplist_name    = \"test traplist\",\n"
@@ -61,11 +62,12 @@ main()
         "}\n"
         "section database {\n"
         "  driver = \"../src/modules/bdb.so\",\n"
-        "  path   = \"/tmp/greyd_test_grey.db\"\n"
+        "  path   = \"/tmp/greyd\",\n"
+        "  db_name = \"test_grey.db\"\n"
         "}";
 
     /* Empty existing database file. */
-    ret = unlink("/tmp/greyd_test_grey.db");
+    ret = unlink("/tmp/greyd/test_grey.db");
     if(ret < 0 && errno != ENOENT) {
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
@@ -322,8 +324,8 @@ tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey
         }
     }
 
-    DB_commit_txn(db);
     DB_close_itr(&itr);
+    DB_commit_txn(db);
     DB_close(&db);
 }
 

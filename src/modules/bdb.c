@@ -12,8 +12,20 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define DEFAULT_PATH "/var/db/greyd"
+#define DEFAULT_DB   "greyd.db"
+
+/**
+ * The internal bdb driver handle.
+ */
+struct bdb_handle {
+    DB_ENV *env;
+    DB *db;
+    DB_TXN *txn;
+};
 
 /*
  * The key/values need to be marshalled before storing, to allow for
@@ -25,69 +37,164 @@ static void unpack_key(struct DB_key *key, DBT *dbkey);
 static void unpack_val(struct DB_val *val, DBT *dbval);
 
 extern void
-Mod_db_open(DB_handle_T handle, int flags)
+Mod_db_init(DB_handle_T handle)
 {
-    char *db_path;
-    DB *db;
-    int path, ret, open_flags;
+    struct bdb_handle *bh;
+    char *path;
+    int ret, flags;
 
-    db_path = Config_get_str(handle->config, "path", "database", DEFAULT_PATH);
-
-    ret = db_create(&db, NULL, 0);
-    if(ret != 0)
-        i_critical("Could not obtain db handle: %s", db_strerror(ret));
-    handle->dbh = db;
-
-    open_flags = (flags & GREYDB_RO ? DB_RDONLY : 0);
-    ret = db->open(db, NULL, db_path, NULL, DB_HASH, open_flags, 0600);
-    if(ret != 0) {
-        switch(ret) {
-        case ENOENT:
-            i_warning("%s does not exist, creating", db_path);
-            db->close(db, 0);
-
-            /*
-             * Open the database once more with the create flag,
-             * and ensure the right user/group is set.
-             */
-            ret = db_create(&db, NULL, 0);
-            if(ret != 0)
-                i_critical("Could not obtain db handle: %s", db_strerror(ret));
-            handle->dbh = db;
-
-            ret = db->open(db, NULL, db_path, NULL, DB_HASH, DB_CREATE, 0600);
-            if(ret != 0)
-                i_critical("Could not create database %s", db_path);
-
-            /*
-             * Set the appropriate owner/group on the new database file.
-             */
-            path = open(db_path, O_RDWR, 0644);
-            if(path == -1)
-                i_critical("Create %s failed: %s", db_path, strerror(errno));
-
-            if(handle->pw && (fchown(path, handle->pw->pw_uid,
-                                     handle->pw->pw_gid) == -1))
-            {
-                i_critical("chown %s failed: %s", db_path, strerror(errno));
-            }
-            close(path);
-
-            return;
-
-        default:
-            i_critical("Create %s failed: %s", db_path, db_strerror(ret));
+    path = Config_get_str(handle->config, "path", "database", DEFAULT_PATH);
+    if(mkdir(path, 0700) == -1) {
+        if(errno != EEXIST)
+            i_critical("db environment path: %s", strerror(errno));
+    }
+    else {
+        /*
+         * As the directory has just been created, ensure the correct
+         * ownership.
+         */
+        if(handle->pw
+           && (chown(path, handle->pw->pw_uid, handle->pw->pw_gid) == -1))
+        {
+            i_critical("chown %s failed: %s", path, strerror(errno));
         }
     }
+
+    if((bh = malloc(sizeof(*bh))) == NULL)
+        i_critical("malloc: %s", strerror(errno));
+    bh->env = NULL;
+    bh->txn = NULL;
+    bh->db = NULL;
+
+    ret = db_env_create(&bh->env, 0);
+    if(ret != 0) {
+        i_critical("error creating db environment: %s",
+                   db_strerror(ret));
+    }
+
+    flags = DB_CREATE
+        | DB_INIT_TXN
+        | DB_INIT_LOCK
+        | DB_INIT_LOG
+        | DB_INIT_MPOOL;
+    ret = bh->env->open(bh->env, path, flags, 0);
+    if(ret != 0) {
+        i_critical("error opening db environment: %s",
+                   db_strerror(ret));
+    }
+
+    handle->dbh = bh;
+}
+
+extern void
+Mod_db_open(DB_handle_T handle, int flags)
+{
+    struct bdb_handle *bh = handle->dbh;
+    char *db_name;
+    int ret, open_flags;
+
+    db_name = Config_get_str(handle->config, "db_name", "database", DEFAULT_DB);
+
+    ret = db_create(&bh->db, bh->env, 0);
+    if(ret != 0) {
+        i_warning("Could not obtain db handle: %s", db_strerror(ret));
+        goto cleanup;
+    }
+
+    open_flags = (flags & GREYDB_RO ? DB_RDONLY : DB_CREATE) | DB_AUTO_COMMIT;
+    ret = bh->db->open(bh->db, NULL, db_name, NULL, DB_HASH, open_flags, 0600);
+    if(ret != 0) {
+        i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
+        goto cleanup;
+    }
+
+    return;
+
+cleanup:
+    bh->env->close(bh->env, 0);
+    exit(1);
+}
+
+extern int
+Mod_db_start_txn(DB_handle_T handle)
+{
+    struct bdb_handle *bh = handle->dbh;
+    int ret;
+
+    if(bh->txn != NULL) {
+        /* Already in a transaction. */
+        return -1;
+    }
+
+    ret = bh->env->txn_begin(bh->env, NULL, &bh->txn, 0);
+    if(ret != 0) {
+        i_warning("db txn start failed: %s", db_strerror(ret));
+        goto cleanup;
+    }
+
+    return ret;
+
+cleanup:
+    if(bh->db)
+        bh->db->close(bh->db, 0);
+    bh->env->close(bh->env, 0);
+    exit(1);
+}
+
+extern int
+Mod_db_commit_txn(DB_handle_T handle)
+{
+    struct bdb_handle *bh = handle->dbh;
+    int ret;
+
+    if(bh->txn == NULL) {
+        i_warning("cannot commit, NULL transaction");
+        return -1;
+    }
+
+    ret = bh->txn->commit(bh->txn, 0);
+    if(ret != 0) {
+        i_warning("db txn commit failed: %s", db_strerror(ret));
+        goto cleanup;
+    }
+    bh->txn = NULL;
+
+    return ret;
+
+cleanup:
+    if(bh->db)
+        bh->db->close(bh->db, 0);
+    bh->env->close(bh->env, 0);
+    exit(1);
+}
+
+extern int
+Mod_db_rollback_txn(DB_handle_T handle)
+{
+    struct bdb_handle *bh = handle->dbh;
+    int ret;
+
+    if(bh->txn == NULL) {
+        i_warning("cannot rollback, NULL transaction");
+        return -1;
+    }
+
+    ret = bh->txn->abort(bh->txn);
+    bh->txn = NULL;
+
+    return ret;
 }
 
 extern void
 Mod_db_close(DB_handle_T handle)
 {
-    DB *db;
+    struct bdb_handle *bh;
 
-    if((db = (DB *) handle->dbh) != NULL) {
-        db->close(db, 0);
+    if((bh = handle->dbh) != NULL) {
+        if(bh->db)
+            bh->db->close(bh->db, 0);
+        bh->env->close(bh->env, 0);
+        free(bh);
         handle->dbh = NULL;
     }
 }
@@ -95,14 +202,15 @@ Mod_db_close(DB_handle_T handle)
 extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    DB *db = (DB *) handle->dbh;
+    struct bdb_handle *bh = handle->dbh;
+    DB *db = bh->db;
     DBT dbkey, dbval;
     int ret;
 
     pack_key(key, &dbkey);
     pack_val(val, &dbval);
 
-    ret = db->put(db, NULL, &dbkey, &dbval, 0);
+    ret = db->put(db, bh->txn, &dbkey, &dbval, 0);
 
     /* Cleanup the packed data. */
     free(dbkey.data);
@@ -122,14 +230,15 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 extern int
 Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    DB *db = (DB *) handle->dbh;
+    struct bdb_handle *bh = handle->dbh;
+    DB *db = bh->db;
     DBT dbkey, dbval;
     int ret;
 
     pack_key(key, &dbkey);
     memset(&dbval, 0, sizeof(DBT));
 
-    ret = db->get(db, NULL, &dbkey, &dbval, 0);
+    ret = db->get(db, bh->txn, &dbkey, &dbval, 0);
 
     /* Cleanup the packed key data. */
     free(dbkey.data);
@@ -154,12 +263,13 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 extern int
 Mod_db_del(DB_handle_T handle, struct DB_key *key)
 {
-    DB *db = (DB *) handle->dbh;
+    struct bdb_handle *bh = handle->dbh;
+    DB *db = bh->db;
     DBT dbkey;
     int ret;
 
     pack_key(key, &dbkey);
-    ret = db->del(db, NULL, &dbkey, 0);
+    ret = db->del(db, bh->txn, &dbkey, 0);
 
     /* Free packed key data. */
     free(dbkey.data);
@@ -181,11 +291,12 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 extern void
 Mod_db_get_itr(DB_itr_T itr)
 {
+    struct bdb_handle *bh = itr->handle->dbh;
+    DB *db = bh->db;
     DBC *cursor;
-    DB *db = (DB *) itr->handle->dbh;
     int ret;
 
-    ret = db->cursor(db, NULL, &cursor, 0);
+    ret = db->cursor(db, bh->txn, &cursor, 0);
     if(ret != 0) {
         i_critical("Could not create cursor (%s)", db_strerror(ret));
     }

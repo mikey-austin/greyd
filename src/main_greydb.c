@@ -101,8 +101,8 @@ db_list(DB_handle_T db)
         }
     }
 
-    DB_commit_txn(db);
     DB_close_itr(&itr);
+    DB_commit_txn(db);
 
     return 0;
 }

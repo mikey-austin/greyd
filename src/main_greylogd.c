@@ -132,7 +132,7 @@ main(int argc, char **argv)
 
     db_user = Config_get_str(config, "user", "grey", GREYD_DB_USER);
     if((db_pw = getpwnam(db_user)) == NULL) {
-        i_warning("getpwnam:%s", strerror(errno));
+        i_warning("getpwnam: %s", strerror(errno));
         goto shutdown;
     }
 

@@ -384,7 +384,9 @@ Grey_scan_db(Greylister_T greylister)
         }
     }
 
+    DB_close_itr(&itr);
     DB_commit_txn(db);
+
     Greyd_send_config(greylister->trap_out,
                       greylister->traplist_name,
                       greylister->traplist_msg,
@@ -407,7 +409,6 @@ Grey_scan_db(Greylister_T greylister)
 cleanup:
     if(ret < 0)
         DB_rollback_txn(db);
-    DB_close_itr(&itr);
     DB_close(&db);
 
     return ret;
