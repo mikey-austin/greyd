@@ -8,6 +8,7 @@
 #include "failures.h"
 #include "greydb.h"
 #include "mod.h"
+#include "constants.h"
 
 #include <stdlib.h>
 
@@ -28,9 +29,7 @@ DB_open(Config_T config, int flags)
     }
 
     handle->config  = config;
-    handle->section = section;
-
-    if((user = Config_section_get_str(section, "user", NULL)) != NULL) {
+    if((user = Config_get_str(config, "user", "grey", GREYD_DB_USER)) != NULL) {
         if((handle->pw = getpwnam(user)) == NULL) {
             i_critical("No such user %s", user);
         }
@@ -40,7 +39,7 @@ DB_open(Config_T config, int flags)
     }
 
     /* Open the configured driver and extract all required symbols. */
-    handle->driver = Mod_open(handle->section, "db");
+    handle->driver = Mod_open(section, "db");
 
     handle->db_open = (void (*)(DB_handle_T, int))
         Mod_get(handle->driver, "Mod_db_open");

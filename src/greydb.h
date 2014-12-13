@@ -55,7 +55,6 @@ struct DB_handle_T {
     void *driver;
     void *dbh;                /**< Driver dependent handle reference. */
     Config_T config;          /**< System configuration. */
-    Config_section_T section; /**< Module configuration section. */
     struct passwd *pw;        /**< System user/group information. */
 
     void (*db_open)(DB_handle_T handle, int);

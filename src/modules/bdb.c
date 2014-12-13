@@ -29,43 +29,54 @@ Mod_db_open(DB_handle_T handle, int flags)
 {
     char *db_path;
     DB *db;
-    int i, ret, open_flags;
+    int path, ret, open_flags;
 
-    db_path = Config_section_get_str(handle->section, "path", DEFAULT_PATH);
+    db_path = Config_get_str(handle->config, "path", "database", DEFAULT_PATH);
 
     ret = db_create(&db, NULL, 0);
-    if(ret != 0) {
+    if(ret != 0)
         i_critical("Could not obtain db handle: %s", db_strerror(ret));
-    }
     handle->dbh = db;
 
-    open_flags = (flags & GREYDB_RO ? DB_RDONLY : DB_CREATE);
+    open_flags = (flags & GREYDB_RO ? DB_RDONLY : 0);
     ret = db->open(db, NULL, db_path, NULL, DB_HASH, open_flags, 0600);
     if(ret != 0) {
         switch(ret) {
         case ENOENT:
+            i_warning("%s does not exist, creating", db_path);
+            db->close(db, 0);
+
             /*
-             * The database did not exist, so create it.
+             * Open the database once more with the create flag,
+             * and ensure the right user/group is set.
              */
-            i = open(db_path, O_RDWR|O_CREAT, 0644);
-            if(i == -1) {
-                i_critical("Create %s failed (%m)", db_path, strerror(errno));
-            }
+            ret = db_create(&db, NULL, 0);
+            if(ret != 0)
+                i_critical("Could not obtain db handle: %s", db_strerror(ret));
+            handle->dbh = db;
+
+            ret = db->open(db, NULL, db_path, NULL, DB_HASH, DB_CREATE, 0600);
+            if(ret != 0)
+                i_critical("Could not create database %s", db_path);
 
             /*
              * Set the appropriate owner/group on the new database file.
              */
-            if(handle->pw && (fchown(i, handle->pw->pw_uid,
+            path = open(db_path, O_RDWR, 0644);
+            if(path == -1)
+                i_critical("Create %s failed: %s", db_path, strerror(errno));
+
+            if(handle->pw && (fchown(path, handle->pw->pw_uid,
                                      handle->pw->pw_gid) == -1))
             {
-                i_critical("chown %s failed (%m)", db_path, db_strerror(ret));
+                i_critical("chown %s failed: %s", db_path, strerror(errno));
             }
+            close(path);
 
-            close(i);
             return;
 
         default:
-            i_critical("Create %s failed (%m)", db_path, db_strerror(ret));
+            i_critical("Create %s failed: %s", db_path, db_strerror(ret));
         }
     }
 }
