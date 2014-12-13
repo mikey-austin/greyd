@@ -64,6 +64,10 @@ Grey_setup(Config_T config)
         i_critical("Could not create firewall handle");
     }
 
+    if((greylister->db_handle = DB_init(config)) == NULL) {
+        i_critical("Could not create db handle");
+    }
+
     /*
      * Gather configuration from the grey section.
      */
@@ -192,6 +196,7 @@ Grey_finish(Greylister_T *greylister)
     (*greylister)->config = NULL;
 
     FW_close(&((*greylister)->fw_handle));
+    DB_close(&((*greylister)->db_handle));
     List_destroy(&((*greylister)->whitelist));
     List_destroy(&((*greylister)->whitelist_ipv6));
     List_destroy(&((*greylister)->traplist));
@@ -272,7 +277,7 @@ Grey_start_scanner(Greylister_T greylister)
 extern int
 Grey_scan_db(Greylister_T greylister)
 {
-    DB_handle_T db;
+    DB_handle_T db = greylister->db_handle;
     DB_itr_T itr;
     struct DB_key key, wkey;
     struct DB_val val, wval;
@@ -282,7 +287,6 @@ Grey_scan_db(Greylister_T greylister)
     time_t now = time(NULL);
     int ret = 0;
 
-    db = DB_init(greylister->config);
     DB_open(db, 0);
     DB_start_txn(db);
     itr = DB_get_itr(db);
@@ -409,7 +413,6 @@ Grey_scan_db(Greylister_T greylister)
 cleanup:
     if(ret < 0)
         DB_rollback_txn(db);
-    DB_close(&db);
 
     return ret;
 }
@@ -504,7 +507,7 @@ trap_check(DB_handle_T db, char *to)
 static void
 process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst_ip)
 {
-    DB_handle_T db;
+    DB_handle_T db = greylister->db_handle;
     struct DB_key key;
     struct DB_val val;
     struct Grey_data gd;
@@ -512,7 +515,6 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     int spamtrap;
 
     now = time(NULL);
-    db = DB_init(greylister->config);
     DB_open(db, 0);
 
     switch(trap_check(db, gt->to)) {
@@ -625,18 +627,16 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     }
 
     DB_commit_txn(db);
-    DB_close(&db);
     return;
 
 rollback:
     DB_rollback_txn(db);
-    DB_close(&db);
 }
 
 static void
 process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, char *expires)
 {
-    DB_handle_T db;
+    DB_handle_T db = greylister->db_handle;
     struct DB_key key;
     struct DB_val val;
     struct Grey_data gd;
@@ -659,7 +659,6 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
     key.type = DB_KEY_IP;
     key.data.s = ip;
 
-    db = DB_init(greylister->config);
     DB_open(db, 0);
     DB_start_txn(db);
 
@@ -706,12 +705,10 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
     }
 
     DB_commit_txn(db);
-    DB_close(&db);
     return;
 
 rollback:
     DB_rollback_txn(db);
-    DB_close(&db);
 }
 
 static void

@@ -50,6 +50,8 @@ struct Grey_data {
 	int     pcount; /**< How many times passed, or -1 for spamtrap. */
 };
 
+struct DB_handle_T;
+
 /**
  * The greylister holds the state of the greylisting engine.
  */
@@ -75,6 +77,7 @@ struct Greylister_T {
     time_t      pass_time;
     int         sync_send;
     FW_handle_T fw_handle;
+    struct DB_handle_T *db_handle;
 };
 
 /**
