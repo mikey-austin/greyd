@@ -41,7 +41,7 @@ Mod_db_init(DB_handle_T handle)
 {
     struct bdb_handle *bh;
     char *path;
-    int ret, flags;
+    int ret, flags, uid_changed = 0;
 
     path = Config_get_str(handle->config, "path", "database", DEFAULT_PATH);
     if(mkdir(path, 0700) == -1) {
@@ -66,6 +66,18 @@ Mod_db_init(DB_handle_T handle)
     bh->txn = NULL;
     bh->db = NULL;
 
+    /*
+     * We want to create the environment as the database user.
+     */
+    if(handle->pw) {
+        if(seteuid(handle->pw->pw_uid) == -1) {
+            i_critical("seteuid: %s", strerror(errno));
+        }
+        else {
+            uid_changed = 1;
+        }
+    }
+
     ret = db_env_create(&bh->env, 0);
     if(ret != 0) {
         i_critical("error creating db environment: %s",
@@ -81,6 +93,11 @@ Mod_db_init(DB_handle_T handle)
     if(ret != 0) {
         i_critical("error opening db environment: %s",
                    db_strerror(ret));
+    }
+
+    if(uid_changed && seteuid(0) == -1) {
+        bh->env->close(bh->env, 0);
+        i_critical("seteuid back to root: %s", strerror(errno));
     }
 
     handle->dbh = bh;

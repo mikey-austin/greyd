@@ -304,6 +304,7 @@ main(int argc, char **argv)
     Config_set_int(config, "syslog_enable", NULL, 0);
     Log_setup(config, PROG_NAME);
 
+    Config_set_int(config, "drop_privs", NULL, 0);
     db = DB_init(config);
     DB_open(db, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
 
