@@ -2,17 +2,17 @@
 # Makefile for pluggable firewall modules.
 #
 
-SRC = pf.c ipset.c bdb.c
+SRC = pf.c netfilter.c bdb.c
 OBJ = $(SRC:.c=.o)
 CFLAGS += -fpic
 
-all: pf.so ipset.so fw_dummy.so bdb.so
+all: pf.so netfilter.so fw_dummy.so bdb.so
 
 pf.so: pf.o
 	$(CC) $(CFLAGS) -shared -o pf.so pf.o
 
-ipset.so: ipset.o
-	$(CC) $(CFLAGS) -shared -o ipset.so ipset.o -lnetfilter_conntrack -lmnl -lcap -lipset -lnetfilter_log
+netfilter.so: netfilter.o
+	$(CC) $(CFLAGS) -shared -o netfilter.so netfilter.o -lnetfilter_conntrack -lmnl -lcap -lipset -lnetfilter_log
 
 fw_dummy.so: fw_dummy.o
 	$(CC) $(CFLAGS) -shared -o fw_dummy.so fw_dummy.o

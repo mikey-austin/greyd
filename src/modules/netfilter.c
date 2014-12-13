@@ -1,12 +1,12 @@
 /**
- * @file   ipset.c
- * @brief  Pluggable IPset firewall interface.
+ * @file   netfilter.c
+ * @brief  Pluggable GNU/Linux firewall interface.
  * @author Mikey Austin
  * @date   2014
  *
- * This firewall driver makes use of libipset for the set management
- * and libnetfilter_conntrack for the DNAT original destination
- * lookups.
+ * This firewall driver makes use of libipset for the set management,
+ * libnetfilter_conntrack for the DNAT original destination
+ * lookups and libnetfilter_log for the capturing of firewall packets.
  */
 
 #include "../failures.h"
