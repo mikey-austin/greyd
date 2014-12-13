@@ -12,7 +12,7 @@ pf.so: pf.o
 	$(CC) $(CFLAGS) -shared -o pf.so pf.o
 
 netfilter.so: netfilter.o
-	$(CC) $(CFLAGS) -shared -o netfilter.so netfilter.o -lnetfilter_conntrack -lmnl -lcap -lipset -lnetfilter_log
+	$(CC) $(CFLAGS) -shared -o netfilter.so netfilter.o -L/usr/local/lib -lnetfilter_conntrack -lmnl -lcap -lipset -lnetfilter_log
 
 fw_dummy.so: fw_dummy.o
 	$(CC) $(CFLAGS) -shared -o fw_dummy.so fw_dummy.o

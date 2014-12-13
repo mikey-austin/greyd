@@ -274,8 +274,11 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     group_in = Config_get_int(handle->config, "inbound_group", "firewall", NFLOG_GROUP_IN);
     group_out = Config_get_int(handle->config, "outbound_group", "firewall", NFLOG_GROUP_OUT);
 
-    if(Config_get_int(handle->config, "inbound", "firewall", 1) && (group_in == group_out))
+    if(Config_get_int(handle->config, "track_inbound", "firewall", 1)
+       && (group_in == group_out))
+    {
         i_critical("inbound and outbound NFLOG groups must not be the same");
+    }
 
     if((lh = malloc(sizeof(*lh))) == NULL)
         err(1, "malloc");
@@ -290,7 +293,7 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     setup_nflog_group(lh->handle, &lh->group_out, group_out);
     nflog_callback_register(lh->group_out, log_callback, lh);
 
-    if(Config_get_int(handle->config, "inbound", "firewall", 1)) {
+    if(Config_get_int(handle->config, "track_inbound", "firewall", 1)) {
         setup_nflog_group(lh->handle, &lh->group_in, group_in);
         nflog_callback_register(lh->group_in, log_callback, lh);
     }

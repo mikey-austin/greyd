@@ -15,6 +15,7 @@
 #include "log.h"
 
 #include <err.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -54,13 +55,16 @@ int
 main(int argc, char **argv)
 {
     Config_T config, opts;
-    char *config_file = NULL, *db_user, *addr;
+    char *config_file = NULL, *db_user;
     struct passwd *db_pw;
-    int option, white_time;
+    int option, white_expiry;
     FW_handle_T fw_handle;
-    DB_handle_T db_handle;
     List_T entries;
     struct List_entry *entry;
+    DB_handle_T db_handle;
+    struct DB_key key;
+    struct DB_val val;
+    time_t now;
 
     tzset();
     opts = Config_create();
@@ -85,8 +89,9 @@ main(int argc, char **argv)
 
         case 'W':
             /* Convert hours to seconds. */
-            white_time = atoi(optarg);
-            Config_set_int(opts, "white_expiry", "grey", (white_time * 60 * 60));
+            white_expiry = atoi(optarg);
+            Config_set_int(opts, "white_expiry", "grey",
+                           (white_expiry * 60 * 60));
             break;
 
         case 'Y':
@@ -111,7 +116,7 @@ main(int argc, char **argv)
 
     Log_setup(config, PROG_NAME);
 
-    i_info("Listening, %s%s",
+    i_info("Listening, %s",
            Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
            ? "in both directions" : "outbound direction only");
 
@@ -126,12 +131,16 @@ main(int argc, char **argv)
     signal(SIGTERM, sighandler_shutdown);
 
     db_user = Config_get_str(config, "user", "grey", GREYD_DB_USER);
-    if((db_pw = getpwnam(db_user)) == NULL)
-        i_critical("no such user %s", db_user);
+    if((db_pw = getpwnam(db_user)) == NULL) {
+        i_warning("getpwnam:%s", strerror(errno));
+        goto shutdown;
+    }
 
     if(!Config_get_int(config, "debug", NULL, 0)) {
-        if(daemon(1, 1) == -1)
-            err(1, "daemon");
+        if(daemon(1, 1) == -1) {
+            i_warning("daemon: %s", strerror(errno));
+            goto shutdown;
+        }
     }
 
     if(db_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
@@ -139,22 +148,54 @@ main(int argc, char **argv)
            || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
            || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
         {
-            i_critical("failed to drop privileges");
+            i_warning("could not drop privileges: %s", strerror(errno));
+            goto shutdown;
         }
     }
 
+    white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
     FW_start_log_capture(fw_handle);
+
     while(!Greylogd_shutdown) {
         if((entries = FW_capture_log(fw_handle)) != NULL
            && List_size(entries) > 0)
         {
+            now = time(NULL);
             LIST_FOREACH(entries, entry) {
-                addr = List_entry_value(entry);
-                i_debug("received %s", addr);
+                key.data.s = List_entry_value(entry);
+                key.type = DB_KEY_IP;
+
+                switch(DB_get(db_handle, &key, &val)) {
+                case GREYDB_NOT_FOUND:
+                    /* Create new entry. */
+                    memset(&val.data.gd, 0, sizeof(val.data.gd));
+                    val.type = DB_VAL_GREY;
+                    val.data.gd.first = now;
+                    val.data.gd.pass = now;
+                    /* Fallthrough. */
+
+                case GREYDB_FOUND:
+                    /* Update existing entry. */
+                    val.data.gd.pcount++;
+                    val.data.gd.expire = now + white_expiry;
+                    if(DB_put(db_handle, &key, &val) != GREYDB_OK) {
+                        i_warning("error putting %s", key.data.s);
+                        goto shutdown;
+                    }
+                    else {
+                        i_info("whitelisting %s", key.data.s);
+                    }
+                    break;
+
+                default:
+                    i_warning("error querying database for %s", key.data.s);
+                    goto shutdown;
+                }
             }
         }
     }
 
+shutdown:
     i_info("exiting");
     FW_end_log_capture(fw_handle);
     FW_close(&fw_handle);
