@@ -111,9 +111,9 @@ main(int argc, char **argv)
 
     Log_setup(config, PROG_NAME);
 
-    i_debug("Listening, %s%s",
-            Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
-            ? "in both directions" : "outbound direction only");
+    i_info("Listening, %s%s",
+           Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
+           ? "in both directions" : "outbound direction only");
 
     if((fw_handle = FW_open(config)) == NULL)
         i_critical("could not obtain firewall handle");
@@ -144,11 +144,7 @@ main(int argc, char **argv)
     }
 
     FW_start_log_capture(fw_handle);
-
-    for(;;) {
-        if(Greylogd_shutdown)
-            break;
-
+    while(!Greylogd_shutdown) {
         if((entries = FW_capture_log(fw_handle)) != NULL
            && List_size(entries) > 0)
         {
