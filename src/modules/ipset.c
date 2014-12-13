@@ -38,6 +38,7 @@
 #include <libnetfilter_log/libipulog.h>
 #include <libnetfilter_log/libnetfilter_log.h>
 #include <linux/ip.h>
+#include <linux/ipv6.h>
 
 #define MAX_ELEM           200000
 #define HASH_SIZE          (1024 * 1024)
@@ -48,6 +49,8 @@
 #define NFLOG_BUF          1024
 #define NFLOG_TIMEOUT      1500
 #define NFLOG_WHOLE_PACKET 0xffff
+#define NFLOG_DIR_IN       1
+#define NFLOG_DIR_OUT      0
 
 struct cb_filter {
     struct sockaddr *src;
@@ -61,11 +64,8 @@ struct cb_data_arg {
 
 struct log_handle {
     struct nflog_handle *handle;
-    struct nflog_handle *handle_ipv6;
     struct nflog_g_handle *group_in;
     struct nflog_g_handle *group_out;
-    struct nflog_g_handle *group_in_ipv6;
-    struct nflog_g_handle *group_out_ipv6;
     List_T entries;
 };
 
@@ -261,6 +261,141 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     return 0;
 }
 
+void
+Mod_fw_init_log_capture(FW_handle_T handle)
+{
+    struct fw_handle *fwh = handle->fwh;
+    struct log_handle *lh;
+    int group_in, group_out;
+
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
+        set_effective_caps();
+
+    group_in = Config_get_int(handle->config, "inbound_group", "firewall", NFLOG_GROUP_IN);
+    group_out = Config_get_int(handle->config, "outbound_group", "firewall", NFLOG_GROUP_OUT);
+
+    if(Config_get_int(handle->config, "inbound", "firewall", 1) && (group_in == group_out))
+        i_critical("inbound and outbound NFLOG groups must not be the same");
+
+    if((lh = malloc(sizeof(*lh))) == NULL)
+        err(1, "malloc");
+    fwh->log = lh;
+
+    /*
+     * Binding a group to this AF_INET handle also picks up AF_INET6 packets destined
+     * to the same group, so we don't need a separate handle for IPv6.
+     */
+    memset(lh, 0, sizeof(*lh));
+    setup_nflog_handle(&lh->handle, AF_INET);
+    setup_nflog_group(lh->handle, &lh->group_out, group_out);
+    nflog_callback_register(lh->group_out, log_callback, lh);
+
+    if(Config_get_int(handle->config, "inbound", "firewall", 1)) {
+        setup_nflog_group(lh->handle, &lh->group_in, group_in);
+        nflog_callback_register(lh->group_in, log_callback, lh);
+    }
+    else {
+        lh->group_in = NULL;
+    }
+
+    lh->entries = List_create(destroy_log_entry);
+}
+
+void
+Mod_fw_end_log_capture(FW_handle_T handle)
+{
+    struct fw_handle *fwh = handle->fwh;
+    struct log_handle *lh = fwh->log;
+
+    if(lh) {
+        nflog_unbind_group(lh->group_out);
+        if(lh->group_in != NULL)
+            nflog_unbind_group(lh->group_in);
+        nflog_close(lh->handle);
+        List_destroy(&lh->entries);
+        free(lh);
+    }
+}
+
+List_T
+Mod_fw_capture_log(FW_handle_T handle)
+{
+    struct fw_handle *fwh = handle->fwh;
+    struct log_handle *lh = fwh->log;
+    char buf[NFLOG_BUF];
+    struct pollfd fd;
+    int size;
+
+    memset(&fd, 0, sizeof(fd));
+    memset(buf, 0, sizeof(buf));
+
+    fd.fd = nflog_fd(lh->handle);
+    fd.events = POLLIN;
+
+    /* Use poll to effect a timeout. */
+    if(poll(&fd, 1, POLL_TIMEOUT) == -1) {
+        if(errno != EINTR)
+            i_critical("poll: %m");
+        return NULL;
+    }
+
+    List_remove_all(lh->entries);
+    if(fd.revents & POLLIN) {
+        if((size = recv(fd.fd, buf, NFLOG_BUF, 0)) == -1) {
+            if(errno != EINTR)
+                i_critical("poll: %m");
+            return NULL;
+        }
+        nflog_handle_packet(lh->handle, buf, size);
+    }
+
+    return lh->entries;
+}
+
+int
+Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
+{
+    struct ipset_session *session = ((struct fw_handle *) handle->fwh)->session;
+    struct List_entry *entry;
+    char *cidr, stage_set_name[MAX_STAGE_NAME];
+    int nadded = 0, hash_size, max_elem;
+
+    sstrncpy(stage_set_name, set_name, sizeof(stage_set_name));
+    sstrncat(stage_set_name, "-stage", sizeof(stage_set_name));
+
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
+        set_effective_caps();
+
+    if(session == NULL)
+        return -1;
+
+    hash_size = Config_section_get_int(
+        handle->section, "hash_size", HASH_SIZE);
+    max_elem = Config_section_get_int(
+        handle->section, "max_elements", MAX_ELEM);
+
+    if(ipset_create(session, stage_set_name, hash_size, max_elem, af) == -1)
+        return -1;
+
+    LIST_FOREACH(cidrs, entry) {
+        if((cidr = List_entry_value(entry)) != NULL) {
+            if(ipset_add(session, stage_set_name, cidr, af) == -1) {
+                warnx("invalid cidr %s", cidr);
+                return -1;
+            }
+            nadded++;
+        }
+    }
+
+    if(ipset_create(session, set_name, hash_size, max_elem, af) == -1)
+        return -1;
+
+    if(ipset_swap_and_destroy(session, set_name, stage_set_name) == -1)
+        return -1;
+
+    return nadded;
+}
+
 static int
 conntrack_callback(const struct nlmsghdr *nlh, void *arg)
 {
@@ -344,170 +479,6 @@ conntrack_callback(const struct nlmsghdr *nlh, void *arg)
     nfct_destroy(ct);
 
     return ret;
-}
-
-void
-Mod_fw_init_log_capture(FW_handle_T handle)
-{
-    struct fw_handle *fwh = handle->fwh;
-    struct log_handle *lh;
-    int group_in, group_out;
-
-    group_in = Config_get_int(handle->config, "inbound_group", "firewall", NFLOG_GROUP_IN);
-    group_out = Config_get_int(handle->config, "outbound_group", "firewall", NFLOG_GROUP_OUT);
-
-    if(Config_get_int(handle->config, "inbound", "firewall", 1) && (group_in == group_out))
-        i_critical("inbound and outbound NFLOG groups must not be the same");
-
-    if((lh = malloc(sizeof(*lh))) == NULL)
-        err(1, "malloc");
-    fwh->log = lh;
-
-    memset(lh, 0, sizeof(*lh));
-    setup_nflog_handle(&lh->handle, AF_INET);
-    setup_nflog_group(lh->handle, &lh->group_out, group_out);
-    nflog_callback_register(lh->group_out, log_callback, lh);
-
-    if(Config_get_int(handle->config, "inbound", "firewall", 1)) {
-        setup_nflog_group(lh->handle, &lh->group_in, group_in);
-        nflog_callback_register(lh->group_in, log_callback, lh);
-    }
-    else {
-        lh->group_in = NULL;
-    }
-
-    if(Config_get_int(handle->config, "enable_ipv6", NULL, 0)) {
-        setup_nflog_handle(&lh->handle_ipv6, AF_INET6);
-        setup_nflog_group(lh->handle_ipv6, &lh->group_out_ipv6, group_out);
-        nflog_callback_register(lh->group_out_ipv6, log_callback, lh);
-
-        if(Config_get_int(handle->config, "inbound", "firewall", 1)) {
-            setup_nflog_group(lh->handle_ipv6, &lh->group_in_ipv6, group_in);
-            nflog_callback_register(lh->group_in_ipv6, log_callback, lh);
-        }
-        else {
-            lh->group_in_ipv6 = NULL;
-        }
-    }
-    else {
-        lh->handle_ipv6 = NULL;
-        lh->group_in_ipv6 = NULL;
-        lh->group_out_ipv6 = NULL;
-    }
-
-    lh->entries = List_create(destroy_log_entry);
-}
-
-void
-Mod_fw_end_log_capture(FW_handle_T handle)
-{
-    struct fw_handle *fwh = handle->fwh;
-    struct log_handle *lh = fwh->log;
-
-    if(lh) {
-        nflog_unbind_group(lh->group_out);
-        if(lh->group_in != NULL)
-            nflog_unbind_group(lh->group_in);
-        nflog_close(lh->handle);
-
-        if(lh->handle_ipv6 != NULL) {
-            nflog_unbind_group(lh->group_out_ipv6);
-            if(lh->group_in_ipv6 != NULL)
-                nflog_unbind_group(lh->group_in_ipv6);
-            nflog_close(lh->handle_ipv6);
-        }
-
-        List_destroy(&lh->entries);
-        free(lh);
-    }
-}
-
-List_T
-Mod_fw_capture_log(FW_handle_T handle)
-{
-    struct fw_handle *fwh = handle->fwh;
-    struct log_handle *lh = fwh->log;
-    char buf[NFLOG_BUF];
-    struct pollfd fds[2];
-    int i, size;
-
-    memset(fds, 0, sizeof(*fds) * 2);
-    memset(buf, 0, sizeof(buf));
-
-    fds[0].fd = nflog_fd(lh->handle);
-    fds[0].events = POLLIN;
-
-    if(lh->handle_ipv6) {
-        fds[1].fd = nflog_fd(lh->handle_ipv6);
-        fds[1].events = POLLIN;
-    }
-
-    if(poll(fds, 2, POLL_TIMEOUT) == -1) {
-        if(errno != EINTR)
-            i_critical("poll: %m");
-        return NULL;
-    }
-
-    List_remove_all(lh->entries);
-    for(i = 0; i < 2; i++) {
-        if(fds[i].revents & POLLIN) {
-            if((size = recv(fds[i].fd, buf, NFLOG_BUF, 0)) == -1) {
-                if(errno != EINTR)
-                    i_critical("poll: %m");
-                return NULL;
-            }
-
-            nflog_handle_packet(
-                (i == 0 ? lh->handle : lh->handle_ipv6),
-                buf, size);
-        }
-    }
-
-    return lh->entries;
-}
-
-int
-Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
-{
-    struct ipset_session *session = ((struct fw_handle *) handle->fwh)->session;
-    struct List_entry *entry;
-    char *cidr, stage_set_name[MAX_STAGE_NAME];
-    int nadded = 0, hash_size, max_elem;
-
-    sstrncpy(stage_set_name, set_name, sizeof(stage_set_name));
-    sstrncat(stage_set_name, "-stage", sizeof(stage_set_name));
-
-    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
-        set_effective_caps();
-
-    if(session == NULL)
-        return -1;
-
-    hash_size = Config_section_get_int(
-        handle->section, "hash_size", HASH_SIZE);
-    max_elem = Config_section_get_int(
-        handle->section, "max_elements", MAX_ELEM);
-
-    if(ipset_create(session, stage_set_name, hash_size, max_elem, af) == -1)
-        return -1;
-
-    LIST_FOREACH(cidrs, entry) {
-        if((cidr = List_entry_value(entry)) != NULL) {
-            if(ipset_add(session, stage_set_name, cidr, af) == -1) {
-                warnx("invalid cidr %s", cidr);
-                return -1;
-            }
-            nadded++;
-        }
-    }
-
-    if(ipset_create(session, set_name, hash_size, max_elem, af) == -1)
-        return -1;
-
-    if(ipset_swap_and_destroy(session, set_name, stage_set_name) == -1)
-        return -1;
-
-    return nadded;
 }
 
 static int
@@ -665,30 +636,39 @@ static int
 log_callback(struct nflog_g_handle *group, struct nfgenmsg *msg,
                struct nflog_data *data, void *arg)
 {
+    struct log_handle *lh = arg;
     char *payload, saddr[INET6_ADDRSTRLEN], daddr[INET6_ADDRSTRLEN];
     int payload_len = nflog_get_payload(data, &payload);
+    short direction;
 
-    u_int32_t indev = nflog_get_indev(data);
-    u_int32_t outdev = nflog_get_outdev(data);
-
-    if(payload_len <= 0 || payload_len < sizeof(struct iphdr)) {
-        i_warning("invalid payload length of %d", payload_len);
-        return 0;
-    }
+    direction = (group == lh->group_in ? NFLOG_DIR_IN : NFLOG_DIR_OUT);
 
     /* Extract the IP addresses from the payload. */
     switch(msg->nfgen_family) {
     case AF_INET:
+        if(payload_len <= 0 || payload_len < sizeof(struct iphdr)) {
+            i_warning("invalid IPv4 payload length of %d", payload_len);
+            return 0;
+        }
         inet_ntop(AF_INET, &((struct iphdr *) payload)->saddr, saddr, sizeof(saddr));
         inet_ntop(AF_INET, &((struct iphdr *) payload)->daddr, daddr, sizeof(daddr));
-
-        i_debug("packet received: indev = %d, outdev = %d, saddr = %s, daddr = %s",
-                indev, outdev, saddr, daddr);
-
         break;
 
     case AF_INET6:
+        if(payload_len <= 0 || payload_len < sizeof(struct ipv6hdr)) {
+            i_warning("invalid IPv6 payload length of %d", payload_len);
+            return 0;
+        }
+        inet_ntop(AF_INET6, &((struct ipv6hdr *) payload)->saddr, saddr, sizeof(saddr));
+        inet_ntop(AF_INET6, &((struct ipv6hdr *) payload)->daddr, daddr, sizeof(daddr));
         break;
+    }
+
+    if(saddr[0] != '\0' && daddr[0] != '\0') {
+        i_debug("packet received: direction = %s, saddr = %s, daddr = %s",
+                (direction == NFLOG_DIR_IN ? "in" : "out"), saddr, daddr);
+        List_insert_after(lh->entries,
+                          strdup((direction == NFLOG_DIR_IN ? saddr : daddr)));
     }
 
     return 0;
@@ -714,6 +694,6 @@ set_effective_caps()
 static void
 destroy_log_entry(void *entry)
 {
-    if(entry == NULL)
+    if(entry != NULL)
         free(entry);
 }
