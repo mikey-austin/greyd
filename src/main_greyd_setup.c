@@ -32,6 +32,7 @@
 
 #define _GNU_SOURCE
 
+#include "log.h"
 #include "utils.h"
 #include "config.h"
 #include "list.h"
@@ -58,7 +59,7 @@
 #define DEFAULT_CONFIG  "/etc/greyd/greyd.conf"
 #define DEFAULT_CURL    "/bin/curl"
 #define DEFAULT_MSG     "You have been blacklisted..."
-#define PROGNAME        "greyd-setup"
+#define PROG_NAME        "greyd-setup"
 #define MAX_PLEN        1024
 #define METHOD_FTP      "ftp"
 #define METHOD_HTTP     "http"
@@ -84,7 +85,7 @@ static int debug = 0;
 static void
 usage()
 {
-    fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROGNAME);
+    fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROG_NAME);
     exit(1);
 }
 
@@ -369,6 +370,8 @@ main(int argc, char **argv)
     if(lists == NULL || List_size(lists) == 0) {
         errx(1, "no lists configured in %s", config_path);
     }
+
+    Log_setup(config, PROG_NAME);
 
     if(!greyonly && !dryrun)
         fw = FW_open(config);
