@@ -87,7 +87,7 @@ int
 main(int argc, char **argv)
 {
     struct Greyd_state state;
-    Sync_engine_T syncer;
+    Sync_engine_T syncer = NULL;
     Greylister_T greylister;
     Config_T config, opts;
     char *config_file = NULL, hostname[MAX_HOST_NAME];
@@ -688,7 +688,9 @@ jail:
         }
 
         /* Finally process any sync messages. */
-        if(sync_recv && syncer && fds[syncer->sync_fd % max_fd].events) {
+        if(sync_recv && syncer
+           && fds[syncer->sync_fd % max_fd].revents & POLLIN)
+        {
             Sync_recv(syncer);
         }
     }

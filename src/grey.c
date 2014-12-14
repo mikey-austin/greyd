@@ -618,7 +618,6 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
      */
     if(greylister->syncer && sync) {
         if(spamtrap) {
-            i_debug("sync_trap %s", gt->ip);
             Sync_trapped(greylister->syncer, gt->ip, now, now + expire);
         }
         else {
