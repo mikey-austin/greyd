@@ -5,7 +5,7 @@
 SRC		= $(wildcard *.c)
 MAINS   = main_greyd.o main_greyd_setup.o main_greydb.o main_greylogd.o
 OBJ		= $(SRC:.c=.o)
-LIBS    = -lz -ldl
+LIBS    = -lz -ldl -lcrypto
 TESTS   = tests
 
 all: greyd greyd-setup greydb greylogd modules

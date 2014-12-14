@@ -6,7 +6,7 @@ SRC			= test.c
 TESTS		= $(wildcard test_*.c)
 TEST_OBJ    = $(SRC:.c=.o) $(TESTS:.c=.o)
 TARGETS		= $(TESTS:.c=.t)
-LIBS        = -lz -ldl
+LIBS        = -lz -ldl -lcrypto
 CFLAGS		+= -I../src
 
 all: $(TARGETS)

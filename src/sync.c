@@ -28,7 +28,6 @@
 #include <sys/resource.h>
 #include <sys/uio.h>
 #include <sys/ioctl.h>
-#include <sys/queue.h>
 
 #include <net/if.h>
 #include <netinet/in.h>
@@ -42,33 +41,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sha1.h>
 #include <syslog.h>
 #include <stdint.h>
 
 #include <netdb.h>
 
 #include <openssl/hmac.h>
-#include <openssl/sha1.h>
+#include <openssl/sha.h>
 
+#include "utils.h"
 #include "failures.h"
 #include "constants.h"
 #include "grey.h"
 #include "sync.h"
 #include "list.h"
 
+#define KEY_BUF_SIZE 512
+
 struct Sync_host {
     char *name;
     struct sockaddr_in addr;
 };
 
+static void send_sync_message(Sync_engine_T, struct iovec *, int);
+static void send_address(Sync_engine_T, char *, time_t, time_t, u_int16_t);
 static void destroy_sync_host(void *);
 
 extern Sync_engine_T
 Sync_init(Config_T config, FILE *grey_out)
 {
     Sync_engine_T engine;
-    char *key_path;
+    char *key_path, buf[KEY_BUF_SIZE];
+    int fd, nread = 0;
+    SHA_CTX ctx;
 
     if((engine = calloc(1, sizeof(*engine))) == NULL)
         err(1, "calloc");
@@ -80,14 +85,39 @@ Sync_init(Config_T config, FILE *grey_out)
     engine->port = Config_get_int(config, "port", "sync", GREYD_SYNC_PORT);
 
     /* Use empty key by default. */
-    engine->sync_key = "";
+    *engine->sync_key = '\0';
     if(Config_get_int(config, "verify_messages", "sync", SYNC_VERIFY_MSG)) {
         key_path = Config_get_str(config, "key", "sync", SYNC_KEY);
-        engine->sync_key = SHA1File(key_path, NULL);
-        if(engine->sync_key == NULL) {
+        if((fd = open(key_path, 0, O_RDONLY)) == -1) {
             if(errno != ENOENT) {
                 i_warning("failed to open sync key: %s",
                           strerror(errno));
+                return NULL;
+            }
+        }
+        else {
+            memset(&ctx, 0, sizeof(ctx));
+            if(!SHA1_Init(&ctx)) {
+                i_warning("failed to init sha context");
+                return NULL;
+            }
+
+            while((nread = read(fd, buf, KEY_BUF_SIZE)) != 0) {
+                if(nread == -1) {
+                    i_warning("failed to read in sync key: %s",
+                              strerror(errno));
+                    return NULL;
+                }
+
+                if(!SHA1_Update(&ctx, buf, nread)) {
+                    i_warning("failed to update sha context");
+                    return NULL;
+                }
+            }
+            close(fd);
+
+            if(!SHA1_Final(engine->sync_key, &ctx)) {
+                i_warning("failed to close sha context");
                 return NULL;
             }
         }
@@ -106,7 +136,7 @@ Sync_start(Sync_engine_T engine)
     struct ip_mreq mreq;
     struct sockaddr_in *addr;
     char if_name[IFNAMSIZ], *ttl_str;
-    char *end;
+    char *end, *mcast_addr;
     struct in_addr bind_in_addr;
 
     bind_addr = Config_get_str(engine->config, "bind_address", "sync", NULL);
@@ -139,15 +169,13 @@ Sync_start(Sync_engine_T engine)
         goto fail;
     }
 
-    bzero(&sync_out, sizeof(sync_out));
     memset(&engine->sync_out, 0, sizeof(engine->sync_out));
     engine->sync_out.sin_family = AF_INET;
-    engine->sync_out.sin_len = sizeof(engine->sync_out);
     engine->sync_out.sin_addr.s_addr = bind_in_addr.s_addr;
     if(bind_addr == NULL && iface == NULL)
         engine->sync_out.sin_port = 0;
     else
-        engine->sync_out.sin_port = htons(port);
+        engine->sync_out.sin_port = htons(engine->port);
 
     if(bind(engine->sync_fd, (struct sockaddr *) &engine->sync_out,
             sizeof(engine->sync_out)) == -1)
@@ -166,15 +194,16 @@ Sync_start(Sync_engine_T engine)
     if((ttl_str = strchr(if_name, ':')) != NULL) {
         *ttl_str++ = '\0';
         errno = 0;
-        ttl = strtol(expires, &end, 10);
-        if(expire == 0 || ttl_str[0] == '\0' || *end != '\0'
-           || (errno == ERANGE && (ttl == LONG_MAX || ttl == LONG_MIN)))
+        ttl = strtol(ttl_str, &end, 10);
+        if(ttl == 0 || ttl_str[0] == '\0' || *end != '\0'
+           || (errno == ERANGE))
         {
             i_warning("invalid multicast ttl %s", ttl_str);
             goto fail;
         }
     }
 
+    /* Extract the IP address from the interface. */
     memset(&ifr, 0, sizeof(ifr));
     sstrncpy(ifr.ifr_name, if_name, sizeof(ifr.ifr_name));
     if(ioctl(engine->sync_fd, SIOCGIFADDR, &ifr) == -1)
@@ -183,37 +212,38 @@ Sync_start(Sync_engine_T engine)
     memset(&engine->sync_in, 0, sizeof(engine->sync_in));
     addr = (struct sockaddr_in *) &ifr.ifr_addr;
     engine->sync_in.sin_family = AF_INET;
-    engine->sync_in.sin_len = sizeof(engine->sync_in);
     engine->sync_in.sin_addr.s_addr = addr->sin_addr.s_addr;
     engine->sync_in.sin_port = htons(engine->port);
 
+    mcast_addr = Config_get_str(engine->config, "multicast_address", "sync",
+                                SYNC_MCASTADDR);
     memset(&mreq, 0, sizeof(mreq));
-    engine->sync_out.sin_addr.s_addr = inet_addr(SYNC_MCASTADDR);
-    mreq.imr_multiaddr.s_addr = inet_addr(SYNC_MCASTADDR);
+    engine->sync_out.sin_addr.s_addr = inet_addr(mcast_addr);
+    mreq.imr_multiaddr.s_addr = inet_addr(mcast_addr);
     mreq.imr_interface.s_addr = engine->sync_in.sin_addr.s_addr;
 
     if(setsockopt(engine->sync_fd, IPPROTO_IP,
         IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) == -1)
     {
         i_warning("failed to add multicast membership to %s: %s",
-                  SYNC_MCASTADDR, strerror(errno));
+                  mcast_addr, strerror(errno));
         goto fail;
     }
 
     if(setsockopt(engine->sync_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl,
         sizeof(ttl)) < 0)
     {
-        i_warning("failed to set multicast ttl to "
-                  "%u: %s\n", ttl, strerror(errno));
+        i_warning("failed to set multicast ttl to %u: %s",
+                  ttl, strerror(errno));
         setsockopt(engine->sync_fd, IPPROTO_IP,
             IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
         goto fail;
     }
 
     i_debug("using multicast spam sync %smode "
-            "(ttl %u, group %s, port %d)\n",
+            "(ttl %u, group %s, port %d)",
             engine->send_mcast ? "" : "receive ",
-            ttl, inet_ntoa(engine->sync_out.sin_addr), engin->port);
+            ttl, inet_ntoa(engine->sync_out.sin_addr), engine->port);
 
     return engine->sync_fd;
 
@@ -236,7 +266,7 @@ extern int
 Sync_add_host(Sync_engine_T engine, const char *name)
 {
     struct addrinfo hints, *res, *next;
-    struct sync_host *host;
+    struct Sync_host *host;
     struct sockaddr_in *addr = NULL;
 
     memset(&hints, 0, sizeof(hints));
@@ -283,23 +313,109 @@ Sync_add_host(Sync_engine_T engine, const char *name)
 }
 
 extern void
-Sync_recv(void)
+Sync_recv(Sync_engine_T engine)
 {
 }
 
 extern void
-Sync_update(time_t now, char *helo, char *ip, char *from, char *to)
+Sync_update(Sync_engine_T engine, struct Grey_data *gd, time_t now)
 {
 }
 
 extern void
-Sync_white(time_t now, time_t expire, char *ip)
+Sync_white(Sync_engine_T engine, char *ip, time_t now, time_t expire)
 {
+    send_address(engine, ip, now, expire, SYNC_WHITE);
 }
 
 extern void
-Sync_trapped(time_t now, time_t expire, char *ip)
+Sync_trapped(Sync_engine_T engine, char *ip, time_t now, time_t expire)
 {
+    send_address(engine, ip, now, expire, SYNC_TRAPPED);
+}
+
+static void
+send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_t type)
+{
+    struct iovec iov[3];
+    struct Sync_hdr hdr;
+    struct Sync_tlv_addr sd;
+    struct Sync_tlv_hdr end;
+    int i = 0;
+    HMAC_CTX ctx;
+    u_int hmac_len;
+
+    i_debug("sync %s %s", type == SYNC_WHITE ? "white" : "trapped", ip);
+
+    memset(&hdr, 0, sizeof(hdr));
+    memset(&sd, 0, sizeof(sd));
+
+    HMAC_CTX_init(&ctx);
+    HMAC_Init(&ctx, engine->sync_key, sizeof(engine->sync_key), EVP_sha1());
+
+    /* Add SPAM sync packet header. */
+    hdr.sh_version = SYNC_VERSION;
+    hdr.sh_af = AF_INET;
+    hdr.sh_counter = htonl(engine->sync_counter++);
+    hdr.sh_length = htons(sizeof(hdr) + sizeof(sd) + sizeof(end));
+    iov[i].iov_base = &hdr;
+    iov[i].iov_len = sizeof(hdr);
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    /* Add single SPAM sync address entry */
+    sd.sd_type = htons(type);
+    sd.sd_length = htons(sizeof(sd));
+    sd.sd_timestamp = htonl(now);
+    sd.sd_expire = htonl(expire);
+    sd.sd_ip = inet_addr(ip);
+    iov[i].iov_base = &sd;
+    iov[i].iov_len = sizeof(sd);
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    /* Add end marker */
+    end.st_type = htons(SYNC_END);
+    end.st_length = htons(sizeof(end));
+    iov[i].iov_base = &end;
+    iov[i].iov_len = sizeof(end);
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    HMAC_Final(&ctx, hdr.sh_hmac, &hmac_len);
+
+    /* Send message to the target hosts. */
+    send_sync_message(engine, iov, i);
+    HMAC_CTX_cleanup(&ctx);
+}
+
+static void
+send_sync_message(Sync_engine_T engine, struct iovec *iov, int iovlen)
+{
+    struct List_entry *entry;
+	struct Sync_host *host;
+	struct msghdr msg;
+
+	/* setup buffer */
+    memset(&msg, 0, sizeof(msg));
+	msg.msg_iov = iov;
+	msg.msg_iovlen = iovlen;
+
+	if(engine->send_mcast) {
+        i_debug("sending multicast sync message");
+		msg.msg_name = &engine->sync_out;
+		msg.msg_namelen = sizeof(engine->sync_out);
+		sendmsg(engine->sync_fd, &msg, 0);
+	}
+
+	LIST_FOREACH(engine->sync_hosts, entry) {
+        host = List_entry_value(entry);
+        i_debug("sending sync message to %s (%s)",
+			    host->name, inet_ntoa(host->addr.sin_addr));
+		msg.msg_name = &host->addr;
+		msg.msg_namelen = sizeof(host->addr);
+		sendmsg(engine->sync_fd, &msg, 0);
+	}
 }
 
 static void
