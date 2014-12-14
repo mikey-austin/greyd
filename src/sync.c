@@ -639,29 +639,29 @@ static void
 send_sync_message(Sync_engine_T engine, struct iovec *iov, int iovlen)
 {
     struct List_entry *entry;
-	struct Sync_host *host;
-	struct msghdr msg;
+    struct Sync_host *host;
+    struct msghdr msg;
 
-	/* setup buffer */
+    /* setup buffer */
     memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = iov;
-	msg.msg_iovlen = iovlen;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovlen;
 
-	if(engine->send_mcast) {
+    if(engine->send_mcast) {
         i_debug("sending multicast sync message");
-		msg.msg_name = &engine->sync_out;
-		msg.msg_namelen = sizeof(engine->sync_out);
-		sendmsg(engine->sync_fd, &msg, 0);
-	}
+        msg.msg_name = &engine->sync_out;
+        msg.msg_namelen = sizeof(engine->sync_out);
+        sendmsg(engine->sync_fd, &msg, 0);
+    }
 
-	LIST_FOREACH(engine->sync_hosts, entry) {
+    LIST_FOREACH(engine->sync_hosts, entry) {
         host = List_entry_value(entry);
         i_debug("sending sync message to %s (%s)",
-			    host->name, inet_ntoa(host->addr.sin_addr));
-		msg.msg_name = &host->addr;
-		msg.msg_namelen = sizeof(host->addr);
-		sendmsg(engine->sync_fd, &msg, 0);
-	}
+                host->name, inet_ntoa(host->addr.sin_addr));
+        msg.msg_name = &host->addr;
+        msg.msg_namelen = sizeof(host->addr);
+        sendmsg(engine->sync_fd, &msg, 0);
+    }
 }
 
 static void
