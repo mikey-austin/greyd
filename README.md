@@ -62,6 +62,6 @@ Licensing
 ---------
 
 All of the source is (will be) licensed under the OpenBSD license, with the exception of the netfilter
-database driver. As this driver links with the libnetfilter userland libraries, it must be licensed
+firewall driver. As this driver links with the libnetfilter userland libraries, it must be licensed
 under the GPL. This does not conflict with the rest of the code base as all `greyd` drivers are
 compiled as shared objects, to be dynamically linked at runtime.
