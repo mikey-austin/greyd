@@ -39,7 +39,29 @@ The greyd suite
 Development Status
 ------------------
 
-`greyd` is currently under active development and is around 90% complete. With the exception of syncronization support, all of the programs are complete and functional.
+`greyd` is currently under active development and is now fully functional. All of the features from `spamd`
+have now been implemented, including synchronization support.
 
-I also aim to autotool-ize the project after the main components are complete. All development
-is currently happening on Fedora.
+A database driver has been implemented for Berkeley DB, which makes full use of transactions. After the first
+release, a MySQL driver will be implemented.
+
+A firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
+  - `libipset` for IP set management
+  - `libnetfilter-log` for the tracking and auto-whitelisting of connections
+  - `libnetfilter-conntrack` for the DNAT original destination lookups
+
+Firewall drivers for PF & IPFW are planned as well, which will allow `greyd` to run in a BSD environment.
+
+Before the first proper release, there is still the following to be done:
+  - Testing in the wild on different setups
+  - autotools build configuration
+  - man pages & documentation (install guides, user guides, etc.)
+  - sample init scripts for some RHEL-like systems (and Debian)
+
+Licensing
+---------
+
+All of the source is (will be) licensed under the OpenBSD license, with the exception of the netfilter
+database driver. As this driver links with the libnetfilter userland libraries, it must be licensed
+under the GPL. This does not conflict with the rest of the code base as all `greyd` drivers are
+compiled as shared objects, to be dynamically linked at runtime.
