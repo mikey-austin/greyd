@@ -42,7 +42,7 @@ Development Status
 `greyd` is currently under active development and is now fully functional. All of the features from `spamd`
 have now been implemented, including synchronization support.
 
-A database driver has been implemented for Berkeley DB, which makes full use of transactions. After the first
+A database driver has been implemented for Berkeley DB (5.3 onwards), which makes full use of transactions (in contrast to the OpenBSD version). After the first
 release, a MySQL driver will be implemented.
 
 A firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
