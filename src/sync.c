@@ -97,29 +97,17 @@ Sync_init(Config_T config, FILE *grey_out)
         }
         else {
             memset(&ctx, 0, sizeof(ctx));
-            if(!SHA1_Init(&ctx)) {
-                i_warning("failed to init sha context");
-                return NULL;
-            }
-
+            SHA1_Init(&ctx);
             while((nread = read(fd, buf, KEY_BUF_SIZE)) != 0) {
                 if(nread == -1) {
                     i_warning("failed to read in sync key: %s",
                               strerror(errno));
                     return NULL;
                 }
-
-                if(!SHA1_Update(&ctx, buf, nread)) {
-                    i_warning("failed to update sha context");
-                    return NULL;
-                }
+                SHA1_Update(&ctx, buf, nread);
             }
             close(fd);
-
-            if(!SHA1_Final(engine->sync_key, &ctx)) {
-                i_warning("failed to close sha context");
-                return NULL;
-            }
+            SHA1_Final(engine->sync_key, &ctx);
         }
     }
 
@@ -315,11 +303,268 @@ Sync_add_host(Sync_engine_T engine, const char *name)
 extern void
 Sync_recv(Sync_engine_T engine)
 {
+    struct Sync_hdr *hdr;
+    struct sockaddr_in addr;
+    struct Sync_tlv_hdr *tlv;
+    struct Sync_tlv_grey *sg;
+    struct Sync_tlv_addr *sd;
+    u_int8_t buf[SYNC_MAXSIZE];
+    u_int8_t hmac[2][SYNC_HMAC_LEN];
+    struct in_addr ip;
+    char *from, *to, *helo;
+    u_int8_t *p;
+    socklen_t addr_len;
+    ssize_t len;
+    u_int hmac_len;
+    u_int32_t expire;
+
+    memset(&addr, 0, sizeof(addr));
+    memset(buf, 0, sizeof(buf));
+
+    addr_len = sizeof(addr);
+    if((len = recvfrom(engine->sync_fd, buf, sizeof(buf), 0,
+                       (struct sockaddr *) &addr, &addr_len)) < 1)
+    {
+        return;
+    }
+
+    if(addr.sin_addr.s_addr != htonl(INADDR_ANY) &&
+       memcmp(&engine->sync_in.sin_addr, &addr.sin_addr,
+              sizeof(addr.sin_addr)) == 0)
+    {
+        return;
+    }
+
+    /* Ignore invalid or truncated packets. */
+    hdr = (struct Sync_hdr *) buf;
+    if(len < sizeof(struct Sync_hdr) ||
+       hdr->sh_version != SYNC_VERSION ||
+       hdr->sh_af != AF_INET ||
+       len < ntohs(hdr->sh_length))
+    {
+        goto trunc;
+    }
+    len = ntohs(hdr->sh_length);
+
+    /* Compute and validate HMAC */
+    memcpy(hdr->sh_hmac, hmac[0], SYNC_HMAC_LEN);
+    memset(hdr->sh_hmac, 0, SYNC_HMAC_LEN);
+    HMAC(EVP_sha1(), engine->sync_key, sizeof(engine->sync_key),
+         buf, len, hmac[1], &hmac_len);
+    if(memcmp(hmac[0], hmac[1], SYNC_HMAC_LEN) != 0)
+        goto trunc;
+
+    i_debug("%s(sync): received packet of %d bytes",
+            inet_ntoa(addr.sin_addr), (int) len);
+
+    p = (u_int8_t *) (hdr + 1);
+    while(len) {
+        tlv = (struct Sync_tlv_hdr *) p;
+
+        if(len < sizeof(struct Sync_tlv_hdr) ||
+           len < ntohs(tlv->st_length))
+        {
+            goto trunc;
+        }
+
+        switch(ntohs(tlv->st_type)) {
+        case SYNC_GREY:
+            sg = (struct Sync_tlv_grey *) tlv;
+            if((sizeof(*sg) +
+                ntohs(sg->sg_from_length) +
+                ntohs(sg->sg_to_length) +
+                ntohs(sg->sg_helo_length)) >
+               ntohs(tlv->st_length))
+            {
+                goto trunc;
+            }
+
+            ip.s_addr = sg->sg_ip;
+            from = (char *) (sg + 1);
+            to = from + ntohs(sg->sg_from_length);
+            helo = to + ntohs(sg->sg_to_length);
+
+            i_debug("%s(sync): received grey entry "
+                    "from %s to %s, helo %s ip %s",
+                    inet_ntoa(addr.sin_addr),
+                    helo, inet_ntoa(ip), from, to);
+
+            if(Config_get_int(engine->config, "enable", "grey",
+                   GREYLISTING_ENABLED))
+            {
+                /* Send this info to the greylister. */
+                fprintf(engine->grey_out,
+                        "type = %d\n"
+                        "sync = 0\n"
+                        "ip = \"%s\"\n"
+                        "helo = \"%s\"\n"
+                        "from = \"%s\"\n"
+                        "to = \"%s\"\n"
+                        "%%\n", GREY_MSG_GREY, inet_ntoa(ip),
+                        helo, from, to);
+                fflush(engine->grey_out);
+            }
+            break;
+
+        case SYNC_WHITE:
+            sd = (struct Sync_tlv_addr *) tlv;
+            if(sizeof(*sd) != ntohs(tlv->st_length))
+                goto trunc;
+
+            ip.s_addr = sd->sd_ip;
+            expire = ntohl(sd->sd_expire);
+            i_debug("%s(sync): received white entry ip %s ",
+                    inet_ntoa(addr.sin_addr), inet_ntoa(ip));
+
+            if(Config_get_int(engine->config, "enable", "grey",
+                   GREYLISTING_ENABLED))
+            {
+                /* Send this info to the greylister. */
+                fprintf(engine->grey_out,
+                        "type = %d\n"
+                        "sync = 0\n"
+                        "ip = \"%s\"\n"
+                        "source = \"%s\"\n"
+                        "expires = \"%u\"\n"
+                        "%%\n", GREY_MSG_WHITE, inet_ntoa(ip),
+                        inet_ntoa(addr.sin_addr), expire);
+                fflush(engine->grey_out);
+            }
+            break;
+
+        case SYNC_TRAPPED:
+            sd = (struct Sync_tlv_addr *) tlv;
+            if(sizeof(*sd) != ntohs(tlv->st_length))
+                goto trunc;
+
+            ip.s_addr = sd->sd_ip;
+            expire = ntohl(sd->sd_expire);
+            i_debug("%s(sync): received trapped entry ip %s ",
+                    inet_ntoa(addr.sin_addr), inet_ntoa(ip));
+
+            if(Config_get_int(engine->config, "enable", "grey",
+                   GREYLISTING_ENABLED))
+            {
+                /* Send this info to the greylister. */
+                fprintf(engine->grey_out,
+                        "type = %d\n"
+                        "sync = 0\n"
+                        "ip = \"%s\"\n"
+                        "source = \"%s\"\n"
+                        "expires = \"%u\"\n"
+                        "%%\n", GREY_MSG_TRAP, inet_ntoa(ip),
+                        inet_ntoa(addr.sin_addr), expire);
+                fflush(engine->grey_out);
+            }
+            break;
+
+        case SYNC_END:
+            goto done;
+
+        default:
+            i_warning("invalid type: %d", ntohs(tlv->st_type));
+            goto trunc;
+        }
+
+        len -= ntohs(tlv->st_length);
+        p = ((u_int8_t *) tlv) + ntohs(tlv->st_length);
+    }
+
+ done:
+    return;
+
+ trunc:
+    i_debug("%s(sync): truncated or invalid packet",
+            inet_ntoa(addr.sin_addr));
 }
 
 extern void
-Sync_update(Sync_engine_T engine, struct Grey_data *gd, time_t now)
+Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
 {
+    struct iovec iov[7];
+    struct Sync_hdr hdr;
+    struct Sync_tlv_grey sg;
+    struct Sync_tlv_hdr end;
+    u_int16_t sglen, fromlen, tolen, helolen, padlen;
+    char pad[SYNC_ALIGNBYTES];
+    int i = 0;
+    HMAC_CTX ctx;
+    u_int hmac_len;
+
+    i_debug("sync grey update helo %s ip %s from %s to %s",
+            gt->helo, gt->ip, gt->from, gt->to);
+
+    memset(&hdr, 0, sizeof(hdr));
+    memset(&sg, 0, sizeof(sg));
+    memset(&pad, 0, sizeof(pad));
+
+    fromlen = strlen(gt->from) + 1;
+    tolen = strlen(gt->to) + 1;
+    helolen = strlen(gt->helo) + 1;
+
+    HMAC_CTX_init(&ctx);
+    HMAC_Init(&ctx, engine->sync_key, sizeof(engine->sync_key),
+              EVP_sha1());
+
+    sglen = sizeof(sg) + fromlen + tolen + helolen;
+    padlen = SYNC_ALIGN(sglen) - sglen;
+
+    /* Add SPAM sync packet header */
+    hdr.sh_version = SYNC_VERSION;
+    hdr.sh_af = AF_INET;
+    hdr.sh_counter = htonl(engine->sync_counter++);
+    hdr.sh_length = htons(sizeof(hdr) + sglen + padlen + sizeof(end));
+    iov[i].iov_base = &hdr;
+    iov[i].iov_len = sizeof(hdr);
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    /* Add single SPAM sync greylisting entry */
+    sg.sg_type = htons(SYNC_GREY);
+    sg.sg_length = htons(sglen + padlen);
+    sg.sg_timestamp = htonl(now);
+    sg.sg_ip = inet_addr(gt->ip);
+    sg.sg_from_length = htons(fromlen);
+    sg.sg_to_length = htons(tolen);
+    sg.sg_helo_length = htons(helolen);
+    iov[i].iov_base = &sg;
+    iov[i].iov_len = sizeof(sg);
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    iov[i].iov_base = gt->from;
+    iov[i].iov_len = fromlen;
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    iov[i].iov_base = gt->to;
+    iov[i].iov_len = tolen;
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    iov[i].iov_base = gt->helo;
+    iov[i].iov_len = helolen;
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    iov[i].iov_base = pad;
+    iov[i].iov_len = padlen;
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    /* Add end marker */
+    end.st_type = htons(SYNC_END);
+    end.st_length = htons(sizeof(end));
+    iov[i].iov_base = &end;
+    iov[i].iov_len = sizeof(end);
+    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    i++;
+
+    HMAC_Final(&ctx, hdr.sh_hmac, &hmac_len);
+
+    /* Send message to the target hosts. */
+    send_sync_message(engine, iov, i);
+    HMAC_CTX_cleanup(&ctx);
 }
 
 extern void

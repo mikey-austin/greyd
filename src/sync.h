@@ -124,7 +124,7 @@ extern void Sync_recv(Sync_engine_T engine);
  * Send out a sync message to notify others of a change to a grey
  * entry.
  */
-extern void Sync_update(Sync_engine_T engine, struct Grey_data *gd,
+extern void Sync_update(Sync_engine_T engine, struct Grey_tuple *gt,
                         time_t now);
 
 /**

@@ -719,7 +719,7 @@ process_message(Greylister_T greylister, Config_T message)
     char *dst_ip, *ip, *source, *expires;
 
     type   = Config_get_int(message, "type", NULL, -1);
-    dst_ip = Config_get_str(message, "dst_ip", NULL, NULL);
+    dst_ip = Config_get_str(message, "dst_ip", NULL, "");
 
     /*
      * If this message isn't a SYNC message from another greyd,
