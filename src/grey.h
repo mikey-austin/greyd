@@ -51,6 +51,7 @@ struct Grey_data {
 };
 
 struct DB_handle_T;
+struct Sync_engine_T;
 
 /**
  * The greylister holds the state of the greylisting engine.
@@ -75,9 +76,10 @@ struct Greylister_T {
     time_t      trap_exp;
     time_t      white_exp;
     time_t      pass_time;
-    int         sync_send;
     FW_handle_T fw_handle;
-    struct DB_handle_T *db_handle;
+
+    struct DB_handle_T   *db_handle;
+    struct Sync_engine_T *syncer;
 };
 
 /**

@@ -7,16 +7,8 @@
 
 #define _GNU_SOURCE
 
-#include "failures.h"
-#include "config.h"
-#include "constants.h"
-#include "grey.h"
-#include "ip.h"
-#include "utils.h"
-#include "con.h"
-#include "greyd.h"
-#include "hash.h"
-#include "log.h"
+#include <sys/types.h>
+#include <sys/resource.h>
 
 #include <err.h>
 #include <errno.h>
@@ -27,11 +19,21 @@
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
-#include <sys/resource.h>
 #include <pwd.h>
-#include <sys/types.h>
 #include <grp.h>
 #include <poll.h>
+
+#include "failures.h"
+#include "config.h"
+#include "constants.h"
+#include "grey.h"
+#include "sync.h"
+#include "ip.h"
+#include "utils.h"
+#include "con.h"
+#include "greyd.h"
+#include "hash.h"
+#include "log.h"
 
 #define PROG_NAME "greyd"
 
@@ -85,6 +87,7 @@ int
 main(int argc, char **argv)
 {
     struct Greyd_state state;
+    Sync_engine_T syncer;
     Greylister_T greylister;
     Config_T config, opts;
     char *config_file = NULL, hostname[MAX_HOST_NAME];
@@ -97,12 +100,14 @@ main(int argc, char **argv)
     struct sockaddr_in main_addr, cfg_addr, main_in_addr;
     struct sockaddr_in6 main_addr6, main_in_addr6;
     struct passwd *main_pw;
-    char *main_user;
+    char *main_user, *sync_host;
     pid_t grey_pid;
     FILE *grey_in, *trap_out;
+    List_T sync_hosts;
+    struct List_entry *entry;
     char *chroot_dir;
     time_t now;
-    int prev_max_fd = 0;
+    int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
     struct pollfd *fds = NULL;
 
     tzset();
@@ -122,6 +127,7 @@ main(int argc, char **argv)
     state.max_black = (CON_DEFAULT_MAX > state.max_files
                       ? state.max_files : CON_DEFAULT_MAX);
 
+    sync_hosts = List_create(NULL);
     while((option =
            getopt(argc, argv, "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1)
     {
@@ -242,11 +248,14 @@ main(int argc, char **argv)
             break;
 
         case 'Y':
-            /* TODO */
+            /* Store the specified sync hosts for later processing. */
+            List_insert_after(sync_hosts, optarg);
+            sync_send++;
             break;
 
         case 'y':
-            /* TODO */
+            Config_set_str(opts, "bind_address", "sync", optarg);
+            sync_recv++;
             break;
 
         default:
@@ -368,6 +377,24 @@ main(int argc, char **argv)
     if(bind(cfg_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
         err(1, "bind local");
 
+    /*
+     * Setup and initialize the sync engine.
+     */
+    if(sync_send || sync_recv) {
+        syncer = Sync_init(state.config);
+
+        LIST_FOREACH(sync_hosts, entry) {
+            sync_host = List_entry_value(entry);
+            if(Sync_add_host(syncer, sync_host) != 0) {
+                /*
+                 * This was not a host address, so treat it as an
+                 * interface name.
+                 */
+                Config_set_str(state.config, "interface", "sync", sync_host);
+            }
+        }
+    }
+
     main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
     if((main_pw = getpwnam(main_user)) == NULL)
         errx(1, "no such user %s", main_user);
@@ -414,6 +441,9 @@ main(int argc, char **argv)
         /* In parent. Run the greylisting engine. */
         greylister = Grey_setup(state.config);
 
+        if(syncer)
+            greylister->syncer = syncer;
+
         if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
             i_critical("fdopen: %m");
         close(grey_pipe[1]);
@@ -428,6 +458,9 @@ main(int argc, char **argv)
     }
 
 jail:
+    if(syncer && Sync_start(syncer, state.grey_out) == -1)
+        i_critical("Could not start the sync engine");
+
     /* Setup the firewall handle before dropping privileges. */
     if((state.fw_handle = FW_open(state.config)) == NULL)
         i_critical("could not obtain firewall handle");
@@ -473,6 +506,8 @@ jail:
         socklen_t main_addr_len, main_addr6_len;
 
         max_fd = MAX(main_sock, cfg_sock);
+        if(sync_recv && syncer && syncer->sync_fd)
+            max_fd = MAX(max_fd, syncer->sync_fd);
         if(main_sock6 > 0)
             max_fd = MAX(max_fd, main_sock6);
         max_fd = MAX(max_fd, trap_fd);
@@ -550,6 +585,11 @@ jail:
         if(trap_fd > 0) {
             fds[trap_fd % max_fd].fd = trap_fd;
             fds[trap_fd % max_fd].events = POLLIN;
+        }
+
+        if(sync_recv && syncer && syncer->sync_fd > 0) {
+            fds[syncer->sync_fd % max_fd].fd = syncer->sync_fd;
+            fds[syncer->sync_fd % max_fd].events = POLLIN;
         }
 
         /*
@@ -645,6 +685,11 @@ jail:
         /* Handle the trap pipe input. */
         if(trap_fd > 0 && fds[trap_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(trap_fd, &state);
+        }
+
+        /* Finally process any sync messages. */
+        if(sync_recv && syncer && fds[syncer->sync_fd % max_fd].events) {
+            Sync_recv(syncer);
         }
     }
 

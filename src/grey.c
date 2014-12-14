@@ -7,9 +7,21 @@
 
 #define _GNU_SOURCE
 
+#include <sys/types.h>
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <time.h>
+#include <unistd.h>
+#include <string.h>
+#include <grp.h>
+
 #include "constants.h"
 #include "failures.h"
 #include "grey.h"
+#include "sync.h"
 #include "greyd.h"
 #include "greydb.h"
 #include "config.h"
@@ -17,16 +29,6 @@
 #include "config_parser.h"
 #include "list.h"
 #include "ip.h"
-
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
-#include <grp.h>
 
 #define GREY_TRAP_NAME       "greyd-greytrap"
 #define GREY_TRAP_MSG        "Your address %A has mailed to spamtraps here"
@@ -59,6 +61,7 @@ Grey_setup(Config_T config)
     greylister->grey_pid   = -1;
     greylister->reader_pid = -1;
     greylister->startup    = -1;
+    greylister->syncer     = NULL;
 
     if((greylister->fw_handle = FW_open(config)) == NULL) {
         i_critical("Could not create firewall handle");
@@ -97,9 +100,6 @@ Grey_setup(Config_T config)
 
     greylister->low_prio_mx = Config_get_str(
         config, "low_prio_mx",NULL , NULL);
-
-    greylister->sync_send = Config_get_int(
-        config, "sync", NULL, 0);
 
     greylister->whitelist      = List_create(destroy_address);
     greylister->whitelist_ipv6 = List_create(destroy_address);
@@ -616,13 +616,13 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     /*
      * Entry successfully updated, send out sync message.
      */
-    if(greylister->sync_send && sync) {
+    if(greylister->syncer && sync) {
         if(spamtrap) {
             i_debug("sync_trap %s", gt->ip);
-            /* TODO: sync_trapped(now, now + expire, gt->ip); */
+            Sync_trapped(greylister->syncer, gt->ip, now, now + expire);
         }
         else {
-            /* TODO: sync_update(now, gt->helo, gt->ip, gt->from, gt->to); */
+            Sync_update(greylister->syncer, gt, now);
         }
     }
 

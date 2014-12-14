@@ -68,7 +68,7 @@ static void send_address(Sync_engine_T, char *, time_t, time_t, u_int16_t);
 static void destroy_sync_host(void *);
 
 extern Sync_engine_T
-Sync_init(Config_T config, FILE *grey_out)
+Sync_init(Config_T config)
 {
     Sync_engine_T engine;
     char *key_path, buf[KEY_BUF_SIZE];
@@ -80,7 +80,7 @@ Sync_init(Config_T config, FILE *grey_out)
 
     engine->sync_fd = -1;
     engine->config = config;
-    engine->grey_out = grey_out;
+    engine->grey_out = NULL;
     engine->sync_hosts = List_create(destroy_sync_host);
     engine->port = Config_get_int(config, "port", "sync", GREYD_SYNC_PORT);
 
@@ -115,7 +115,7 @@ Sync_init(Config_T config, FILE *grey_out)
 }
 
 extern int
-Sync_start(Sync_engine_T engine)
+Sync_start(Sync_engine_T engine, FILE *grey_out)
 {
     char *bind_addr, *iface;
     int one = 1;
@@ -127,6 +127,7 @@ Sync_start(Sync_engine_T engine)
     char *end, *mcast_addr;
     struct in_addr bind_in_addr;
 
+    engine->grey_out = grey_out;
     bind_addr = Config_get_str(engine->config, "bind_address", "sync", NULL);
     iface = Config_get_str(engine->config, "interface", "sync", NULL);
 

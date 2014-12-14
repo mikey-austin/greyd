@@ -96,14 +96,14 @@ struct Sync_tlv_addr {
  * Create a new engine object and initialize the engine's
  * fields based on the supplied configuration.
  */
-extern Sync_engine_T Sync_init(Config_T config, FILE *grey_out);
+extern Sync_engine_T Sync_init(Config_T config);
 
 /**
  * Start the sync engine.
  *
  * @return the engine's socket file descriptor.
  */
-extern int Sync_start(Sync_engine_T engine);
+extern int Sync_start(Sync_engine_T engine, FILE *grey_out);
 
 /**
  * Stop the sync engine and cleanup all sync resources.

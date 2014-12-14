@@ -22,6 +22,9 @@ greyd: $(OBJ)
 greylogd: $(OBJ)
 	$(CC) $(CFLAGS) -Wl,-E -o greylogd main_greylogd.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
 
+modules:
+	$(MAKE) -C modules
+
 #
 # Generate the object file header dependencies.
 #
@@ -33,10 +36,7 @@ greylogd: $(OBJ)
 
 -include $(SRC:.c=.d)
 
-modules: $(OBJ)
-	cd modules && $(MAKE)
-
-.PHONY: clean
+.PHONY: clean modules
 
 clean:
 	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup greydb greyd greylogd
