@@ -127,7 +127,6 @@ main(int argc, char **argv)
     state.max_black = (CON_DEFAULT_MAX > state.max_files
                       ? state.max_files : CON_DEFAULT_MAX);
 
-    sync_hosts = List_create(NULL);
     while((option =
            getopt(argc, argv, "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1)
     {
@@ -249,7 +248,7 @@ main(int argc, char **argv)
 
         case 'Y':
             /* Store the specified sync hosts for later processing. */
-            List_insert_after(sync_hosts, optarg);
+            Config_append_list_str(opts, "hosts", "sync", optarg);
             sync_send++;
             break;
 
@@ -382,6 +381,7 @@ main(int argc, char **argv)
      */
     if(sync_send || sync_recv) {
         syncer = Sync_init(state.config);
+        sync_hosts = Config_get_list(state.config, "hosts", "sync");
 
         LIST_FOREACH(sync_hosts, entry) {
             sync_host = List_entry_value(entry);

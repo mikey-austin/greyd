@@ -71,7 +71,6 @@ main(int argc, char **argv)
 
     tzset();
     opts = Config_create();
-    sync_hosts = List_create(NULL);
 
     while((option = getopt(argc, argv, "DIW:Y:f:")) != -1) {
         switch (option) {
@@ -99,7 +98,7 @@ main(int argc, char **argv)
             break;
 
         case 'Y':
-            List_insert_after(sync_hosts, optarg);
+            Config_append_list_str(opts, "hosts", "sync", optarg);
             sync_send++;
             break;
 
@@ -123,6 +122,7 @@ main(int argc, char **argv)
 
     if(sync_send) {
         syncer = Sync_init(config);
+        sync_hosts = Config_get_list(config, "hosts", "sync");
 
         LIST_FOREACH(sync_hosts, entry) {
             sync_host = List_entry_value(entry);
