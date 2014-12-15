@@ -7,12 +7,7 @@
 
 #define _GNU_SOURCE
 
-#include "failures.h"
-#include "config.h"
-#include "constants.h"
-#include "firewall.h"
-#include "greydb.h"
-#include "log.h"
+#include <sys/types.h>
 
 #include <err.h>
 #include <errno.h>
@@ -24,8 +19,15 @@
 #include <ctype.h>
 #include <signal.h>
 #include <pwd.h>
-#include <sys/types.h>
 #include <grp.h>
+
+#include "failures.h"
+#include "config.h"
+#include "constants.h"
+#include "firewall.h"
+#include "greydb.h"
+#include "log.h"
+#include "sync.h"
 
 #define PROG_NAME "greylogd"
 
@@ -55,19 +57,21 @@ int
 main(int argc, char **argv)
 {
     Config_T config, opts;
-    char *config_file = NULL, *db_user;
+    char *config_file = NULL, *db_user, *sync_host;
     struct passwd *db_pw;
-    int option, white_expiry;
+    int option, white_expiry, sync_send = 0;
     FW_handle_T fw_handle;
-    List_T entries;
+    List_T entries, sync_hosts;
     struct List_entry *entry;
     DB_handle_T db_handle;
     struct DB_key key;
     struct DB_val val;
     time_t now;
+    Sync_engine_T syncer;
 
     tzset();
     opts = Config_create();
+    sync_hosts = List_create(NULL);
 
     while((option = getopt(argc, argv, "DIW:Y:f:")) != -1) {
         switch (option) {
@@ -95,7 +99,8 @@ main(int argc, char **argv)
             break;
 
         case 'Y':
-            /* TODO */
+            List_insert_after(sync_hosts, optarg);
+            sync_send++;
             break;
 
         default:
@@ -115,6 +120,21 @@ main(int argc, char **argv)
     }
 
     Log_setup(config, PROG_NAME);
+
+    if(sync_send) {
+        syncer = Sync_init(config);
+
+        LIST_FOREACH(sync_hosts, entry) {
+            sync_host = List_entry_value(entry);
+            if(Sync_add_host(syncer, sync_host) != 0) {
+                /*
+                 * This was not a host address, so treat it as an
+                 * interface name.
+                 */
+                Config_set_str(config, "interface", "sync", sync_host);
+            }
+        }
+    }
 
     i_info("Listening, %s",
            Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
@@ -187,6 +207,8 @@ main(int argc, char **argv)
                     }
                     else {
                         i_info("whitelisting %s", key.data.s);
+                        if(sync_send)
+                            Sync_white(syncer, key.data.s, now, now + white_expiry);
                     }
                     break;
 
