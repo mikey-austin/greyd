@@ -190,9 +190,7 @@ get_parser(Config_section_T section, Config_T config)
         /*
          * The file is to be fetched via curl.
          */
-        section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
-        curl_path = Config_section_get_str(section, "curl_path",
-                                           DEFAULT_CURL);
+        curl_path = Config_get_str(config, "curl_path", "setup", DEFAULT_CURL);
 
         asprintf(&url, "%s://%s", method, file);
         if(url == NULL) {
@@ -365,8 +363,7 @@ main(int argc, char **argv)
     /* Don't drop privileges. */
     Config_set_int(config, "drop_privs", NULL, 0);
 
-    section = Config_get_section(config, CONFIG_DEFAULT_SECTION);
-    lists = Config_section_get_list(section, "lists");
+    lists = Config_get_list(config, "lists", "setup");
     if(lists == NULL || List_size(lists) == 0) {
         errx(1, "no lists configured in %s", config_path);
     }

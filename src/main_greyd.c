@@ -229,7 +229,7 @@ main(int argc, char **argv)
             break;
 
         case 'M':
-            Config_set_str(opts, "low_prio_mx", NULL, optarg);
+            Config_set_str(opts, "low_prio_mx", "grey", optarg);
             break;
 
         case 'n':
