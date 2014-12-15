@@ -175,6 +175,7 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     if(setsockopt(engine->sync_fd, SOL_SOCKET, SO_REUSEADDR, &one,
                   sizeof(one)) == -1)
     {
+        i_warning("setsockopt: %s", strerror(errno));
         goto fail;
     }
 
@@ -189,6 +190,7 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     if(bind(engine->sync_fd, (struct sockaddr *) &engine->sync_out,
             sizeof(engine->sync_out)) == -1)
     {
+        i_warning("bind: %s", strerror(errno));
         goto fail;
     }
 
@@ -215,8 +217,11 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     /* Extract the IP address from the interface. */
     memset(&ifr, 0, sizeof(ifr));
     sstrncpy(ifr.ifr_name, if_name, sizeof(ifr.ifr_name));
-    if(ioctl(engine->sync_fd, SIOCGIFADDR, &ifr) == -1)
+    if(ioctl(engine->sync_fd, SIOCGIFADDR, &ifr) == -1) {
+        i_warning("ioctl SIOCGIFADDR %s: %s", if_name,
+                  strerror(errno));
         goto fail;
+    }
 
     memset(&engine->sync_in, 0, sizeof(engine->sync_in));
     addr = (struct sockaddr_in *) &ifr.ifr_addr;
@@ -258,7 +263,6 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
 
  fail:
     close(engine->sync_fd);
-
     return -1;
 }
 

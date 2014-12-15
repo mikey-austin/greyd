@@ -452,8 +452,12 @@ main(int argc, char **argv)
     }
 
 jail:
-    if(syncer && Sync_start(syncer, state.grey_out) == -1)
-        i_critical("Could not start the sync engine");
+    if(syncer && Sync_start(syncer, state.grey_out) == -1) {
+        i_warning("refusing to start sync engine");
+        Sync_stop(&syncer);
+        sync_send = 0;
+        sync_recv = 0;
+    }
 
     /* Setup the firewall handle before dropping privileges. */
     if((state.fw_handle = FW_open(state.config)) == NULL)
