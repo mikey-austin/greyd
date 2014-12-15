@@ -86,7 +86,7 @@ Sync_init(Config_T config)
 
     /* Use empty key by default. */
     *engine->sync_key = '\0';
-    if(Config_get_int(config, "verify_messages", "sync", SYNC_VERIFY_MSG)) {
+    if(Config_get_int(config, "verify", "sync", SYNC_VERIFY_MSG)) {
         key_path = Config_get_str(config, "key", "sync", SYNC_KEY);
         if((fd = open(key_path, 0, O_RDONLY)) == -1) {
             if(errno != ENOENT) {
@@ -179,7 +179,7 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
 
     /* Extract any TTL value from the interface name. */
     sstrncpy(if_name, iface, sizeof(if_name));
-    ttl = SYNC_MCASTTTL;
+    ttl = Config_get_int(engine->config, "ttl", "sync", SYNC_MCASTTTL);
     if((ttl_str = strchr(if_name, ':')) != NULL) {
         *ttl_str++ = '\0';
         errno = 0;
