@@ -185,7 +185,6 @@ Config_merge(Config_T config, Config_T from)
     List_destroy(&keys);
 }
 
-
 extern void
 Config_add_include(Config_T config, const char *file)
 {
@@ -298,6 +297,34 @@ Config_set_str(Config_T config, const char *varname,
     }
 
     Config_section_set_str(section, varname, value);
+}
+
+extern void
+Config_append_list_str(Config_T config, const char *varname,
+                       const char *section_name, const char *str)
+{
+    Config_section_T section;
+    Config_value_T val, new_val;
+    List_T list;
+
+    /* Create the section if it doesn't exist. */
+    if((section = Config_get_section(config, section_name)) == NULL) {
+        section = Config_section_create(section_name);
+        Config_add_section(config, section);
+    }
+
+    /* Create the new config value. */
+    new_val = Config_value_create(CONFIG_VAL_TYPE_STR);
+    Config_value_set_str(new_val, str);
+
+    /* Get the list config value, or create it if it doesn't exist. */
+    if((val = Config_section_get(section, varname)) == NULL) {
+        val = Config_value_create(CONFIG_VAL_TYPE_LIST);
+        Config_section_set(section, varname, val);
+    }
+
+    list = Config_section_get_list(section, varname);
+    List_insert_after(list, new_val);
 }
 
 static void

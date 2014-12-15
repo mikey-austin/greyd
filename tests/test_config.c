@@ -25,9 +25,10 @@ main()
     Config_T c, m;
     Config_section_T s1, s2, s;
     Config_value_T v;
+    List_T list;
     int *count;
 
-    TEST_START(29);
+    TEST_START(31);
 
     c = Config_create();
     TEST_OK((c != NULL), "Config created successfully");
@@ -124,6 +125,13 @@ main()
     TEST_OK(!strcmp(Config_get_str(m, "mystr1", "mysection1", NULL), "mystr1 value"), "new str/section ok");
     TEST_OK(Config_get_int(m, "myint86", NULL, 0) == 4, "new int ok");
     TEST_OK(Config_get_int(m, "myint1", "mysection2", 0) == 1234, "int overwrite");
+
+    Config_append_list_str(m, "newlist", "newsection", "my str var");
+    Config_append_list_str(m, "newlist", "newsection", "another var");
+
+    list = Config_get_list(m, "newlist", "newsection");
+    TEST_OK((list != NULL), "list created successfully");
+    TEST_OK((List_size(list) == 2), "list entries ok");
 
     Config_destroy(&c);
     Config_destroy(&m);
