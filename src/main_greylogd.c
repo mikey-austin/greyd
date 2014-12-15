@@ -124,13 +124,12 @@ main(int argc, char **argv)
         sync_send += List_size(hosts);
     }
 
-    Log_setup(config, PROG_NAME);
-
-
     if(sync_send && (syncer = Sync_init(config)) == NULL) {
         i_warning("sync disabled by configuration");
         sync_send = 0;
     }
+
+    Log_setup(config, PROG_NAME);
 
     i_info("Listening, %s",
            Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
