@@ -245,10 +245,12 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
 extern void
 Sync_stop(Sync_engine_T *engine)
 {
-    if((*engine)->sync_hosts)
-        List_destroy(&(*engine)->sync_hosts);
-    free(*engine);
-    *engine = NULL;
+    if(engine && *engine) {
+        if((*engine)->sync_hosts)
+            List_destroy(&(*engine)->sync_hosts);
+        free(*engine);
+        *engine = NULL;
+    }
 }
 
 extern int

@@ -225,10 +225,13 @@ main(int argc, char **argv)
 
 shutdown:
     i_info("exiting");
+    List_destroy(&sync_hosts);
     FW_end_log_capture(fw_handle);
     FW_close(&fw_handle);
     DB_close(&db_handle);
     Config_destroy(&config);
+    if(sync_send)
+        Sync_stop(&syncer);
 
     return 0;
 }
