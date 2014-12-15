@@ -745,10 +745,6 @@ process_message(Greylister_T greylister, Config_T message)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
                              ip, source, expires);
         break;
-
-    default:
-        i_warning("Unknown greylist message type %d", type);
-        return;
     }
 }
 

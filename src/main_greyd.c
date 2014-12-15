@@ -100,11 +100,10 @@ main(int argc, char **argv)
     struct sockaddr_in main_addr, cfg_addr, main_in_addr;
     struct sockaddr_in6 main_addr6, main_in_addr6;
     struct passwd *main_pw;
-    char *main_user, *sync_host;
+    List_T hosts;
+    char *main_user;
     pid_t grey_pid;
     FILE *grey_in, *trap_out;
-    List_T sync_hosts;
-    struct List_entry *entry;
     char *chroot_dir;
     time_t now;
     int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
@@ -274,6 +273,12 @@ main(int argc, char **argv)
         state.config = opts;
     }
 
+    if(sync_send == 0
+       && (hosts = Config_get_list(state.config, "hosts", "sync")))
+    {
+        sync_send += List_size(hosts);
+    }
+
     Log_setup(state.config, PROG_NAME);
 
     if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED))
@@ -376,23 +381,12 @@ main(int argc, char **argv)
     if(bind(cfg_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
         err(1, "bind local");
 
-    /*
-     * Setup and initialize the sync engine.
-     */
-    if(sync_send || sync_recv) {
-        syncer = Sync_init(state.config);
-        sync_hosts = Config_get_list(state.config, "hosts", "sync");
-
-        LIST_FOREACH(sync_hosts, entry) {
-            sync_host = List_entry_value(entry);
-            if(Sync_add_host(syncer, sync_host) != 0) {
-                /*
-                 * This was not a host address, so treat it as an
-                 * interface name.
-                 */
-                Config_set_str(state.config, "interface", "sync", sync_host);
-            }
-        }
+    if((sync_send || sync_recv)
+       && (syncer = Sync_init(state.config)) == NULL)
+    {
+        i_warning("sync disabled by configuration");
+        sync_send = 0;
+        sync_recv = 0;
     }
 
     main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);

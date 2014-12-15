@@ -57,11 +57,11 @@ int
 main(int argc, char **argv)
 {
     Config_T config, opts;
-    char *config_file = NULL, *db_user, *sync_host;
+    char *config_file = NULL, *db_user;
     struct passwd *db_pw;
     int option, white_expiry, sync_send = 0;
     FW_handle_T fw_handle;
-    List_T entries, sync_hosts;
+    List_T entries, hosts;
     struct List_entry *entry;
     DB_handle_T db_handle;
     struct DB_key key;
@@ -118,22 +118,18 @@ main(int argc, char **argv)
         config = opts;
     }
 
+    if(sync_send == 0
+       && (hosts = Config_get_list(config, "hosts", "sync")))
+    {
+        sync_send += List_size(hosts);
+    }
+
     Log_setup(config, PROG_NAME);
 
-    if(sync_send) {
-        syncer = Sync_init(config);
-        sync_hosts = Config_get_list(config, "hosts", "sync");
 
-        LIST_FOREACH(sync_hosts, entry) {
-            sync_host = List_entry_value(entry);
-            if(Sync_add_host(syncer, sync_host) != 0) {
-                /*
-                 * This was not a host address, so treat it as an
-                 * interface name.
-                 */
-                Config_set_str(config, "interface", "sync", sync_host);
-            }
-        }
+    if(sync_send && (syncer = Sync_init(config)) == NULL) {
+        i_warning("sync disabled by configuration");
+        sync_send = 0;
     }
 
     i_info("Listening, %s",
@@ -225,7 +221,6 @@ main(int argc, char **argv)
 
 shutdown:
     i_info("exiting");
-    List_destroy(&sync_hosts);
     FW_end_log_capture(fw_handle);
     FW_close(&fw_handle);
     DB_close(&db_handle);

@@ -52,6 +52,7 @@
 #include "utils.h"
 #include "failures.h"
 #include "constants.h"
+#include "config_value.h"
 #include "grey.h"
 #include "sync.h"
 #include "list.h"
@@ -72,8 +73,14 @@ Sync_init(Config_T config)
 {
     Sync_engine_T engine;
     char *key_path, buf[KEY_BUF_SIZE];
+    Config_value_T val;
+    List_T sync_hosts;
+    struct List_entry *entry;
     int fd, nread = 0;
     SHA_CTX ctx;
+
+    if(!Config_get_int(config, "enable", "sync", 0))
+        return NULL;
 
     if((engine = calloc(1, sizeof(*engine))) == NULL)
         err(1, "calloc");
@@ -81,8 +88,21 @@ Sync_init(Config_T config)
     engine->sync_fd = -1;
     engine->config = config;
     engine->grey_out = NULL;
+    engine->iface = NULL;
     engine->sync_hosts = List_create(destroy_sync_host);
     engine->port = Config_get_int(config, "port", "sync", GREYD_SYNC_PORT);
+
+    sync_hosts = Config_get_list(config, "hosts", "sync");
+    LIST_FOREACH(sync_hosts, entry) {
+        val = List_entry_value(entry);
+        if(cv_str(val) && Sync_add_host(engine, cv_str(val)) != 0) {
+            /*
+             * This was not a host address, so treat it as an
+             * interface name.
+             */
+            engine->iface = cv_str(val);
+        }
+    }
 
     /* Use empty key by default. */
     *engine->sync_key = '\0';
@@ -117,7 +137,7 @@ Sync_init(Config_T config)
 extern int
 Sync_start(Sync_engine_T engine, FILE *grey_out)
 {
-    char *bind_addr, *iface;
+    char *bind_addr;
     int one = 1;
     u_int8_t ttl;
     struct ifreq ifr;
@@ -129,20 +149,20 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
 
     engine->grey_out = grey_out;
     bind_addr = Config_get_str(engine->config, "bind_address", "sync", NULL);
-    iface = Config_get_str(engine->config, "interface", "sync", NULL);
 
-    if(iface != NULL)
+    if(engine->iface != NULL)
         engine->send_mcast++;
 
     memset(&bind_in_addr, 0, sizeof(bind_in_addr));
     if(bind_addr != NULL) {
         if(inet_pton(AF_INET, bind_addr, &bind_in_addr) != 1) {
             bind_in_addr.s_addr = htonl(INADDR_ANY);
-            if(iface == NULL) {
-                iface = bind_addr;
+            if(engine->iface == NULL) {
+                engine->iface = bind_addr;
             }
-            else if(strcmp(bind_addr, iface) != 0) {
-                fprintf(stderr, "multicast interface does not match");
+            else if(strcmp(bind_addr, engine->iface) != 0) {
+                i_warning("multicast interface %s does not match %s",
+                          bind_addr, engine->iface);
                 return -1;
             }
         }
@@ -161,7 +181,7 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     memset(&engine->sync_out, 0, sizeof(engine->sync_out));
     engine->sync_out.sin_family = AF_INET;
     engine->sync_out.sin_addr.s_addr = bind_in_addr.s_addr;
-    if(bind_addr == NULL && iface == NULL)
+    if(bind_addr == NULL && engine->iface == NULL)
         engine->sync_out.sin_port = 0;
     else
         engine->sync_out.sin_port = htons(engine->port);
@@ -172,13 +192,13 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
         goto fail;
     }
 
-    if(iface == NULL) {
+    if(engine->iface == NULL) {
         /* Don't use multicast messages. */
         return engine->sync_fd;
     }
 
     /* Extract any TTL value from the interface name. */
-    sstrncpy(if_name, iface, sizeof(if_name));
+    sstrncpy(if_name, engine->iface, sizeof(if_name));
     ttl = Config_get_int(engine->config, "ttl", "sync", SYNC_MCASTTTL);
     if((ttl_str = strchr(if_name, ':')) != NULL) {
         *ttl_str++ = '\0';
@@ -204,7 +224,7 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     engine->sync_in.sin_addr.s_addr = addr->sin_addr.s_addr;
     engine->sync_in.sin_port = htons(engine->port);
 
-    mcast_addr = Config_get_str(engine->config, "multicast_address", "sync",
+    mcast_addr = Config_get_str(engine->config, "mcast_address", "sync",
                                 SYNC_MCASTADDR);
     memset(&mreq, 0, sizeof(mreq));
     engine->sync_out.sin_addr.s_addr = inet_addr(mcast_addr);
@@ -349,8 +369,8 @@ Sync_recv(Sync_engine_T engine)
     }
     len = ntohs(hdr->sh_length);
 
-    /* Compute and validate HMAC */
-    memcpy(hdr->sh_hmac, hmac[0], SYNC_HMAC_LEN);
+    /* Compute and validate HMAC. */
+    memcpy(hmac[0], hdr->sh_hmac, SYNC_HMAC_LEN);
     memset(hdr->sh_hmac, 0, SYNC_HMAC_LEN);
     HMAC(EVP_sha1(), engine->sync_key, sizeof(engine->sync_key),
          buf, len, hmac[1], &hmac_len);
