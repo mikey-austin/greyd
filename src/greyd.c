@@ -5,6 +5,9 @@
  * @date   2014
  */
 
+#include <errno.h>
+#include <string.h>
+
 #include "failures.h"
 #include "config.h"
 #include "greyd.h"
@@ -33,7 +36,7 @@ Greyd_process_config(int fd, struct Greyd_state *state)
      * upon destroying the lexer source.
      */
     if((read_fd = dup(fd)) == -1)
-        i_critical("dup: %m");
+        i_critical("dup: %s", strerror(errno));
     source = Lexer_source_create_from_fd(read_fd);
     lexer = Config_lexer_create(source);
     parser = Config_parser_create(lexer);

@@ -246,7 +246,6 @@ main(int argc, char **argv)
             break;
 
         case 'Y':
-            /* Store the specified sync hosts for later processing. */
             Config_append_list_str(opts, "hosts", "sync", optarg);
             sync_send++;
             break;
@@ -408,22 +407,22 @@ main(int argc, char **argv)
         }
 
         if(pipe(grey_pipe) == -1)
-            i_critical("grey pipe: %m");
+            i_critical("grey pipe: %s", strerror(errno));
 
         if(pipe(trap_pipe) == -1)
-            i_critical("trap pipe: %m");
+            i_critical("trap pipe: %s", strerror(errno));
 
         grey_pid = fork();
         switch(grey_pid) {
         case -1:
-            i_error("fork greylister: %m");
+            i_error("fork greylister: %s", strerror(errno));
 
         case 0:
             /* In child. */
             signal(SIGPIPE, SIG_IGN);
 
             if((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
-                i_critical("fdopen: %m");
+                i_critical("fdopen: %s", strerror(errno));
             close(grey_pipe[0]);
 
             trap_fd = trap_pipe[0];
@@ -439,11 +438,11 @@ main(int argc, char **argv)
             greylister->syncer = syncer;
 
         if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
-            i_critical("fdopen: %m");
+            i_critical("fdopen: %s", strerror(errno));
         close(grey_pipe[1]);
 
         if((trap_out = fdopen(trap_pipe[1], "w")) == NULL)
-            i_critical("fdopen: %m");
+            i_critical("fdopen: %s", strerror(errno));
         close(trap_pipe[0]);
 
         Grey_start(greylister, grey_pid, grey_in, trap_out);
@@ -480,16 +479,16 @@ jail:
     }
 
     if(listen(main_sock, GREYD_BACKLOG) == -1)
-        i_critical("listen: %m");
+        i_critical("listen: %s", strerror(errno));
 
     if(listen(cfg_sock, GREYD_BACKLOG) == -1)
-        i_critical("listen: %m");
+        i_critical("listen: %s", strerror(errno));
 
     i_warning("listening for incoming connections");
 
     if(main_sock6 > 0) {
         if(listen(main_sock6, GREYD_BACKLOG) == -1)
-            i_critical("listen: %m");
+            i_critical("listen: %s", strerror(errno));
         i_warning("listening for incoming IPv6 connections");
     }
 
@@ -525,7 +524,7 @@ jail:
             fds = NULL;
             fds = calloc(max_fd + 1, sizeof(*fds));
             if(fds == NULL)
-                i_critical("calloc: %m");
+                i_critical("calloc: %s", strerror(errno));
 
             prev_max_fd = max_fd;
         }
@@ -604,7 +603,7 @@ jail:
 
         if(poll(fds, max_fd + 1, timeout) == -1) {
             if(errno != EINTR)
-                i_critical("poll: %m");
+                i_critical("poll: %s", strerror(errno));
             continue;
         }
 
@@ -664,7 +663,7 @@ jail:
                     break;
 
                 default:
-                    i_error("accept: %m");
+                    i_error("accept: %s", strerror(errno));
                 }
             }
             else if(ntohs(main_in_addr.sin_port) >= IPPORT_RESERVED) {

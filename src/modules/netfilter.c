@@ -9,24 +9,18 @@
  * lookups and libnetfilter_log for the capturing of firewall packets.
  */
 
-#include "../failures.h"
-#include "../firewall.h"
-#include "../config_section.h"
-#include "../list.h"
-#include "../ip.h"
-#include "../utils.h"
-#include "../constants.h"
+#include <sys/prctl.h>
+#include <sys/capability.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
 #include <err.h>
+#include <errno.h>
 #include <stdint.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include <sys/prctl.h>
-#include <sys/capability.h>
 #include <poll.h>
 
 #include <libmnl/libmnl.h>
@@ -39,6 +33,14 @@
 #include <libnetfilter_log/libnetfilter_log.h>
 #include <linux/ip.h>
 #include <linux/ipv6.h>
+
+#include "../failures.h"
+#include "../firewall.h"
+#include "../config_section.h"
+#include "../list.h"
+#include "../ip.h"
+#include "../utils.h"
+#include "../constants.h"
 
 #define MAX_ELEM           200000
 #define HASH_SIZE          (1024 * 1024)
@@ -338,7 +340,7 @@ Mod_fw_capture_log(FW_handle_T handle)
     /* Use poll to effect a timeout. */
     if(poll(&fd, 1, POLL_TIMEOUT) == -1) {
         if(errno != EINTR)
-            i_critical("poll: %m");
+            i_critical("poll: %s", strerror(errno));
         return NULL;
     }
 
@@ -346,7 +348,7 @@ Mod_fw_capture_log(FW_handle_T handle)
     if(fd.revents & POLLIN) {
         if((size = recv(fd.fd, buf, NFLOG_BUF, 0)) == -1) {
             if(errno != EINTR)
-                i_critical("poll: %m");
+                i_critical("poll: %s", strerror(errno));
             return NULL;
         }
         nflog_handle_packet(lh->handle, buf, size);
