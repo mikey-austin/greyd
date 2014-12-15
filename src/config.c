@@ -123,7 +123,9 @@ Config_load_file(Config_T config, char *file)
         parser = Config_parser_create(lexer);
 
         if(Config_parser_start(parser, config) != CONFIG_PARSER_OK)
-            errx(1, "Parse error encountered while processing %s", file);
+            errx(1, "Parse error processing %s, line %d col %d",
+                 file, parser->lexer->current_line,
+                 parser->lexer->current_line_pos);
 
         /* Clean up the parser & friends. */
         Config_parser_destroy(&parser);
