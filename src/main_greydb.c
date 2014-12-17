@@ -328,7 +328,7 @@ main(int argc, char **argv)
 
     /* Setup sync if enabled in configuration file. */
     if(sync && ((syncer = Sync_init(config)) == NULL)) {
-        warn("sync disabled by configuration");
+        warnx("sync disabled by configuration");
         sync = 0;
     }
 
