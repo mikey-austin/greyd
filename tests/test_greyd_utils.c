@@ -19,7 +19,7 @@
 static void destroy_blacklist(struct Hash_entry *entry);
 
 int
-main()
+main(void)
 {
     int com[2];
     FILE *out;

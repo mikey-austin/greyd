@@ -18,7 +18,7 @@
 static u_int32_t stoi(const char *address);
 
 int
-main()
+main(void)
 {
     Blacklist_T bl;
     u_int32_t a1, b1, a2, b2, a3, b3;

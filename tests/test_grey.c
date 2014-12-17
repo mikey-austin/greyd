@@ -34,7 +34,7 @@ static void tally_database(Config_T c, int *total_entries, int *total_white, int
                            int *total_white_blocked, int *total_grey_passed, int *total_grey_blocked);
 
 int
-main()
+main(void)
 {
     DB_handle_T db;
     struct DB_key key;

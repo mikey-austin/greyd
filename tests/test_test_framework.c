@@ -8,7 +8,7 @@
 #include "test.h"
 
 int
-main()
+main(void)
 {
     TEST_START(4);
 

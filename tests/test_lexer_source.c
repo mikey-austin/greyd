@@ -14,7 +14,7 @@
 #include <fcntl.h>
 
 int
-main()
+main(void)
 {
     char *test_file, *src = "limit = 10";
     Lexer_source_T cs;

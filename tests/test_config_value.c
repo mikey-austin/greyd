@@ -11,7 +11,7 @@
 #include <string.h>
 
 int
-main()
+main(void)
 {
     Config_value_T v1, v2, v3, val;
     Config_value_T c1, c2, c3;

@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 int
-main()
+main(void)
 {
     char *test_file;
     Lexer_source_T cs;

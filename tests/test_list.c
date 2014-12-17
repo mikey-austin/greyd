@@ -13,7 +13,7 @@
 static void destroy_string(void *str);
 
 int
-main()
+main(void)
 {
     List_T list;
     struct List_entry *curr;

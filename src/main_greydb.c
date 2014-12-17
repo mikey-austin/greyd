@@ -36,13 +36,13 @@
 extern char *optarg;
 extern int optind, opterr, optopt;
 
-static void usage();
+static void usage(void);
 static int db_list(DB_handle_T);
 static int db_update(DB_handle_T, char *, int, int, Sync_engine_T,
                      int, int);
 
 static void
-usage()
+usage(void)
 {
     fprintf(stderr, "usage: %s [-f config] [[-Tt] -a keys] [[-Tt] -d keys] \n",
             PROG_NAME);

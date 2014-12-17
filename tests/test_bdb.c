@@ -19,7 +19,7 @@
 #include <stdio.h>
 
 int
-main()
+main(void)
 {
     DB_handle_T db;
     DB_itr_T itr;

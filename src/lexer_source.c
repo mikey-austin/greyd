@@ -29,7 +29,7 @@ struct source_data_gz {
     gzFile gzf;
 };
 
-static Lexer_source_T source_create();
+static Lexer_source_T source_create(void);
 static void  source_data_file_destroy(void *data);
 static int   source_data_file_getc(void *data);
 static void  source_data_file_ungetc(void *data, int c);
@@ -182,7 +182,7 @@ Lexer_source_ungetc(Lexer_source_T source, int c)
 }
 
 static Lexer_source_T
-source_create()
+source_create(void)
 {
     Lexer_source_T source;
 

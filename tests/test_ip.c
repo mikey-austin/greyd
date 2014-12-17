@@ -20,7 +20,7 @@ static u_int32_t stoi(const char *address);
 static void cidr_destroy(void *cidr);
 
 int
-main()
+main(void)
 {
     struct IP_cidr cidr;
     struct IP_addr a, m, b;

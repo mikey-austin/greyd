@@ -19,7 +19,7 @@
 #define VAL2 123
 
 int
-main()
+main(void)
 {
     Config_section_T s1;
     Config_value_T v;

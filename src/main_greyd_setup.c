@@ -71,7 +71,7 @@
 extern char *optarg;
 extern int optind, opterr, optopt;
 
-static void usage();
+static void usage(void);
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
 static int file_get(char *url, char *curl_path);
@@ -83,7 +83,7 @@ static void send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
 static int debug = 0;
 
 static void
-usage()
+usage(void)
 {
     fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROG_NAME);
     exit(1);

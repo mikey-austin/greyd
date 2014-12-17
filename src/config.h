@@ -29,7 +29,7 @@ struct Config_T {
 /**
  * Create a new empty configuration object.
  */
-extern Config_T Config_create();
+extern Config_T Config_create(void);
 
 /**
  * Destroy a config table, freeing all sections.

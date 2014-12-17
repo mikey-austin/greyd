@@ -11,7 +11,7 @@
 #include <string.h>
 
 int
-main()
+main(void)
 {
     Queue_T queue;
     char *v1 = "value 1", *v2 = "value 2", *v3 = "value 3", *v;

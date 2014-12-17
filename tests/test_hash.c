@@ -32,7 +32,7 @@
 void destroy(struct Hash_entry *entry);
 
 int
-main()
+main(void)
 {
     Hash_T hash;
     List_T keys;

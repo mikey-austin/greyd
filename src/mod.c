@@ -20,7 +20,7 @@ extern void
     if((mod_path = Config_section_get_str(section, "driver", NULL)) == NULL) {
         i_critical("No %s module configured", name);
     }
-    
+
     if((handle = dlopen(mod_path, RTLD_NOW)) == NULL) {
         i_critical("Could not open module: %s", dlerror());
     }
@@ -44,12 +44,12 @@ extern void
     if((error = Mod_error()) != NULL) {
         i_critical("Could not find symbol %s: %s", sym, error);
     }
-    
+
     return mod_sym;
 }
 
 extern char
-*Mod_error()
+*Mod_error(void)
 {
     return dlerror();
 }

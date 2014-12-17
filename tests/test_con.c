@@ -27,7 +27,7 @@
 #include <sys/wait.h>
 
 int
-main()
+main(void)
 {
     Lexer_source_T ls;
     Lexer_T l;

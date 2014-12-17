@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 int
-main()
+main(void)
 {
     Lexer_source_T cs;
     Lexer_T lexer;
