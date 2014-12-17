@@ -11,12 +11,14 @@ prefix = /usr/local
 exec_prefix = $(prefix)
 sbindir = $(exec_prefix)/sbin
 libdir = $(exec_prefix)/lib
+sysconfdir = $(prefix)/etc
 export progname
 export package
 export prefix
 export exec_prefix
 export sbindir
 export libdir
+export sysconfdir
 
 CC = clang
 export CC
@@ -32,8 +34,8 @@ check test: all
 	$(MAKE) -C tests/ $@
 
 install:
-	install -d $(sysconfdir)/$(progname)
-	install -m 0640 sample-greyd.conf $(sysconfdir)/$(progname)/greyd.conf
+	install -d $(DESTDIR)$(sysconfdir)/$(progname)
+	install -m 0640 sample-greyd.conf $(DESTDIR)$(sysconfdir)/$(progname)/greyd.conf
 	$(MAKE) -C src/ $@
 
 dist: $(distdir).tar.gz

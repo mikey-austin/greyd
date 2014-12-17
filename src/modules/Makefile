@@ -21,10 +21,10 @@ bdb.so: bdb.o
 	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -L/usr/local/BerkeleyDB.5.3/lib -ldb
 
 install: netfilter.so bdb.so pf.so
-	install -d $(libdir)/$(progname)
-	install -m 750 netfilter.so $(libdir)/$(progname)
-	install -m 750 bdb.so $(libdir)/$(progname)
-	install -m 750 pf.so $(libdir)/$(prognam)
+	install -d $(DESTDIR)$(libdir)/$(progname)
+	install -m 750 netfilter.so $(DESTDIR)$(libdir)/$(progname)
+	install -m 750 bdb.so $(DESTDIR)$(libdir)/$(progname)
+	install -m 750 pf.so $(DESTDIR)$(libdir)/$(progname)
 
 .PHONY: clean install
 

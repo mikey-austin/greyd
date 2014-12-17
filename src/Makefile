@@ -26,11 +26,11 @@ modules:
 	$(MAKE) -C modules
 
 install: greyd greylogd greydb greyd-setup
-	install -d $(sbindir)
-	install -m 0750 greyd $(sbindir)
-	install -m 0750 greylogd $(sbindir)
-	install -m 0750 greydb $(sbindir)
-	install -m 0750 greyd-setup $(sbindir)
+	install -d $(DESTDIR)$(sbindir)
+	install -m 0750 greyd $(DESTDIR)$(sbindir)
+	install -m 0750 greylogd $(DESTDIR)$(sbindir)
+	install -m 0750 greydb $(DESTDIR)$(sbindir)
+	install -m 0750 greyd-setup $(DESTDIR)$(sbindir)
 	$(MAKE) -C modules/ $@
 
 #
