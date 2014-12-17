@@ -5,12 +5,6 @@
  * @date   2014
  */
 
-#include "config.h"
-#include "greydb.h"
-#include "grey.h"
-#include "ip.h"
-#include "log.h"
-
 #include <err.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,8 +13,15 @@
 #include <time.h>
 #include <ctype.h>
 
-#define DEFAULT_CONFIG "/etc/greyd/greyd.conf"
-#define PROG_NAME       "greydb"
+#include "constants.h"
+#include "config.h"
+#include "greydb.h"
+#include "grey.h"
+#include "sync.h"
+#include "ip.h"
+#include "log.h"
+
+#define PROG_NAME "greydb"
 
 /* Types. */
 #define TYPE_WHITE    0
@@ -36,8 +37,9 @@ extern char *optarg;
 extern int optind, opterr, optopt;
 
 static void usage();
-static int db_list(DB_handle_T db);
-static int db_update(DB_handle_T db, char *ip, int action, int type);
+static int db_list(DB_handle_T);
+static int db_update(DB_handle_T, char *, int, int, Sync_engine_T,
+                     int, int);
 
 static void
 usage()
@@ -108,7 +110,8 @@ db_list(DB_handle_T db)
 }
 
 static int
-db_update(DB_handle_T db, char *ip, int action, int type)
+db_update(DB_handle_T db, char *ip, int action, int type,
+          Sync_engine_T syncer, int white_expiry, int trap_expiry)
 {
     struct DB_key key;
     struct DB_val val;
@@ -179,11 +182,11 @@ db_update(DB_handle_T db, char *ip, int action, int type)
             switch(type) {
             case TYPE_WHITE:
                 gd.pass = now;
-                gd.expire = now + GREY_WHITEEXP;
+                gd.expire = now + white_expiry;
                 break;
 
             case TYPE_TRAPHIT:
-                gd.expire = now + GREY_TRAPEXP;
+                gd.expire = now + trap_expiry;
                 gd.pcount = -1;
                 break;
 
@@ -215,11 +218,11 @@ db_update(DB_handle_T db, char *ip, int action, int type)
             switch(type) {
             case TYPE_WHITE:
                 gd.pass = now;
-                gd.expire = now + GREY_WHITEEXP;
+                gd.expire = now + white_expiry;
                 break;
 
             case TYPE_TRAPHIT:
-                gd.expire = now + GREY_TRAPEXP;
+                gd.expire = now + trap_expiry;
                 gd.pcount = -1;
                 break;
 
@@ -249,6 +252,19 @@ db_update(DB_handle_T db, char *ip, int action, int type)
 
     DB_commit_txn(db);
 
+    /* Perform sync after committing transaction. */
+    if(syncer && action != ACTION_DEL) {
+        switch(type) {
+        case TYPE_WHITE:
+            Sync_white(syncer, ip, now, gd.expire);
+            break;
+
+        case TYPE_TRAPHIT:
+            Sync_trapped(syncer, ip, now, gd.expire);
+            break;
+        }
+    }
+
     return 0;
 
 rollback:
@@ -264,8 +280,11 @@ main(int argc, char **argv)
     char *config_path = DEFAULT_CONFIG;
     Config_T config;
     DB_handle_T db;
+    Sync_engine_T syncer = NULL;
+    short sync = 0;
+    int white_expiry, trap_expiry;
 
-    while((option = getopt(argc, argv, "adtTf:")) != -1) {
+    while((option = getopt(argc, argv, "adtTf:s")) != -1) {
         switch(option) {
         case 'a':
             action = ACTION_ADD;
@@ -287,6 +306,10 @@ main(int argc, char **argv)
             config_path = optarg;
             break;
 
+        case 's':
+            sync = 1;
+            break;
+
         default:
             usage();
             break;
@@ -304,6 +327,12 @@ main(int argc, char **argv)
     Config_set_int(config, "syslog_enable", NULL, 0);
     Log_setup(config, PROG_NAME);
 
+    /* Setup sync if enabled in configuration file. */
+    if(sync && ((syncer = Sync_init(config)) == NULL)) {
+        warn("sync disabled by configuration");
+        sync = 0;
+    }
+
     Config_set_int(config, "drop_privs", NULL, 0);
     db = DB_init(config);
     DB_open(db, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
@@ -315,10 +344,14 @@ main(int argc, char **argv)
 
     case ACTION_DEL:
     case ACTION_ADD:
+        white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
+        trap_expiry = Config_get_int(config, "trap_expiry", "grey", GREY_TRAPEXP);
+
         for(i = optind; i < argc; i++) {
             if(argv[i][0] != '\0') {
                 c++;
-                ret += db_update(db, argv[i], action, type);
+                ret += db_update(db, argv[i], action, type, syncer,
+                                 white_expiry, trap_expiry);
             }
         }
 
