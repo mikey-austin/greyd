@@ -252,7 +252,6 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
     DB_commit_txn(db);
 
-    /* Perform sync after committing transaction. */
     if(syncer && action != ACTION_DEL) {
         switch(type) {
         case TYPE_WHITE:
