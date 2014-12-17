@@ -9,3 +9,6 @@ greydb
 greyd-setup
 greylogd
 *.tar.gz
+*.scan
+*.log
+configure
