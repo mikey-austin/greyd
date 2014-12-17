@@ -20,7 +20,13 @@ fw_dummy.so: fw_dummy.o
 bdb.so: bdb.o
 	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -L/usr/local/BerkeleyDB.5.3/lib -ldb
 
-.PHONY: clean
+install: netfilter.so bdb.so pf.so
+	install -d $(libdir)/$(progname)
+	install -m 750 netfilter.so $(libdir)/$(progname)
+	install -m 750 bdb.so $(libdir)/$(progname)
+	install -m 750 pf.so $(libdir)/$(prognam)
+
+.PHONY: clean install
 
 clean:
 	rm -f $(OBJ) *.so

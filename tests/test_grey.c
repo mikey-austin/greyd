@@ -62,12 +62,12 @@ main()
         "}\n"
         "section database {\n"
         "  driver = \"../src/modules/bdb.so\",\n"
-        "  path   = \"/tmp/greyd\",\n"
+        "  path   = \"/tmp/greyd_test_grey\",\n"
         "  db_name = \"test_grey.db\"\n"
         "}";
 
     /* Empty existing database file. */
-    ret = unlink("/tmp/greyd/test_grey.db");
+    ret = unlink("/tmp/greyd_test_grey/test_grey.db");
     if(ret < 0 && errno != ENOENT) {
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }

@@ -25,6 +25,14 @@ greylogd: $(OBJ)
 modules:
 	$(MAKE) -C modules
 
+install: greyd greylogd greydb greyd-setup
+	install -d $(sbindir)
+	install -m 0750 greyd $(sbindir)
+	install -m 0750 greylogd $(sbindir)
+	install -m 0750 greydb $(sbindir)
+	install -m 0750 greyd-setup $(sbindir)
+	$(MAKE) -C modules/ $@
+
 #
 # Generate the object file header dependencies.
 #
@@ -36,7 +44,7 @@ modules:
 
 -include $(SRC:.c=.d)
 
-.PHONY: clean modules
+.PHONY: clean modules install
 
 clean:
 	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup greydb greyd greylogd
