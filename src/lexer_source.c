@@ -1,18 +1,18 @@
 /**
  * @file   lexer_source.c
- * @brief  Implements interface for configuration source data.
+ * @brief  Implements interface for lexer source data.
  * @author Mikey Austin
  * @date   2014
  */
-
-#include "utils.h"
-#include "failures.h"
-#include "lexer_source.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <err.h>
+
+#include "utils.h"
+#include "lexer_source.h"
 
 struct source_data_file {
     char *filename;
@@ -51,20 +51,20 @@ Lexer_source_create_from_file(const char *filename)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        i_critical("Could not create config source for %s", filename);
+        errx(1, "could not create source for %s", filename);
     }
     else {
         /* Store the filename. */
         data->filename = malloc(flen);
         if(data->filename == NULL) {
-            i_critical("Could not create file config source");
+            errx(1, "could not create file source");
         }
         sstrncpy(data->filename, filename, flen);
 
         /* Try to open the file. */
         data->handle = fopen(filename, "r");
         if(data->handle == NULL) {
-            i_critical("Error opening config file source: %s", strerror(errno));
+            errx(1, "error opening file source: %s", strerror(errno));
         }
 
         source->type     = LEXER_SOURCE_FILE;
@@ -85,13 +85,13 @@ Lexer_source_create_from_fd(int fd)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        i_critical("Could not create config source for fd %d", fd);
+        errx(1, "could not create source for fd %d", fd);
     }
     else {
         /* Try to open the file. */
         data->handle = fdopen(fd, "r");
         if(data->handle == NULL) {
-            i_critical("Error opening config file source: %s", strerror(errno));
+            errx(1, "error opening file source: %s", strerror(errno));
         }
 
         /* No need for a filename. */
@@ -115,7 +115,7 @@ Lexer_source_create_from_str(const char *buf, int len)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        i_critical("Could not create config source");
+        errx(1, "could not create source");
     }
     else {
         /* Copy the buffer into the new source object. */
@@ -142,7 +142,7 @@ Lexer_source_create_from_gz(gzFile gzf)
 
     data = malloc(sizeof(*data));
     if(data == NULL) {
-        i_critical("Could not create config source");
+        errx(1, "Could not create source");
     }
     else {
         /* Store the reference to the gz file handle. */
@@ -188,7 +188,7 @@ source_create(void)
 
     source = malloc(sizeof(*source));
     if(source == NULL) {
-        i_critical("Could not create config source");
+        errx(1, "Could not create source");
     }
     else {
         /* Initialize object. */
@@ -214,7 +214,7 @@ source_data_file_destroy(void *data)
 
     /* Try to close the handle. */
     if(fclose(data_file->handle) == EOF) {
-        i_warning("Error closing config source: %s", strerror(errno));
+        warnx("error closing source: %s", strerror(errno));
     }
 
     free(data_file);
@@ -284,7 +284,7 @@ source_data_gz_destroy(void *data)
         return;
 
     if(data_gz->gzf && ((ret = gzclose(data_gz->gzf)) != Z_OK)) {
-        i_warning("gzclose returned an unexpected %d", ret);
+        warnx("gzclose returned an unexpected %d", ret);
     }
 
     free(data_gz);
