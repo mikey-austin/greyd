@@ -26,7 +26,7 @@ greylogd: $(OBJ)
 modules:
 	$(MAKE) -C modules
 
-install: greyd greylogd greydb greyd-setup
+install:
 	install -d $(DESTDIR)$(sbindir)
 	install -m 0750 greyd $(DESTDIR)$(sbindir)
 	install -m 0750 greylogd $(DESTDIR)$(sbindir)
