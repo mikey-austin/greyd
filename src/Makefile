@@ -2,11 +2,12 @@
 # Makefile for greyd.
 #
 
-SRC		= $(wildcard *.c)
-MAINS   = main_greyd.o main_greyd_setup.o main_greydb.o main_greylogd.o
-OBJ		= $(SRC:.c=.o)
-LIBS    = -lz -ldl -lcrypto
-TESTS   = tests
+SRC = $(wildcard *.c)
+MAINS_SRC = $(wildcard main_*.c)
+MAINS = $(MAINS_SRC:.c=.o)
+OBJ = $(SRC:.c=.o)
+LIBS = -lz -ldl -lcrypto
+TESTS = tests
 
 all: greyd greyd-setup greydb greylogd modules
 
@@ -48,4 +49,4 @@ install: greyd greylogd greydb greyd-setup
 
 clean:
 	rm -f $(OBJ) $(MAINS) $(SRC:.c=.d) $(SRC:.c=.d).* greyd-setup greydb greyd greylogd
-	$(MAKE) -C modules/ clean
+	$(MAKE) -C modules $@
