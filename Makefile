@@ -14,6 +14,7 @@ libdir = $(exec_prefix)/lib
 sysconfdir = $(prefix)/etc
 export progname
 export package
+export version
 export prefix
 export exec_prefix
 export sbindir
@@ -21,9 +22,8 @@ export libdir
 export sysconfdir
 
 CC = clang
-export CC
-
 CFLAGS = -Wall -Wunused -Wstrict-prototypes
+export CC
 export CFLAGS
 
 all clean:
