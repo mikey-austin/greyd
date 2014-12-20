@@ -5,7 +5,7 @@
  * @date   2014
  */
 
-#define _GNU_SOURCE
+#include "config.h"
 
 #include <sys/types.h>
 

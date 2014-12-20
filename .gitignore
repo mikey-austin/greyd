@@ -12,3 +12,16 @@ greylogd
 *.scan
 *.log
 configure
+autom4te.cache*
+*.swp
+Makefile
+config.guess
+config.status
+config.sub
+etc/greyd.conf
+install-sh
+src/Makefile
+src/config.h
+src/config.h.in
+src/modules/Makefile
+tests/Makefile

@@ -6,7 +6,7 @@
 # The firewall configuration.
 #
 section firewall {
-    driver    = "/usr/lib/greyd/netfilter.so",
+    driver    = "@libdir@/@PACKAGE_NAME@/netfilter.so",
     max_elem  = 1000000,       # Max. number of set elements.
     hash_size = 1048576        # Initial hash size.
 }
@@ -15,9 +15,9 @@ section firewall {
 # The greylisting database configuration.
 #
 section database {
-    driver  = "/usr/lib/greyd/bdb.so",
-    path    = "/tmp/greyd",
-    db_name = "test.db"
+    driver  = "@libdir@/@PACKAGE_NAME@/greyd/bdb.so",
+    path    = "@localstatedir@/@PACKAGE_NAME@",
+    db_name = "@PACKAGE_NAME@.db"
 }
 
 #
@@ -29,7 +29,7 @@ section sync {
     ttl           = 2,
     port          = 8099,
     verify        = 1,
-    key           = "/etc/greyd/greyd.key"
+    key           = "@sysconfdir@/@PACKAGE_NAME@/greyd.key"
     bind_address  = "eth0:2",
     mcast_address = "224.0.1.241"
 }
