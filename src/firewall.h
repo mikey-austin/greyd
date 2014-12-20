@@ -8,7 +8,7 @@
 #ifndef FIREWALL_DEFINED
 #define FIREWALL_DEFINED
 
-#include "config.h"
+#include "greyd_config.h"
 #include "list.h"
 
 #include <arpa/inet.h>

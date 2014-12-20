@@ -8,7 +8,7 @@
 #ifndef GREYDB_DEFINED
 #define GREYDB_DEFINED
 
-#include "config.h"
+#include "greyd_config.h"
 #include "grey.h"
 
 #include <sys/types.h>

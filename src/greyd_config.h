@@ -1,5 +1,5 @@
 /**
- * @file   config.h
+ * @file   greyd_config.h
  * @brief  Defines the application configuration interface.
  * @author Mikey Austin
  * @date   2014

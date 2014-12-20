@@ -14,7 +14,7 @@
 #include <ctype.h>
 
 #include "constants.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "greydb.h"
 #include "grey.h"
 #include "sync.h"

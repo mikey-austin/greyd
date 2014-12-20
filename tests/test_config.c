@@ -6,7 +6,7 @@
  */
 
 #include "test.h"
-#include <config.h>
+#include <greyd_config.h>
 #include <config_parser.h>
 
 #include <string.h>

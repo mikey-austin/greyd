@@ -22,7 +22,7 @@
 #include <grp.h>
 
 #include "failures.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "constants.h"
 #include "firewall.h"
 #include "greydb.h"

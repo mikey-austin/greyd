@@ -12,7 +12,7 @@
 #include "grey.h"
 #include "greyd.h"
 #include "list.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "ip.h"
 
 #define CON_BL_SUMMARY_SIZE  80

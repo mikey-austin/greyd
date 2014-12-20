@@ -5,7 +5,7 @@
  * @date   2014
  */
 
-#include "config.h"
+#include "greyd_config.h"
 
 #include <stdarg.h>
 

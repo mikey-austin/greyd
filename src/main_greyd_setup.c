@@ -34,7 +34,7 @@
 
 #include "log.h"
 #include "utils.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "list.h"
 #include "hash.h"
 #include "blacklist.h"

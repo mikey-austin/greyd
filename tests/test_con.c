@@ -8,7 +8,7 @@
 #include "test.h"
 #include <con.h>
 #include <greyd.h>
-#include <config.h>
+#include <greyd_config.h>
 #include <lexer.h>
 #include <config_parser.h>
 #include <config_lexer.h>

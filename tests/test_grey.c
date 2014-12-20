@@ -7,7 +7,7 @@
 
 #include "test.h"
 #include <greydb.h>
-#include <config.h>
+#include <greyd_config.h>
 #include <lexer.h>
 #include <config_parser.h>
 #include <config_lexer.h>

@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "failures.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "greyd.h"
 #include "hash.h"
 #include "ip.h"

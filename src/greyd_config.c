@@ -9,7 +9,7 @@
 #include "failures.h"
 #include "config_section.h"
 #include "hash.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "config_parser.h"
 
 #include <err.h>

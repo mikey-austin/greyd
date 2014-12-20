@@ -68,7 +68,7 @@
 #define CONFIG_PARSER_DEFINED
 
 #include "config_lexer.h"
-#include "config.h"
+#include "greyd_config.h"
 
 #define T Config_parser_T
 

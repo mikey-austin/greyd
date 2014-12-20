@@ -24,7 +24,7 @@
 #include <poll.h>
 
 #include "failures.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "constants.h"
 #include "grey.h"
 #include "sync.h"

@@ -24,7 +24,7 @@
 #include "sync.h"
 #include "greyd.h"
 #include "greydb.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "config_lexer.h"
 #include "config_parser.h"
 #include "list.h"

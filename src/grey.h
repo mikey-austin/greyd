@@ -9,7 +9,7 @@
 #define GREY_DEFINED
 
 #include "firewall.h"
-#include "config.h"
+#include "greyd_config.h"
 #include "list.h"
 
 #include <stdio.h>

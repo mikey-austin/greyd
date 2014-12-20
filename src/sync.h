@@ -27,7 +27,7 @@
 
 #include <openssl/sha.h>
 
-#include "config.h"
+#include "greyd_config.h"
 
 #define SYNC_VERSION    1
 #define SYNC_VERIFY_MSG 1
