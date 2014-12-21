@@ -68,7 +68,7 @@ $(distdir): FORCE
 
 distcheck: $(distdir).tar.gz
 	gunzip -c $(distdir).tar.gz |tar xvf -
-	cd $(distdir) && ./configure
+	cd $(distdir) && ./configure --with-bdb --with-netfilter
 	cd $(distdir) && $(MAKE) all
 	cd $(distdir) && $(MAKE) check
 	cd $(distdir) && $(MAKE) clean

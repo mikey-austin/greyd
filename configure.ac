@@ -4,7 +4,6 @@ AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
 
 # Checks for programs.
-AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_SED
