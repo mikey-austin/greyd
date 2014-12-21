@@ -15,7 +15,9 @@ if test "x${have_gz}" = xyes; then
     AC_CHECK_HEADERS([zlib.h], [], [have_gz="yes"])
 fi
 
-if test "x${have_gz}" != xyes; then
+if test "x${have_gz}" = xyes; then
+   LIBS="$LIBS -lz"
+else
     AC_MSG_FAILURE([zlib is required along with its headers])
 fi
 
@@ -24,7 +26,9 @@ if test "x${have_dl}" = xyes; then
     AC_CHECK_HEADERS([dlfcn.h], [], [have_dl="yes"])
 fi
 
-if test "x${have_dl}" != xyes; then
+if test "x${have_dl}" = xyes; then
+   LIBS="$LIBS -ldl"
+else
     AC_MSG_FAILURE([Dynamic loader support is missing])
 fi
 
@@ -33,7 +37,9 @@ if test "x${have_crypto}" = xyes; then
     AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [], [have_crypto="yes"])
 fi
 
-if test "x${have_crypto}" != xyes; then
+if test "x${have_crypto}" = xyes; then
+   LIBS="$LIBS -lcrypto"
+else
     AC_MSG_FAILURE([libcrypto (OpenSSL) is missing, required for sync])
 fi
 
