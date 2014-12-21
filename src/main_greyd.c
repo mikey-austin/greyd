@@ -5,7 +5,7 @@
  * @date   2014
  */
 
-#include "config.h"
+#include <config.h>
 
 #include <sys/types.h>
 #include <sys/resource.h>

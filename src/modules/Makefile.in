@@ -18,7 +18,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-CFLAGS += @CFLAGS@ -fpic
+CFLAGS = -fpic @CFLAGS@
 
 SRC = pf.c netfilter.c bdb.c fw_dummy.c
 OBJ = $(SRC:.c=.o)
