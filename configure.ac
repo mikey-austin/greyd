@@ -10,9 +10,33 @@ AC_PROG_SED
 AC_CHECK_PROGS([VALGRIND], [valgrind], )
 
 # Checks for common libraries.
-AC_CHECK_LIB([z], [gzdopen])
-AC_CHECK_LIB([dl], [dlopen])
-AC_CHECK_LIB([crypto], [HMAC_Init])
+AC_CHECK_LIB([z], [gzdopen], [have_gz="yes"])
+if test "x${have_gz}" = xyes; then
+    AC_CHECK_HEADERS([zlib.h], [], [have_gz="yes"])
+fi
+
+if test "x${have_gz}" != xyes; then
+    AC_MSG_FAILURE([zlib is required along with its headers])
+fi
+
+AC_CHECK_LIB([dl], [dlopen], [have_dl="yes"])
+if test "x${have_dl}" = xyes; then
+    AC_CHECK_HEADERS([dlfcn.h], [], [have_dl="yes"])
+fi
+
+if test "x${have_dl}" != xyes; then
+    AC_MSG_FAILURE([Dynamic loader support is missing])
+fi
+
+AC_CHECK_LIB([crypto], [HMAC_Init], [have_crypto="yes"])
+if test "x${have_crypto}" = xyes; then
+    AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [], [have_crypto="yes"])
+fi
+
+if test "x${have_crypto}" != xyes; then
+    AC_MSG_FAILURE([libcrypto (OpenSSL) is missing, required for sync])
+fi
+
 greyd_LIBS="$LIBS"
 greylogd_LIBS="$LIBS"
 greydb_LIBS="$LIBS"
@@ -24,7 +48,7 @@ AC_SUBST([greydb_LIBS], ["$greydb_LIBS"])
 AC_SUBST([greyd_setup_LIBS], ["$greyd_setup_LIBS"])
 
 # Checks for header files.
-AC_CHECK_HEADERS([dlfcn.h arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
 
 #
 # Berkeley db driver library & header checks.
