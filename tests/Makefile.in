@@ -1,6 +1,6 @@
-#
 # Makefile for greyd unit tests.
-#
+# @configure_input@
+
 progname = @PACKAGE_NAME@
 package = @PACKAGE_NAME@
 version = @PACKAGE_VERSION@

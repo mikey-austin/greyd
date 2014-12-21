@@ -1,6 +1,6 @@
-#
 # Master makefile for greyd.
-#
+# @configure_input@
+
 progname = @PACKAGE_NAME@
 package = @PACKAGE_NAME@
 version = @PACKAGE_VERSION@

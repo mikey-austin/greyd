@@ -3,6 +3,8 @@
 # Run all supplied test files through valgrind using the perl TAP
 # test harness to process results.
 #
+# @configure_input@
+#
 
 use TAP::Harness;
 
