@@ -15,6 +15,9 @@ libdir = @libdir@
 sysconfdir = @sysconfdir@
 localstatedir = @localstatedir@
 
+srcdir = @srcdir@
+VPATH = @srcdir@
+
 CC = @CC@
 CFLAGS = @CFLAGS@
 

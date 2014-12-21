@@ -11,6 +11,9 @@ libdir = @libdir@
 sysconfdir = @sysconfdir@
 localstatedir = @localstatedir@
 
+srcdir = @srcdir@
+VPATH = @srcdir@
+
 all: Makefile greyd.conf
 
 greyd.conf: greyd.conf.in

@@ -1,13 +1,30 @@
 #
 # Makefile for greyd unit tests.
 #
+progname = @PACKAGE_NAME@
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
+distdir = $(tarname)-$(version)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+libdir = @libdir@
+sysconfdir = @sysconfdir@
+localstatedir = @localstatedir@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+CFLAGS += @CFLAGS@ -I../src
 
 SRC			= test.c
 TESTS		= $(wildcard test_*.c)
 TEST_OBJ    = $(SRC:.c=.o) $(TESTS:.c=.o)
 TARGETS		= $(TESTS:.c=.t)
 LIBS        = -lz -ldl -lcrypto
-CFLAGS		+= -I../src
 
 all: $(TARGETS)
 

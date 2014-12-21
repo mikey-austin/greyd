@@ -1,7 +1,6 @@
 #
 # Master makefile for greyd.
 #
-
 progname = @PACKAGE_NAME@
 package = @PACKAGE_NAME@
 version = @PACKAGE_VERSION@
@@ -14,6 +13,9 @@ sbindir = @sbindir@
 libdir = @libdir@
 sysconfdir = @sysconfdir@
 localstatedir = @localstatedir@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
 
 CC = @CC@
 CFLAGS = @CFLAGS@
@@ -48,22 +50,22 @@ $(distdir): FORCE
 	mkdir -p $(distdir)/src/modules
 	mkdir -p $(distdir)/tests
 	mkdir -p $(distdir)/tests/data
-	cp configure $(distdir)
-	cp install-sh $(distdir)
-	cp configure.ac $(distdir)
-	cp Makefile.in $(distdir)
-	cp etc/Makefile.in $(distdir)/etc
-	cp etc/greyd.conf.in $(distdir)/etc
-	cp src/Makefile.in $(distdir)/src
-	cp src/config.h.in $(distdir)/src
-	cp src/*.[ch] $(distdir)/src
-	cp src/modules/Makefile.in $(distdir)/src/modules/
-	cp src/modules/*.c $(distdir)/src/modules
-	cp tests/Makefile.in $(distdir)/tests
-	cp tests/*.[ch] $(distdir)/tests
-	cp tests/run_tests.pl $(distdir)/tests
-	cp tests/data/*.conf $(distdir)/tests/data
-	cp tests/data/*.gz $(distdir)/tests/data
+	cp $(srcdir)/configure $(distdir)
+	cp $(srcdir)/install-sh $(distdir)
+	cp $(srcdir)/configure.ac $(distdir)
+	cp $(srcdir)/Makefile.in $(distdir)
+	cp $(srcdir)/etc/Makefile.in $(distdir)/etc
+	cp $(srcdir)/etc/greyd.conf.in $(distdir)/etc
+	cp $(srcdir)/src/Makefile.in $(distdir)/src
+	cp $(srcdir)/src/config.h.in $(distdir)/src
+	cp $(srcdir)/src/*.[ch] $(distdir)/src
+	cp $(srcdir)/src/modules/Makefile.in $(distdir)/src/modules/
+	cp $(srcdir)/src/modules/*.c $(distdir)/src/modules
+	cp $(srcdir)/tests/Makefile.in $(distdir)/tests
+	cp $(srcdir)/tests/*.[ch] $(distdir)/tests
+	cp $(srcdir)/tests/run_tests.pl $(distdir)/tests
+	cp $(srcdir)/tests/data/*.conf $(distdir)/tests/data
+	cp $(srcdir)/tests/data/*.gz $(distdir)/tests/data
 
 distcheck: $(distdir).tar.gz
 	gunzip -c $(distdir).tar.gz |tar xvf -
