@@ -18,8 +18,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-CFLAGS = -I. @CFLAGS@
-CFLAGS = @CFLAGS@
+CFLAGS = -I. -I$(srcdir) -I.. @CFLAGS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@

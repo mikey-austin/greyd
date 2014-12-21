@@ -8,6 +8,7 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_SED
+AC_CHECK_PROGS([VALGRIND], [valgrind], )
 
 # Checks for libraries.
 AC_CHECK_LIB([cap], [cap_get_proc])
