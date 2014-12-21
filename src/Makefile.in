@@ -2,6 +2,22 @@
 # Makefile for greyd.
 #
 
+progname = @PACKAGE_NAME@
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
+distdir = $(tarname)-$(version)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+libdir = @libdir@
+sysconfdir = @sysconfdir@
+localstatedir = @localstatedir@
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+
 SRC = $(wildcard *.c)
 MAINS_SRC = $(wildcard main_*.c)
 MAINS = $(MAINS_SRC:.c=.o)

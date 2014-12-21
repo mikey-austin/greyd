@@ -1,10 +1,24 @@
 #
-# Makefile for pluggable firewall modules.
+# Makefile for plugin modules.
 #
+progname = @PACKAGE_NAME@
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
+distdir = $(tarname)-$(version)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+libdir = @libdir@
+sysconfdir = @sysconfdir@
+localstatedir = @localstatedir@
+
+CC = @CC@
+CFLAGS += @CFLAGS@ -fpic
 
 SRC = pf.c netfilter.c bdb.c fw_dummy.c
 OBJ = $(SRC:.c=.o)
-CFLAGS += -fpic
 
 all: pf.so netfilter.so fw_dummy.so bdb.so
 

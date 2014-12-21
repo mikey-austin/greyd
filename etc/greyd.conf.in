@@ -15,7 +15,7 @@ section firewall {
 # The greylisting database configuration.
 #
 section database {
-    driver  = "@libdir@/@PACKAGE_NAME@/greyd/bdb.so",
+    driver  = "@libdir@/@PACKAGE_NAME@/bdb.so",
     path    = "@localstatedir@/@PACKAGE_NAME@",
     db_name = "@PACKAGE_NAME@.db"
 }

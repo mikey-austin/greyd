@@ -1,0 +1,33 @@
+progname = @PACKAGE_NAME@
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
+distdir = $(tarname)-$(version)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+libdir = @libdir@
+sysconfdir = @sysconfdir@
+localstatedir = @localstatedir@
+
+all: Makefile greyd.conf
+
+greyd.conf: greyd.conf.in
+	sed -e 's,[@]PACKAGE_NAME[@],$(progname),g' \
+		-e 's,[@]libdir[@],$(libdir),g' \
+		-e 's,[@]localstatedir[@],$(localstatedir),g' \
+		-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
+		< $< >$@
+
+Makefile: Makefile.in ../config.status
+	../config.status $@
+
+clean:
+	rm -f greyd.conf
+
+install:
+	install -d $(DESTDIR)$(sysconfdir)/$(progname)
+	install -m 0640 greyd.conf $(DESTDIR)$(sysconfdir)/$(progname)/greyd.conf
+
+.PHONY: install clean

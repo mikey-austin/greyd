@@ -2,40 +2,38 @@
 # Master makefile for greyd.
 #
 
-progname = greyd
-package = $(progname)
-version = 0.1.0
-tarname = $(package)
+progname = @PACKAGE_NAME@
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
 distdir = $(tarname)-$(version)
-prefix = /usr/local
-exec_prefix = $(prefix)
-sbindir = $(exec_prefix)/sbin
-libdir = $(exec_prefix)/lib
-sysconfdir = $(prefix)/etc
-export progname
-export package
-export version
-export prefix
-export exec_prefix
-export sbindir
-export libdir
-export sysconfdir
 
-CC = clang
-CFLAGS = -Wall -Wunused -Wstrict-prototypes
-export CC
-export CFLAGS
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+libdir = @libdir@
+sysconfdir = @sysconfdir@
+localstatedir = @localstatedir@
+
+CC = @CC@
+CFLAGS = @CFLAGS@
 
 all clean:
+	$(MAKE) -C etc/ $@
 	$(MAKE) -C src/ $@
 	$(MAKE) -C tests/ $@
+
+Makefile: Makefile.in config.status
+	./config.status $@
+
+config.status: configure
+	./config.status --recheck
 
 check test: all
 	$(MAKE) -C tests/ $@
 
 install:
-	install -d $(DESTDIR)$(sysconfdir)/$(progname)
-	install -m 0640 sample-greyd.conf $(DESTDIR)$(sysconfdir)/$(progname)/greyd.conf
+	$(MAKE) -C etc/ $@
 	$(MAKE) -C src/ $@
 
 dist: $(distdir).tar.gz
@@ -45,16 +43,23 @@ $(distdir).tar.gz: $(distdir)
 	rm -rf $(distdir)
 
 $(distdir): FORCE
+	mkdir -p $(distdir)/etc
 	mkdir -p $(distdir)/src
 	mkdir -p $(distdir)/src/modules
 	mkdir -p $(distdir)/tests
 	mkdir -p $(distdir)/tests/data
-	cp Makefile $(distdir)
-	cp src/Makefile $(distdir)/src
+	cp configure $(distdir)
+	cp install-sh $(distdir)
+	cp configure.ac $(distdir)
+	cp Makefile.in $(distdir)
+	cp etc/Makefile.in $(distdir)/etc
+	cp etc/greyd.conf.in $(distdir)/etc
+	cp src/Makefile.in $(distdir)/src
+	cp src/config.h.in $(distdir)/src
 	cp src/*.[ch] $(distdir)/src
-	cp src/modules/Makefile $(distdir)/src/modules/
+	cp src/modules/Makefile.in $(distdir)/src/modules/
 	cp src/modules/*.c $(distdir)/src/modules
-	cp tests/Makefile $(distdir)/tests
+	cp tests/Makefile.in $(distdir)/tests
 	cp tests/*.[ch] $(distdir)/tests
 	cp tests/run_tests.pl $(distdir)/tests
 	cp tests/data/*.conf $(distdir)/tests/data
@@ -62,6 +67,7 @@ $(distdir): FORCE
 
 distcheck: $(distdir).tar.gz
 	gunzip -c $(distdir).tar.gz |tar xvf -
+	cd $(distdir) && ./configure
 	cd $(distdir) && $(MAKE) all
 	cd $(distdir) && $(MAKE) check
 	cd $(distdir) && $(MAKE) clean
