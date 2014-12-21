@@ -10,77 +10,109 @@ AC_PROG_INSTALL
 AC_PROG_SED
 AC_CHECK_PROGS([VALGRIND], [valgrind], )
 
-# Checks for libraries.
-AC_CHECK_LIB([cap], [cap_get_proc])
-AC_CHECK_LIB([cap], [cap_set_flag])
-AC_CHECK_LIB([cap], [cap_set_proc])
-AC_CHECK_LIB([cap], [cap_free])
-AC_CHECK_LIB([cap], [cap_clear])
-AC_CHECK_LIB([crypto], [HMAC_Init])
-AC_CHECK_LIB([crypto], [HMAC_Update])
-AC_CHECK_LIB([crypto], [HMAC_Final])
-AC_CHECK_LIB([crypto], [HMAC_CTX_cleanup])
-AC_CHECK_LIB([crypto], [HMAC_CTX_init])
-AC_CHECK_LIB([crypto], [SHA1_Init])
-AC_CHECK_LIB([crypto], [SHA1_Update])
-AC_CHECK_LIB([crypto], [SHA1_Final])
-AC_CHECK_LIB([db], [db_create])
-AC_CHECK_LIB([db], [db_strerror])
-AC_CHECK_LIB([db], [db_env_create])
-AC_CHECK_LIB([dl], [dlopen])
-AC_CHECK_LIB([dl], [dlerror])
-AC_CHECK_LIB([dl], [dlclose])
-AC_CHECK_LIB([dl], [dlsym])
-AC_CHECK_LIB([ipset], [ipset_load_types])
-AC_CHECK_LIB([ipset], [ipset_session_init])
-AC_CHECK_LIB([ipset], [ipset_session_fini])
-AC_CHECK_LIB([ipset], [ipset_session_data_set])
-AC_CHECK_LIB([ipset], [ipset_session_error])
-AC_CHECK_LIB([ipset], [ipset_type_get])
-AC_CHECK_LIB([ipset], [ipset_cmd])
-AC_CHECK_LIB([ipset], [ipset_envopt_parse])
-AC_CHECK_LIB([mnl], [mnl_socket_open])
-AC_CHECK_LIB([mnl], [mnl_socket_bind])
-AC_CHECK_LIB([mnl], [mnl_socket_close])
-AC_CHECK_LIB([mnl], [mnl_socket_get_portid])
-AC_CHECK_LIB([mnl], [mnl_nlmsg_put_header])
-AC_CHECK_LIB([mnl], [mnl_mlmsg_put_extra_header])
-AC_CHECK_LIB([mnl], [mnl_socket_sendto])
-AC_CHECK_LIB([mnl], [mnl_socket_recv])
-AC_CHECK_LIB([mnl], [mnl_cb_run])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_new])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_set_attr_u8])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_set_attr_u16])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_set_attr_u32])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_set_attr])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_nlmsg_build])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_destroy])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_nlmsg_parse])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_get_attr_u8])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_get_attr_u16])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_get_attr_u32])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_get_attr])
-AC_CHECK_LIB([netfilter_conntrack], [nfct_destroy])
-AC_CHECK_LIB([netfilter_log], [nflog_handle])
-AC_CHECK_LIB([netfilter_log], [nflog_group])
-AC_CHECK_LIB([netfilter_log], [nflog_callback_register])
-AC_CHECK_LIB([netfilter_log], [nflog_unbind_group])
-AC_CHECK_LIB([netfilter_log], [nflog_close])
-AC_CHECK_LIB([netfilter_log], [nflog_fd])
-AC_CHECK_LIB([netfilter_log], [nflog_handle_packet])
-AC_CHECK_LIB([netfilter_log], [nflog_open])
-AC_CHECK_LIB([netfilter_log], [nflog_bind_pf])
-AC_CHECK_LIB([netfilter_log], [nflog_set_mode])
-AC_CHECK_LIB([netfilter_log], [nflog_set_nlbufsiz])
-AC_CHECK_LIB([netfilter_log], [nflog_set_timeout])
-AC_CHECK_LIB([netfilter_log], [nflog_get_payload])
+# Checks for common libraries.
 AC_CHECK_LIB([z], [gzdopen])
-AC_CHECK_LIB([z], [gzclose])
-AC_CHECK_LIB([z], [gzgetc])
-AC_CHECK_LIB([z], [gzungetc])
+AC_CHECK_LIB([dl], [dlopen])
+AC_CHECK_LIB([crypto], [HMAC_Init])
+greyd_LIBS="$LIBS"
+greylogd_LIBS="$LIBS"
+greydb_LIBS="$LIBS"
+greyd_setup_LIBS="$LIBS"
+
+AC_SUBST([greyd_LIBS], ["$greyd_LIBS"])
+AC_SUBST([greylogd_LIBS], ["$greylogd_LIBS"])
+AC_SUBST([greydb_LIBS], ["$greydb_LIBS"])
+AC_SUBST([greyd_setup_LIBS], ["$greyd_setup_LIBS"])
 
 # Checks for header files.
 AC_CHECK_HEADERS([dlfcn.h arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
+
+#
+# Berkeley db driver library & header checks.
+#
+bdb_LIBS=""
+have_bdb=no
+AC_CHECK_LIB([db], [db_create], [have_bdb=yes])
+if test "x${have_bdb}" = xyes; then
+   AC_CHECK_HEADERS([db.h], [], [have_bdb=no])
+fi
+
+if test "x${have_bdb}" = xyes; then
+   bdb_LIBS="$bdb_LIBS -ldb"
+   AC_DEFINE([HAVE_LIBDB], [1], [Berkeley db development library])
+   AC_SUBST([bdb_LIBS], ["$bdb_LIBS"])
+else
+   AC_MSG_FAILURE([libdb is required to build the Berkeley database driver])
+fi
+
+#
+# Netfilter driver library & header checks.
+#
+netfilter_LIBS=""
+have_netfilter=no
+AC_CHECK_LIB([cap], [cap_get_proc], [have_netfilter=yes])
+if test "x${have_netfilter}" = xyes; then
+   AC_CHECK_HEADERS([sys/capability.h], [], [have_netfilter=no])
+fi
+
+if test "x${have_netfilter}" = xyes; then
+   netfilter_LIBS="$netfilter_LIBS -lcap"
+   AC_DEFINE([HAVE_LIBCAP], [1], [Linux system capabilities])
+else
+   AC_MSG_FAILURE([libcap is required to build the netfilter driver])
+fi
+
+AC_CHECK_LIB([ipset], [ipset_cmd], [have_netfilter=yes])
+if test "x${have_netfilter}" = xyes; then
+   AC_CHECK_HEADERS([libipset/session.h], [], [have_netfilter=no])
+fi
+
+if test "x${have_netfilter}" = xyes; then
+   netfilter_LIBS="$netfilter_LIBS -lipset"
+   AC_DEFINE([HAVE_LIBIPSET], [1], [Netfilter IPSET management library])
+else
+   AC_MSG_FAILURE([libipset is required to build the netfilter driver])
+fi
+
+AC_CHECK_LIB([mnl], [mnl_socket_open], [have_netfilter=yes])
+if test "x${have_netfilter}" = xyes; then
+   AC_CHECK_HEADERS([libmnl/libmnl.h], [], [have_netfilter=no])
+fi
+
+if test "x${have_netfilter}" = xyes; then
+   netfilter_LIBS="$netfilter_LIBS -lmnl"
+   AC_DEFINE([HAVE_LIBMNL], [1], [Netlink socket abstraction library])
+else
+   AC_MSG_FAILURE([libmnl is required to build the netfilter driver])
+fi
+
+AC_CHECK_LIB([netfilter_conntrack], [nfct_new], [have_netfilter=yes])
+if test "x${have_netfilter}" = xyes; then
+   AC_CHECK_HEADERS([libnetfilter_conntrack/libnetfilter_conntrack.h], [], [have_netfilter=no])
+fi
+
+if test "x${have_netfilter}" = xyes; then
+   netfilter_LIBS="$netfilter_LIBS -lnetfilter_conntrack"
+   AC_DEFINE([HAVE_LIBNETFILTER_CONNTRACK], [1], [Netfilter connection tracking library])
+else
+   AC_MSG_FAILURE([libnetfilter_conntrack is required to build the netfilter driver])
+fi
+
+AC_CHECK_LIB([netfilter_log], [nflog_open], [have_netfilter=yes])
+if test "x${have_netfilter}" = xyes; then
+   AC_CHECK_HEADERS([libnetfilter_log/libnetfilter_log.h], [], [have_netfilter=no])
+fi
+
+if test "x${have_netfilter}" = xyes; then
+   netfilter_LIBS="$netfilter_LIBS -lnetfilter_log"
+   AC_DEFINE([HAVE_LIBNETFILTER_LOG], [1], [Netfilter connection tracking library])
+else
+   AC_MSG_FAILURE([libnetfilter_log is required to build the netfilter driver])
+fi
+
+if test "x${have_netfilter}" = xyes; then
+   AC_SUBST([netfilter_LIBS], ["$netfilter_LIBS"])
+fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT64_T

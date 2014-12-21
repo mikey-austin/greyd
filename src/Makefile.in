@@ -19,6 +19,10 @@ VPATH = @srcdir@
 
 CC = @CC@
 CFLAGS = -I. -I$(srcdir) -I.. @CFLAGS@
+greyd_LIBS = @greyd_LIBS@
+greylogd_LIBS = @greylogd_LIBS@
+greydb_LIBS = @greydb_LIBS@
+greyd_setup_LIBS = @greyd_setup_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -28,22 +32,21 @@ SRC = blacklist.c con.c config_lexer.c config_parser.c config_section.c config_v
 MAINS_SRC = main_greydb.c  main_greyd.c  main_greyd_setup.c  main_greylogd.c
 MAINS = $(MAINS_SRC:.c=.o)
 OBJ = $(SRC:.c=.o)
-LIBS = -lz -ldl -lcrypto
 TESTS = tests
 
 all: greyd greyd-setup greydb greylogd modules
 
-greyd-setup: $(OBJ)
-	$(CC) $(CFLAGS) -Wl,-E -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
-
-greydb: $(OBJ)
-	$(CC) $(CFLAGS) -Wl,-E -o greydb main_greydb.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
-
 greyd: $(OBJ)
-	$(CC) $(CFLAGS) -Wl,-E -o greyd main_greyd.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
+	$(CC) $(CFLAGS) -Wl,-E -o greyd main_greyd.o $(filter-out $(MAINS),$(OBJ)) $(greyd_LIBS)
 
 greylogd: $(OBJ)
-	$(CC) $(CFLAGS) -Wl,-E -o greylogd main_greylogd.o $(filter-out $(MAINS),$(OBJ)) $(LIBS)
+	$(CC) $(CFLAGS) -Wl,-E -o greylogd main_greylogd.o $(filter-out $(MAINS),$(OBJ)) $(greylogd_LIBS)
+
+greydb: $(OBJ)
+	$(CC) $(CFLAGS) -Wl,-E -o greydb main_greydb.o $(filter-out $(MAINS),$(OBJ)) $(greydb_LIBS)
+
+greyd-setup: $(OBJ)
+	$(CC) $(CFLAGS) -Wl,-E -o greyd-setup main_greyd_setup.o $(filter-out $(MAINS),$(OBJ)) $(greyd_setup_LIBS)
 
 modules:
 	$(MAKE) -C modules

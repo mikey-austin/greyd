@@ -19,6 +19,8 @@ VPATH = @srcdir@
 
 CC = @CC@
 CFLAGS = -fpic @CFLAGS@
+bdb_LIBS = @bdb_LIBS@
+netfilter_LIBS = @netfilter_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -33,13 +35,13 @@ pf.so: pf.o
 	$(CC) $(CFLAGS) -shared -o pf.so pf.o
 
 netfilter.so: netfilter.o
-	$(CC) $(CFLAGS) -shared -o netfilter.so netfilter.o -L/usr/local/lib -lnetfilter_conntrack -lmnl -lcap -lipset -lnetfilter_log
+	$(CC) $(CFLAGS) -shared -o netfilter.so netfilter.o -L/usr/local/lib $(netfilter_LIBS)
 
 fw_dummy.so: fw_dummy.o
 	$(CC) $(CFLAGS) -shared -o fw_dummy.so fw_dummy.o
 
 bdb.so: bdb.o
-	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -L/usr/local/BerkeleyDB.5.3/lib -ldb
+	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -L/usr/local/BerkeleyDB.5.3/lib $(bdb_LIBS)
 
 install:
 	$(INSTALL) -d $(DESTDIR)$(libdir)/$(progname)

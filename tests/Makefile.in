@@ -19,12 +19,12 @@ VPATH = @srcdir@
 
 CC = @CC@
 CFLAGS = -I$(srcdir)/../src @CFLAGS@
+LIBS = @LIBS@
 
 SRC	= test.c
 TESTS = test_bdb.c test_blacklist.c test_con.c test_config.c test_config_lexer.c test_config_parser.c test_config_section.c test_config_value.c test_grey.c test_greyd_utils.c test_hash.c test_ip.c test_lexer_source.c test_list.c test_queue.c test_spamd_lexer.c test_spamd_parser.c test_test_framework.c
 TEST_OBJ = $(SRC:.c=.o) $(TESTS:.c=.o)
 TARGETS	= $(TESTS:.c=.t)
-LIBS = -lz -ldl -lcrypto
 
 all: $(TARGETS)
 
