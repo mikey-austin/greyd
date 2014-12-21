@@ -11,8 +11,6 @@
 #include "failures.h"
 #include "config_section.h"
 
-#include <dlfcn.h>
-
 /**
  * Load the driver module from the specified configuration section, and
  * return an open handle.

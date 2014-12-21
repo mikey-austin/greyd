@@ -78,7 +78,7 @@ AC_CHECK_LIB([z], [gzgetc])
 AC_CHECK_LIB([z], [gzungetc])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
+AC_CHECK_HEADERS([dlfcn.h arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT64_T

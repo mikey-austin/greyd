@@ -5,6 +5,14 @@
  * @date   2014
  */
 
+#include <config.h>
+
+#ifdef HAVE_DLFCN_H
+# include <dlfcn.h>
+#else
+# error This module requires dlfcn.h.
+#endif
+
 #include "mod.h"
 
 extern void

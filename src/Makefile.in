@@ -19,7 +19,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-CFLAGS = -I$(srcdir) @CFLAGS@
+CFLAGS = -I. @CFLAGS@
 
 SRC = blacklist.c con.c config_lexer.c config_parser.c config_section.c config_value.c failures.c firewall.c grey.c greydb.c greyd.c greyd_config.c hash.c ip.c lexer.c lexer_source.c list.c log.c main_greydb.c main_greyd.c main_greyd_setup.c main_greylogd.c mod.c queue.c spamd_lexer.c spamd_parser.c sync.c utils.c
 MAINS_SRC = main_greydb.c  main_greyd.c  main_greyd_setup.c  main_greylogd.c
