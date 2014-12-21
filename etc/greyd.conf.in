@@ -29,7 +29,7 @@ section sync {
     ttl           = 2,
     port          = 8099,
     verify        = 1,
-    key           = "@sysconfdir@/@PACKAGE_NAME@/greyd.key"
+    key           = "@sysconfdir@/@PACKAGE_NAME@/greyd.key",
     bind_address  = "eth0:2",
     mcast_address = "224.0.1.241"
 }
