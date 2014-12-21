@@ -18,7 +18,6 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-CFLAGS = @CFLAGS@
 
 all clean:
 	$(MAKE) -C etc/ $@

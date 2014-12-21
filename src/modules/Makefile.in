@@ -19,6 +19,10 @@ VPATH = @srcdir@
 
 CC = @CC@
 CFLAGS = -fpic @CFLAGS@
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
 
 SRC = pf.c netfilter.c bdb.c fw_dummy.c
 OBJ = $(SRC:.c=.o)
@@ -38,10 +42,10 @@ bdb.so: bdb.o
 	$(CC) $(CFLAGS) -shared -o bdb.so bdb.o -L/usr/local/BerkeleyDB.5.3/lib -ldb
 
 install:
-	install -d $(DESTDIR)$(libdir)/$(progname)
-	install -m 750 netfilter.so $(DESTDIR)$(libdir)/$(progname)
-	install -m 750 bdb.so $(DESTDIR)$(libdir)/$(progname)
-	install -m 750 pf.so $(DESTDIR)$(libdir)/$(progname)
+	$(INSTALL) -d $(DESTDIR)$(libdir)/$(progname)
+	$(INSTALL_PROGRAM) -m 750 netfilter.so $(DESTDIR)$(libdir)/$(progname)
+	$(INSTALL_PROGRAM) -m 750 bdb.so $(DESTDIR)$(libdir)/$(progname)
+	$(INSTALL_PROGRAM) -m 750 pf.so $(DESTDIR)$(libdir)/$(progname)
 
 .PHONY: clean install
 

@@ -7,6 +7,7 @@ AC_CONFIG_HEADERS([src/config.h])
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_PROG_SED
 
 # Checks for libraries.
 AC_CHECK_LIB([cap], [cap_get_proc])

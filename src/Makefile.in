@@ -19,6 +19,11 @@ VPATH = @srcdir@
 
 CC = @CC@
 CFLAGS = -I. @CFLAGS@
+CFLAGS = @CFLAGS@
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
 
 SRC = blacklist.c con.c config_lexer.c config_parser.c config_section.c config_value.c failures.c firewall.c grey.c greydb.c greyd.c greyd_config.c hash.c ip.c lexer.c lexer_source.c list.c log.c main_greydb.c main_greyd.c main_greyd_setup.c main_greylogd.c mod.c queue.c spamd_lexer.c spamd_parser.c sync.c utils.c
 MAINS_SRC = main_greydb.c  main_greyd.c  main_greyd_setup.c  main_greylogd.c
@@ -45,11 +50,11 @@ modules:
 	$(MAKE) -C modules
 
 install:
-	install -d $(DESTDIR)$(sbindir)
-	install -m 0750 greyd $(DESTDIR)$(sbindir)
-	install -m 0750 greylogd $(DESTDIR)$(sbindir)
-	install -m 0750 greydb $(DESTDIR)$(sbindir)
-	install -m 0750 greyd-setup $(DESTDIR)$(sbindir)
+	$(INSTALL) -d $(DESTDIR)$(sbindir)
+	$(INSTALL_PROGRAM) -m 0750 greyd $(DESTDIR)$(sbindir)
+	$(INSTALL_PROGRAM) -m 0750 greylogd $(DESTDIR)$(sbindir)
+	$(INSTALL_PROGRAM) -m 0750 greydb $(DESTDIR)$(sbindir)
+	$(INSTALL_PROGRAM) -m 0750 greyd-setup $(DESTDIR)$(sbindir)
 	$(MAKE) -C modules/ $@
 
 #

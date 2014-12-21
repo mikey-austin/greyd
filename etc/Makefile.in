@@ -17,10 +17,16 @@ localstatedir = @localstatedir@
 srcdir = @srcdir@
 VPATH = @srcdir@
 
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+SED = @SED@
+
 all: Makefile greyd.conf
 
 greyd.conf: greyd.conf.in
-	sed -e 's,[@]PACKAGE_NAME[@],$(progname),g' \
+	$(SED) -e 's,[@]PACKAGE_NAME[@],$(progname),g' \
 		-e 's,[@]libdir[@],$(libdir),g' \
 		-e 's,[@]localstatedir[@],$(localstatedir),g' \
 		-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
@@ -33,7 +39,7 @@ clean:
 	rm -f greyd.conf
 
 install:
-	install -d $(DESTDIR)$(sysconfdir)/$(progname)
-	install -m 0640 greyd.conf $(DESTDIR)$(sysconfdir)/$(progname)/greyd.conf
+	$(INSTALL) -d $(DESTDIR)$(sysconfdir)/$(progname)
+	$(INSTALL_DATA) greyd.conf $(DESTDIR)$(sysconfdir)/$(progname)/greyd.conf
 
 .PHONY: install clean
