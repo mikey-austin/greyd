@@ -99,5 +99,12 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/modules/Makefile
                  etc/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+                 tests/run_tests.pl
+                 tests/data/config_lexer_test1.conf
+                 tests/data/config_test1.conf
+                 tests/data/config_test2.conf
+                 tests/data/config_test3.conf
+                 tests/data/lexer_source_1.conf
+                 tests/data/lexer_source_2.conf.gz])
 AC_OUTPUT

@@ -63,9 +63,9 @@ $(distdir): FORCE
 	cp $(srcdir)/src/modules/*.c $(distdir)/src/modules
 	cp $(srcdir)/tests/Makefile.in $(distdir)/tests
 	cp $(srcdir)/tests/*.[ch] $(distdir)/tests
-	cp $(srcdir)/tests/run_tests.pl $(distdir)/tests
-	cp $(srcdir)/tests/data/*.conf $(distdir)/tests/data
-	cp $(srcdir)/tests/data/*.gz $(distdir)/tests/data
+	cp $(srcdir)/tests/run_tests.pl.in $(distdir)/tests
+	cp $(srcdir)/tests/data/*.conf.in $(distdir)/tests/data
+	cp $(srcdir)/tests/data/*.gz.in $(distdir)/tests/data
 
 distcheck: $(distdir).tar.gz
 	gunzip -c $(distdir).tar.gz |tar xvf -
