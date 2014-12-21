@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <grp.h>
+#include <limits.h>
 
 #include "constants.h"
 #include "failures.h"
