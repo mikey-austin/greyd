@@ -615,6 +615,12 @@ jail:
         for(i = 0; i < state.max_cons; i++) {
             con = &state.cons[i];
 
+            if(con->fd != -1 &&
+               (fds[con->fd % max_fd].revents & (POLLERR | POLLHUP)))
+            {
+                Con_close(con, &state);
+            }
+
             if(con->fd != -1 && (fds[con->fd % max_fd].revents & POLLIN))
                 Con_handle_read(con, &now, &state);
 
