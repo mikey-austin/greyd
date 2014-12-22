@@ -23,6 +23,7 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
+#include <asm/types.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
 #include <libipset/types.h>
