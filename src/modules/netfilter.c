@@ -23,15 +23,16 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-#include <libmnl/libmnl.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
+#include <libipset/types.h>
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #include <linux/netfilter/nf_conntrack_tcp.h>
-#include <libipset/types.h>
 #include <libipset/session.h>
 #include <libipset/data.h>
 #include <libnetfilter_log/libipulog.h>
 #include <libnetfilter_log/libnetfilter_log.h>
-#include <asm/byteorder.h>
+#include <libmnl/libmnl.h>
 
 #include "../failures.h"
 #include "../firewall.h"
@@ -52,47 +53,6 @@
 #define NFLOG_WHOLE_PACKET 0xffff
 #define NFLOG_DIR_IN       1
 #define NFLOG_DIR_OUT      0
-
-struct iphdr {
-#if defined(__LITTLE_ENDIAN_BITFIELD)
-    __u8    ihl:4,
-        version:4;
-#elif defined (__BIG_ENDIAN_BITFIELD)
-    __u8    version:4,
-        ihl:4;
-#else
-#error  "Please fix <asm/byteorder.h>"
-#endif
-    __u8    tos;
-    __be16  tot_len;
-    __be16  id;
-    __be16  frag_off;
-    __u8    ttl;
-    __u8    protocol;
-    __sum16 check;
-    __be32  saddr;
-    __be32  daddr;
-};
-
-struct ipv6hdr {
-#if defined(__LITTLE_ENDIAN_BITFIELD)
-    __u8            priority:4,
-                version:4;
-#elif defined(__BIG_ENDIAN_BITFIELD)
-    __u8            version:4,
-                priority:4;
-#else
-#error  "Please fix <asm/byteorder.h>"
-#endif
-    __u8            flow_lbl[3];
-
-    __be16          payload_len;
-    __u8            nexthdr;
-    __u8            hop_limit;
-
-    struct  in6_addr    saddr;
-    struct  in6_addr    daddr;
-};
 
 struct cb_filter {
     struct sockaddr *src;
@@ -700,12 +660,12 @@ log_callback(struct nflog_g_handle *group, struct nfgenmsg *msg,
         break;
 
     case AF_INET6:
-        if(payload_len <= 0 || payload_len < sizeof(struct ipv6hdr)) {
+        if(payload_len <= 0 || payload_len < sizeof(struct ip6_hdr)) {
             i_warning("invalid IPv6 payload length of %d", payload_len);
             return 0;
         }
-        inet_ntop(AF_INET6, &((struct ipv6hdr *) payload)->saddr, saddr, sizeof(saddr));
-        inet_ntop(AF_INET6, &((struct ipv6hdr *) payload)->daddr, daddr, sizeof(daddr));
+        inet_ntop(AF_INET6, &((struct ip6_hdr *) payload)->ip6_src, saddr, sizeof(struct in6_addr));
+        inet_ntop(AF_INET6, &((struct ip6_hdr *) payload)->ip6_dst, daddr, sizeof(struct in6_addr));
         break;
     }
 
