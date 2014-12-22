@@ -21,15 +21,12 @@ else
     AC_MSG_FAILURE([zlib is required along with its headers])
 fi
 
-AC_CHECK_LIB([dl], [dlopen], [have_dl="yes"])
+AC_CHECK_HEADERS([dlfcn.h], [have_dl="yes"])
 if test "x${have_dl}" = xyes; then
-    AC_CHECK_HEADERS([dlfcn.h], [], [have_dl="yes"])
-fi
-
-if test "x${have_dl}" = xyes; then
-   LIBS="$LIBS -ldl"
+    # Not all systems require -ldl (eg OpenBSD).
+    AC_CHECK_LIB([dl], [dlopen], [LIBS="$LIBS -ldl"])
 else
-    AC_MSG_FAILURE([Dynamic loader support is missing])
+   AC_MSG_FAILURE([dynamic loader support is missing])
 fi
 
 AC_CHECK_LIB([crypto], [HMAC_Init], [have_crypto="yes"])
