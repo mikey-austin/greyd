@@ -66,9 +66,21 @@ chroot_dir = "/var/empty/greyd"
 # The firewall configuration.
 #
 section firewall {
-    driver    = "@libdir@/@PACKAGE_NAME@/netfilter.so",
-    max_elem  = 1000000,       # Max. number of set elements.
-    hash_size = 1048576        # Initial hash size.
+    driver = "@libdir@/@PACKAGE_NAME@/netfilter.so",
+
+    # Max. number of IPSET set elements.
+    max_elements = 1000000,
+
+    # Max. IPSET hash size.
+    hash_size = 1048576,
+
+    #
+    # Greylogd tracking via the iptables NFLOG target and
+    # corresponding --nflog-group.
+    #
+    track_inbound  = 1,
+    inbound_group  = 155,
+    outbound_group = 255
 }
 
 #
