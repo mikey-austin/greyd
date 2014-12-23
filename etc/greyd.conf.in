@@ -3,6 +3,66 @@
 #
 
 #
+# Debugging options and more verbose logs.
+#
+debug = 0
+verbose = 0
+
+#
+# Main daemon user to drop privileges to.
+#
+user = "greyd"
+
+#
+# Address to listen on.
+#
+bind_address = "127.0.0.1"
+
+#
+# Main greyd port.
+#
+port = 8025
+
+#
+# This will be obtained via "hostname" if not set.
+#
+hostname = "greyd.org"
+
+#
+# Enable listening on IPv6 socket.
+#
+enable_ipv6 = 0
+bind_address_ipv6 = "::1"
+
+#
+# For blacklisted connections, the number of seconds between
+# stuttered bytes.
+#
+stutter = 1
+
+#
+# Adjust the socket receive buffer to the specified number
+# of bytes (window size). This slows down spammers even more.
+#
+# window = 1
+
+#
+# The banner message to be displayed to new connections.
+#
+banner = "greyd IP-based SPAM blocker"
+
+#
+# The return code to show blacklisted spammers.
+#
+error_code = "450"
+
+#
+# Chroot enable & location for main daemon.
+#
+chroot     = 1
+chroot_dir = "/var/empty/greyd"
+
+#
 # The firewall configuration.
 #
 section firewall {
@@ -27,7 +87,7 @@ section sync {
     enable        = 1,
     hosts         = [ "eth0:2", "jackiemclean.net" ],
     ttl           = 2,
-    port          = 8099,
+    port          = 8025,
     verify        = 1,
     key           = "@sysconfdir@/@PACKAGE_NAME@/greyd.key",
     bind_address  = "eth0:2",
@@ -52,10 +112,10 @@ section grey {
     stutter = 10,
 
     # Various greylisting times (in seconds)
-    grey_expiry  = 1500,    # 25 minutes.
-    white_expiry = 86400,   # 4 hours.
-    trap_expiry  = 3110400, # 36 days.
-    pass_time    = 86400    # 4 hours.
+    pass_time    = 600,     # 10 minutes.
+    grey_expiry  = 14400,   # 4 hours.
+    white_expiry = 2678400, # 31 days.
+    trap_expiry  = 86400    # 1 day.
 }
 
 #
@@ -88,3 +148,8 @@ blacklist test_file_method {
     method = "file",
     file   = "/tmp/nixspam-traplist.gz"
 }
+
+#
+# Configuration may be recursively specified using globs.
+#
+#include "/etc/greyd/conf.d/*.conf"
