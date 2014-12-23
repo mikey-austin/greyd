@@ -532,6 +532,10 @@ jail:
             memset(fds, 0, (max_fd + 1) * sizeof(*fds));
         }
 
+        /* Ensure that all unset fds are ignored by poll. */
+        for(i = 0; i < (max_fd + 1); i++)
+            fds[i].fd = -1;
+
         writers = 0;
         for(i = 0; i < state.max_cons; i++) {
             con = &state.cons[i];
