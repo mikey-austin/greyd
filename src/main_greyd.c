@@ -642,16 +642,24 @@ jail:
             Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr,
                        &state);
         }
+        else if(fds[main_sock % max_fd].revents & (POLLERR | POLLHUP)) {
+            i_critical("poll error");
+        }
 
         /* Handle the main IPv6 socket. */
-        if(main_sock6 > 0 && fds[main_sock6 % max_fd].revents & POLLIN) {
-            memset(&main_in_addr6, 0, sizeof(main_in_addr6));
-            main_addr6_len = sizeof(main_in_addr6);
-            accept_fd = accept(main_sock6,
-                               (struct sockaddr *) &main_in_addr6,
-                               &main_addr6_len);
-            Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr6,
-                       &state);
+        if(main_sock6 > 0) {
+            if(fds[main_sock6 % max_fd].revents & POLLIN) {
+                memset(&main_in_addr6, 0, sizeof(main_in_addr6));
+                main_addr6_len = sizeof(main_in_addr6);
+                accept_fd = accept(main_sock6,
+                                   (struct sockaddr *) &main_in_addr6,
+                                   &main_addr6_len);
+                Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr6,
+                           &state);
+            }
+            else if(fds[main_sock6 % max_fd].revents & (POLLERR | POLLHUP)) {
+                i_critical("poll error");
+            }
         }
 
         /* Handle the configuration socket. */
@@ -682,6 +690,9 @@ jail:
                 state.slow_until = 0;
             }
         }
+        else if(fds[cfg_sock % max_fd].revents & (POLLERR | POLLHUP)) {
+            i_critical("poll error");
+        }
         else if(cfg_fd > 0 && fds[cfg_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(cfg_fd, &state);
             close(cfg_fd);
@@ -690,15 +701,19 @@ jail:
         }
 
         /* Handle the trap pipe input. */
-        if(trap_fd > 0 && fds[trap_fd % max_fd].revents & POLLIN) {
-            Greyd_process_config(trap_fd, &state);
+        if(trap_fd > 0) {
+            if(fds[trap_fd % max_fd].revents & POLLIN)
+                Greyd_process_config(trap_fd, &state);
+            else if(fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP))
+                i_critical("poll error");
         }
 
         /* Finally process any sync messages. */
-        if(sync_recv && syncer
-           && fds[syncer->sync_fd % max_fd].revents & POLLIN)
-        {
-            Sync_recv(syncer);
+        if(sync_recv && syncer) {
+            if(fds[syncer->sync_fd % max_fd].revents & POLLIN)
+                Sync_recv(syncer);
+            else if(fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP))
+                i_critical("poll error");
         }
     }
 

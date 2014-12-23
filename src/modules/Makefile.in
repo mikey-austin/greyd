@@ -66,9 +66,9 @@ bdb.so: bdb.o
 
 install:
 	$(INSTALL) -d $(DESTDIR)$(libdir)/$(progname)
-	$(INSTALL_PROGRAM) -m 750 netfilter.so $(DESTDIR)$(libdir)/$(progname)
-	$(INSTALL_PROGRAM) -m 750 bdb.so $(DESTDIR)$(libdir)/$(progname)
-	$(INSTALL_PROGRAM) -m 750 pf.so $(DESTDIR)$(libdir)/$(progname)
+	if test x$(WITH_NETFILTER) = xyes; then $(INSTALL_PROGRAM) -m 750 netfilter.so $(DESTDIR)$(libdir)/$(progname); fi
+	if test x$(WITH_BDB) = xyes; then $(INSTALL_PROGRAM) -m 750 bdb.so $(DESTDIR)$(libdir)/$(progname); fi
+	if test x$(WITH_PF) = xyes; then $(INSTALL_PROGRAM) -m 750 pf.so $(DESTDIR)$(libdir)/$(progname); fi
 
 .PHONY: clean install
 
