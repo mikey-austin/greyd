@@ -392,7 +392,7 @@ main(int argc, char **argv)
     if((main_pw = getpwnam(main_user)) == NULL)
         errx(1, "no such user %s", main_user);
 
-    if(!Config_get_int(state.config, "debug", NULL, 0)) {
+    if(!Config_get_int(state.config, "daemonize", NULL, 1)) {
         if(daemon(1, 1) == -1)
             err(1, "daemon");
     }
@@ -643,7 +643,7 @@ jail:
                        &state);
         }
         else if(fds[main_sock % max_fd].revents & (POLLERR | POLLHUP)) {
-            i_critical("poll error");
+            i_critical("main socket poll error");
         }
 
         /* Handle the main IPv6 socket. */
@@ -658,7 +658,7 @@ jail:
                            &state);
             }
             else if(fds[main_sock6 % max_fd].revents & (POLLERR | POLLHUP)) {
-                i_critical("poll error");
+                i_critical("main IPv6 socket poll error");
             }
         }
 
@@ -691,7 +691,7 @@ jail:
             }
         }
         else if(fds[cfg_sock % max_fd].revents & (POLLERR | POLLHUP)) {
-            i_critical("poll error");
+            i_critical("config socket poll error");
         }
         else if(cfg_fd > 0 && fds[cfg_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(cfg_fd, &state);
@@ -705,7 +705,7 @@ jail:
             if(fds[trap_fd % max_fd].revents & POLLIN)
                 Greyd_process_config(trap_fd, &state);
             else if(fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP))
-                i_critical("poll error");
+                i_critical("trap pipe in poll error");
         }
 
         /* Finally process any sync messages. */
@@ -713,7 +713,7 @@ jail:
             if(fds[syncer->sync_fd % max_fd].revents & POLLIN)
                 Sync_recv(syncer);
             else if(fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP))
-                i_critical("poll error");
+                i_critical("syncer poll error");
         }
     }
 
