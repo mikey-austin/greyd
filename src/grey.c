@@ -364,7 +364,9 @@ Grey_scan_db(Greylister_T greylister)
                 gd.expire = now + greylister->white_exp;
                 wval.data.gd = gd;
 
-                if(DB_put(db, &wkey, &wval) != GREYDB_OK) {
+                if(!(DB_put(db, &wkey, &wval) == GREYDB_OK
+                    && DB_itr_del_curr(itr) == GREYDB_OK)) 
+                {
                     ret = -1;
                     goto cleanup;
                 }
