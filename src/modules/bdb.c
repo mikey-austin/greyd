@@ -107,8 +107,12 @@ extern void
 Mod_db_open(DB_handle_T handle, int flags)
 {
     struct bdb_handle *bh = handle->dbh;
-    char *db_name;
+    char *db_name, *err_log_path;
+        FILE *err_log;
     int ret, open_flags;
+
+    if(bh->db != NULL)
+        return;
 
     db_name = Config_get_str(handle->config, "db_name", "database", DEFAULT_DB);
 
@@ -123,6 +127,12 @@ Mod_db_open(DB_handle_T handle, int flags)
     if(ret != 0) {
         i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
         goto cleanup;
+    }
+
+    if((err_log_path = Config_get_str(handle->config, "error_log", "database", NULL))
+       != NULL && (err_log = fopen(err_log_path, "a+")) != NULL)
+    {
+        bh->db->set_errfile(bh->db, err_log);
     }
 
     return;
