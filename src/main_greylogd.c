@@ -151,7 +151,7 @@ main(int argc, char **argv)
         goto shutdown;
     }
 
-    if(!Config_get_int(config, "daemonize", NULL, 1)) {
+    if(Config_get_int(config, "daemonize", NULL, 1)) {
         if(daemon(1, 1) == -1) {
             i_warning("daemon: %s", strerror(errno));
             goto shutdown;
