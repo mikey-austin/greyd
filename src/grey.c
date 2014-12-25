@@ -188,8 +188,6 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
 extern void
 Grey_finish(Greylister_T *greylister)
 {
-    pid_t grey_pid, reader_pid;
-
     if(*greylister == NULL)
         return;
 
@@ -206,9 +204,6 @@ Grey_finish(Greylister_T *greylister)
 
     if((*greylister)->grey_in != NULL)
         fclose((*greylister)->grey_in);
-
-    grey_pid   = (*greylister)->grey_pid;
-    reader_pid = (*greylister)->reader_pid;
 
     free(*greylister);
     *greylister = NULL;
