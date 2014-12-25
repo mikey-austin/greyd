@@ -107,12 +107,14 @@ main(void)
 
     case 0:
         /* In child. */
+        greylister->db_handle = DB_init(c);
         Grey_start_reader(greylister);
         fclose(grey_out);
         close(grey[1]);
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
+        Grey_finish(&greylister);
         exit(0);
         break;
     }
@@ -121,6 +123,7 @@ main(void)
     fclose(grey_in);
     close(grey[0]);
     greylister->grey_in = NULL;
+    greylister->db_handle = DB_init(c);
 
     /* Send the reader entries over the pipe. */
 
@@ -252,15 +255,15 @@ main(void)
     tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
                    &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
 
-    TEST_OK(total_entries == 13, "Total entries as expected");
+    TEST_OK(total_entries == 12, "Total entries as expected");
     TEST_OK(total_white == 5, "Total white as expected");
-    TEST_OK(total_grey == 2, "Total grey as expected");
+    TEST_OK(total_grey == 1, "Total grey as expected");
     TEST_OK(total_trapped == 5, "Total trapped entries as expected");
     TEST_OK(total_spamtrap == 1, "Total spamtraps as expected");
     TEST_OK(total_white_passed == 3, "Total white passed as expected");
     TEST_OK(total_white_blocked == 2, "Total white blocked as expected");
     TEST_OK(total_grey_passed == 0, "Total grey passed as expected");
-    TEST_OK(total_grey_blocked == 4, "Total grey blocked as expected");
+    TEST_OK(total_grey_blocked == 2, "Total grey blocked as expected");
 
 cleanup:
     Grey_finish(&greylister);
