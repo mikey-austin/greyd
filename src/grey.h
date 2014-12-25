@@ -59,6 +59,7 @@ struct Sync_engine_T;
 typedef struct Greylister_T *Greylister_T;
 struct Greylister_T {
     Config_T    config;
+    int         shutdown;
     char       *low_prio_mx;
     char       *traplist_name;
     char       *traplist_msg;

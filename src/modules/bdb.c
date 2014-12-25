@@ -114,7 +114,8 @@ Mod_db_open(DB_handle_T handle, int flags)
     if(bh->db != NULL)
         return;
 
-    db_name = Config_get_str(handle->config, "db_name", "database", DEFAULT_DB);
+    db_name = Config_get_str(handle->config, "db_name", "database",
+                             DEFAULT_DB);
 
     ret = db_create(&bh->db, bh->env, 0);
     if(ret != 0) {
@@ -123,7 +124,8 @@ Mod_db_open(DB_handle_T handle, int flags)
     }
 
     open_flags = (flags & GREYDB_RO ? DB_RDONLY : DB_CREATE) | DB_AUTO_COMMIT;
-    ret = bh->db->open(bh->db, NULL, db_name, NULL, DB_HASH, open_flags, 0600);
+    ret = bh->db->open(bh->db, NULL, db_name, NULL, DB_HASH,
+                       open_flags, 0600);
     if(ret != 0) {
         i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
         goto cleanup;

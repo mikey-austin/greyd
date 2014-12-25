@@ -37,7 +37,8 @@
 #define GREY_WHITE_NAME_IPV6 "greyd-whitelist-ipv6"
 
 static void destroy_address(void *);
-static void sig_term_children(int);
+static void drop_privs(Greylister_T);
+static void shutdown_greyd(int);
 static int push_addr(List_T, char *);
 static void process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
@@ -63,13 +64,10 @@ Grey_setup(Config_T config)
     greylister->reader_pid = -1;
     greylister->startup    = -1;
     greylister->syncer     = NULL;
+    greylister->shutdown   = 0;
 
     if((greylister->fw_handle = FW_open(config)) == NULL) {
         i_critical("Could not create firewall handle");
-    }
-
-    if((greylister->db_handle = DB_init(config)) == NULL) {
-        i_critical("Could not create db handle");
     }
 
     /*
@@ -110,30 +108,30 @@ Grey_setup(Config_T config)
 }
 
 extern void
-Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_out)
+Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
+           FILE *trap_out)
 {
     struct sigaction sa;
-    char *db_user;
-    struct passwd *db_pw;
 
-    db_user = Config_get_str(greylister->config, "user", "grey",
-                             GREYD_DB_USER);
-    if((db_pw = getpwnam(db_user)) == NULL)
-        i_critical("no such user %s", db_user);
-
-    if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)) {
-        if(setgroups(1, &db_pw->pw_gid)
-           || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
-           || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
-        {
-            i_critical("failed to drop privileges");
-        }
-    }
-
+    memset(&sa, 0, sizeof(sa));
     greylister->grey_pid = grey_pid;
     greylister->startup  = time(NULL);
     greylister->grey_in  = grey_in;
     greylister->trap_out = trap_out;
+
+    /*
+     * Set a global reference to the configured greylister state,
+     * to make it available to signal handlers.
+     */
+    Grey_greylister = greylister;
+
+    sigfillset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sa.sa_handler = shutdown_greyd;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGCHLD, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
 
     switch((greylister->reader_pid = fork()))
     {
@@ -143,11 +141,20 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
 
     case 0:
         /*
-         * In child. This process has no access to the
-         * firewall configuration handle, nor the traplist
-         * configuration pipe to the main greyd process.
+         * In child.
+         */
+        if((greylister->db_handle = DB_init(greylister->config)) == NULL) {
+            i_critical("Could not create db handle");
+        }
+        drop_privs(greylister);
+
+        /*
+         * This process has no access to the firewall configuration
+         * handle, nor the traplist configuration pipe to the main
+         * greyd process.
          */
         fclose(greylister->trap_out);
+        greylister->trap_out = NULL;
         FW_close(&(greylister->fw_handle));
 
         /* TODO: Set proc title to "(greyd db update)". */
@@ -163,21 +170,13 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in, FILE *trap_ou
      * In parent. This process has no access to the grey data being
      * sent from the main greyd process.
      */
+    if((greylister->db_handle = DB_init(greylister->config)) == NULL) {
+        i_critical("Could not create db handle");
+    }
+
     fclose(greylister->grey_in);
-
-    /*
-     * Set a global reference to the configured greylister state,
-     * to make it available to signal handlers.
-     */
-    Grey_greylister = greylister;
-
-    sigfillset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-    sa.sa_handler = sig_term_children;
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
+    greylister->grey_in = NULL;
+    drop_privs(greylister);
 
     /* TODO: Set proc title "(greyd fw whitelist update)". */
 
@@ -214,12 +213,6 @@ Grey_finish(Greylister_T *greylister)
     free(*greylister);
     *greylister = NULL;
     Grey_greylister = NULL;
-
-    if(grey_pid != -1)
-        kill(grey_pid, SIGTERM);
-
-    if(reader_pid != -1)
-        kill(reader_pid, SIGTERM);
 }
 
 extern int
@@ -242,8 +235,14 @@ Grey_start_reader(Greylister_T greylister)
     parser = Config_parser_create(lexer);
 
     for(;;) {
-        message = Config_create();
+        if(greylister->shutdown) {
+            i_debug("stopping grey reader");
+            Config_parser_destroy(&parser);
+            Grey_finish(&greylister);
+            return 0;
+        }
 
+        message = Config_create();
         ret = Config_parser_start(parser, message);
         switch(ret) {
         case CONFIG_PARSER_OK:
@@ -268,11 +267,25 @@ extern void
 Grey_start_scanner(Greylister_T greylister)
 {
     for(;;) {
+        if(greylister->shutdown)
+            break;
+
         if(Grey_scan_db(greylister) == -1)
             i_warning("db scan failed");
+
         sleep(GREY_DB_SCAN_INTERVAL);
     }
-    /* Not reached. */
+
+    i_info("exiting");
+    if(Grey_greylister->grey_pid != -1)
+        kill(Grey_greylister->grey_pid, SIGTERM);
+
+    if(Grey_greylister->reader_pid != -1)
+        kill(Grey_greylister->reader_pid, SIGTERM);
+
+    Grey_finish(&greylister);
+
+    exit(0);
 }
 
 extern int
@@ -365,7 +378,7 @@ Grey_scan_db(Greylister_T greylister)
                 wval.data.gd = gd;
 
                 if(!(DB_put(db, &wkey, &wval) == GREYDB_OK
-                    && DB_itr_del_curr(itr) == GREYDB_OK)) 
+                    && DB_itr_del_curr(itr) == GREYDB_OK))
                 {
                     ret = -1;
                     goto cleanup;
@@ -761,15 +774,30 @@ destroy_address(void *address)
 }
 
 static void
-sig_term_children(int sig)
+drop_privs(Greylister_T greylister)
+{
+    char *db_user;
+    struct passwd *db_pw;
+
+    db_user = Config_get_str(greylister->config, "user", "grey",
+                             GREYD_DB_USER);
+    if((db_pw = getpwnam(db_user)) == NULL)
+        i_critical("no such user %s", db_user);
+
+    if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)) {
+        if(setgroups(1, &db_pw->pw_gid)
+           || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
+           || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
+        {
+            i_critical("failed to drop privileges");
+        }
+    }
+}
+
+static void
+shutdown_greyd(int sig)
 {
     if(Grey_greylister) {
-        if(Grey_greylister->grey_pid != -1)
-            kill(Grey_greylister->grey_pid, SIGTERM);
-
-        if(Grey_greylister->reader_pid != -1)
-            kill(Grey_greylister->reader_pid, SIGTERM);
+        Grey_greylister->shutdown = 1;
     }
-
-    _exit(1);
 }

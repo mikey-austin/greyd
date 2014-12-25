@@ -20,6 +20,7 @@
 struct Greyd_state {
     Config_T config;
     int slow_until;
+    int shutdown;
 
     struct Con *cons;
     int max_files;

@@ -43,6 +43,9 @@ extern int optind, opterr, optopt;
 static void usage(void);
 static int max_files(void);
 static void destroy_blacklist(struct Hash_entry *entry);
+static void shutdown_greyd(int sig);
+
+struct Greyd_state *Greyd_state = NULL;
 
 static void
 usage(void)
@@ -56,6 +59,13 @@ usage(void)
         PROG_NAME);
 
     exit(1);
+}
+
+static void
+shutdown_greyd(int sig)
+{
+    if(Greyd_state)
+        Greyd_state->shutdown = 1;
 }
 
 static int
@@ -108,7 +118,9 @@ main(int argc, char **argv)
     time_t now;
     int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
     struct pollfd *fds = NULL;
+    struct sigaction sa;
 
+    memset(&sa, 0, sizeof(sa));
     tzset();
 
     opts = Config_create();
@@ -392,7 +404,7 @@ main(int argc, char **argv)
     if((main_pw = getpwnam(main_user)) == NULL)
         errx(1, "no such user %s", main_user);
 
-    if(!Config_get_int(state.config, "daemonize", NULL, 1)) {
+    if(Config_get_int(state.config, "daemonize", NULL, 1)) {
         if(daemon(1, 1) == -1)
             err(1, "daemon");
     }
@@ -451,6 +463,14 @@ main(int argc, char **argv)
     }
 
 jail:
+    state.shutdown = 0;
+    Greyd_state = &state;
+    sigfillset(&sa.sa_mask);
+    sa.sa_handler = shutdown_greyd;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+
     if(syncer && Sync_start(syncer, state.grey_out) == -1) {
         i_warning("refusing to start sync engine");
         Sync_stop(&syncer);
@@ -501,6 +521,9 @@ jail:
         struct Con *con;
         int accept_fd;
         socklen_t main_addr_len, main_addr6_len;
+
+        if(state.shutdown)
+            break;
 
         max_fd = MAX(main_sock, cfg_sock);
         if(sync_recv && syncer && syncer->sync_fd)
@@ -717,5 +740,26 @@ jail:
         }
     }
 
-    /* Not reached. */
+    /*
+     * We must have received a shutdown signal, so clean
+     * up and exit.
+     */
+    i_debug("stopping main process");
+
+    for(i = 0; i < state.max_cons; i++) {
+        if(state.cons[i].fd != -1)
+            Con_close(&state.cons[i], &state);
+
+        if(state.cons[i].blacklists != NULL)
+            List_destroy(&state.cons[i].blacklists);
+    }
+
+    free(fds);
+    free(state.cons);
+    fclose(state.grey_out);
+    Hash_destroy(&state.blacklists);
+    FW_close(&state.fw_handle);
+    Config_destroy(&state.config);
+
+    return 0;
 }
