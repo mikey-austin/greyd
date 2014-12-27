@@ -21,6 +21,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+
+#include "utils.h"
 
 extern size_t
 sstrncat(char *dst, const char *src, size_t dsize)
@@ -40,7 +43,7 @@ sstrncat(char *dst, const char *src, size_t dsize)
     return slen + dlen;
 }
 
-size_t
+extern size_t
 sstrncpy(char *dst, const char *src, size_t dsize)
 {
     const size_t slen = strlen(src);
@@ -52,4 +55,26 @@ sstrncpy(char *dst, const char *src, size_t dsize)
     }
 
     return slen;
+}
+
+extern char *
+normalize_email_addr(const char *addr, char *buf, int buf_size)
+{
+    char *cp;
+
+    if(*addr == '<')
+        addr++;
+
+    sstrncpy(buf, addr, buf_size);
+    cp = strrchr(buf, '>');
+    if(cp != NULL && *(cp + 1) == '\0')
+        *cp = '\0';
+
+    cp = buf;
+    while(*cp != '\0') {
+        *cp = tolower((unsigned char) *cp);
+        cp++;
+    }
+
+    return buf;
 }
