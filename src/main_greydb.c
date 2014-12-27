@@ -17,18 +17,17 @@
 #include "greyd_config.h"
 #include "greydb.h"
 #include "grey.h"
+#include "utils.h"
 #include "sync.h"
 #include "ip.h"
 #include "log.h"
 
 #define PROG_NAME "greydb"
 
-/* Types. */
 #define TYPE_WHITE    0
 #define TYPE_TRAPHIT  1
 #define TYPE_SPAMTRAP 2
 
-/* Actions. */
 #define ACTION_LIST 0
 #define ACTION_DEL  1
 #define ACTION_ADD  2
@@ -116,6 +115,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     struct DB_key key;
     struct DB_val val;
     struct Grey_data gd;
+    char addr[GREY_MAX_MAIL];
     time_t now;
     int ret, i;
 
@@ -135,8 +135,8 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     }
     else {
         /*
-         * This must be an email address, so ensure it is and convert to
-         * lowercase.
+         * This must be an email address, so ensure it is
+         * and normalize.
          */
         key.type = DB_KEY_MAIL;
 
@@ -145,11 +145,8 @@ db_update(DB_handle_T db, char *ip, int action, int type,
             return 1;
         }
 
-        for(i = 0; ip[i] != '\0'; i++) {
-            if(isupper((unsigned char) ip[i])) {
-                ip[i] = tolower((unsigned char) ip[i]);
-            }
-        }
+        normalize_email_addr(ip, addr, sizeof(addr));
+        ip = addr;
     }
 
     DB_start_txn(db);
