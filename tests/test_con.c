@@ -261,7 +261,7 @@ main(void)
     TEST_OK(!strcmp(con.helo, "greyd.org"), "helo parsed ok");
     TEST_OK(con.state = CON_STATE_HELO_OUT, "state helo out ok");
 
-    char *mail_from = "MAIL FROM: mikey@greyd.org\r\n";
+    char *mail_from = "MAIL FROM: <Mikey@greyd.ORG>\r\n";
     write(con_pipe[1], mail_from, strlen(mail_from));
 
     Con_next_state(&con, &now, &gs);

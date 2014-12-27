@@ -354,6 +354,7 @@ extern void
 Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
 {
     char *p, *q;
+    char email_addr[GREY_MAX_MAIL];
     char *hostname = Config_get_str(state->config, "hostname", NULL, NULL);
     char *error_code = Config_get_str(state->config, "error_code", NULL, CON_ERROR_CODE);
     int greylist = Config_get_int(state->config, "enable", "grey", GREYLISTING_ENABLED);
@@ -428,7 +429,8 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
     case CON_STATE_MAIL_IN:
     mail:
         if(match(con->in_buf, "MAIL")) {
-            set_log(con->mail, sizeof(con->mail), con->in_buf);
+            set_log(email_addr, sizeof(email_addr), con->in_buf);
+            normalize_email_addr(email_addr, con->mail, sizeof(con->mail));
             snprintf(con->out_buf, con->out_size, "250 OK\r\n");
             con->out_p = con->out_buf;
             con->out_remaining = strlen(con->out_p);
@@ -451,7 +453,8 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
     case CON_STATE_RCPT_IN:
     rcpt:
         if(match(con->in_buf, "RCPT")) {
-            set_log(con->rcpt, sizeof(con->rcpt), con->in_buf);
+            set_log(email_addr, sizeof(email_addr), con->in_buf);
+            normalize_email_addr(email_addr, con->rcpt, sizeof(con->rcpt));
             snprintf(con->out_buf, con->out_size, "250 OK\r\n");
             con->out_p = con->out_buf;
             con->out_remaining = strlen(con->out_p);
