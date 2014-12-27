@@ -57,7 +57,7 @@ sstrncpy(char *dst, const char *src, size_t dsize)
     return slen;
 }
 
-extern char *
+extern void
 normalize_email_addr(const char *addr, char *buf, int buf_size)
 {
     char *cp;
@@ -75,6 +75,4 @@ normalize_email_addr(const char *addr, char *buf, int buf_size)
         *cp = tolower((unsigned char) *cp);
         cp++;
     }
-
-    return buf;
 }

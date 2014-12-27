@@ -48,6 +48,6 @@ extern size_t sstrncpy(char *dst, const char *src, size_t dsize);
  * Take a NUL-terminated email address, remove any '<' & '>' characters,
  * and ensure that it is lower case.
  */
-extern char *normalize_email_addr(const char *addr, char *buf, int buf_size);
+extern void normalize_email_addr(const char *addr, char *buf, int buf_size);
 
 #endif
