@@ -115,6 +115,7 @@ main(void)
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
         Grey_finish(&greylister);
+        free(__plan);
         exit(0);
         break;
     }
