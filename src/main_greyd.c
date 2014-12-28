@@ -629,8 +629,10 @@ jail:
         }
 
         if(poll(fds, max_fd + 1, timeout) == -1) {
-            if(errno != EINTR)
-                i_critical("poll: %s", strerror(errno));
+            if(errno != EINTR) {
+                i_warning("poll: %s", strerror(errno));
+                goto shutdown;
+            }
             continue;
         }
 
@@ -666,7 +668,8 @@ jail:
                        &state);
         }
         else if(fds[main_sock % max_fd].revents & (POLLERR | POLLHUP)) {
-            i_critical("main socket poll error");
+            i_warning("main socket poll error");
+            goto shutdown;
         }
 
         /* Handle the main IPv6 socket. */
@@ -681,7 +684,8 @@ jail:
                            &state);
             }
             else if(fds[main_sock6 % max_fd].revents & (POLLERR | POLLHUP)) {
-                i_critical("main IPv6 socket poll error");
+                i_warning("main IPv6 socket poll error");
+                goto shutdown;
             }
         }
 
@@ -714,7 +718,8 @@ jail:
             }
         }
         else if(fds[cfg_sock % max_fd].revents & (POLLERR | POLLHUP)) {
-            i_critical("config socket poll error");
+            i_warning("config socket poll error");
+            goto shutdown;
         }
         else if(cfg_fd > 0 && fds[cfg_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(cfg_fd, &state);
@@ -725,25 +730,28 @@ jail:
 
         /* Handle the trap pipe input. */
         if(trap_fd > 0) {
-            if(fds[trap_fd % max_fd].revents & POLLIN)
+            if(fds[trap_fd % max_fd].revents & POLLIN) {
                 Greyd_process_config(trap_fd, &state);
-            else if(fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP))
-                i_critical("trap pipe in poll error");
+            }
+            else if(fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP)) {
+                i_warning("trap pipe poll error");
+                goto shutdown;
+            }
         }
 
         /* Finally process any sync messages. */
         if(sync_recv && syncer) {
-            if(fds[syncer->sync_fd % max_fd].revents & POLLIN)
+            if(fds[syncer->sync_fd % max_fd].revents & POLLIN) {
                 Sync_recv(syncer);
-            else if(fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP))
-                i_critical("syncer poll error");
+            }
+            else if(fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP)) {
+                i_warning("syncer poll error");
+                goto shutdown;
+            }
         }
     }
 
-    /*
-     * We must have received a shutdown signal, so clean
-     * up and exit.
-     */
+shutdown:
     i_debug("stopping main process");
 
     for(i = 0; i < state.max_cons; i++) {
