@@ -85,7 +85,7 @@ static int debug = 0;
 static void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [-bDdn] [-c config]\n", PROG_NAME);
+    fprintf(stderr, "usage: %s [-bDdn] [-f config]\n", PROG_NAME);
     exit(1);
 }
 

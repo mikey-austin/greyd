@@ -296,7 +296,7 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     setup_nflog_group(lh->handle, &lh->group_out, group_out);
     nflog_callback_register(lh->group_out, log_callback, lh);
 
-    if(Config_get_int(handle->config, "track_inbound", "firewall", 1)) {
+    if(Config_get_int(handle->config, "track_inbound", "firewall", TRACK_INBOUND)) {
         setup_nflog_group(lh->handle, &lh->group_in, group_in);
         nflog_callback_register(lh->group_in, log_callback, lh);
     }
