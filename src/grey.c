@@ -43,7 +43,7 @@ static int push_addr(List_T, char *);
 static void process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *);
-static int trap_check(DB_handle_T, char *);
+static int trap_check(List_T, DB_handle_T, char *);
 static int db_addr_state(DB_handle_T, char *);
 
 Greylister_T Grey_greylister = NULL;
@@ -556,11 +556,32 @@ push_addr(List_T list, char *addr)
  * @return -1 An error occured.
  */
 static int
-trap_check(DB_handle_T db, char *to)
+trap_check(List_T domains, DB_handle_T db, char *to)
 {
     struct DB_key key;
     struct DB_val val;
-    int ret;
+    struct List_entry *entry;
+    char *domain;
+    int ret, to_len, from_pos, match = 0;
+
+    if(List_size(domains) > 0) {
+        to_len = strlen(to);
+        LIST_FOREACH(domains, entry) {
+            domain = List_entry_value(entry);
+            from_pos = to_len - strlen(domain);
+
+            if((from_pos >= 0)
+               && (strcasecmp(to + from_pos, domain) == 0))
+            {
+                match = 1;
+            }
+        }
+
+        if(!match) {
+            /* No domains match, so trap. */
+            return 0;
+        }
+    }
 
     key.type = DB_KEY_MAIL;
     key.data.s = to;
@@ -595,7 +616,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     now = time(NULL);
     DB_open(db, 0);
 
-    switch(trap_check(db, gt->to)) {
+    switch(trap_check(greylister->domains, db, gt->to)) {
     case 1:
         /* Do not trap. */
         spamtrap = 0;

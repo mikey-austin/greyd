@@ -83,7 +83,7 @@ main(void)
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
 
-    add_spamtrap("trap@test.com", c);
+    add_spamtrap("trap@domain3.com", c);
 
     greylister = Grey_setup(c);
     TEST_OK((greylister != NULL), "Greylister created successfully");
@@ -146,14 +146,14 @@ main(void)
     /* Send the reader entries over the pipe. */
 
     /* Write some grey entries. */
-    write_grey("2.3.4.5", "1.2.3.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
-    write_grey("2.3.1.5", "1.2.4.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
-    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+    write_grey("2.3.4.5", "1.2.3.4", "jackiemclean.net", "m@jackiemclean.net", "r@domain1.com", grey_out);
+    write_grey("2.3.1.5", "1.2.4.4", "jackiemclean.net", "m@jackiemclean.net", "r@domain1.com", grey_out);
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "r@domain1.com", grey_out);
 
     /* Write the duplicate entries. */
-    write_grey("2.3.4.5", "1.2.3.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
-    write_grey("2.3.1.5", "1.2.4.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
-    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "r@hotmail.com", grey_out);
+    write_grey("2.3.4.5", "1.2.3.4", "jackiemclean.net", "m@jackiemclean.net", "r@domain1.com", grey_out);
+    write_grey("2.3.1.5", "1.2.4.4", "jackiemclean.net", "m@jackiemclean.net", "r@domain1.com", grey_out);
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "r@domain1.com", grey_out);
 
     /* Write some white entries. */
     write_white("2.3.4.5", "4.3.2.1", time(NULL) + 3600, grey_out);
@@ -179,16 +179,20 @@ main(void)
     write_white("8.8.8.3", "7.7.6.5", time(NULL) - 3600, grey_out);
     write_trap("8.8.8.5", "7.7.6.6", time(NULL) - 120, grey_out);
 
-    /* Check spam trap address to test the trap checking for grey entries. */
-    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "trap@test.com", grey_out);
-    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net", "trap@test.com", grey_out);
+    /* Entry to an explicit trap address in a permitted domain, will be trapped. */
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net",
+               "trap@domain3.com", grey_out);
+
+    /* This entry is to a domain not in the allowed list of domains, will be trapped. */
+    write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net",
+               "trap@willbetrapped.com", grey_out);
 
     /* Add a whitelist entry with the same ip as an existing grey entry. */
     write_white("2.3.4.7", "1.2.3.4", time(NULL) + 3600, grey_out);
 
     /* Trigger a hit to the low-priority MX server. */
     write_grey("192.179.21.3", "1.2.2.34", "jackiemclean.net", "m@jackiemclean.net",
-               "notrap@test.com", grey_out);
+               "notrap@domain4.com", grey_out);
 
     /* Forcing a parse error will kill the reader process. */
     fprintf(grey_out, "==\n");
@@ -222,7 +226,7 @@ main(void)
     key.type = DB_KEY_TUPLE;
     key.data.gt.ip = "1.2.2.4";
     key.data.gt.from = "m@jackiemclean.net";
-    key.data.gt.to = "r@hotmail.com";
+    key.data.gt.to = "r@domain1.com";
     key.data.gt.helo = "jackiemclean.net";
 
     db = DB_init(c);
