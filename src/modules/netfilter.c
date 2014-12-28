@@ -277,7 +277,7 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     group_in = Config_get_int(handle->config, "inbound_group", "firewall", NFLOG_GROUP_IN);
     group_out = Config_get_int(handle->config, "outbound_group", "firewall", NFLOG_GROUP_OUT);
 
-    if(Config_get_int(handle->config, "track_inbound", "firewall", 1)
+    if(Config_get_int(handle->config, "track_inbound", "firewall", TRACK_INBOUND)
        && (group_in == group_out))
     {
         i_critical("inbound and outbound NFLOG groups must not be the same");
