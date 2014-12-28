@@ -192,6 +192,7 @@ AC_CONFIG_FILES([Makefile
                  etc/Makefile
                  tests/Makefile
                  tests/run_tests.pl
+                 tests/data/permitted_domains.txt
                  tests/data/config_lexer_test1.conf
                  tests/data/config_test1.conf
                  tests/data/config_test2.conf

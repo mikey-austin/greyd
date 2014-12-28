@@ -40,19 +40,22 @@ main(void)
     struct DB_key key;
     struct DB_val val;
     List_T ips;
+    struct List_entry *entry;
     Lexer_source_T ls, message_source;
     Lexer_T l, message_lexer;
     Config_parser_T cp, message_parser;
     Greylister_T greylister;
     Config_T c, message;
     Config_section_T section;
-    int ret, grey[2], trap[2];
+    int ret, grey[2], trap[2], i;
     FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
+    char *domain;
     char *conf =
         "drop_privs = 0\n"
         "low_prio_mx = \"192.179.21.3\"\n"
         "section grey {\n"
+        "  permitted_domains = \"data/permitted_domains.txt\",\n"
         "  traplist_name    = \"test traplist\",\n"
         "  traplist_message = \"you have been trapped\",\n"
         "  grey_expiry      = 3600\n"
@@ -72,7 +75,7 @@ main(void)
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(28);
+    TEST_START(33);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -90,6 +93,20 @@ main(void)
         "greylister msg set correctly");
     TEST_OK(!strcmp(greylister->low_prio_mx, "192.179.21.3"),
         "greylister low priority mx ip set correctly");
+    TEST_OK(List_size(greylister->domains) == 4, "permitted domains size ok");
+
+    /* Check the loaded domains. */
+    i = 0;
+    char *permitted_domains[4] = {
+        "domain1.com",
+        "domain2.com",
+        "greyd@domain3.com",
+        "domain4.com"
+    };
+    LIST_FOREACH(greylister->domains, entry) {
+        domain = List_entry_value(entry);
+        TEST_OK(!strcmp(permitted_domains[i++], domain), "domain loaded ok");
+    }
 
     pipe(grey);
 

@@ -100,9 +100,12 @@ Grey_setup(Config_T config)
     greylister->low_prio_mx = Config_get_str(
         config, "low_prio_mx", NULL, "grey");
 
-    greylister->whitelist      = List_create(destroy_address);
+    greylister->traplist = List_create(destroy_address);
+    greylister->whitelist = List_create(destroy_address);
     greylister->whitelist_ipv6 = List_create(destroy_address);
-    greylister->traplist       = List_create(destroy_address);
+    greylister->domains = List_create(destroy_address);
+
+    Grey_load_domains(greylister);
 
     return greylister;
 }
@@ -198,6 +201,7 @@ Grey_finish(Greylister_T *greylister)
     List_destroy(&((*greylister)->whitelist));
     List_destroy(&((*greylister)->whitelist_ipv6));
     List_destroy(&((*greylister)->traplist));
+    List_destroy(&((*greylister)->domains));
 
     if((*greylister)->trap_out != NULL)
         fclose((*greylister)->trap_out);
@@ -426,6 +430,69 @@ cleanup:
         DB_rollback_txn(db);
 
     return ret;
+}
+
+extern void
+Grey_load_domains(Greylister_T greylister)
+{
+    char *domains_file = NULL;
+    FILE *domains = NULL;
+    char domain[GREY_MAX_MAIL], *dp, *sp, *addr;
+    int overflow = 0;
+
+    if(!((domains_file = Config_get_str(
+            greylister->config, "permitted_domains", "grey", NULL)) != NULL
+        && (domains = fopen(domains_file, "r")) != NULL))
+    {
+        return;
+    }
+    else if(domains_file && domains == NULL) {
+        i_warning("failed to load domains from %s", domains_file);
+        return;
+    }
+
+    if(greylister->domains)
+        List_remove_all(greylister->domains);
+
+    while(fgets(domain, sizeof(domain), domains) != NULL) {
+        sp = domain;
+        if((dp = strchr(domain, '\n')) == NULL) {
+            overflow = 1;
+            continue;
+        }
+        else if(overflow) {
+            /* This is the tail end of an overly large line. */
+            overflow = 0;
+            continue;
+        }
+
+        /* Remove trailing white space. */
+        do {
+            dp--;
+        }
+        while(dp > sp && isspace(*dp));
+
+        if(dp == sp)
+            continue;
+        else
+            *(++dp) = '\0';
+
+        /* Remove leading white space and skip comments. */
+        while(sp != dp && isspace(*sp))
+            sp++ ;
+
+        if(*sp == '\0' || *sp == '#')
+            continue;
+
+        if((addr = strdup(sp)) == NULL)
+            i_warning("error inserting domain: %s", strerror(errno));
+        List_insert_after(greylister->domains, addr);
+    }
+
+    if(ferror(domains)) {
+        i_warning("error while loading domains: %s",
+                  strerror(errno));
+    }
 }
 
 /**

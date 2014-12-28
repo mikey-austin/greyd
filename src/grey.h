@@ -68,6 +68,7 @@ struct Greylister_T {
     List_T      whitelist;
     List_T      whitelist_ipv6;
     List_T      traplist;
+    List_T      domains;
     FILE       *trap_out;
     FILE       *grey_in;
     pid_t       grey_pid;
@@ -119,5 +120,11 @@ extern void Grey_start_scanner(Greylister_T greylister);
  * the main greyd process.
  */
 extern int Grey_scan_db(Greylister_T greylister);
+
+/**
+ * Loads the permitted domains from the configured file path in
+ * the configuration.
+ */
+extern void Grey_load_domains(Greylister_T greylister);
 
 #endif
