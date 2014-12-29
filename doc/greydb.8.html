@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>greydb(8) - greyd database tool</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#NAME">NAME</a>
+    <a href="#SYNOPSIS">SYNOPSIS</a>
+    <a href="#DESCRIPTION">DESCRIPTION</a>
+    <a href="#DATABASE-OUTPUT-FORMAT">DATABASE OUTPUT FORMAT</a>
+    <a href="#SEE-ALSO">SEE ALSO</a>
+    <a href="#CREDITS">CREDITS</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>greydb(8)</li>
+    <li class='tc'></li>
+    <li class='tr'>greydb(8)</li>
+  </ol>
+
+  <h2 id="NAME">NAME</h2>
+<p class="man-name">
+  <code>greydb</code> - <span class="man-whatis">greyd database tool</span>
+</p>
+
+<h2 id="SYNOPSIS">SYNOPSIS</h2>
+
+<p><code>greydb</code> [<strong>-f</strong> config] [[<strong>-Tt</strong>] <strong>-a</strong> keys] [[<strong>-Tt</strong>] <strong>-d</strong> keys]</p>
+
+<h2 id="DESCRIPTION">DESCRIPTION</h2>
+
+<p><strong>greydb</strong> manipulates the <strong>greyd</strong> database used for <strong>greyd</strong>(8).</p>
+
+<p>The options are as follows:</p>
+
+<dl>
+<dt class="flush"><strong>-a</strong> <em>keys</em></dt><dd><p>Add or update the entries for keys. This can be used to whitelist one or more IP addresses (i.e. circumvent the greylisting process altogether) by adding all IP addresses as keys to the <strong>greyd</strong> database for WHITE entries. If any keys specified match entries already in the <strong>greyd</strong> database, <strong>greydb</strong> updates the entry's time last seen to now.</p></dd>
+<dt class="flush"><strong>-d</strong> <em>keys</em></dt><dd><p>Delete entries for keys.</p></dd>
+<dt class="flush"><strong>-T</strong></dt><dd><p>Add or delete the keys as SPAMTRAP entries. See the GREYTRAPPING section of <strong>greyd</strong>(8) for more information. Must be used in conjunction with the <strong>-a</strong> or <strong>-d</strong> option.</p></dd>
+<dt class="flush"><strong>-t</strong></dt><dd><p>Add or delete the keys as TRAPPED entries. See the GREYTRAPPING section of <strong>greyd</strong>(8) for more information. Must be used in conjunction with the <strong>-a</strong> or <strong>-d</strong> option.</p></dd>
+</dl>
+
+
+<p>If adding or deleting a SPAMTRAP address (<strong>-T</strong>), keys should be specified as email addresses:</p>
+
+<pre><code>spamtrap@mydomain.org
+</code></pre>
+
+<p>Otherwise keys must be numerical IP addresses.</p>
+
+<h2 id="DATABASE-OUTPUT-FORMAT">DATABASE OUTPUT FORMAT</h2>
+
+<p>If invoked without any arguments, <strong>greydb</strong> lists the contents of the database in a text format.</p>
+
+<p>For SPAMTRAP entries the format is:</p>
+
+<pre><code>type|mailaddress
+</code></pre>
+
+<p>where type will be SPAMTRAP and mailaddress will be the email address for which any connections received by <strong>greyd</strong>(8) will be blacklisted if mail is sent to this address.</p>
+
+<p>For TRAPPED entries the format is:</p>
+
+<pre><code>type|ip|expire
+</code></pre>
+
+<p>where <em>type</em> will be TRAPPED, IP will be the IP address blacklisted due to hitting a spamtrap, and <em>expire</em> will be when the IP is due to be removed from the blacklist.</p>
+
+<p>For GREY entries, the format is:</p>
+
+<pre><code>type|source IP|helo|from|to|first|pass|expire|block|pass
+</code></pre>
+
+<p>For WHITE entries, the format is:</p>
+
+<pre><code>type|source IP|||first|pass|expire|block|pass
+</code></pre>
+
+<p>The fields are as follows:</p>
+
+<dl>
+<dt class="flush"><strong>type</strong></dt><dd><p>WHITE if whitelisted or GREY if greylisted</p></dd>
+<dt><strong>source IP</strong></dt><dd><p>IP address the connection originated from</p></dd>
+<dt class="flush"><strong>helo</strong></dt><dd><p>what the connecting host sent as identification in the HELO/EHLO command in the SMTP dialogue</p></dd>
+<dt class="flush"><strong>from</strong></dt><dd><p>envelope-from address for GREY (empty for WHITE entries)</p></dd>
+<dt class="flush"><strong>to</strong></dt><dd><p>envelope-to address for GREY (empty for WHITE entries)</p></dd>
+<dt class="flush"><strong>first</strong></dt><dd><p>time the entry was first seen</p></dd>
+<dt class="flush"><strong>pass</strong></dt><dd><p>time the entry passed from being GREY to being WHITE</p></dd>
+<dt class="flush"><strong>expire</strong></dt><dd><p>time the entry will expire and be removed from the database</p></dd>
+<dt class="flush"><strong>block</strong></dt><dd><p>number of times a corresponding connection received a temporary failure from <strong>greyd</strong>(8)</p></dd>
+<dt class="flush"><strong>pass</strong></dt><dd><p>number of times a corresponding connection has been seen to pass to the real MTA by <strong>greylogd</strong>(8)</p></dd>
+</dl>
+
+
+<p>Note that times are in seconds since the Epoch, in the manner returned by <span class="man-ref">time<span class="s">(3)</span></span>. Times may be converted to human readable format using:</p>
+
+<pre><code>$ date --date '@&lt;value>'
+</code></pre>
+
+<h2 id="SEE-ALSO">SEE ALSO</h2>
+
+<p>  <strong>greyd.conf</strong>(5), <strong>greyd-setup</strong>(8), <strong>greydb</strong>(8), <strong>greylogd</strong>(8)</p>
+
+<h2 id="CREDITS">CREDITS</h2>
+
+<p>Much of this man page was taken from the <em>OpenBSD</em> manual, and adapted accordingly.</p>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'></li>
+    <li class='tc'>December 2014</li>
+    <li class='tr'>greydb(8)</li>
+  </ol>
+
+  </div>
+</body>
+</html>

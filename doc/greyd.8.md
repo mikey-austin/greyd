@@ -24,67 +24,67 @@ When a sending host talks to **greyd**, the reply will be stuttered. That is, th
 The options are as follows (all of which may be specified in **greyd.conf**(5)):
 
 * **-4**:
-  For blacklisted entries, return error code 450 to the spammer (default).
+For blacklisted entries, return error code 450 to the spammer (default).
 
 * **-5**:
-  For blacklisted entries, return error code 550 to the spammer.
+For blacklisted entries, return error code 550 to the spammer.
 
 * **-6**:
-  Enable IPv6. This is disabled by default.
+Enable IPv6. This is disabled by default.
 
 * **-f** *config*:
-  The main greyd configuration file.
+The main greyd configuration file.
 
 * **-B** *maxblack*:
-  The maximum number of concurrent blacklisted connections to stutter at. This value may not be greater than *maxcon* (see below). The default is maxcon - 100. When this value is exceeded new blacklisted connections will not be stuttered at.
+The maximum number of concurrent blacklisted connections to stutter at. This value may not be greater than *maxcon* (see below). The default is maxcon - 100. When this value is exceeded new blacklisted connections will not be stuttered at.
 
 * **-b**:
-  Run in blacklist-only mode.
+Run in blacklist-only mode.
 
 * **-c** *maxcon*:
-  The maximum number of concurrent connections to allow. maxcon may not exceed the kernel's maximum number of open files - 200, and defaults to 800.
+The maximum number of concurrent connections to allow. maxcon may not exceed the kernel's maximum number of open files - 200, and defaults to 800.
 
 * **-d**:
-  Debug mode in which debug log messages will not be suppressed.
+Debug mode in which debug log messages will not be suppressed.
 
 * **-G** *passtime:greyexp:whiteexp*:
-  Adjust the three time parameters for greylisting. *passtime* defaults to 25 (minutes), *greyexp* to 4 (hours), and *whiteexp* to 864 (hours, approximately 36 days).
+Adjust the three time parameters for greylisting. *passtime* defaults to 25 (minutes), *greyexp* to 4 (hours), and *whiteexp* to 864 (hours, approximately 36 days).
 
 * **-h** *hostname*:
-  The hostname that is reported in the SMTP banner.
+The hostname that is reported in the SMTP banner.
 
 * **-l** *address*:
-  Specify the local address to which **greyd** is to bind. By default **greyd** listens on all local addresses.
+Specify the local address to which **greyd** is to bind. By default **greyd** listens on all local addresses.
 
 * **-L** *address*:
-  Specify the local IPv6 address to which **greyd** is to bind. By default **greyd** listens on all local IPv6 addresses. Note, IPv6 must be enabled for this to have any effect.
+Specify the local IPv6 address to which **greyd** is to bind. By default **greyd** listens on all local IPv6 addresses. Note, IPv6 must be enabled for this to have any effect.
 
 * **-M** *address*:
-  Specify a local IP address which is listed as a low priority MX record, used to identify and trap hosts that connect to MX hosts out of order. See [GREYTRAPPING][] below for details.
+Specify a local IP address which is listed as a low priority MX record, used to identify and trap hosts that connect to MX hosts out of order. See [GREYTRAPPING][] below for details.
 
 * **-n** *name*:
-  The SMTP version banner that is reported upon initial connection.
+The SMTP version banner that is reported upon initial connection.
 
 * **-p** *port*:
-  Specify a different port number from the default port that **greyd** should listen for redirected SMTP connections on.
+Specify a different port number from the default port that **greyd** should listen for redirected SMTP connections on.
 
 * **-S** *secs*:
-  Stutter at greylisted connections for the specified amount of seconds, after which the connection is not stuttered at. The default is 10; maximum is 90.
+Stutter at greylisted connections for the specified amount of seconds, after which the connection is not stuttered at. The default is 10; maximum is 90.
 
 * **-s** *secs*:
-  Delay each character sent to the client by the specified amount of seconds. The default is 1; maximum is 10.
+Delay each character sent to the client by the specified amount of seconds. The default is 1; maximum is 10.
 
 * **-v**:
-  Enable verbose logging. By default **greyd** logs connections, disconnections and blacklist matches to syslog at *LOG_INFO* level. With verbose logging enabled, message detail including subject and recipient information is logged at *LOG_INFO*, along with the message body and SMTP dialogue being logged at *LOG_DEBUG* level.
+Enable verbose logging. By default **greyd** logs connections, disconnections and blacklist matches to syslog at *LOG_INFO* level. With verbose logging enabled, message detail including subject and recipient information is logged at *LOG_INFO*, along with the message body and SMTP dialogue being logged at *LOG_DEBUG* level.
 
 * **-w** *window*:
-  Set the socket receive buffer to this many bytes, adjusting the window size.
+Set the socket receive buffer to this many bytes, adjusting the window size.
 
 * **-Y** *synctarget*:
-  Add target *synctarget* to receive synchronisation messages. synctarget can be either an IPv4 address for unicast messages or a network interface and optional TTL value for multicast messages to the group 224.0.1.241. If the multicast TTL is not specified, a default value of 1 is used. This option can be specified multiple times. If a network interface is specified, it must match the interface specified by the **-y** option. See also [SYNCHRONISATION][] below.
+Add target *synctarget* to receive synchronisation messages. synctarget can be either an IPv4 address for unicast messages or a network interface and optional TTL value for multicast messages to the group 224.0.1.241. If the multicast TTL is not specified, a default value of 1 is used. This option can be specified multiple times. If a network interface is specified, it must match the interface specified by the **-y** option. See also [SYNCHRONISATION][] below.
 
 * **-y** *synclisten*:
-  Listen on *synclisten* network interface for incoming synchronisation messages. This option can be specified only once. See also [SYNCHRONISATION][] below.
+Listen on *synclisten* network interface for incoming synchronisation messages. This option can be specified only once. See also [SYNCHRONISATION][] below.
 
 When run in default mode, connections receive the pleasantly innocuous temporary failure of:
 
