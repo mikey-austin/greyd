@@ -169,7 +169,8 @@ Note that it is important to ensure that a host running **greyd** with the low p
 
 When running in default mode, the *iptables* rules described above are sufficient (when using the *netfilter* firewall driver). However when running in blacklist-only mode, a slightly modified iptables ruleset is required, redirecting any addresses found in the ⟨*greyd-blacklist*⟩ IPSet to **greyd**. Any other addresses are passed to the real MTA. For example:
 
-    # iptables -t nat -A PREROUTING -p tcp --dport smtp -m set --match-set greyd-blacklist src -j DNAT --to-destination 127.0.0.1:8025
+    # iptables -t nat -A PREROUTING -p tcp --dport smtp \
+        -m set --match-set greyd-blacklist src -j DNAT --to-destination 127.0.0.1:8025
     # iptables -t filter -A INPUT -p tcp --dport smtp -j ACCEPT
     # iptables -t filter -A INPUT -p tcp --dport 8025 -d 127.0.0.1 -j ACCEPT
 
@@ -225,7 +226,9 @@ The file needs to be copied to all hosts sending or receiving synchronisation me
 **greyd** closly follows the design of the *OpenBSD* *spamd*, and thus implements all features of *spamd*. Essentially all of the code is written from scratch, with other notable differences from *spamd*:
 
 * The code is modular to support good test coverage by way of unit testing.
+
 * The system abstracts the interfaces to the firewall and database, to support a wide variety of setups (eg GNU/Linux).
+
 * The system is designed to make use of common configuration file(s) between **greyd**, **greylogd**, **greydb** & **greyd-setup**.
 
 ## CREDITS

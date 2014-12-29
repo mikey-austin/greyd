@@ -293,7 +293,8 @@ When running in default mode, the \fIiptables\fR rules described above are suffi
 .
 .nf
 
-# iptables \-t nat \-A PREROUTING \-p tcp \-\-dport smtp \-m set \-\-match\-set greyd\-blacklist src \-j DNAT \-\-to\-destination 127\.0\.0\.1:8025
+# iptables \-t nat \-A PREROUTING \-p tcp \-\-dport smtp \e
+    \-m set \-\-match\-set greyd\-blacklist src \-j DNAT \-\-to\-destination 127\.0\.0\.1:8025
 # iptables \-t filter \-A INPUT \-p tcp \-\-dport smtp \-j ACCEPT
 # iptables \-t filter \-A INPUT \-p tcp \-\-dport 8025 \-d 127\.0\.0\.1 \-j ACCEPT
 .

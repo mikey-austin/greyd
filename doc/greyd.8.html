@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>greyd(8) - spam deferral daemon</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#NAME">NAME</a>
+    <a href="#SYNOPSIS">SYNOPSIS</a>
+    <a href="#DESCRIPTION">DESCRIPTION</a>
+    <a href="#GREYTRAPPING">GREYTRAPPING</a>
+    <a href="#BLACKLIST-ONLY-MODE">BLACKLIST-ONLY MODE</a>
+    <a href="#CONFIGURATION-CONNECTIONS">CONFIGURATION CONNECTIONS</a>
+    <a href="#SYNCHRONISATION">SYNCHRONISATION</a>
+    <a href="#SEE-ALSO">SEE ALSO</a>
+    <a href="#HISTORY">HISTORY</a>
+    <a href="#CREDITS">CREDITS</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>greyd(8)</li>
+    <li class='tc'></li>
+    <li class='tr'>greyd(8)</li>
+  </ol>
+
+  <h2 id="NAME">NAME</h2>
+<p class="man-name">
+  <code>greyd</code> - <span class="man-whatis">spam deferral daemon</span>
+</p>
+
+<h2 id="SYNOPSIS">SYNOPSIS</h2>
+
+<p><code>greyd</code> [<strong>-456bdv</strong>] [<strong>-f</strong> config] [<strong>-B</strong> maxblack] [<strong>-c</strong> maxcon] [<strong>-G</strong> passtime:greyexp:whiteexp] [<strong>-h</strong> hostname] [<strong>-l</strong> address] [<strong>-L</strong> address] [<strong>-M</strong> address] [<strong>-n</strong> name] [<strong>-p</strong> port] [<strong>-S</strong> secs] [<strong>-s</strong> secs] [<strong>-w</strong> window] [<strong>-Y</strong> synctarget] [<strong>-y</strong> synclisten]</p>
+
+<h2 id="DESCRIPTION">DESCRIPTION</h2>
+
+<p><strong>greyd</strong> is a fake mail daemon which rejects false mail. It is designed to be very efficient so that it does not slow down the receiving machine.</p>
+
+<p><strong>greyd</strong> considers sending hosts to be of three types:</p>
+
+<ul>
+<li><p><em>blacklisted</em> hosts are redirected to <strong>greyd</strong> and tarpitted i.e. they are communicated with very slowly to consume the sender's resources. Mail is rejected with either a 450 or 550 error message. A blacklisted host will not be allowed to talk to a real mail server.</p></li>
+<li><p><em>whitelisted</em> hosts do not talk to <strong>greyd</strong>. Their connections are instead sent to a real mail server.</p></li>
+<li><p><em>greylisted</em> hosts are redirected to <strong>greyd</strong>, but <strong>greyd</strong> has not yet decided if they are likely spammers. They are given a temporary failure message by <strong>greyd</strong> when they try to deliver mail.</p></li>
+</ul>
+
+
+<p>When <strong>greyd</strong> is run in default mode, it will greylist connections from new hosts. Depending on its configuration, it may choose to blacklist the host or, if the checks described below are met, eventually whitelist it. When <strong>greyd</strong> is run in blacklist-only mode, using the -b flag, it will consult a pre-defined set of blacklist addresses to decide whether to tarpit the host or not.</p>
+
+<p>When a sending host talks to <strong>greyd</strong>, the reply will be stuttered. That is, the response will be sent back a character at a time, slowly. For blacklisted hosts, the entire dialogue is stuttered. For greylisted hosts, the default is to stutter for the first 10 seconds of dialogue only.</p>
+
+<p>The options are as follows (all of which may be specified in <strong>greyd.conf</strong>(5)):</p>
+
+<dl>
+<dt class="flush"><strong>-4</strong></dt><dd><p>For blacklisted entries, return error code 450 to the spammer (default).</p></dd>
+<dt class="flush"><strong>-5</strong></dt><dd><p>For blacklisted entries, return error code 550 to the spammer.</p></dd>
+<dt class="flush"><strong>-6</strong></dt><dd><p>Enable IPv6. This is disabled by default.</p></dd>
+<dt><strong>-f</strong> <em>config</em></dt><dd><p>The main greyd configuration file.</p></dd>
+<dt><strong>-B</strong> <em>maxblack</em></dt><dd><p>The maximum number of concurrent blacklisted connections to stutter at. This value may not be greater than <em>maxcon</em> (see below). The default is maxcon - 100. When this value is exceeded new blacklisted connections will not be stuttered at.</p></dd>
+<dt class="flush"><strong>-b</strong></dt><dd><p>Run in blacklist-only mode.</p></dd>
+<dt><strong>-c</strong> <em>maxcon</em></dt><dd><p>The maximum number of concurrent connections to allow. maxcon may not exceed the kernel's maximum number of open files - 200, and defaults to 800.</p></dd>
+<dt class="flush"><strong>-d</strong></dt><dd><p>Debug mode in which debug log messages will not be suppressed.</p></dd>
+<dt><strong>-G</strong> <em>passtime:greyexp:whiteexp</em></dt><dd><p>Adjust the three time parameters for greylisting. <em>passtime</em> defaults to 25 (minutes), <em>greyexp</em> to 4 (hours), and <em>whiteexp</em> to 864 (hours, approximately 36 days).</p></dd>
+<dt><strong>-h</strong> <em>hostname</em></dt><dd><p>The hostname that is reported in the SMTP banner.</p></dd>
+<dt><strong>-l</strong> <em>address</em></dt><dd><p>Specify the local address to which <strong>greyd</strong> is to bind. By default <strong>greyd</strong> listens on all local addresses.</p></dd>
+<dt><strong>-L</strong> <em>address</em></dt><dd><p>Specify the local IPv6 address to which <strong>greyd</strong> is to bind. By default <strong>greyd</strong> listens on all local IPv6 addresses. Note, IPv6 must be enabled for this to have any effect.</p></dd>
+<dt><strong>-M</strong> <em>address</em></dt><dd><p>Specify a local IP address which is listed as a low priority MX record, used to identify and trap hosts that connect to MX hosts out of order. See <a href="#GREYTRAPPING" title="GREYTRAPPING" data-bare-link="true">GREYTRAPPING</a> below for details.</p></dd>
+<dt class="flush"><strong>-n</strong> <em>name</em></dt><dd><p>The SMTP version banner that is reported upon initial connection.</p></dd>
+<dt class="flush"><strong>-p</strong> <em>port</em></dt><dd><p>Specify a different port number from the default port that <strong>greyd</strong> should listen for redirected SMTP connections on.</p></dd>
+<dt class="flush"><strong>-S</strong> <em>secs</em></dt><dd><p>Stutter at greylisted connections for the specified amount of seconds, after which the connection is not stuttered at. The default is 10; maximum is 90.</p></dd>
+<dt class="flush"><strong>-s</strong> <em>secs</em></dt><dd><p>Delay each character sent to the client by the specified amount of seconds. The default is 1; maximum is 10.</p></dd>
+<dt class="flush"><strong>-v</strong></dt><dd><p>Enable verbose logging. By default <strong>greyd</strong> logs connections, disconnections and blacklist matches to syslog at <em>LOG_INFO</em> level. With verbose logging enabled, message detail including subject and recipient information is logged at <em>LOG_INFO</em>, along with the message body and SMTP dialogue being logged at <em>LOG_DEBUG</em> level.</p></dd>
+<dt><strong>-w</strong> <em>window</em></dt><dd><p>Set the socket receive buffer to this many bytes, adjusting the window size.</p></dd>
+<dt><strong>-Y</strong> <em>synctarget</em></dt><dd><p>Add target <em>synctarget</em> to receive synchronisation messages. synctarget can be either an IPv4 address for unicast messages or a network interface and optional TTL value for multicast messages to the group 224.0.1.241. If the multicast TTL is not specified, a default value of 1 is used. This option can be specified multiple times. If a network interface is specified, it must match the interface specified by the <strong>-y</strong> option. See also <a href="#SYNCHRONISATION" title="SYNCHRONISATION" data-bare-link="true">SYNCHRONISATION</a> below.</p></dd>
+<dt><strong>-y</strong> <em>synclisten</em></dt><dd><p>Listen on <em>synclisten</em> network interface for incoming synchronisation messages. This option can be specified only once. See also <a href="#SYNCHRONISATION" title="SYNCHRONISATION" data-bare-link="true">SYNCHRONISATION</a> below.</p></dd>
+</dl>
+
+
+<p>When run in default mode, connections receive the pleasantly innocuous temporary failure of:</p>
+
+<pre><code>451 Temporary failure, please try again later.
+</code></pre>
+
+<p>This happens in the SMTP dialogue immediately after the DATA command is received from the client.  <strong>greyd</strong> will use the configured <em>database driver</em> to track these connections to <strong>greyd</strong> by connecting IP address, HELO/EHLO, envelope-from, and envelope-to, or tuple for short.</p>
+
+<p>A previously unseen tuple is added to the database, recording the time an initial connection attempt was seen. After <em>passtime</em> minutes if <strong>greyd</strong> sees a retried attempt to deliver mail for the same tuple, <strong>greyd</strong> will whitelist the connecting address by adding it as a whitelist entry to the database, and removing the corresponding grey entry.</p>
+
+<p><strong>greyd</strong> regularly scans the database and configures all whitelist addresses via the configured <em>firewall driver</em>, allowing connections to pass to the real MTA. Any addresses not found in the firewall's set management (eg Netfilter IPSets, PF tables, etc.) are redirected to <strong>greyd</strong>.</p>
+
+<p>An example iptables fragment (for use with the <em>netfilter</em> driver) is given below. In the example, the <em>IPSet</em> <em>greyd-whitelist</em> contains the hosts who should be passed directly to the SMTP agent (thus bypassing <strong>greyd</strong>).</p>
+
+<pre><code># iptables -t nat -A PREROUTING -p tcp --dport smtp -m set --match-set greyd-whitelist src -j ACCEPT
+# iptables -t nat -A PREROUTING -p tcp --dport smtp -j DNAT --to-destination 127.0.0.1:8025
+# iptables -t filter -A INPUT -p tcp --dport smtp -j ACCEPT
+# iptables -t filter -A INPUT -p tcp --dport 8025 -d 127.0.0.1 -j ACCEPT
+</code></pre>
+
+<p>Linux kernels by default do not allow routing packets from an external facing network interface to localhost (as used in the above example). To enable this, use the following (update your network interface accordingly):</p>
+
+<pre><code># sysctl net.ipv4.conf.eth0.route_localnet=1
+</code></pre>
+
+<p><strong>greyd</strong> removes tuple entries from the database if delivery has not been retried within <em>greyexp</em> hours from the initial time a connection is seen. The default is 4 hours as this is the most common setting after which MTAs will give up attempting to retry delivery of a message.</p>
+
+<p><strong>greyd</strong> removes whitelist entries from the database if no mail delivery activity has been seen from the whitelisted address by <strong>greylogd</strong>(8) within <em>whiteexp</em> hours from the initial time an address is whitelisted. The default is 36 days to allow for the delivery of monthly mailing list digests without greylist delays every time.</p>
+
+<p><strong>greyd-setup</strong>(8) should be run periodically by cron to fetch and configure blacklists in <strong>greyd</strong>. When run in blacklist-only mode, the -b flag should be specified. Below is an example crontab entry to run at 5 minutes past every hour:</p>
+
+<pre><code>05 * * * * /usr/sbin/greyd-setup -f /etc/greyd/greyd.conf
+</code></pre>
+
+<p><strong>greylogd</strong>(8) should be used to update the whitelist entries in the configured database when connections are seen to pass to the real MTA on the smtp port.</p>
+
+<p><strong>greydb</strong>(8) can be used to examine and alter the contents of the configured database. See <strong>greydb</strong>(8) for further information.</p>
+
+<p><strong>greyd</strong> sends log messages to syslog using facility daemon and, with increasing verbosity, level err, warn, info, and debug. The following rsyslog section can be used to log connection details to a dedicated file:</p>
+
+<pre><code>if $programname startswith 'grey' then /var/log/greyd.log
+&amp;~
+</code></pre>
+
+<p>A typical entry shows the time of the connection and the IP address of the connecting host. When a host connects, the total number of active connections and the number of connections from blacklisted hosts is shown (connected (xx/xx)). When a host disconnects, the amount of time spent talking to <strong>greyd</strong> is shown.</p>
+
+<h2 id="GREYTRAPPING">GREYTRAPPING</h2>
+
+<p>When running <strong>greyd</strong> in default mode, it may be useful to define spamtrap destination addresses to catch spammers as they send mail from greylisted hosts. Such spamtrap addresses affect only greylisted connections to <strong>greyd</strong> and are used to temporarily blacklist a host that is obviously sending spam. Unused email addresses or email addresses on spammers' lists are very useful for this. When a host that is currently greylisted attempts to send mail to a spamtrap address, it is blacklisted for 24 hours by adding the host to the <strong>greyd</strong> blacklist ⟨<em>greyd-greytrap</em>⟩. Spamtrap addresses are added to the database with the following <strong>greydb</strong>(8) command:</p>
+
+<pre><code># greydb -T -a 'spamtrap@greyd.org'
+</code></pre>
+
+<p>See <strong>greydb</strong>(8) for further details.</p>
+
+<p>A file configured with <em>permitted_domains</em> in the <em>grey</em> section of <em>greyd.conf</em> can be used to specify a list of domain name suffixes, one per line, one of which must match each destination email address in the greylist. Any destination address which does not match one of the suffixes listed in <em>permitted_domains</em> will be trapped, exactly as if it were sent to a spamtrap address. Comment lines beginning with '#' and empty lines are ignored. A sample <em>greyd.conf</em> configuration may be (see <strong>greyd.conf</strong>(5) for further details):</p>
+
+<pre><code>section grey {
+    permitted_domains = "/etc/greyd/permitted_domains",
+    ...
+}
+</code></pre>
+
+<p>For example, if the <em>/etc/greyd/permitted_domains</em> configured above contains:</p>
+
+<ul>
+<li><p>@greyd.org</p></li>
+<li><p>obtuse.com</p></li>
+</ul>
+
+
+<p>The following destination addresses would not cause the sending host to be trapped:</p>
+
+<ul>
+<li><p>beardedclams@greyd.org</p></li>
+<li><p>stacy@obtuse.com</p></li>
+<li><p>stacy@snouts.obtuse.com</p></li>
+</ul>
+
+
+<p>However the following addresses would cause the sending host to be trapped:</p>
+
+<ul>
+<li><p>peter@bugs.greyd.org</p></li>
+<li><p>bigbutts@bofh.ucs.ualberta.ca</p></li>
+</ul>
+
+
+<p>A low priority MX IP address may be specified with the -M option. When <strong>greyd</strong> has such an address specified, no host may enter new greylist tuples when connecting to this address; only existing entries may be updated. Any host attempting to make new deliveries to the low priority MX for which a tuple has not previously been seen will be trapped.</p>
+
+<p>Note that it is important to ensure that a host running <strong>greyd</strong> with the low priority MX address active must see all the greylist changes for a higher priority MX host for the same domains. This is best done by the host itself receiving the connections to the higher priority MX on another IP address (which may be an IP alias). This will ensure that hosts are not trapped erroneously if the higher priority MX is unavailable. For example, on a host which is an existing MX record for a domain of value 10, a second IP address with MX of value 99 (a higher number, and therefore lower priority) would ensure that any RFC conformant client would attempt delivery to the IP address with the MX value of 10 first, and should not attempt to deliver to the address with MX value 99.</p>
+
+<h2 id="BLACKLIST-ONLY-MODE">BLACKLIST-ONLY MODE</h2>
+
+<p>When running in default mode, the <em>iptables</em> rules described above are sufficient (when using the <em>netfilter</em> firewall driver). However when running in blacklist-only mode, a slightly modified iptables ruleset is required, redirecting any addresses found in the ⟨<em>greyd-blacklist</em>⟩ IPSet to <strong>greyd</strong>. Any other addresses are passed to the real MTA. For example:</p>
+
+<pre><code># iptables -t nat -A PREROUTING -p tcp --dport smtp \
+    -m set --match-set greyd-blacklist src -j DNAT --to-destination 127.0.0.1:8025
+# iptables -t filter -A INPUT -p tcp --dport smtp -j ACCEPT
+# iptables -t filter -A INPUT -p tcp --dport 8025 -d 127.0.0.1 -j ACCEPT
+</code></pre>
+
+<p>Addresses can be loaded into the table with the <em>ipset</em> command (consult the <em>ipset</em> manual for more details), like:</p>
+
+<pre><code># ipset add greyd-blacklist 1.2.3.4/30
+</code></pre>
+
+<p><strong>greyd-setup</strong>(8) can also be used to load addresses into the ⟨<em>greyd-blacklist</em>⟩ table. It has the added benefit of being able to remove addresses from blacklists, and will connect to <strong>greyd</strong> over a localhost socket, giving <strong>greyd</strong> information about each source of blacklist addresses, as well as custom rejection messages for each blacklist source that can be used to let any real person whose mail is deferred by <strong>greyd</strong> know why their address has been listed from sending mail. This is important as it allows legitimate mail senders to pressure spam sources into behaving properly so that they may be removed from the relevant blacklists.</p>
+
+<h2 id="CONFIGURATION-CONNECTIONS">CONFIGURATION CONNECTIONS</h2>
+
+<p><strong>greyd</strong> listens for configuration connections on port 8026 by default, which can be overridden by setting the <em>config_port</em> configuration option. The configuration socket listens only on the INADDR_LOOPBACK address. Configuration of <strong>greyd</strong> is done by connecting to the configuration socket, and sending blacklist information. Each blacklist consists of a name, a message to reject mail with, and addresses in CIDR format. This information is specified in the <strong>greyd.conf</strong> format, with entries terminated by '%%'. For example:</p>
+
+<pre><code>name = "greyd-blacklist
+message = "Your IP address %A has been blocked by \\\\nour blacklist"
+ips = [ "1.3.4.2/31", "2.3.4.5/30", "1.2.3.4/32" ]
+%%
+</code></pre>
+
+<p>A \" will produce a double quote in the output. \\n will produce a newline. %A will expand to the connecting IP address in dotted quad format. %% may be used to produce a single % in the output. \ will produce a single . <strong>greyd</strong> will reject mail by displaying all the messages from all blacklists in which a connecting address is matched. <strong>greyd-setup</strong>(8) is normally used to configure this information.</p>
+
+<h2 id="SYNCHRONISATION">SYNCHRONISATION</h2>
+
+<p><strong>greyd</strong> supports realtime synchronisation of <strong>greyd</strong> databases between a number of <strong>greyd</strong> daemons running on multiple machines, using the <strong>-Y</strong> and <strong>-y</strong> options. The databases are synchronised for greylisted, trapped and whitelisted entries. Entries made manually using <strong>greydb</strong>(8) are also synchronised (if using the same <em>sync</em> section configuration in <em>greyd.conf</em>(5)). Furthermore, hosts whitelisted by <strong>greylogd</strong>(8) are also synchronised with the appropriate configuration in the same manner as <strong>greydb</strong>(8).</p>
+
+<p>The following example will accept incoming multicast and unicast synchronisation messages, and send outgoing multicast messages through the network interface eth0:</p>
+
+<pre><code># greyd -y eth0 -T eth0
+</code></pre>
+
+<p>The second example will increase the multicast TTL to a value of 2, add the unicast targets foo.somewhere.org and bar.somewhere.org, and accept incoming unicast messages received on eth0 only.</p>
+
+<pre><code># greyd -y eth0 -Y eth0:2 -Y foo.somewhere.org -Y bar.somewhere.org
+</code></pre>
+
+<p>If a <em>key</em> file is specified in the <em>sync</em> <strong>greyd.conf</strong>(5) configuration section and exists, <strong>greyd</strong> will calculate the message-digest fingerprint (checksum) for the file and use it as a shared key to authenticate the synchronisation messages. Below is an example sync configuration (see <strong>greyd.conf</strong>(5) for more details):</p>
+
+<pre><code>section sync {
+    verify = 1,
+    key = "/etc/greyd/greyd.key",
+    ...
+}
+</code></pre>
+
+<p>The file itself can contain any data. For example, to create a secure random key:</p>
+
+<pre><code># dd if=/dev/random of=/etc/greyd/greyd.key bs=2048 count=1
+</code></pre>
+
+<p>The file needs to be copied to all hosts sending or receiving synchronisation messages.</p>
+
+<h2 id="SEE-ALSO">SEE ALSO</h2>
+
+<p>  <span class="man-ref">greyd.conf<span class="s">(5)</span></span>, <span class="man-ref">greyd-setup<span class="s">(8)</span></span>, <span class="man-ref">greydb<span class="s">(8)</span></span>, <span class="man-ref">greylogd<span class="s">(8)</span></span></p>
+
+<h2 id="HISTORY">HISTORY</h2>
+
+<p><strong>greyd</strong> closly follows the design of the <em>OpenBSD</em> <em>spamd</em>, and thus implements all features of <em>spamd</em>. Essentially all of the code is written from scratch, with other notable differences from <em>spamd</em>:</p>
+
+<ul>
+<li><p>The code is modular to support good test coverage by way of unit testing.</p></li>
+<li><p>The system abstracts the interfaces to the firewall and database, to support a wide variety of setups (eg GNU/Linux).</p></li>
+<li><p>The system is designed to make use of common configuration file(s) between <strong>greyd</strong>, <strong>greylogd</strong>, <strong>greydb</strong> &amp; <strong>greyd-setup</strong>.</p></li>
+</ul>
+
+
+<h2 id="CREDITS">CREDITS</h2>
+
+<p>Much of this man page was taken from the <em>OpenBSD</em> manual, and adapted accordingly.</p>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'></li>
+    <li class='tc'>December 2014</li>
+    <li class='tr'>greyd(8)</li>
+  </ol>
+
+  </div>
+</body>
+</html>
