@@ -87,7 +87,7 @@ main(int argc, char **argv)
             break;
 
         case 'I':
-            Config_set_int(opts, "inbound", "firewall", 1);
+            Config_set_int(opts, "track_outbound", "firewall", 0);
             break;
 
         case 'W':
