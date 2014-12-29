@@ -54,8 +54,8 @@ Firewall drivers for PF & IPFW are planned as well, which will allow **greyd** t
 
 Before the first proper release, there is still the following to be done:
   * Testing in the wild on different setups
-  * -autotools build configuration-
-  * -man pages & documentation (install guides, user guides, etc.)-
+  * <del>autotools build configuration</del>
+  * <del>man pages & documentation (install guides, user guides, etc.)</del>
   * sample init scripts for some RHEL-like systems (and Debian)
 
 Licensing
