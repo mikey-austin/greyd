@@ -132,7 +132,7 @@ main(int argc, char **argv)
     Log_setup(config, PROG_NAME);
 
     i_info("Listening, %s",
-           Config_get_int(config, "track_inbound", "firewall", TRACK_INBOUND)
+           Config_get_int(config, "track_outbound", "firewall", TRACK_OUTBOUND)
            ? "in both directions" : "outbound direction only");
 
     if((fw_handle = FW_open(config)) == NULL)

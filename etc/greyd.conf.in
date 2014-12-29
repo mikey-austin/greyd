@@ -79,7 +79,7 @@ section firewall {
     # Greylogd tracking via the iptables NFLOG target and
     # corresponding --nflog-group.
     #
-    track_inbound  = 1,
+    track_outbound  = 1,
     inbound_group  = 155,
     outbound_group = 255
 }

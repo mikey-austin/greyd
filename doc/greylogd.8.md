@@ -46,7 +46,7 @@ For the *netfilter* driver, the above default configuration may be overridden in
 
     section firewall {
         driver = "netfilter.so", # Find via dynamic linker
-        track_inbound = 1,
+        track_outbound = 1,
         inbound_group = 155,
         outbound_group = 255,
         ...
