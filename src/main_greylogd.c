@@ -133,7 +133,7 @@ main(int argc, char **argv)
 
     i_info("Listening, %s",
            Config_get_int(config, "track_outbound", "firewall", TRACK_OUTBOUND)
-           ? "in both directions" : "outbound direction only");
+           ? "in both directions" : "inbound direction only");
 
     if((fw_handle = FW_open(config)) == NULL)
         i_critical("could not obtain firewall handle");
