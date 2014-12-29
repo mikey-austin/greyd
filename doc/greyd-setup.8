@@ -1,0 +1,94 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "GREYD\-SETUP" "8" "December 2014" "" ""
+.
+.SH "NAME"
+\fBgreyd\-setup\fR \- parse and load file of spammer addresses
+.
+.SH "SYNOPSIS"
+\fBgreyd\-setup\fR [\fB\-bDdn\fR] [\fB\-f\fR config]
+.
+.SH "DESCRIPTION"
+The \fBgreyd\-setup\fR utility sends blacklist data to \fBgreyd\fR(8), as well as configuring mail rejection messages for blacklist entries\.
+.
+.P
+When \fBgreyd\-setup\fR is run in blacklist only mode, it also sends blacklist data to the firewall \fIgreyd\-blacklist\fR table (or IPSet if using \fInetfilter\fR firewall driver)\. The ⟨\fIgreyd\-blacklist\fR⟩ table must then be used in conjunction with a firewall redirection rule to selectively redirect mail connections to \fBgreyd\fR(8)\.
+.
+.P
+The options are as follows:
+.
+.TP
+\fB\-f\fR \fIconfig\fR
+The main greyd configuration file\.
+.
+.TP
+\fB\-b\fR
+Blacklisting only mode\. Blacklist data is normally stored only in \fBgreyd\fR(8)\. With this flag, data is stored in both \fBgreyd\fR(8) and the firewall\. Use this flag if \fBgreyd\fR(8) is running with the \-b flag too\.
+.
+.TP
+\fB\-D\fR
+Daemonize; run \fBgreyd\-setup\fR in the background\.
+.
+.TP
+\fB\-d\fR
+Debug mode reports a few pieces of information\.
+.
+.TP
+\fB\-n\fR
+Dry\-run mode\. No data is shipped\.
+.
+.P
+Lists are specified in the configuration file \fBgreyd\.conf\fR(5) and are processed in the order specified in the \fIlists\fR tag in the \fIsetup\fR section, for example:
+.
+.IP "" 4
+.
+.nf
+
+section setup {
+    lists = [ "nixspam", "uatraps" ],
+    curl_path = "/usr/bin/curl"
+}
+.
+.fi
+.
+.IP "" 0
+.
+.P
+with the following list definitions:
+.
+.IP "" 4
+.
+.nf
+
+blacklist nixspam {
+    message = "Your address %A is in the nixspam list",
+    method  = "http",
+    file = "www\.openbsd\.org/spamd/nixspam\.gz"
+}
+
+blacklist nixspam {
+    message = "Your address %A has sent mail to a ualberta\.ca spamtrap\e\e\e\en
+               within the last 24 hours",
+    method = "http",
+    file = "www\.openbsd\.org/spamd/traplist\.gz"
+}
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The \fIhttp\fR method specified in the above blacklist definitions will instruct \fBgreyd\-setup\fR to fetch the lists using \fIcurl\fR\.
+.
+.P
+Output is concatenated and sent to a running \fBgreyd\fR(8)\. Addresses are sent along with the message \fBgreyd\fR will give on mail rejection when a matching client connects\. The configuration port for \fBgreyd\fR(8) is found from the \fIconfig_port\fR configuration option in \fBgreyd\.conf\fR(5) (which defaults to port 8026)\.
+.
+.P
+\fBgreyd\-setup\fR reads all configuration information from the spamd\.conf(5) file\.
+.
+.SH "SEE ALSO"
+\fBgreyd\.conf\fR(5), \fBgreyd\fR(8), \fBgreydb\fR(8), \fBgreylogd\fR(8)
+.
+.SH "CREDITS"
+Much of this man page was taken from the \fIOpenBSD\fR manual, and adapted accordingly\.

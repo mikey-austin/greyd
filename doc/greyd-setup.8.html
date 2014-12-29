@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>greyd-setup(8) - parse and load file of spammer addresses</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#NAME">NAME</a>
+    <a href="#SYNOPSIS">SYNOPSIS</a>
+    <a href="#DESCRIPTION">DESCRIPTION</a>
+    <a href="#SEE-ALSO">SEE ALSO</a>
+    <a href="#CREDITS">CREDITS</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>greyd-setup(8)</li>
+    <li class='tc'></li>
+    <li class='tr'>greyd-setup(8)</li>
+  </ol>
+
+  <h2 id="NAME">NAME</h2>
+<p class="man-name">
+  <code>greyd-setup</code> - <span class="man-whatis">parse and load file of spammer addresses</span>
+</p>
+
+<h2 id="SYNOPSIS">SYNOPSIS</h2>
+
+<p><code>greyd-setup</code> [<strong>-bDdn</strong>] [<strong>-f</strong> config]</p>
+
+<h2 id="DESCRIPTION">DESCRIPTION</h2>
+
+<p>The <strong>greyd-setup</strong> utility sends blacklist data to <strong>greyd</strong>(8), as well as configuring mail rejection messages for blacklist entries.</p>
+
+<p>When <strong>greyd-setup</strong> is run in blacklist only mode, it also sends blacklist data to the firewall <em>greyd-blacklist</em> table (or IPSet if using <em>netfilter</em> firewall driver). The ⟨<em>greyd-blacklist</em>⟩ table must then be used in conjunction with a firewall redirection rule to selectively redirect mail connections to <strong>greyd</strong>(8).</p>
+
+<p>The options are as follows:</p>
+
+<dl>
+<dt><strong>-f</strong> <em>config</em></dt><dd><p>The main greyd configuration file.</p></dd>
+<dt class="flush"><strong>-b</strong></dt><dd><p>Blacklisting only mode. Blacklist data is normally stored only in <strong>greyd</strong>(8). With this flag, data is stored in both <strong>greyd</strong>(8) and the firewall. Use this flag if <strong>greyd</strong>(8) is running with the -b flag too.</p></dd>
+<dt class="flush"><strong>-D</strong></dt><dd><p>Daemonize; run <strong>greyd-setup</strong> in the background.</p></dd>
+<dt class="flush"><strong>-d</strong></dt><dd><p>Debug mode reports a few pieces of information.</p></dd>
+<dt class="flush"><strong>-n</strong></dt><dd><p>Dry-run mode. No data is shipped.</p></dd>
+</dl>
+
+
+<p>Lists are specified in the configuration file <strong>greyd.conf</strong>(5) and are processed in the order specified in the <em>lists</em> tag in the <em>setup</em> section, for example:</p>
+
+<pre><code>section setup {
+    lists = [ "nixspam", "uatraps" ],
+    curl_path = "/usr/bin/curl"
+}
+</code></pre>
+
+<p>with the following list definitions:</p>
+
+<pre><code>blacklist nixspam {
+    message = "Your address %A is in the nixspam list",
+    method  = "http",
+    file = "www.openbsd.org/spamd/nixspam.gz"
+}
+
+blacklist nixspam {
+    message = "Your address %A has sent mail to a ualberta.ca spamtrap\\\\n
+               within the last 24 hours",
+    method = "http",
+    file = "www.openbsd.org/spamd/traplist.gz"
+}
+</code></pre>
+
+<p>The <em>http</em> method specified in the above blacklist definitions will instruct <strong>greyd-setup</strong> to fetch the lists using <em>curl</em>.</p>
+
+<p>Output is concatenated and sent to a running <strong>greyd</strong>(8). Addresses are sent along with the message <strong>greyd</strong> will give on mail rejection when a matching client connects. The configuration port for <strong>greyd</strong>(8) is found from the <em>config_port</em> configuration option in <strong>greyd.conf</strong>(5) (which defaults to port 8026).</p>
+
+<p><strong>greyd-setup</strong> reads all configuration information from the <span class="man-ref">spamd.conf<span class="s">(5)</span></span> file.</p>
+
+<h2 id="SEE-ALSO">SEE ALSO</h2>
+
+<p>  <strong>greyd.conf</strong>(5), <strong>greyd</strong>(8), <strong>greydb</strong>(8), <strong>greylogd</strong>(8)</p>
+
+<h2 id="CREDITS">CREDITS</h2>
+
+<p>Much of this man page was taken from the <em>OpenBSD</em> manual, and adapted accordingly.</p>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'></li>
+    <li class='tc'>December 2014</li>
+    <li class='tr'>greyd-setup(8)</li>
+  </ol>
+
+  </div>
+</body>
+</html>

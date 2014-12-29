@@ -94,7 +94,7 @@ Note that times are in seconds since the Epoch, in the manner returned by time(3
 
 ## SEE ALSO
 
-  **greyd.conf**(5), **greyd-setup**(8), **greydb**(8), **greylogd**(8)
+  **greyd.conf**(5), **greyd-setup**(8), **greyd**(8), **greylogd**(8)
 
 ## CREDITS
 

@@ -12,7 +12,7 @@ greylogd(8) -- greyd whitelist updating daemon
 The options are as follows:
 
 * **-f** *config*:
-The main greyd configuration file.
+  The main greyd configuration file.
 
 * **-d**:
   Debugging mode. **greylogd** displays debug messages (suppressed by default).
@@ -60,7 +60,7 @@ See **greyd.conf**(5) for more details.
 
 ## SEE ALSO
 
-  **greyd.conf**(5), **greyd-setup**(8), **greydb**(8), **greylogd**(8)
+  **greyd.conf**(5), **greyd-setup**(8), **greydb**(8), **greyd**(8)
 
 ## CREDITS
 
