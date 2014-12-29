@@ -83,6 +83,7 @@
 <p>The options are as follows:</p>
 
 <dl>
+<dt><strong>-f</strong> <em>config</em></dt><dd><p>The main greyd configuration file.</p></dd>
 <dt class="flush"><strong>-a</strong> <em>keys</em></dt><dd><p>Add or update the entries for keys. This can be used to whitelist one or more IP addresses (i.e. circumvent the greylisting process altogether) by adding all IP addresses as keys to the <strong>greyd</strong> database for WHITE entries. If any keys specified match entries already in the <strong>greyd</strong> database, <strong>greydb</strong> updates the entry's time last seen to now.</p></dd>
 <dt class="flush"><strong>-d</strong> <em>keys</em></dt><dd><p>Delete entries for keys.</p></dd>
 <dt class="flush"><strong>-T</strong></dt><dd><p>Add or delete the keys as SPAMTRAP entries. See the GREYTRAPPING section of <strong>greyd</strong>(8) for more information. Must be used in conjunction with the <strong>-a</strong> or <strong>-d</strong> option.</p></dd>

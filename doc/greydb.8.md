@@ -11,6 +11,9 @@ greydb(8) -- greyd database tool
 
 The options are as follows:
 
+* **-f** *config*:
+The main greyd configuration file.
+
 * **-a** *keys*:
 Add or update the entries for keys. This can be used to whitelist one or more IP addresses (i.e. circumvent the greylisting process altogether) by adding all IP addresses as keys to the **greyd** database for WHITE entries. If any keys specified match entries already in the **greyd** database, **greydb** updates the entry's time last seen to now.
 

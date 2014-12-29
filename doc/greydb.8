@@ -16,6 +16,10 @@
 The options are as follows:
 .
 .TP
+\fB\-f\fR \fIconfig\fR
+The main greyd configuration file\.
+.
+.TP
 \fB\-a\fR \fIkeys\fR
 Add or update the entries for keys\. This can be used to whitelist one or more IP addresses (i\.e\. circumvent the greylisting process altogether) by adding all IP addresses as keys to the \fBgreyd\fR database for WHITE entries\. If any keys specified match entries already in the \fBgreyd\fR database, \fBgreydb\fR updates the entry\'s time last seen to now\.
 .
