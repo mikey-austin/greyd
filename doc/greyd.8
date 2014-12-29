@@ -1,0 +1,419 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "GREYD" "8" "December 2014" "" ""
+.
+.SH "NAME"
+\fBgreyd\fR \- spam deferral daemon
+.
+.SH "SYNOPSIS"
+\fBgreyd\fR [\fB\-456bdv\fR] [\fB\-f\fR config] [\fB\-B\fR maxblack] [\fB\-c\fR maxcon] [\fB\-G\fR passtime:greyexp:whiteexp] [\fB\-h\fR hostname] [\fB\-l\fR address] [\fB\-L\fR address] [\fB\-M\fR address] [\fB\-n\fR name] [\fB\-p\fR port] [\fB\-S\fR secs] [\fB\-s\fR secs] [\fB\-w\fR window] [\fB\-Y\fR synctarget] [\fB\-y\fR synclisten]
+.
+.SH "DESCRIPTION"
+\fBgreyd\fR is a fake mail daemon which rejects false mail\. It is designed to be very efficient so that it does not slow down the receiving machine\.
+.
+.P
+\fBgreyd\fR considers sending hosts to be of three types:
+.
+.IP "\(bu" 4
+\fIblacklisted\fR hosts are redirected to \fBgreyd\fR and tarpitted i\.e\. they are communicated with very slowly to consume the sender\'s resources\. Mail is rejected with either a 450 or 550 error message\. A blacklisted host will not be allowed to talk to a real mail server\.
+.
+.IP "\(bu" 4
+\fIwhitelisted\fR hosts do not talk to \fBgreyd\fR\. Their connections are instead sent to a real mail server\.
+.
+.IP "\(bu" 4
+\fIgreylisted\fR hosts are redirected to \fBgreyd\fR, but \fBgreyd\fR has not yet decided if they are likely spammers\. They are given a temporary failure message by \fBgreyd\fR when they try to deliver mail\.
+.
+.IP "" 0
+.
+.P
+When \fBgreyd\fR is run in default mode, it will greylist connections from new hosts\. Depending on its configuration, it may choose to blacklist the host or, if the checks described below are met, eventually whitelist it\. When \fBgreyd\fR is run in blacklist\-only mode, using the \-b flag, it will consult a pre\-defined set of blacklist addresses to decide whether to tarpit the host or not\.
+.
+.P
+When a sending host talks to \fBgreyd\fR, the reply will be stuttered\. That is, the response will be sent back a character at a time, slowly\. For blacklisted hosts, the entire dialogue is stuttered\. For greylisted hosts, the default is to stutter for the first 10 seconds of dialogue only\.
+.
+.P
+The options are as follows (all of which may be specified in \fBgreyd\.conf\fR(5)):
+.
+.TP
+\fB\-4\fR
+For blacklisted entries, return error code 450 to the spammer (default)\.
+.
+.TP
+\fB\-5\fR
+For blacklisted entries, return error code 550 to the spammer\.
+.
+.TP
+\fB\-6\fR
+Enable IPv6\. This is disabled by default\.
+.
+.TP
+\fB\-f\fR \fIconfig\fR
+The main greyd configuration file\.
+.
+.TP
+\fB\-B\fR \fImaxblack\fR
+The maximum number of concurrent blacklisted connections to stutter at\. This value may not be greater than \fImaxcon\fR (see below)\. The default is maxcon \- 100\. When this value is exceeded new blacklisted connections will not be stuttered at\.
+.
+.TP
+\fB\-b\fR
+Run in blacklist\-only mode\.
+.
+.TP
+\fB\-c\fR \fImaxcon\fR
+The maximum number of concurrent connections to allow\. maxcon may not exceed the kernel\'s maximum number of open files \- 200, and defaults to 800\.
+.
+.TP
+\fB\-d\fR
+Debug mode in which debug log messages will not be suppressed\.
+.
+.TP
+\fB\-G\fR \fIpasstime:greyexp:whiteexp\fR
+Adjust the three time parameters for greylisting\. \fIpasstime\fR defaults to 25 (minutes), \fIgreyexp\fR to 4 (hours), and \fIwhiteexp\fR to 864 (hours, approximately 36 days)\.
+.
+.TP
+\fB\-h\fR \fIhostname\fR
+The hostname that is reported in the SMTP banner\.
+.
+.TP
+\fB\-l\fR \fIaddress\fR
+Specify the local address to which \fBgreyd\fR is to bind\. By default \fBgreyd\fR listens on all local addresses\.
+.
+.TP
+\fB\-L\fR \fIaddress\fR
+Specify the local IPv6 address to which \fBgreyd\fR is to bind\. By default \fBgreyd\fR listens on all local IPv6 addresses\. Note, IPv6 must be enabled for this to have any effect\.
+.
+.TP
+\fB\-M\fR \fIaddress\fR
+Specify a local IP address which is listed as a low priority MX record, used to identify and trap hosts that connect to MX hosts out of order\. See \fIGREYTRAPPING\fR below for details\.
+.
+.TP
+\fB\-n\fR \fIname\fR
+The SMTP version banner that is reported upon initial connection\.
+.
+.TP
+\fB\-p\fR \fIport\fR
+Specify a different port number from the default port that \fBgreyd\fR should listen for redirected SMTP connections on\.
+.
+.TP
+\fB\-S\fR \fIsecs\fR
+Stutter at greylisted connections for the specified amount of seconds, after which the connection is not stuttered at\. The default is 10; maximum is 90\.
+.
+.TP
+\fB\-s\fR \fIsecs\fR
+Delay each character sent to the client by the specified amount of seconds\. The default is 1; maximum is 10\.
+.
+.TP
+\fB\-v\fR
+Enable verbose logging\. By default \fBgreyd\fR logs connections, disconnections and blacklist matches to syslog at \fILOG_INFO\fR level\. With verbose logging enabled, message detail including subject and recipient information is logged at \fILOG_INFO\fR, along with the message body and SMTP dialogue being logged at \fILOG_DEBUG\fR level\.
+.
+.TP
+\fB\-w\fR \fIwindow\fR
+Set the socket receive buffer to this many bytes, adjusting the window size\.
+.
+.TP
+\fB\-Y\fR \fIsynctarget\fR
+Add target \fIsynctarget\fR to receive synchronisation messages\. synctarget can be either an IPv4 address for unicast messages or a network interface and optional TTL value for multicast messages to the group 224\.0\.1\.241\. If the multicast TTL is not specified, a default value of 1 is used\. This option can be specified multiple times\. If a network interface is specified, it must match the interface specified by the \fB\-y\fR option\. See also \fISYNCHRONISATION\fR below\.
+.
+.TP
+\fB\-y\fR \fIsynclisten\fR
+Listen on \fIsynclisten\fR network interface for incoming synchronisation messages\. This option can be specified only once\. See also \fISYNCHRONISATION\fR below\.
+.
+.P
+When run in default mode, connections receive the pleasantly innocuous temporary failure of:
+.
+.IP "" 4
+.
+.nf
+
+451 Temporary failure, please try again later\.
+.
+.fi
+.
+.IP "" 0
+.
+.P
+This happens in the SMTP dialogue immediately after the DATA command is received from the client\. \fBgreyd\fR will use the configured \fIdatabase driver\fR to track these connections to \fBgreyd\fR by connecting IP address, HELO/EHLO, envelope\-from, and envelope\-to, or tuple for short\.
+.
+.P
+A previously unseen tuple is added to the database, recording the time an initial connection attempt was seen\. After \fIpasstime\fR minutes if \fBgreyd\fR sees a retried attempt to deliver mail for the same tuple, \fBgreyd\fR will whitelist the connecting address by adding it as a whitelist entry to the database, and removing the corresponding grey entry\.
+.
+.P
+\fBgreyd\fR regularly scans the database and configures all whitelist addresses via the configured \fIfirewall driver\fR, allowing connections to pass to the real MTA\. Any addresses not found in the firewall\'s set management (eg Netfilter IPSets, PF tables, etc\.) are redirected to \fBgreyd\fR\.
+.
+.P
+An example iptables fragment (for use with the \fInetfilter\fR driver) is given below\. In the example, the \fIIPSet\fR \fIgreyd\-whitelist\fR contains the hosts who should be passed directly to the SMTP agent (thus bypassing \fBgreyd\fR)\.
+.
+.IP "" 4
+.
+.nf
+
+# iptables \-t nat \-A PREROUTING \-p tcp \-\-dport smtp \-m set \-\-match\-set greyd\-whitelist src \-j ACCEPT
+# iptables \-t nat \-A PREROUTING \-p tcp \-\-dport smtp \-j DNAT \-\-to\-destination 127\.0\.0\.1:8025
+# iptables \-t filter \-A INPUT \-p tcp \-\-dport smtp \-j ACCEPT
+# iptables \-t filter \-A INPUT \-p tcp \-\-dport 8025 \-d 127\.0\.0\.1 \-j ACCEPT
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Linux kernels by default do not allow routing packets from an external facing network interface to localhost (as used in the above example)\. To enable this, use the following (update your network interface accordingly):
+.
+.IP "" 4
+.
+.nf
+
+# sysctl net\.ipv4\.conf\.eth0\.route_localnet=1
+.
+.fi
+.
+.IP "" 0
+.
+.P
+\fBgreyd\fR removes tuple entries from the database if delivery has not been retried within \fIgreyexp\fR hours from the initial time a connection is seen\. The default is 4 hours as this is the most common setting after which MTAs will give up attempting to retry delivery of a message\.
+.
+.P
+\fBgreyd\fR removes whitelist entries from the database if no mail delivery activity has been seen from the whitelisted address by \fBgreylogd\fR(8) within \fIwhiteexp\fR hours from the initial time an address is whitelisted\. The default is 36 days to allow for the delivery of monthly mailing list digests without greylist delays every time\.
+.
+.P
+\fBgreyd\-setup\fR(8) should be run periodically by cron to fetch and configure blacklists in \fBgreyd\fR\. When run in blacklist\-only mode, the \-b flag should be specified\. Below is an example crontab entry to run at 5 minutes past every hour:
+.
+.IP "" 4
+.
+.nf
+
+05 * * * * /usr/sbin/greyd\-setup \-f /etc/greyd/greyd\.conf
+.
+.fi
+.
+.IP "" 0
+.
+.P
+\fBgreylogd\fR(8) should be used to update the whitelist entries in the configured database when connections are seen to pass to the real MTA on the smtp port\.
+.
+.P
+\fBgreydb\fR(8) can be used to examine and alter the contents of the configured database\. See \fBgreydb\fR(8) for further information\.
+.
+.P
+\fBgreyd\fR sends log messages to syslog using facility daemon and, with increasing verbosity, level err, warn, info, and debug\. The following rsyslog section can be used to log connection details to a dedicated file:
+.
+.IP "" 4
+.
+.nf
+
+if $programname startswith \'grey\' then /var/log/greyd\.log
+&~
+.
+.fi
+.
+.IP "" 0
+.
+.P
+A typical entry shows the time of the connection and the IP address of the connecting host\. When a host connects, the total number of active connections and the number of connections from blacklisted hosts is shown (connected (xx/xx))\. When a host disconnects, the amount of time spent talking to \fBgreyd\fR is shown\.
+.
+.SH "GREYTRAPPING"
+When running \fBgreyd\fR in default mode, it may be useful to define spamtrap destination addresses to catch spammers as they send mail from greylisted hosts\. Such spamtrap addresses affect only greylisted connections to \fBgreyd\fR and are used to temporarily blacklist a host that is obviously sending spam\. Unused email addresses or email addresses on spammers\' lists are very useful for this\. When a host that is currently greylisted attempts to send mail to a spamtrap address, it is blacklisted for 24 hours by adding the host to the \fBgreyd\fR blacklist ⟨\fIgreyd\-greytrap\fR⟩\. Spamtrap addresses are added to the database with the following \fBgreydb\fR(8) command:
+.
+.IP "" 4
+.
+.nf
+
+# greydb \-T \-a \'spamtrap@greyd\.org\'
+.
+.fi
+.
+.IP "" 0
+.
+.P
+See \fBgreydb\fR(8) for further details\.
+.
+.P
+A file configured with \fIpermitted_domains\fR in the \fIgrey\fR section of \fIgreyd\.conf\fR can be used to specify a list of domain name suffixes, one per line, one of which must match each destination email address in the greylist\. Any destination address which does not match one of the suffixes listed in \fIpermitted_domains\fR will be trapped, exactly as if it were sent to a spamtrap address\. Comment lines beginning with \'#\' and empty lines are ignored\. A sample \fIgreyd\.conf\fR configuration may be (see \fBgreyd\.conf\fR(5) for further details):
+.
+.IP "" 4
+.
+.nf
+
+section grey {
+    permitted_domains = "/etc/greyd/permitted_domains",
+    \.\.\.
+}
+.
+.fi
+.
+.IP "" 0
+.
+.P
+For example, if the \fI/etc/greyd/permitted_domains\fR configured above contains:
+.
+.IP "\(bu" 4
+@greyd\.org
+.
+.IP "\(bu" 4
+obtuse\.com
+.
+.IP "" 0
+.
+.P
+The following destination addresses would not cause the sending host to be trapped:
+.
+.IP "\(bu" 4
+beardedclams@greyd\.org
+.
+.IP "\(bu" 4
+stacy@obtuse\.com
+.
+.IP "\(bu" 4
+stacy@snouts\.obtuse\.com
+.
+.IP "" 0
+.
+.P
+However the following addresses would cause the sending host to be trapped:
+.
+.IP "\(bu" 4
+peter@bugs\.greyd\.org
+.
+.IP "\(bu" 4
+bigbutts@bofh\.ucs\.ualberta\.ca
+.
+.IP "" 0
+.
+.P
+A low priority MX IP address may be specified with the \-M option\. When \fBgreyd\fR has such an address specified, no host may enter new greylist tuples when connecting to this address; only existing entries may be updated\. Any host attempting to make new deliveries to the low priority MX for which a tuple has not previously been seen will be trapped\.
+.
+.P
+Note that it is important to ensure that a host running \fBgreyd\fR with the low priority MX address active must see all the greylist changes for a higher priority MX host for the same domains\. This is best done by the host itself receiving the connections to the higher priority MX on another IP address (which may be an IP alias)\. This will ensure that hosts are not trapped erroneously if the higher priority MX is unavailable\. For example, on a host which is an existing MX record for a domain of value 10, a second IP address with MX of value 99 (a higher number, and therefore lower priority) would ensure that any RFC conformant client would attempt delivery to the IP address with the MX value of 10 first, and should not attempt to deliver to the address with MX value 99\.
+.
+.SH "BLACKLIST\-ONLY MODE"
+When running in default mode, the \fIiptables\fR rules described above are sufficient (when using the \fInetfilter\fR firewall driver)\. However when running in blacklist\-only mode, a slightly modified iptables ruleset is required, redirecting any addresses found in the ⟨\fIgreyd\-blacklist\fR⟩ IPSet to \fBgreyd\fR\. Any other addresses are passed to the real MTA\. For example:
+.
+.IP "" 4
+.
+.nf
+
+# iptables \-t nat \-A PREROUTING \-p tcp \-\-dport smtp \-m set \-\-match\-set greyd\-blacklist src \-j DNAT \-\-to\-destination 127\.0\.0\.1:8025
+# iptables \-t filter \-A INPUT \-p tcp \-\-dport smtp \-j ACCEPT
+# iptables \-t filter \-A INPUT \-p tcp \-\-dport 8025 \-d 127\.0\.0\.1 \-j ACCEPT
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Addresses can be loaded into the table with the \fIipset\fR command (consult the \fIipset\fR manual for more details), like:
+.
+.IP "" 4
+.
+.nf
+
+# ipset add greyd\-blacklist 1\.2\.3\.4/30
+.
+.fi
+.
+.IP "" 0
+.
+.P
+\fBgreyd\-setup\fR(8) can also be used to load addresses into the ⟨\fIgreyd\-blacklist\fR⟩ table\. It has the added benefit of being able to remove addresses from blacklists, and will connect to \fBgreyd\fR over a localhost socket, giving \fBgreyd\fR information about each source of blacklist addresses, as well as custom rejection messages for each blacklist source that can be used to let any real person whose mail is deferred by \fBgreyd\fR know why their address has been listed from sending mail\. This is important as it allows legitimate mail senders to pressure spam sources into behaving properly so that they may be removed from the relevant blacklists\.
+.
+.SH "CONFIGURATION CONNECTIONS"
+\fBgreyd\fR listens for configuration connections on port 8026 by default, which can be overridden by setting the \fIconfig_port\fR configuration option\. The configuration socket listens only on the INADDR_LOOPBACK address\. Configuration of \fBgreyd\fR is done by connecting to the configuration socket, and sending blacklist information\. Each blacklist consists of a name, a message to reject mail with, and addresses in CIDR format\. This information is specified in the \fBgreyd\.conf\fR format, with entries terminated by \'%%\'\. For example:
+.
+.IP "" 4
+.
+.nf
+
+name = "greyd\-blacklist
+message = "Your IP address %A has been blocked by \e\e\e\enour blacklist"
+ips = [ "1\.3\.4\.2/31", "2\.3\.4\.5/30", "1\.2\.3\.4/32" ]
+%%
+.
+.fi
+.
+.IP "" 0
+.
+.P
+A \e" will produce a double quote in the output\. \e\en will produce a newline\. %A will expand to the connecting IP address in dotted quad format\. %% may be used to produce a single % in the output\. \e will produce a single \. \fBgreyd\fR will reject mail by displaying all the messages from all blacklists in which a connecting address is matched\. \fBgreyd\-setup\fR(8) is normally used to configure this information\.
+.
+.SH "SYNCHRONISATION"
+\fBgreyd\fR supports realtime synchronisation of \fBgreyd\fR databases between a number of \fBgreyd\fR daemons running on multiple machines, using the \fB\-Y\fR and \fB\-y\fR options\. The databases are synchronised for greylisted, trapped and whitelisted entries\. Entries made manually using \fBgreydb\fR(8) are also synchronised (if using the same \fIsync\fR section configuration in \fIgreyd\.conf\fR(5))\. Furthermore, hosts whitelisted by \fBgreylogd\fR(8) are also synchronised with the appropriate configuration in the same manner as \fBgreydb\fR(8)\.
+.
+.P
+The following example will accept incoming multicast and unicast synchronisation messages, and send outgoing multicast messages through the network interface eth0:
+.
+.IP "" 4
+.
+.nf
+
+# greyd \-y eth0 \-T eth0
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The second example will increase the multicast TTL to a value of 2, add the unicast targets foo\.somewhere\.org and bar\.somewhere\.org, and accept incoming unicast messages received on eth0 only\.
+.
+.IP "" 4
+.
+.nf
+
+# greyd \-y eth0 \-Y eth0:2 \-Y foo\.somewhere\.org \-Y bar\.somewhere\.org
+.
+.fi
+.
+.IP "" 0
+.
+.P
+If a \fIkey\fR file is specified in the \fIsync\fR \fBgreyd\.conf\fR(5) configuration section and exists, \fBgreyd\fR will calculate the message\-digest fingerprint (checksum) for the file and use it as a shared key to authenticate the synchronisation messages\. Below is an example sync configuration (see \fBgreyd\.conf\fR(5) for more details):
+.
+.IP "" 4
+.
+.nf
+
+section sync {
+    verify = 1,
+    key = "/etc/greyd/greyd\.key",
+    \.\.\.
+}
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The file itself can contain any data\. For example, to create a secure random key:
+.
+.IP "" 4
+.
+.nf
+
+# dd if=/dev/random of=/etc/greyd/greyd\.key bs=2048 count=1
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The file needs to be copied to all hosts sending or receiving synchronisation messages\.
+.
+.SH "SEE ALSO"
+greyd\.conf(5), greyd\-setup(8), greydb(8), greylogd(8)
+.
+.SH "HISTORY"
+\fBgreyd\fR closly follows the design of the \fIOpenBSD\fR \fIspamd\fR, and thus implements all features of \fIspamd\fR\. Essentially all of the code is written from scratch, with other notable differences from \fIspamd\fR:
+.
+.IP "\(bu" 4
+The code is modular to support good test coverage by way of unit testing\.
+.
+.IP "\(bu" 4
+The system abstracts the interfaces to the firewall and database, to support a wide variety of setups (eg GNU/Linux)\.
+.
+.IP "\(bu" 4
+The system is designed to make use of common configuration file(s) between \fBgreyd\fR, \fBgreylogd\fR, \fBgreydb\fR & \fBgreyd\-setup\fR\.
+.
+.IP "" 0
+.
+.SH "CREDITS"
+Much of this man page was taken from the \fIOpenBSD\fR manual, and adapted accordingly\.
