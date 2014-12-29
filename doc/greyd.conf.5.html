@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>greyd.conf(5) - greyd configuration file</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#NAME">NAME</a>
+    <a href="#SYNOPSIS">SYNOPSIS</a>
+    <a href="#DESCRIPTION">DESCRIPTION</a>
+    <a href="#GENERAL-OPTIONS">GENERAL OPTIONS</a>
+    <a href="#FIREWALL-SECTION">FIREWALL SECTION</a>
+    <a href="#DATABASE-SECTION">DATABASE SECTION</a>
+    <a href="#GREY-SECTION">GREY SECTION</a>
+    <a href="#SYNCHRONISATION-SECTION">SYNCHRONISATION SECTION</a>
+    <a href="#SETUP-SECTION">SETUP SECTION</a>
+    <a href="#BLACKLIST-CONFIGURATION">BLACKLIST CONFIGURATION</a>
+    <a href="#SEE-ALSO">SEE ALSO</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>greyd.conf(5)</li>
+    <li class='tc'></li>
+    <li class='tr'>greyd.conf(5)</li>
+  </ol>
+
+  <h2 id="NAME">NAME</h2>
+<p class="man-name">
+  <code>greyd.conf</code> - <span class="man-whatis">greyd configuration file</span>
+</p>
+
+<h2 id="SYNOPSIS">SYNOPSIS</h2>
+
+<p>This configuration file is read by <strong>greyd</strong>, <strong>greydb</strong>, <strong>greylogd</strong> and <strong>greyd-setup</strong>.</p>
+
+<h2 id="DESCRIPTION">DESCRIPTION</h2>
+
+<p>The syntax consists of sequences of assignments, each terminated by a newline:</p>
+
+<pre><code># A string value.
+variable = "value"
+
+# A number value.
+variable = 10  # Another comment.
+
+# A list value may contain strings or numbers.
+variable = [ 10, "value" ]
+</code></pre>
+
+<p>Comments, whitespace and blank lines are ignored.</p>
+
+<p><em>Sections</em> may contain many assignments, separated by a comma and a newline. The last assignment in a section may not have a trailing comma.</p>
+
+<pre><code>section sectionname {
+    var1 = "val1",
+    var2 = 10,
+    var3 = [ 1, 2, 3 ]
+}
+</code></pre>
+
+<p><em>Blacklists</em> and <em>whitelists</em> use the same syntax as the <em>section</em> above (see <a href="#BLACKLIST-CONFIGURATION" title="BLACKLIST CONFIGURATION" data-bare-link="true">BLACKLIST CONFIGURATION</a>):</p>
+
+<pre><code>blacklist blacklistname {
+    ...
+}
+
+whitelist whitelistname {
+    ...
+}
+</code></pre>
+
+<p>Configuration may also be recursively loaded by way of an <em>include</em>:</p>
+
+<pre><code># Globbing is supported.
+include "/etc/greyd/conf.d/*.conf"
+</code></pre>
+
+<h2 id="GENERAL-OPTIONS">GENERAL OPTIONS</h2>
+
+<p>The following options may be specified outside of a section. A <em>boolean</em> value is a <em>number</em> which takes the values <em>0</em> or <em>1</em>.</p>
+
+<dl>
+<dt><strong>debug</strong> = <em>boolean</em></dt><dd><p>Log debug messages which are suppressed by default.</p></dd>
+<dt><strong>verbose</strong> = <em>boolean</em></dt><dd><p>Log blacklisted connection headers.</p></dd>
+<dt><strong>daemonize</strong> = <em>boolean</em></dt><dd><p>Detach from the controlling terminal. Defaults to <em>1</em>.</p></dd>
+<dt><strong>drop_privs</strong> = <em>boolean</em></dt><dd><p>Drop priviliges and run as the specified <strong>user</strong>. Defaults to <em>1</em>.</p></dd>
+<dt><strong>chroot</strong> = <em>boolean</em></dt><dd><p>Chroot the main <strong>greyd</strong> process that accepts connections. Defaults to <em>1</em>.</p></dd>
+<dt><strong>chroot_dir</strong> = <em>string</em></dt><dd><p>The location to chroot to.</p></dd>
+<dt><strong>user</strong> = <em>string</em></dt><dd><p>The username for the main <strong>greyd</strong> daemon the run as.</p></dd>
+<dt><strong>bind_address</strong> = <em>string</em></dt><dd><p>The IPv4 address to listen on. Defaults to listen on all addresses.</p></dd>
+<dt><strong>port</strong> = <em>number</em></dt><dd><p>The port to listen on. Defaults to <em>8025</em>.</p></dd>
+<dt><strong>hostname</strong> = <em>string</em></dt><dd><p>The hostname to display to clients in the initial SMTP banner.</p></dd>
+<dt><strong>enable_ipv6</strong> = <em>boolean</em></dt><dd><p>Listen for IPv6 connections. Disabled by default.</p></dd>
+<dt><strong>bind_address_ipv6</strong> = <em>string</em></dt><dd><p>The IPv6 address to listen on. Only has an effect if <strong>enable_ipv6</strong> is set to true.</p></dd>
+<dt><strong>stutter</strong> = <em>number</em></dt><dd><p>For blacklisted connections, the number of seconds between stuttered bytes.</p></dd>
+<dt><strong>window</strong> = <em>number</em></dt><dd><p>Adjust the socket receive buffer to the specified number of bytes (window size). This slows down spammers even more.</p></dd>
+<dt><strong>banner</strong> = <em>string</em></dt><dd><p>The banner message to be displayed to new connections.</p></dd>
+<dt><strong>error_code</strong> = <em>string</em></dt><dd><p>The SMTP error code to show blacklisted spammers. May be either <em>"450"</em> (default) or <em>"550"</em>.</p></dd>
+</dl>
+
+
+<h2 id="FIREWALL-SECTION">FIREWALL SECTION</h2>
+
+<p>The following options are common to all firewall drivers:</p>
+
+<dl>
+<dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
+
+<pre><code>  section firewall {
+      driver = "netfilter.so",
+      # Driver-specific options below.
+      ...
+  }
+</code></pre></dd>
+</dl>
+
+
+<h3 id="Netfilter-firewall-driver">Netfilter firewall driver</h3>
+
+<p>This firewall driver makes use of <em>libipset</em>, <em>libnetfilter_conntrack</em> and <em>libnetfilter_log</em>.</p>
+
+<dl>
+<dt><strong>max_elements</strong> = <em>number</em></dt><dd><p>Maximum number of ipset elements. Defaults to <em>200,000</em>.</p></dd>
+<dt><strong>hash_size</strong> = <em>number</em></dt><dd><p>Maximum ipset hash size for each set.</p></dd>
+<dt><strong>track_outbound</strong> = <em>boolean</em></dt><dd><p>Track outbound connections. See <strong>greylogd</strong>(8) for more details.</p></dd>
+<dt><strong>inbound_group</strong> = <em>number</em></dt><dd><p>The <em>--nflog-group</em> to indicate inbound SMTP connections.</p></dd>
+<dt><strong>outbound_group</strong> = <em>number</em></dt><dd><p>The <em>--nflog-group</em> to indicate outbound SMTP connections.</p></dd>
+</dl>
+
+
+<h2 id="DATABASE-SECTION">DATABASE SECTION</h2>
+
+<p>The following options are common to all database drivers:</p>
+
+<dl>
+<dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
+
+<pre><code>  section database {
+      driver = "bdb.so",
+      # Driver-specific options below.
+      ...
+  }
+</code></pre></dd>
+</dl>
+
+
+<h3 id="Berkeley-DB-database-driver">Berkeley DB database driver</h3>
+
+<dl>
+<dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the Berkeley DB environment.</p></dd>
+<dt><strong>db_name</strong> = <em>string</em></dt><dd><p>The name of the database file, relative to the specified environment path.</p></dd>
+</dl>
+
+
+<h2 id="GREY-SECTION">GREY SECTION</h2>
+
+<dl>
+<dt><strong>enable</strong> = <em>boolean</em></dt><dd><p>Enable/disable the greylisting engine. Defaults to <em>1</em>.</p></dd>
+<dt><strong>user</strong> = <em>string</em></dt><dd><p>The username to run as for the greylisting processes. Defaults to <em>greydb</em>. This should differ from the <em>user</em> that the main <strong>greyd</strong> process is running as.</p></dd>
+<dt><strong>traplist_name</strong> = <em>string</em></dt><dd><p>The name of the blacklist to which spamtrapped hosts are added.</p></dd>
+<dt><strong>traplist_message</strong> = <em>string</em></dt><dd><p>The blacklist rejection message. See the <em>message</em> field in <a href="#BLACKLIST-CONFIGURATION" title="BLACKLIST CONFIGURATION" data-bare-link="true">BLACKLIST CONFIGURATION</a>.</p></dd>
+<dt><strong>whitelist_name</strong> = <em>string</em></dt><dd><p>The firewall whitelist <em>set/table</em> name. Defaults to <em>greyd-whitelist</em>.</p></dd>
+<dt><strong>whitelist_name_ipv6</strong> = <em>string</em></dt><dd><p>The firewall whitelist <em>set/table</em> name for IPv6 hosts. Defaults to <em>greyd-whitelist-ipv6</em>.</p></dd>
+<dt><strong>low_prio_mx</strong> = <em>string</em></dt><dd><p>The address of the secondary MX server, to greytrap hosts attempting to deliver spam to the MX servers in the incorrect order.</p></dd>
+<dt><strong>stutter</strong> = <em>number</em></dt><dd><p>Kill stutter for new grey connections after so many seconds. Defaults to <em>10</em>.</p></dd>
+<dt><strong>permitted_domains</strong> = <em>string</em></dt><dd><p>Filesystem location of the domains allowed to receive mail. If this file is specified (and exists), any message received with a RCPT TO domain <em>not</em> matching an entry in the below file will be greytrapped (ie blacklisted).</p></dd>
+<dt><strong>pass_time</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to whitelist grey entries. Defaults to <em>25 minutes</em>.</p></dd>
+<dt><strong>grey_expiry</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to remove grey entries. Defaults to <em>4 hours</em>.</p></dd>
+<dt><strong>white_expiry</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to remove whitelisted entries. Defaults to <em>31 days</em>.</p></dd>
+<dt><strong>trap_expiry</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to remove greytrapped entries. Defaults to <em>1 day</em>.</p></dd>
+</dl>
+
+
+<h2 id="SYNCHRONISATION-SECTION">SYNCHRONISATION SECTION</h2>
+
+<dl>
+<dt><strong>enable</strong> = <em>boolean</em></dt><dd><p>Enable/disable the synchronisation engine. Defaults to <em>0</em>.</p></dd>
+<dt><strong>hosts</strong> = <em>list</em></dt><dd><p>Specify a list of <em>sync targets</em>. See the <strong>-Y</strong> option in <strong>greyd</strong>(8).</p></dd>
+<dt><strong>bind_address</strong> = <em>string</em></dt><dd><p>See <strong>-y</strong> option in <strong>greyd</strong>(8).</p></dd>
+<dt><strong>ttl</strong> = <em>number</em></dt><dd><p>Specify a multicast TTL value. Defaults to <em>1</em>.</p></dd>
+<dt><strong>port</strong> = <em>number</em></dt><dd><p>The port on which to listen for incoming UDP sync messages.</p></dd>
+<dt><strong>verify</strong> = <em>boolean</em></dt><dd><p>Load the specified <em>key</em> for verifying sync messages.</p></dd>
+<dt><strong>key</strong> = <em>string</em></dt><dd><p>The filesystem path to the key used to verify sync messages.</p></dd>
+<dt><strong>mcast_address</strong> = <em>string</em></dt><dd><p>The multicast group address for sync messages.</p></dd>
+</dl>
+
+
+<h2 id="SETUP-SECTION">SETUP SECTION</h2>
+
+<p>This section controls the operation of the <strong>greyd-setup</strong>(8) program.</p>
+
+<dl>
+<dt><strong>lists</strong> = <em>list</em></dt><dd><p>The list of blacklists/whitelists to load. The order is important, see <a href="#BLACKLIST-CONFIGURATION" title="BLACKLIST CONFIGURATION" data-bare-link="true">BLACKLIST CONFIGURATION</a>. Consecutive blacklists will be merged, with overlapping regions removed. If a blacklist (or series of blacklists) is followed by a whitelist, any address appearing on both will be removed.</p></dd>
+<dt><strong>curl_path</strong> = <em>string</em></dt><dd><p>The path to the <em>curl</em> program, which is used to fetch the lists via <em>HTTP</em> and <em>FTP</em>.</p></dd>
+</dl>
+
+
+<h2 id="BLACKLIST-CONFIGURATION">BLACKLIST CONFIGURATION</h2>
+
+<p>A blacklist must contain the following fields:</p>
+
+<dl>
+<dt><strong>message</strong> = <em>string</em></dt><dd><p>The message to be sent to <strong>greyd</strong>(8). This message will be displayed to clients who are on this list.</p></dd>
+<dt><strong>method</strong> = <em>string</em></dt><dd><p>The method in which the list of addresses is fetched. This may be one of <em>http</em>, <em>ftp</em>, <em>exec</em> or <em>file</em>.</p></dd>
+<dt><strong>file</strong> = <em>string</em></dt><dd><p>The argument to the specified <em>method</em>. For example, if the <em>http</em> method is specified, the <em>file</em> refers to the URL (minus the protocol).</p></dd>
+</dl>
+
+
+<p>An example blacklist definition is as follows:</p>
+
+<pre><code>blacklist nixspam {
+    message = "Your address %A is in the nixspam list",
+    method  = "http",
+    file = "www.openbsd.org/spamd/nixspam.gz"
+}
+</code></pre>
+
+<h3 id="Whitelist-definitions">Whitelist definitions</h3>
+
+<p>Whitelist definitions take the same fields as a blacklist definition, with the exception of the <em>message</em> (which is not applicable). For example:</p>
+
+<pre><code>whitelist work_clients {
+    method = "exec",
+    file = "cat /tmp/work-clients-traplist.gz"
+}
+</code></pre>
+
+<h3 id="Address-format">Address format</h3>
+
+<p>The format of the list of addresses is expected to consist of one network block or address per line (optionally followed by a space and text that is ignored). Comment lines beginning with # are ignored. Network blocks may be specified in any of the formats as in the following example:</p>
+
+<pre><code># CIDR format
+192.168.20.0/24
+# A start - end range
+192.168.21.0 - 192.168.21.255
+# As a single IP address
+192.168.23.1
+</code></pre>
+
+<p>Note, currently only IPv4 addresses are supported.</p>
+
+<h2 id="SEE-ALSO">SEE ALSO</h2>
+
+<p>  <strong>greyd</strong>(8), <strong>greyd-setup</strong>(8), <strong>greydb</strong>(8), <strong>greylogd</strong>(8)</p>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'></li>
+    <li class='tc'>December 2014</li>
+    <li class='tr'>greyd.conf(5)</li>
+  </ol>
+
+  </div>
+</body>
+</html>

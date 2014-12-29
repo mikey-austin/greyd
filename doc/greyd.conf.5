@@ -1,0 +1,398 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "GREYD\.CONF" "5" "December 2014" "" ""
+.
+.SH "NAME"
+\fBgreyd\.conf\fR \- greyd configuration file
+.
+.SH "SYNOPSIS"
+This configuration file is read by \fBgreyd\fR, \fBgreydb\fR, \fBgreylogd\fR and \fBgreyd\-setup\fR\.
+.
+.SH "DESCRIPTION"
+The syntax consists of sequences of assignments, each terminated by a newline:
+.
+.IP "" 4
+.
+.nf
+
+# A string value\.
+variable = "value"
+
+# A number value\.
+variable = 10  # Another comment\.
+
+# A list value may contain strings or numbers\.
+variable = [ 10, "value" ]
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Comments, whitespace and blank lines are ignored\.
+.
+.P
+\fISections\fR may contain many assignments, separated by a comma and a newline\. The last assignment in a section may not have a trailing comma\.
+.
+.IP "" 4
+.
+.nf
+
+section sectionname {
+    var1 = "val1",
+    var2 = 10,
+    var3 = [ 1, 2, 3 ]
+}
+.
+.fi
+.
+.IP "" 0
+.
+.P
+\fIBlacklists\fR and \fIwhitelists\fR use the same syntax as the \fIsection\fR above (see \fIBLACKLIST CONFIGURATION\fR):
+.
+.IP "" 4
+.
+.nf
+
+blacklist blacklistname {
+    \.\.\.
+}
+
+whitelist whitelistname {
+    \.\.\.
+}
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Configuration may also be recursively loaded by way of an \fIinclude\fR:
+.
+.IP "" 4
+.
+.nf
+
+# Globbing is supported\.
+include "/etc/greyd/conf\.d/*\.conf"
+.
+.fi
+.
+.IP "" 0
+.
+.SH "GENERAL OPTIONS"
+The following options may be specified outside of a section\. A \fIboolean\fR value is a \fInumber\fR which takes the values \fI0\fR or \fI1\fR\.
+.
+.TP
+\fBdebug\fR = \fIboolean\fR
+Log debug messages which are suppressed by default\.
+.
+.TP
+\fBverbose\fR = \fIboolean\fR
+Log blacklisted connection headers\.
+.
+.TP
+\fBdaemonize\fR = \fIboolean\fR
+Detach from the controlling terminal\. Defaults to \fI1\fR\.
+.
+.TP
+\fBdrop_privs\fR = \fIboolean\fR
+Drop priviliges and run as the specified \fBuser\fR\. Defaults to \fI1\fR\.
+.
+.TP
+\fBchroot\fR = \fIboolean\fR
+Chroot the main \fBgreyd\fR process that accepts connections\. Defaults to \fI1\fR\.
+.
+.TP
+\fBchroot_dir\fR = \fIstring\fR
+The location to chroot to\.
+.
+.TP
+\fBuser\fR = \fIstring\fR
+The username for the main \fBgreyd\fR daemon the run as\.
+.
+.TP
+\fBbind_address\fR = \fIstring\fR
+The IPv4 address to listen on\. Defaults to listen on all addresses\.
+.
+.TP
+\fBport\fR = \fInumber\fR
+The port to listen on\. Defaults to \fI8025\fR\.
+.
+.TP
+\fBhostname\fR = \fIstring\fR
+The hostname to display to clients in the initial SMTP banner\.
+.
+.TP
+\fBenable_ipv6\fR = \fIboolean\fR
+Listen for IPv6 connections\. Disabled by default\.
+.
+.TP
+\fBbind_address_ipv6\fR = \fIstring\fR
+The IPv6 address to listen on\. Only has an effect if \fBenable_ipv6\fR is set to true\.
+.
+.TP
+\fBstutter\fR = \fInumber\fR
+For blacklisted connections, the number of seconds between stuttered bytes\.
+.
+.TP
+\fBwindow\fR = \fInumber\fR
+Adjust the socket receive buffer to the specified number of bytes (window size)\. This slows down spammers even more\.
+.
+.TP
+\fBbanner\fR = \fIstring\fR
+The banner message to be displayed to new connections\.
+.
+.TP
+\fBerror_code\fR = \fIstring\fR
+The SMTP error code to show blacklisted spammers\. May be either \fI"450"\fR (default) or \fI"550"\fR\.
+.
+.SH "FIREWALL SECTION"
+The following options are common to all firewall drivers:
+.
+.TP
+\fBdriver\fR = \fIstring\fR
+The driver shared object location\. May be either an absolute or relative path\. If no \'/\' is present, then the system\'s dynamic linker will search the relevant paths\. For example:
+.
+.IP "" 4
+.
+.nf
+
+  section firewall {
+      driver = "netfilter\.so",
+      # Driver\-specific options below\.
+      \.\.\.
+  }
+.
+.fi
+.
+.IP "" 0
+
+.
+.SS "Netfilter firewall driver"
+This firewall driver makes use of \fIlibipset\fR, \fIlibnetfilter_conntrack\fR and \fIlibnetfilter_log\fR\.
+.
+.TP
+\fBmax_elements\fR = \fInumber\fR
+Maximum number of ipset elements\. Defaults to \fI200,000\fR\.
+.
+.TP
+\fBhash_size\fR = \fInumber\fR
+Maximum ipset hash size for each set\.
+.
+.TP
+\fBtrack_outbound\fR = \fIboolean\fR
+Track outbound connections\. See \fBgreylogd\fR(8) for more details\.
+.
+.TP
+\fBinbound_group\fR = \fInumber\fR
+The \fI\-\-nflog\-group\fR to indicate inbound SMTP connections\.
+.
+.TP
+\fBoutbound_group\fR = \fInumber\fR
+The \fI\-\-nflog\-group\fR to indicate outbound SMTP connections\.
+.
+.SH "DATABASE SECTION"
+The following options are common to all database drivers:
+.
+.TP
+\fBdriver\fR = \fIstring\fR
+The driver shared object location\. May be either an absolute or relative path\. If no \'/\' is present, then the system\'s dynamic linker will search the relevant paths\. For example:
+.
+.IP "" 4
+.
+.nf
+
+  section database {
+      driver = "bdb\.so",
+      # Driver\-specific options below\.
+      \.\.\.
+  }
+.
+.fi
+.
+.IP "" 0
+
+.
+.SS "Berkeley DB database driver"
+.
+.TP
+\fBpath\fR = \fIstring\fR
+The filesystem path to the Berkeley DB environment\.
+.
+.TP
+\fBdb_name\fR = \fIstring\fR
+The name of the database file, relative to the specified environment path\.
+.
+.SH "GREY SECTION"
+.
+.TP
+\fBenable\fR = \fIboolean\fR
+Enable/disable the greylisting engine\. Defaults to \fI1\fR\.
+.
+.TP
+\fBuser\fR = \fIstring\fR
+The username to run as for the greylisting processes\. Defaults to \fIgreydb\fR\. This should differ from the \fIuser\fR that the main \fBgreyd\fR process is running as\.
+.
+.TP
+\fBtraplist_name\fR = \fIstring\fR
+The name of the blacklist to which spamtrapped hosts are added\.
+.
+.TP
+\fBtraplist_message\fR = \fIstring\fR
+The blacklist rejection message\. See the \fImessage\fR field in \fIBLACKLIST CONFIGURATION\fR\.
+.
+.TP
+\fBwhitelist_name\fR = \fIstring\fR
+The firewall whitelist \fIset/table\fR name\. Defaults to \fIgreyd\-whitelist\fR\.
+.
+.TP
+\fBwhitelist_name_ipv6\fR = \fIstring\fR
+The firewall whitelist \fIset/table\fR name for IPv6 hosts\. Defaults to \fIgreyd\-whitelist\-ipv6\fR\.
+.
+.TP
+\fBlow_prio_mx\fR = \fIstring\fR
+The address of the secondary MX server, to greytrap hosts attempting to deliver spam to the MX servers in the incorrect order\.
+.
+.TP
+\fBstutter\fR = \fInumber\fR
+Kill stutter for new grey connections after so many seconds\. Defaults to \fI10\fR\.
+.
+.TP
+\fBpermitted_domains\fR = \fIstring\fR
+Filesystem location of the domains allowed to receive mail\. If this file is specified (and exists), any message received with a RCPT TO domain \fInot\fR matching an entry in the below file will be greytrapped (ie blacklisted)\.
+.
+.TP
+\fBpass_time\fR = \fInumber\fR
+The amount of time in seconds after which to whitelist grey entries\. Defaults to \fI25 minutes\fR\.
+.
+.TP
+\fBgrey_expiry\fR = \fInumber\fR
+The amount of time in seconds after which to remove grey entries\. Defaults to \fI4 hours\fR\.
+.
+.TP
+\fBwhite_expiry\fR = \fInumber\fR
+The amount of time in seconds after which to remove whitelisted entries\. Defaults to \fI31 days\fR\.
+.
+.TP
+\fBtrap_expiry\fR = \fInumber\fR
+The amount of time in seconds after which to remove greytrapped entries\. Defaults to \fI1 day\fR\.
+.
+.SH "SYNCHRONISATION SECTION"
+.
+.TP
+\fBenable\fR = \fIboolean\fR
+Enable/disable the synchronisation engine\. Defaults to \fI0\fR\.
+.
+.TP
+\fBhosts\fR = \fIlist\fR
+Specify a list of \fIsync targets\fR\. See the \fB\-Y\fR option in \fBgreyd\fR(8)\.
+.
+.TP
+\fBbind_address\fR = \fIstring\fR
+See \fB\-y\fR option in \fBgreyd\fR(8)\.
+.
+.TP
+\fBttl\fR = \fInumber\fR
+Specify a multicast TTL value\. Defaults to \fI1\fR\.
+.
+.TP
+\fBport\fR = \fInumber\fR
+The port on which to listen for incoming UDP sync messages\.
+.
+.TP
+\fBverify\fR = \fIboolean\fR
+Load the specified \fIkey\fR for verifying sync messages\.
+.
+.TP
+\fBkey\fR = \fIstring\fR
+The filesystem path to the key used to verify sync messages\.
+.
+.TP
+\fBmcast_address\fR = \fIstring\fR
+The multicast group address for sync messages\.
+.
+.SH "SETUP SECTION"
+This section controls the operation of the \fBgreyd\-setup\fR(8) program\.
+.
+.TP
+\fBlists\fR = \fIlist\fR
+The list of blacklists/whitelists to load\. The order is important, see \fIBLACKLIST CONFIGURATION\fR\. Consecutive blacklists will be merged, with overlapping regions removed\. If a blacklist (or series of blacklists) is followed by a whitelist, any address appearing on both will be removed\.
+.
+.TP
+\fBcurl_path\fR = \fIstring\fR
+The path to the \fIcurl\fR program, which is used to fetch the lists via \fIHTTP\fR and \fIFTP\fR\.
+.
+.SH "BLACKLIST CONFIGURATION"
+A blacklist must contain the following fields:
+.
+.TP
+\fBmessage\fR = \fIstring\fR
+The message to be sent to \fBgreyd\fR(8)\. This message will be displayed to clients who are on this list\.
+.
+.TP
+\fBmethod\fR = \fIstring\fR
+The method in which the list of addresses is fetched\. This may be one of \fIhttp\fR, \fIftp\fR, \fIexec\fR or \fIfile\fR\.
+.
+.TP
+\fBfile\fR = \fIstring\fR
+The argument to the specified \fImethod\fR\. For example, if the \fIhttp\fR method is specified, the \fIfile\fR refers to the URL (minus the protocol)\.
+.
+.P
+An example blacklist definition is as follows:
+.
+.IP "" 4
+.
+.nf
+
+blacklist nixspam {
+    message = "Your address %A is in the nixspam list",
+    method  = "http",
+    file = "www\.openbsd\.org/spamd/nixspam\.gz"
+}
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Whitelist definitions"
+Whitelist definitions take the same fields as a blacklist definition, with the exception of the \fImessage\fR (which is not applicable)\. For example:
+.
+.IP "" 4
+.
+.nf
+
+whitelist work_clients {
+    method = "exec",
+    file = "cat /tmp/work\-clients\-traplist\.gz"
+}
+.
+.fi
+.
+.IP "" 0
+.
+.SS "Address format"
+The format of the list of addresses is expected to consist of one network block or address per line (optionally followed by a space and text that is ignored)\. Comment lines beginning with # are ignored\. Network blocks may be specified in any of the formats as in the following example:
+.
+.IP "" 4
+.
+.nf
+
+# CIDR format
+192\.168\.20\.0/24
+# A start \- end range
+192\.168\.21\.0 \- 192\.168\.21\.255
+# As a single IP address
+192\.168\.23\.1
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Note, currently only IPv4 addresses are supported\.
+.
+.SH "SEE ALSO"
+\fBgreyd\fR(8), \fBgreyd\-setup\fR(8), \fBgreydb\fR(8), \fBgreylogd\fR(8)
