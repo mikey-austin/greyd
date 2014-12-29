@@ -31,10 +31,10 @@ The greyd suite
 
 **greyd** provides analogous versions of each of the **spamd** programs, namely:
 
-  - **greyd**       - the main spam deferral daemon
-  - **greydb**      - greylisting/greytrapping database management
-  - **greyd-setup** - blacklist & whitelist population
-  - **greylogd**    - connection tracking & whitelist updating
+  * **greyd**       - the main spam deferral daemon
+  * **greydb**      - greylisting/greytrapping database management
+  * **greyd-setup** - blacklist & whitelist population
+  * **greylogd**    - connection tracking & whitelist updating
 
 Development Status
 ------------------
@@ -46,17 +46,17 @@ A database driver has been implemented for Berkeley DB (4.x onwards), which make
 release, a MySQL driver will be implemented.
 
 A firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
-  - **libipset** for IP set management
-  - **libnetfilter-log** for the tracking and auto-whitelisting of connections
-  - **libnetfilter-conntrack** for the DNAT original destination lookups
+  * **libipset** for IP set management
+  * **libnetfilter-log** for the tracking and auto-whitelisting of connections
+  * **libnetfilter-conntrack** for the DNAT original destination lookups
 
 Firewall drivers for PF & IPFW are planned as well, which will allow **greyd** to run in a BSD environment.
 
 Before the first proper release, there is still the following to be done:
-  - Testing in the wild on different setups
-  - -autotools build configuration-
-  - -man pages & documentation (install guides, user guides, etc.)-
-  - sample init scripts for some RHEL-like systems (and Debian)
+  * Testing in the wild on different setups
+  * -autotools build configuration-
+  * -man pages & documentation (install guides, user guides, etc.)-
+  * sample init scripts for some RHEL-like systems (and Debian)
 
 Licensing
 ---------
