@@ -347,7 +347,7 @@ The following example will accept incoming multicast and unicast synchronisation
 .
 .nf
 
-# greyd \-y eth0 \-T eth0
+# greyd \-y eth0 \-Y eth0
 .
 .fi
 .
@@ -360,7 +360,7 @@ The second example will increase the multicast TTL to a value of 2, add the unic
 .
 .nf
 
-# greyd \-y eth0 \-Y eth0:2 \-Y foo\.somewhere\.org \-Y bar\.somewhere\.org
+# greyd \-y eth0:2 \-Y eth0:2 \-Y foo\.somewhere\.org \-Y bar\.somewhere\.org
 .
 .fi
 .

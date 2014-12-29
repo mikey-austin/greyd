@@ -197,11 +197,11 @@ A \" will produce a double quote in the output. \\\\n will produce a newline. %A
 
 The following example will accept incoming multicast and unicast synchronisation messages, and send outgoing multicast messages through the network interface eth0:
 
-    # greyd -y eth0 -T eth0
+    # greyd -y eth0 -Y eth0
 
 The second example will increase the multicast TTL to a value of 2, add the unicast targets foo.somewhere.org and bar.somewhere.org, and accept incoming unicast messages received on eth0 only.
 
-    # greyd -y eth0 -Y eth0:2 -Y foo.somewhere.org -Y bar.somewhere.org
+    # greyd -y eth0:2 -Y eth0:2 -Y foo.somewhere.org -Y bar.somewhere.org
 
 If a *key* file is specified in the *sync* **greyd.conf**(5) configuration section and exists, **greyd** will calculate the message-digest fingerprint (checksum) for the file and use it as a shared key to authenticate the synchronisation messages. Below is an example sync configuration (see **greyd.conf**(5) for more details):
 
