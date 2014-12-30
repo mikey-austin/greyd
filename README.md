@@ -1,5 +1,10 @@
-greyd - A mail greylisting & blacklisting daemon
+greyd - greylisting & blacklisting daemon
 ================================================
+
+Project Website
+---------------
+
+Check out the project website (http://greyd.org) for more information and documentation. 
 
 Overview
 --------
