@@ -11,7 +11,7 @@
     <body>
         <header class="group">
             <h1 class="logo">
-                <a href="">
+                <a href="index.html">
                     grey<span>d</span>
                 </a>
             </h1>
@@ -22,7 +22,7 @@
             <nav>
                 <ul>
                     <li>
-                        <a href="#">docs</a>
+                        <a href="docs.html">docs</a>
                     </li>
                     <li>
                         <a href="https://github.com/mikey-austin/greyd" target="_blank">code</a>
@@ -48,6 +48,9 @@
                             <em>greyd</em> is a lightweight greylisting &amp; blacklisting daemon. It runs on your gateway and pretends to be a real mail server. It keeps track of all hosts who connect, and automatically whitelists hosts after a period.
                         </p>
                         <p>
+                            <em>greyd</em> is written in <strong>C</strong>, and endeavours to be portable (ie <strong>POSIX</strong> compliant).
+                        </p>
+                        <p>
                             <em>greyd</em> consists of four programs:
                         </p>
                         <ul>
@@ -61,7 +64,10 @@
                     <div class="tile">
                         <h3>Which systems are supported?</h3>
                         <p>
-                            A <strong>netfilter</strong> firewall driver has been implemented for <em>greyd</em> to run on <strong>GNU/Linux</strong> systems. <em>greyd</em> closely integrates with the firewall, and provides an abstract interface to theoretically support any appropriate firewall system.
+                            A <strong>netfilter</strong> firewall driver has been implemented for <em>greyd</em> to run on <strong>GNU/Linux</strong> systems.
+                        </p>
+                        <p>
+                            <em>greyd</em> closely integrates with the firewall, and provides an abstract interface to theoretically support any appropriate firewall system.
                         </p>
                         <p>
                             One of the goals of the <em>greyd</em> project is to support a wide variety of systems, firewalls and databases.

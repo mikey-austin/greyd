@@ -107,6 +107,14 @@ main h3 {
     border-bottom: solid 1px #ddd;
 }
 
+main a {
+    color: #6bd560;
+}
+
+main a:hover {
+    text-decoration: underline;
+}
+
 .content {
     display: table-cell;
     vertical-align: top;
@@ -134,9 +142,64 @@ footer {
 }
 
 footer section {
-    background-color: #eee;
+    display: table;
+    width: 100%;
 }
 
 footer p {
+    padding-top: 15px;
     font-size: 0.75em;
+    border-top: solid 1px #ddd;
+}
+
+iframe {
+    width: 100%;
+    border: none;
+}
+
+/*
+ * Desktop viewports.
+ */
+@media only screen and (min-width : 1224px) {
+    .menuControl {
+        display: none;
+    }
+
+    header nav {
+        position: static;
+        height: 100%;
+        width: auto;
+        float: left;
+        padding-left: 15px;
+    }
+
+    header nav ul {
+        height: 100%;
+        display: block;
+    }
+
+    header nav li {
+        float: left;
+        margin-left: 15px;
+        height: 100%;
+        margin-bottom: 0;
+   }
+
+    header nav li a {
+        padding-top: 15px;
+    }
+
+    header nav li a:hover {
+        color: #6bd560;       
+    }
+
+    .tile {
+        width: 30%;
+        float: left;
+        margin-left: 30px;
+    }
+
+    .tile:first-of-type {
+        padding-left: 0;
+    }
 }
