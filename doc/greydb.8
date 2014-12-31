@@ -7,7 +7,7 @@
 \fBgreydb\fR \- greyd database tool
 .
 .SH "SYNOPSIS"
-\fBgreydb\fR [\fB\-f\fR config] [[\fB\-Tt\fR] \fB\-a\fR keys] [[\fB\-Tt\fR] \fB\-d\fR keys]
+\fBgreydb\fR [\fB\-f\fR config] [[\fB\-Tt\fR] \fB\-a\fR keys] [[\fB\-Tt\fR] \fB\-d\fR keys] [\fB\-Y\fR synctarget]
 .
 .SH "DESCRIPTION"
 \fBgreydb\fR manipulates the \fBgreyd\fR database used for \fBgreyd\fR(8)\.
@@ -34,6 +34,10 @@ Add or delete the keys as SPAMTRAP entries\. See the GREYTRAPPING section of \fB
 .TP
 \fB\-t\fR
 Add or delete the keys as TRAPPED entries\. See the GREYTRAPPING section of \fBgreyd\fR(8) for more information\. Must be used in conjunction with the \fB\-a\fR or \fB\-d\fR option\.
+.
+.TP
+\fB\-Y\fR \fIsynctarget\fR
+Add a target to receive synchronisation messages; see \fISYNCHRONISATION\fR below\. This option can be specified multiple times\.
 .
 .P
 If adding or deleting a SPAMTRAP address (\fB\-T\fR), keys should be specified as email addresses:
@@ -167,6 +171,9 @@ $ date \-\-date \'@<value>\'
 .fi
 .
 .IP "" 0
+.
+.SH "SYNCHRONISATION"
+\fBgreydb\fR supports realtime synchronisation of added entries by sending the information it updates to a number of \fBgreyd\fR(8) daemons running on multiple machines\. To enable synchronisation, use the command line option \-Y to specify the machines to which \fBgreydb\fR will send messages\. The synchronisation may also be configured entirely via \fBgreyd\.conf\fR(5)\. For more information, see \fBgreyd\fR(8) and \fBgreyd\.conf\fR(5)\.
 .
 .SH "SEE ALSO"
 \fBgreyd\.conf\fR(5), \fBgreyd\-setup\fR(8), \fBgreyd\fR(8), \fBgreylogd\fR(8)

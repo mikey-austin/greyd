@@ -3,7 +3,7 @@ greydb(8) -- greyd database tool
 
 ## SYNOPSIS
 
-`greydb` [**-f** config] [[**-Tt**] **-a** keys] [[**-Tt**] **-d** keys]
+`greydb` [**-f** config] [[**-Tt**] **-a** keys] [[**-Tt**] **-d** keys] [**-Y** synctarget]
 
 ## DESCRIPTION
 
@@ -25,6 +25,9 @@ Add or delete the keys as SPAMTRAP entries. See the GREYTRAPPING section of **gr
 
 * **-t**:
 Add or delete the keys as TRAPPED entries. See the GREYTRAPPING section of **greyd**(8) for more information. Must be used in conjunction with the **-a** or **-d** option.
+
+* **-Y** *synctarget*:
+  Add a target to receive synchronisation messages; see [SYNCHRONISATION][] below. This option can be specified multiple times.
 
 If adding or deleting a SPAMTRAP address (**-T**), keys should be specified as email addresses:
 
@@ -91,6 +94,10 @@ The fields are as follows:
 Note that times are in seconds since the Epoch, in the manner returned by time(3). Times may be converted to human readable format using:
 
     $ date --date '@<value>'
+
+## SYNCHRONISATION
+
+**greydb** supports realtime synchronisation of added entries by sending the information it updates to a number of **greyd**(8) daemons running on multiple machines. To enable synchronisation, use the command line option -Y to specify the machines to which **greydb** will send messages. The synchronisation may also be configured entirely via **greyd.conf**(5). For more information, see **greyd**(8) and **greyd.conf**(5).
 
 ## SEE ALSO
 
