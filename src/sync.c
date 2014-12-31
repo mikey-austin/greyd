@@ -385,7 +385,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
     if(memcmp(hmac[0], hmac[1], SYNC_HMAC_LEN) != 0)
         goto trunc;
 
-    i_debug("%s(sync): received packet of %d bytes",
+    i_debug("%s (sync): received packet of %d bytes",
             inet_ntoa(addr.sin_addr), (int) len);
 
     p = (u_int8_t *) (hdr + 1);
@@ -415,10 +415,10 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
             to = from + ntohs(sg->sg_from_length);
             helo = to + ntohs(sg->sg_to_length);
 
-            i_debug("%s(sync): received grey entry "
+            i_debug("%s (sync): received grey entry "
                     "from %s to %s, helo %s ip %s",
                     inet_ntoa(addr.sin_addr),
-                    helo, inet_ntoa(ip), from, to);
+                    from, to, helo, inet_ntoa(ip));
 
             if(Config_get_int(engine->config, "enable", "grey",
                    GREYLISTING_ENABLED))
@@ -444,7 +444,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
 
             ip.s_addr = sd->sd_ip;
             expire = ntohl(sd->sd_expire);
-            i_debug("%s(sync): received white entry ip %s ",
+            i_debug("%s (sync): received white entry ip %s ",
                     inet_ntoa(addr.sin_addr), inet_ntoa(ip));
 
             if(Config_get_int(engine->config, "enable", "grey",
@@ -470,7 +470,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
 
             ip.s_addr = sd->sd_ip;
             expire = ntohl(sd->sd_expire);
-            i_debug("%s(sync): received trapped entry ip %s ",
+            i_debug("%s (sync): received trapped entry ip %s ",
                     inet_ntoa(addr.sin_addr), inet_ntoa(ip));
 
             if(Config_get_int(engine->config, "enable", "grey",
@@ -505,7 +505,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
     return;
 
  trunc:
-    i_debug("%s(sync): truncated or invalid packet",
+    i_debug("%s (sync): truncated or invalid packet",
             inet_ntoa(addr.sin_addr));
 }
 
