@@ -67,7 +67,7 @@ main(int argc, char **argv)
     struct DB_key key;
     struct DB_val val;
     time_t now;
-    Sync_engine_T syncer;
+    Sync_engine_T syncer = NULL;
 
     tzset();
     opts = Config_create();
