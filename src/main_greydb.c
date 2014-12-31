@@ -274,13 +274,17 @@ main(int argc, char **argv)
 {
     int option, type = TYPE_WHITE, action = ACTION_LIST, i, ret = 0, c = 0;
     char *config_path = DEFAULT_CONFIG;
-    Config_T config;
+    Config_T config, opts;
     DB_handle_T db;
     Sync_engine_T syncer = NULL;
-    short sync = 0;
+    List_T hosts;
+    int sync_send = 0;
     int white_expiry, trap_expiry;
 
-    while((option = getopt(argc, argv, "adtTf:s")) != -1) {
+    tzset();
+    opts = Config_create();
+
+    while((option = getopt(argc, argv, "adtTf:Y:")) != -1) {
         switch(option) {
         case 'a':
             action = ACTION_ADD;
@@ -302,8 +306,9 @@ main(int argc, char **argv)
             config_path = optarg;
             break;
 
-        case 's':
-            sync = 1;
+        case 'Y':
+            Config_append_list_str(opts, "hosts", "sync", optarg);
+            sync_send++;
             break;
 
         default:
@@ -318,20 +323,28 @@ main(int argc, char **argv)
 
     config = Config_create();
     Config_load_file(config, config_path);
+    Config_merge(config, opts);
+    Config_destroy(&opts);
 
     /* Ensure syslog output is disabled. */
     Config_set_int(config, "syslog_enable", NULL, 0);
     Log_setup(config, PROG_NAME);
 
+    if(sync_send == 0
+       && (hosts = Config_get_list(config, "hosts", "sync")))
+    {
+        sync_send += List_size(hosts);
+    }
+
     /* Setup sync if enabled in configuration file. */
-    if(sync && ((syncer = Sync_init(config)) == NULL)) {
+    if(sync_send && ((syncer = Sync_init(config)) == NULL)) {
         warnx("sync disabled by configuration");
-        sync = 0;
+        sync_send = 0;
     }
     else if(syncer && Sync_start(syncer) == -1) {
         i_warning("could not start sync engine");
         Sync_stop(&syncer);
-        sync = 0;
+        sync_send = 0;
     }
 
     Config_set_int(config, "drop_privs", NULL, 0);
