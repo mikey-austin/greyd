@@ -57,7 +57,6 @@ Greyd_process_config(int fd, struct Greyd_state *state)
                     Blacklist_add(blacklist, addr);
             }
             Hash_insert(state->blacklists, bl_name, blacklist);
-            i_debug("refreshing blacklist \"%s\"", bl_name);
         }
     }
 
@@ -84,9 +83,9 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
                     ip, (af == AF_INET ? 32 : 128));
             first = 0;
         }
-    }
-    fprintf(out, "]\n%%\n");
+        fprintf(out, "]\n%%\n");
 
-    if(fflush(out) == EOF)
-        i_debug("configure_greyd: fflush failed");
+        if(fflush(out) == EOF)
+            i_debug("configure_greyd: fflush failed");
+    }
 }
