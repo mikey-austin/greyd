@@ -1,13 +1,13 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYLOGD" "8" "December 2014" "" ""
+.TH "GREYLOGD" "8" "January 2015" "" ""
 .
 .SH "NAME"
 \fBgreylogd\fR \- greyd whitelist updating daemon
 .
 .SH "SYNOPSIS"
-\fBspamlogd\fR [\fB\-dI\fR] [\fB\-f\fR config] [\fB\-p\fR port] [\fB\-W\fR whiteexp] [\fB\-Y\fR synctarget]
+\fBgreylogd\fR [\fB\-dI\fR] [\fB\-f\fR config] [\fB\-p\fR port] [\fB\-W\fR whiteexp] [\fB\-Y\fR synctarget]
 .
 .SH "DESCRIPTION"
 \fBgreylogd\fR manipulates the \fBgreyd\fR(8) database used for greylisting\. \fBgreylogd\fR updates the database whitelist entries whenever a connection to port 25 is logged by the configured firewall; see \fICONNECTION TRACKING\fR below\. The source addresses of inbound connections are whitelisted when seen by \fBgreylogd\fR to ensure that their entries in the database do not expire if the connecting host continues to send legitimate mail\. The destination addresses of outbound connections are whitelisted when seen by \fBgreylogd\fR so that replies to outbound mail may be received without initial greylisting delays\. Greylisting is explained more fully in \fBgreyd\fR(8)\.

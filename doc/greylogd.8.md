@@ -3,7 +3,7 @@ greylogd(8) -- greyd whitelist updating daemon
 
 ## SYNOPSIS
 
-`spamlogd` [**-dI**] [**-f** config] [**-p** port] [**-W** whiteexp] [**-Y** synctarget]
+`greylogd` [**-dI**] [**-f** config] [**-p** port] [**-W** whiteexp] [**-Y** synctarget]
 
 ## DESCRIPTION
 
