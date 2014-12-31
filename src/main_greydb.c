@@ -330,23 +330,6 @@ main(int argc, char **argv)
     Config_set_int(config, "syslog_enable", NULL, 0);
     Log_setup(config, PROG_NAME);
 
-    if(sync_send == 0
-       && (hosts = Config_get_list(config, "hosts", "sync")))
-    {
-        sync_send += List_size(hosts);
-    }
-
-    /* Setup sync if enabled in configuration file. */
-    if(sync_send && ((syncer = Sync_init(config)) == NULL)) {
-        warnx("sync disabled by configuration");
-        sync_send = 0;
-    }
-    else if(syncer && Sync_start(syncer) == -1) {
-        i_warning("could not start sync engine");
-        Sync_stop(&syncer);
-        sync_send = 0;
-    }
-
     Config_set_int(config, "drop_privs", NULL, 0);
     db = DB_init(config);
     DB_open(db, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
@@ -358,6 +341,23 @@ main(int argc, char **argv)
 
     case ACTION_DEL:
     case ACTION_ADD:
+        if(sync_send == 0
+           && (hosts = Config_get_list(config, "hosts", "sync")))
+        {
+            sync_send += List_size(hosts);
+        }
+
+        /* Setup sync if enabled in configuration file. */
+        if(sync_send && ((syncer = Sync_init(config)) == NULL)) {
+            warnx("sync disabled by configuration");
+            sync_send = 0;
+        }
+        else if(syncer && Sync_start(syncer) == -1) {
+            i_warning("could not start sync engine");
+            Sync_stop(&syncer);
+            sync_send = 0;
+        }
+
         white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
         trap_expiry = Config_get_int(config, "trap_expiry", "grey", GREY_TRAPEXP);
 
