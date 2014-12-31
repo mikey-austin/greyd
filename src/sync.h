@@ -104,7 +104,7 @@ extern Sync_engine_T Sync_init(Config_T config);
  *
  * @return the engine's socket file descriptor.
  */
-extern int Sync_start(Sync_engine_T engine, FILE *grey_out);
+extern int Sync_start(Sync_engine_T engine);
 
 /**
  * Stop the sync engine and cleanup all sync resources.
@@ -117,9 +117,10 @@ extern void Sync_stop(Sync_engine_T *engine);
 extern int Sync_add_host(Sync_engine_T engine, const char *name);
 
 /**
- * Receive a sync message on the engine's socket.
+ * Receive a sync message on the engine's socket and write grey
+ * data to the greylister on the specified file handle.
  */
-extern void Sync_recv(Sync_engine_T engine);
+extern void Sync_recv(Sync_engine_T engine, FILE *grey_out);
 
 /**
  * Send out a sync message to notify others of a change to a grey

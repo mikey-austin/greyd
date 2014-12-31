@@ -328,6 +328,11 @@ main(int argc, char **argv)
         warnx("sync disabled by configuration");
         sync = 0;
     }
+    else if(syncer && Sync_start(syncer) == -1) {
+        i_warning("could not start sync engine");
+        Sync_stop(&syncer);
+        sync = 0;
+    }
 
     Config_set_int(config, "drop_privs", NULL, 0);
     db = DB_init(config);

@@ -290,6 +290,12 @@ main(int argc, char **argv)
         sync_send += List_size(hosts);
     }
 
+    if(sync_recv == 0
+       && Config_get_str(state.config, "bind_addr", "sync", NULL) != NULL)
+    {
+        sync_recv = 1;
+    }
+
     Log_setup(state.config, PROG_NAME);
 
     if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED))
@@ -399,6 +405,12 @@ main(int argc, char **argv)
         sync_send = 0;
         sync_recv = 0;
     }
+    else if(syncer && Sync_start(syncer) == -1) {
+        i_warning("could not start sync engine");
+        Sync_stop(&syncer);
+        sync_send = 0;
+        sync_recv = 0;
+    }
 
     main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
     if((main_pw = getpwnam(main_user)) == NULL)
@@ -470,13 +482,6 @@ jail:
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
-
-    if(syncer && Sync_start(syncer, state.grey_out) == -1) {
-        i_warning("refusing to start sync engine");
-        Sync_stop(&syncer);
-        sync_send = 0;
-        sync_recv = 0;
-    }
 
     /* Setup the firewall handle before dropping privileges. */
     if((state.fw_handle = FW_open(state.config)) == NULL)
@@ -742,7 +747,7 @@ jail:
         /* Finally process any sync messages. */
         if(sync_recv && syncer) {
             if(fds[syncer->sync_fd % max_fd].revents & POLLIN) {
-                Sync_recv(syncer);
+                Sync_recv(syncer, state.grey_out);
             }
             else if(fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP)) {
                 i_warning("syncer poll error");

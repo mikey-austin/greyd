@@ -135,7 +135,7 @@ Sync_init(Config_T config)
 }
 
 extern int
-Sync_start(Sync_engine_T engine, FILE *grey_out)
+Sync_start(Sync_engine_T engine)
 {
     char *bind_addr;
     int one = 1;
@@ -147,7 +147,6 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     char *end, *mcast_addr;
     struct in_addr bind_in_addr;
 
-    engine->grey_out = grey_out;
     bind_addr = Config_get_str(engine->config, "bind_address", "sync", NULL);
 
     if(engine->iface != NULL)
@@ -156,6 +155,9 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     memset(&bind_in_addr, 0, sizeof(bind_in_addr));
     if(bind_addr != NULL) {
         if(inet_pton(AF_INET, bind_addr, &bind_in_addr) != 1) {
+            /*
+             * As bind_addr is not an address, treat it as an interface.
+             */
             bind_in_addr.s_addr = htonl(INADDR_ANY);
             if(engine->iface == NULL) {
                 engine->iface = bind_addr;
@@ -169,8 +171,10 @@ Sync_start(Sync_engine_T engine, FILE *grey_out)
     }
 
     engine->sync_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if(engine->sync_fd == -1)
+    if(engine->sync_fd == -1) {
+        i_warning("socket: %s", strerror(errno));
         return -1;
+    }
 
     if(setsockopt(engine->sync_fd, SOL_SOCKET, SO_REUSEADDR, &one,
                   sizeof(one)) == -1)
@@ -328,7 +332,7 @@ Sync_add_host(Sync_engine_T engine, const char *name)
 }
 
 extern void
-Sync_recv(Sync_engine_T engine)
+Sync_recv(Sync_engine_T engine, FILE *grey_out)
 {
     struct Sync_hdr *hdr;
     struct sockaddr_in addr;
@@ -420,7 +424,7 @@ Sync_recv(Sync_engine_T engine)
                    GREYLISTING_ENABLED))
             {
                 /* Send this info to the greylister. */
-                fprintf(engine->grey_out,
+                fprintf(grey_out,
                         "type = %d\n"
                         "sync = 0\n"
                         "ip = \"%s\"\n"
@@ -429,7 +433,7 @@ Sync_recv(Sync_engine_T engine)
                         "to = \"%s\"\n"
                         "%%\n", GREY_MSG_GREY, inet_ntoa(ip),
                         helo, from, to);
-                fflush(engine->grey_out);
+                fflush(grey_out);
             }
             break;
 
@@ -447,7 +451,7 @@ Sync_recv(Sync_engine_T engine)
                    GREYLISTING_ENABLED))
             {
                 /* Send this info to the greylister. */
-                fprintf(engine->grey_out,
+                fprintf(grey_out,
                         "type = %d\n"
                         "sync = 0\n"
                         "ip = \"%s\"\n"
@@ -455,7 +459,7 @@ Sync_recv(Sync_engine_T engine)
                         "expires = \"%u\"\n"
                         "%%\n", GREY_MSG_WHITE, inet_ntoa(ip),
                         inet_ntoa(addr.sin_addr), expire);
-                fflush(engine->grey_out);
+                fflush(grey_out);
             }
             break;
 
@@ -473,7 +477,7 @@ Sync_recv(Sync_engine_T engine)
                    GREYLISTING_ENABLED))
             {
                 /* Send this info to the greylister. */
-                fprintf(engine->grey_out,
+                fprintf(grey_out,
                         "type = %d\n"
                         "sync = 0\n"
                         "ip = \"%s\"\n"
@@ -481,7 +485,7 @@ Sync_recv(Sync_engine_T engine)
                         "expires = \"%u\"\n"
                         "%%\n", GREY_MSG_TRAP, inet_ntoa(ip),
                         inet_ntoa(addr.sin_addr), expire);
-                fflush(engine->grey_out);
+                fflush(grey_out);
             }
             break;
 
@@ -677,7 +681,9 @@ send_sync_message(Sync_engine_T engine, struct iovec *iov, int iovlen)
         i_debug("sending multicast sync message");
         msg.msg_name = &engine->sync_out;
         msg.msg_namelen = sizeof(engine->sync_out);
-        sendmsg(engine->sync_fd, &msg, 0);
+
+        if(sendmsg(engine->sync_fd, &msg, 0) == -1)
+            i_warning("sendmsg: %s", strerror(errno));
     }
 
     LIST_FOREACH(engine->sync_hosts, entry) {
@@ -686,7 +692,9 @@ send_sync_message(Sync_engine_T engine, struct iovec *iov, int iovlen)
                 host->name, inet_ntoa(host->addr.sin_addr));
         msg.msg_name = &host->addr;
         msg.msg_namelen = sizeof(host->addr);
-        sendmsg(engine->sync_fd, &msg, 0);
+
+        if(sendmsg(engine->sync_fd, &msg, 0) == -1)
+            i_warning("sendmsg: %s", strerror(errno));
     }
 }
 

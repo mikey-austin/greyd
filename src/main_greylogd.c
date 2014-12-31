@@ -128,6 +128,11 @@ main(int argc, char **argv)
         i_warning("sync disabled by configuration");
         sync_send = 0;
     }
+    else if(syncer && Sync_start(syncer) == -1) {
+        i_warning("could not start sync engine");
+        Sync_stop(&syncer);
+        sync_send = 0;
+    }
 
     Log_setup(config, PROG_NAME);
 

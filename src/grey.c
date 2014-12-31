@@ -144,11 +144,11 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
 
     case 0:
         /*
-         * In child.
+         * In child. Obtain a fresh database handle.
          */
-        if((greylister->db_handle = DB_init(greylister->config)) == NULL) {
+        if((greylister->db_handle = DB_init(greylister->config)) == NULL)
             i_critical("Could not create db handle");
-        }
+
         drop_privs(greylister);
 
         /*
