@@ -380,6 +380,8 @@ main(int argc, char **argv)
 
     DB_close(&db);
     Config_destroy(&config);
+    if(sync_send)
+        Sync_stop(&syncer);
 
     return ret;
 }
