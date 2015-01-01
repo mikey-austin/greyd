@@ -47,7 +47,7 @@ test_config_value_CFLAGS = $(test_cflags)
 test_config_value_SOURCES = test_config_value.c test.c $(greyd_source)
 
 test_grey_LDFLAGS = $(test_ldflags)
-test_grey_LDADD = $(test_ldadd)
+test_grey_LDADD = $(test_ldadd) -dlopen ../drivers/greyd_fw_dummy.la
 test_grey_CFLAGS = $(test_cflags)
 test_grey_SOURCES = test_grey.c test.c $(greyd_source)
 

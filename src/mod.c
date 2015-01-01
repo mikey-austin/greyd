@@ -31,7 +31,7 @@ extern void
             i_critical("No %s module configured", name);
 
         if((handle = lt_dlopen(mod_path)) == NULL)
-            i_critical("Could not open module: %s", lt_dlerror());
+            i_critical("Could not open %s: %s", mod_path, lt_dlerror());
     }
 
     return handle;
