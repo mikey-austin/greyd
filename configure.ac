@@ -21,7 +21,11 @@ if test "x${have_ltdl}" = xyes; then
     AC_CHECK_HEADERS([ltdl.h], [], [have_ltdl="yes"], [have_ltdl="no"])
 fi
 
-if test "x${have_ltdl}" != xyes; then
+if test "x${have_ltdl}" = xyes; then
+   AC_DEFINE([HAVE_LTDL_H], [1], [libtool ltdl abstraction library])
+   AC_SUBST([HAVE_LIBLTDL], "yes")
+   LIBS="${LIBS} -lltdl"
+else
     AC_MSG_FAILURE([ltdl is required along with its headers])
 fi
 
