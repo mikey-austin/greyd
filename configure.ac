@@ -16,9 +16,18 @@ AM_PROG_CC_C_O
 AC_CHECK_PROGS([VALGRIND], [valgrind], )
 
 # Checks for common libraries.
+AC_CHECK_LIB([ltdl], [lt_dlopen], [have_ltdl="yes"])
+if test "x${have_ltdl}" = xyes; then
+    AC_CHECK_HEADERS([ltdl.h], [], [have_ltdl="yes"], [have_ltdl="no"])
+fi
+
+if test "x${have_ltdl}" != xyes; then
+    AC_MSG_FAILURE([ltdl is required along with its headers])
+fi
+
 AC_CHECK_LIB([z], [gzdopen], [have_gz="yes"])
 if test "x${have_gz}" = xyes; then
-    AC_CHECK_HEADERS([zlib.h], [], [have_gz="yes"])
+    AC_CHECK_HEADERS([zlib.h], [], [have_gz="yes"], [have_gz="no"])
 fi
 
 if test "x${have_gz}" = xyes; then
@@ -29,7 +38,7 @@ fi
 
 AC_CHECK_LIB([crypto], [HMAC_Init], [have_crypto="yes"])
 if test "x${have_crypto}" = xyes; then
-    AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [], [have_crypto="yes"])
+    AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [], [have_crypto="yes"], [have_crypto="no"])
 fi
 
 if test "x${have_crypto}" = xyes; then
@@ -39,8 +48,7 @@ else
 fi
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h ltdl.h])
-AC_SEARCH_LIBS([lt_dlopen], [ltdl])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
 
 # Optional drivers to build.
 optional_drivers=
