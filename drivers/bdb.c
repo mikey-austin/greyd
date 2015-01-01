@@ -5,8 +5,8 @@
  * @date   2014
  */
 
-#include "../failures.h"
-#include "../greydb.h"
+#include "../src/failures.h"
+#include "../src/greydb.h"
 
 #include <db.h>
 #include <string.h>

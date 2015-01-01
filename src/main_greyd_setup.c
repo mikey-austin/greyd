@@ -440,6 +440,8 @@ main(int argc, char **argv)
         send_blacklist(fw, blacklist, greyonly, config, 1, all_cidrs);
         FW_close(&fw);
     }
+
+    List_destroy(&all_cidrs);
     Blacklist_destroy(&blacklist);
     Config_destroy(&config);
 

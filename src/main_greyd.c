@@ -767,6 +767,9 @@ shutdown:
             List_destroy(&state.cons[i].blacklists);
     }
 
+    if(syncer)
+        Sync_stop(&syncer);
+
     free(fds);
     free(state.cons);
     fclose(state.grey_out);

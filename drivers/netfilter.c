@@ -35,13 +35,13 @@
 #include <libnetfilter_log/libnetfilter_log.h>
 #include <libmnl/libmnl.h>
 
-#include "../failures.h"
-#include "../firewall.h"
-#include "../config_section.h"
-#include "../list.h"
-#include "../ip.h"
-#include "../utils.h"
-#include "../constants.h"
+#include "../src/failures.h"
+#include "../src/firewall.h"
+#include "../src/config_section.h"
+#include "../src/list.h"
+#include "../src/ip.h"
+#include "../src/utils.h"
+#include "../src/constants.h"
 
 #define MAX_ELEM           200000
 #define HASH_SIZE          (1024 * 1024)

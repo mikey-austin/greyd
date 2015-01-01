@@ -1,13 +1,17 @@
 AC_PREREQ([2.69])
 AC_INIT([greyd], [0.1.0], [bugs@greyd.org])
 AM_INIT_AUTOMAKE([parallel-tests])
+LT_INIT([dlopen])
 AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
+AC_PROG_RANLIB
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_SED
+AM_PROG_CC_C_O
 AC_CHECK_PROGS([VALGRIND], [valgrind], )
 
 # Checks for common libraries.
@@ -17,17 +21,9 @@ if test "x${have_gz}" = xyes; then
 fi
 
 if test "x${have_gz}" = xyes; then
-   LIBS="$LIBS -lz"
+   LIBS="${LIBS} -lz"
 else
     AC_MSG_FAILURE([zlib is required along with its headers])
-fi
-
-AC_CHECK_HEADERS([dlfcn.h], [have_dl="yes"])
-if test "x${have_dl}" = xyes; then
-    # Not all systems require -ldl (eg OpenBSD).
-    AC_CHECK_LIB([dl], [dlopen], [LIBS="$LIBS -ldl"])
-else
-   AC_MSG_FAILURE([dynamic loader support is missing])
 fi
 
 AC_CHECK_LIB([crypto], [HMAC_Init], [have_crypto="yes"])
@@ -36,13 +32,20 @@ if test "x${have_crypto}" = xyes; then
 fi
 
 if test "x${have_crypto}" = xyes; then
-   LIBS="$LIBS -lcrypto"
+   LIBS="${LIBS} -lcrypto"
 else
     AC_MSG_FAILURE([libcrypto (OpenSSL) is missing, required for sync])
 fi
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h ltdl.h])
+AC_SEARCH_LIBS([lt_dlopen], [ltdl])
+
+# Optional drivers to build.
+optional_drivers=
+optional_ldadd=
+AC_SUBST([optional_drivers])
+AC_SUBST([optional_ldadd])
 
 #
 # Berkeley db driver library & header checks.
@@ -59,17 +62,18 @@ if test "x${bdb_driver}" = xyes; then
     fi
 
     if test "x${have_bdb}" = xyes; then
-       bdb_LIBS="$bdb_LIBS -ldb"
+       bdb_LIBS="${bdb_LIBS} -ldb"
        AC_DEFINE([HAVE_LIBDB], [1], [Berkeley DB development library])
-       AC_SUBST([bdb_LIBS], ["$bdb_LIBS"])
     else
        AC_MSG_FAILURE([libdb is required to build the Berkeley database driver])
     fi
 fi
 
 if test "x${bdb_driver}" = xyes; then
+   LIBS="${LIBS} ${bdb_LIBS}"
    AC_DEFINE([WITH_BDB], [1], [with the Berkeley DB driver])
-   AC_SUBST([WITH_BDB], [yes])
+   optional_drivers="${optional_drivers} greyd_bdb.la"
+   optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb.la"
 fi
 
 #
@@ -147,8 +151,10 @@ if test "x${netfilter_driver}" = xyes; then
 fi
 
 if test "x${netfilter_driver}" = xyes; then
+   LIBS="${LIBS} ${netfilter_LIBS}"
    AC_DEFINE([WITH_NETFILTER], [1], [with the Netfilter firewall driver])
-   AC_SUBST([WITH_NETFILTER], [yes])
+   optional_drivers="${optional_drivers} greyd_netfilter.la"
+   optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_netfilter.la"
 fi
 
 #
@@ -159,7 +165,8 @@ AC_ARG_WITH([pf], [AS_HELP_STRING([--with-pf], [build the PF firewall driver])],
 
 if test "x${pf_driver}" = xyes; then
    AC_DEFINE([WITH_PF], [1], [with the PF firewall driver])
-   AC_SUBST([WITH_PF], [yes])
+   optional_drivers="${optional_drivers} greyd_pf.la"
+   optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_pf.la"
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -179,7 +186,8 @@ AC_CHECK_FUNCS([dup2 getcwd gethostname inet_ntoa memset mkdir socket strchr str
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 src/modules/Makefile
+                 drivers/Makefile
+                 doc/Makefile
                  etc/Makefile
                  tests/Makefile
                  tests/run_tests.pl

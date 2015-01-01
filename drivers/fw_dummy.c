@@ -5,8 +5,8 @@
  * @date   2014
  */
 
-#include "../firewall.h"
-#include "../list.h"
+#include "../src/firewall.h"
+#include "../src/list.h"
 
 #include <stdio.h>
 #include <string.h>

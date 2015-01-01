@@ -42,3 +42,10 @@ missing
 depcomp
 src/stamp-h1
 .deps/*
+*.lo
+compile
+libtool
+ltmain.sh
+drivers/.deps/*
+drivers/.libs/*
+drivers/*.la

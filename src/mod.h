@@ -30,6 +30,6 @@ extern void *Mod_get(void *handle, const char *sym);
 /**
  * Check for module errors and return if defined.
  */
-extern char *Mod_error(void);
+extern const char *Mod_error(void);
 
 #endif

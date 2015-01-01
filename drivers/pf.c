@@ -5,10 +5,10 @@
  * @date   2014
  */
 
-#include "../firewall.h"
-#include "../config_section.h"
-#include "../list.h"
-#include "../ip.h"
+#include "../src/firewall.h"
+#include "../src/config_section.h"
+#include "../src/list.h"
+#include "../src/ip.h"
 
 #include <stdio.h>
 #include <unistd.h>
