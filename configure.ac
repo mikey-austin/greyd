@@ -6,6 +6,7 @@ AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
 AC_PROG_RANLIB
 AC_CONFIG_MACRO_DIR([m4])
+AC_REQUIRE_AUX_FILE([tap-driver.pl])
 
 # Checks for programs.
 AC_PROG_CC
@@ -189,13 +190,13 @@ AC_CONFIG_FILES([Makefile
                  drivers/Makefile
                  doc/Makefile
                  etc/Makefile
-                 tests/Makefile
-                 tests/run_tests.pl
-                 tests/data/permitted_domains.txt
-                 tests/data/config_lexer_test1.conf
-                 tests/data/config_test1.conf
-                 tests/data/config_test2.conf
-                 tests/data/config_test3.conf
-                 tests/data/lexer_source_1.conf
-                 tests/data/lexer_source_2.conf.gz])
+                 check/Makefile
+                 check/run_tests.pl
+                 check/data/permitted_domains.txt
+                 check/data/config_lexer_test1.conf
+                 check/data/config_test1.conf
+                 check/data/config_test2.conf
+                 check/data/config_test3.conf
+                 check/data/lexer_source_1.conf
+                 check/data/lexer_source_2.conf.gz])
 AC_OUTPUT

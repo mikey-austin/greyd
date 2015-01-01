@@ -61,10 +61,10 @@ main(void)
         "  grey_expiry      = 3600\n"
         "}\n"
         "section firewall {\n"
-        "  driver = \"../drivers/fw_dummy.so\"\n"
+        "  driver = \"greyd_fw_dummy.so\"\n"
         "}\n"
         "section database {\n"
-        "  driver = \"../drivers/bdb.so\",\n"
+        "  driver = \"greyd_bdb.so\",\n"
         "  path   = \"/tmp/greyd_test_grey\",\n"
         "  db_name = \"test_grey.db\"\n"
         "}";

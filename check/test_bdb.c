@@ -35,7 +35,7 @@ main(void)
     char *conf =
         "drop_privs = 0\n"
         "section database {\n"
-        "  driver = \"../drivers/bdb.so\",\n"
+        "  driver = \"greyd_bdb.so\",\n"
         "  path   = \"/tmp/greyd_test_bdb\",\n"
         "  db_name = \"test_bdb.db\"\n"
         "}";

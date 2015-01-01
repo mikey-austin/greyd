@@ -3,7 +3,7 @@ pkglib_LTLIBRARIES = $(optional_drivers)
 noinst_LTLIBRARIES = greyd_fw_dummy.la
 
 greyd_fw_dummy_la_SOURCES = fw_dummy.c
-greyd_fw_dummy_la_LDFLAGS = -module -avoid-version
+greyd_fw_dummy_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
 
 greyd_bdb_la_SOURCES = bdb.c
 greyd_bdb_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
