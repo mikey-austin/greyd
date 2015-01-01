@@ -1,1 +1,1 @@
-SUBDIRS = drivers src check doc
+SUBDIRS = drivers src check doc etc
