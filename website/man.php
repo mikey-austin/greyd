@@ -1,4 +1,4 @@
-<?php include('header.php') ?>
+<?php $active = 'docs'; include('header.php'); ?>
 
 <?php
      $manuals = array('greyd', 'greylogd', 'greydb', 'greyd-setup', 'greyd.conf');

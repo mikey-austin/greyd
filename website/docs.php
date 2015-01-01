@@ -1,4 +1,4 @@
-<?php include('header.php') ?>
+<?php $active = 'docs'; include('header.php'); ?>
 
 <section class="banner">
     <div class="content">

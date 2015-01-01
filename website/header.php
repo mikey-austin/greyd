@@ -21,14 +21,14 @@
 
             <nav>
                 <ul>
-                    <li>
+                    <li <?php if(isset($active) && $active == 'docs'): ?>class="active"<?php endif; ?>>
                         <a href="docs.php">docs</a>
                     </li>
-                    <li>
+                    <li <?php if(isset($active) && $active == 'downloads'): ?>class="active"<?php endif; ?>>
                         <a href="downloads.php">downloads</a>
                     </li>
-                    <li>
-                        <a href="https://github.com/mikey-austin/greyd" target="_blank">code</a>
+                    <li <?php if(isset($active) && $active == 'code'): ?>class="active"<?php endif; ?>>
+                        <a href="code.php">code</a>
                     </li>
                 </ul>
             </nav>

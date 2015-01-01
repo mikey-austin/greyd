@@ -1,6 +1,6 @@
 <?php include('header.php') ?>
 
-<section class="banner">
+<section class="banner home">
     <div class="content">
         <h2>
             Block spam before it steps foot in your network.
