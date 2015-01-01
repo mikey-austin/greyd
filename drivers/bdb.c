@@ -5,15 +5,15 @@
  * @date   2014
  */
 
-#include "../src/failures.h"
-#include "../src/greydb.h"
-
 #include <db.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "../src/failures.h"
+#include "../src/greydb.h"
 
 #define DEFAULT_PATH "/var/db/greyd"
 #define DEFAULT_DB   "greyd.db"

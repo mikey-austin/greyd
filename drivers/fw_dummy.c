@@ -5,12 +5,12 @@
  * @date   2014
  */
 
-#include "../src/firewall.h"
-#include "../src/list.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <arpa/inet.h>
+
+#include "../src/firewall.h"
+#include "../src/list.h"
 
 int
 Mod_fw_open(FW_handle_T handle)
