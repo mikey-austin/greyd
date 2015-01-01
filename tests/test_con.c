@@ -49,10 +49,10 @@ main(void)
         "  stutter          = 15\n"
         "}\n"
         "section firewall {\n"
-        "  driver = \"../modules/fw_dummy.so\"\n"
+        "  driver = \"../drivers/fw_dummy.so\"\n"
         "}\n"
         "section database {\n"
-        "  driver = \"../modules/bdb.so\",\n"
+        "  driver = \"../drivers/bdb.so\",\n"
         "  path   = \"/tmp/greyd_test_grey.db\"\n"
         "}";
 

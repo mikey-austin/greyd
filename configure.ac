@@ -1,5 +1,6 @@
 AC_PREREQ([2.69])
 AC_INIT([greyd], [0.1.0], [bugs@greyd.org])
+AM_INIT_AUTOMAKE([parallel-tests])
 AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
 
@@ -39,16 +40,6 @@ if test "x${have_crypto}" = xyes; then
 else
     AC_MSG_FAILURE([libcrypto (OpenSSL) is missing, required for sync])
 fi
-
-greyd_LIBS="$LIBS"
-greylogd_LIBS="$LIBS"
-greydb_LIBS="$LIBS"
-greyd_setup_LIBS="$LIBS"
-
-AC_SUBST([greyd_LIBS], ["$greyd_LIBS"])
-AC_SUBST([greylogd_LIBS], ["$greylogd_LIBS"])
-AC_SUBST([greydb_LIBS], ["$greydb_LIBS"])
-AC_SUBST([greyd_setup_LIBS], ["$greyd_setup_LIBS"])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
