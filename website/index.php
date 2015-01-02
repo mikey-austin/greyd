@@ -40,19 +40,30 @@
             <p>
                 One of the goals of the <em>greyd</em> project is to support a wide variety of systems, firewalls and databases.
             </p>
+
+            <h3>Heritage</h3>
+            <p>
+                <em>greyd</em> closely follows the design of the excellent <em>spamd</em> from the <a target="_blank" href="http://openbsd.org">OpenBSD project</a>, and thus, implements all features of <em>spamd</em>.
+            </p>
         </div>
 
         <div class="tile">
             <h3>Blacklisting</h3>
             <p>
-                Blacklists may also be loaded into <em>greyd</em>. If <em>greyd</em> finds that a host is on one or more blacklists, it will reply <em>very slowly</em> in order to waste as much spammer time as possible.
+                Blacklists may also be loaded into <em>greyd</em> (via <a href="man.php?name=greyd-setup">greyd-setup</a>). If <em>greyd</em> finds that a host is on one or more blacklists, it will reply <em>very slowly</em> in order to waste as much spammer time as possible.
             </p>
-        </div>
 
-        <div class="tile">
-            <h3>Heritage</h3>
+            <h3>Spam-trapping</h3>
             <p>
-                <em>greyd</em> closely follows the design of the excellent <em>spamd</em> from the <a target="_blank" href="http://openbsd.org">OpenBSD project</a>, and thus, implements all features of <em>spamd</em>.
+                <em>greyd</em> provides multiple ways to <em>trap</em> spammers (aka <em>greytrapping</em>):
+            </p>
+            <ul>
+                <li>if the spammer sends mail to a designated spamtrap address (setup via <a href="man.php?name=greydb">greydb</a>)</li>
+                <li>if the spammer sends mail to a non-existant address</li>
+                <li>if the spammer sends mail to a designated backup MX out of order</li>
+            </ul>
+            <p>
+                Trapped hosts are treated in the same fashion as blacklisted hosts.
             </p>
         </div>
     </div>

@@ -209,25 +209,20 @@ code {
 
     .tile {
         width: 30%;
-        float: left;
-        margin-left: 30px;
-    }
-
-    .tile.wide {
-        float: none;
         padding-left: 15px;
         padding-right: 15px;
-        width: 50%;
         display: table-cell;
     }
 
+    .tile.wide {
+        width: 50%;
+    }
+
     .tile:first-of-type {
-        margin-left: 0;
         padding-left: 0;
     }
 
     .tile:last-of-type {
-        margin-right: 0;
         padding-right: 0;
     }
 
