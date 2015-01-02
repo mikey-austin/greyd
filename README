@@ -4,7 +4,7 @@ greyd - greylisting & blacklisting daemon
 Project Website
 ---------------
 
-Check out the project website (http://greyd.org) for more information and documentation. 
+Check out the project website (http://greyd.org) for more information and documentation.
 
 Overview
 --------
@@ -66,7 +66,7 @@ Before the first proper release, there is still the following to be done:
 Licensing
 ---------
 
-All of the source is (will be) licensed under the OpenBSD license, with the exception of the netfilter
+All of the source is licensed under the OpenBSD license, with the exception of the netfilter
 firewall driver. As this driver links with the libnetfilter userland libraries, it must be licensed
-under the GPL. This does not conflict with the rest of the code base as all **greyd** drivers are
+under the GPL (as is my understanding!). This does not conflict with the rest of the code base as all **greyd** drivers are/can be
 compiled as shared objects, to be dynamically linked at runtime.
