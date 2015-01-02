@@ -221,7 +221,7 @@ code {
         width: 45%;
     }
 
-    .banner:not(.home) h2 {
+    .banner h2 {
         text-align: left;
     }
 }
