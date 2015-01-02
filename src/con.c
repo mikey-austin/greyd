@@ -1,10 +1,3 @@
-/**
- * @file   con.c
- * @brief  Implements the connection management interface.
- * @author Mikey Austin
- * @date   2014
- */
-
 /*
  * Copyright (c) 2014 Mikey Austin.  All rights reserved.
  * Copyright (c) 2002-2007 Bob Beck.  All rights reserved.
@@ -21,6 +14,13 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/**
+ * @file   con.c
+ * @brief  Implements the connection management interface.
+ * @author Mikey Austin
+ * @date   2014
  */
 
 #include <config.h>

@@ -1,10 +1,3 @@
-/**
- * @file   ip.c
- * @brief  Implements various IP support utilities.
- * @author Mikey Austin
- * @date   2014
- */
-
 /*
  * Copyright (c) 2014 Mikey Austin.  All rights reserved.
  * Copyright (c) 2003 Bob Beck.  All rights reserved.
@@ -28,6 +21,13 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/**
+ * @file   ip.c
+ * @brief  Implements various IP support utilities.
+ * @author Mikey Austin
+ * @date   2014
  */
 
 #include <config.h>

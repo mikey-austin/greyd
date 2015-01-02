@@ -1,10 +1,3 @@
-/**
- * @file   utils.h
- * @brief  Defines various system support utilities.
- * @author Mikey Austin
- * @date   2014
- */
-
 /*
  * Copyright (c) 1998, 2014 Todd C. Miller <Todd.Miller@courtesan.com>
  *
@@ -19,6 +12,13 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/**
+ * @file   utils.h
+ * @brief  Defines various system support utilities.
+ * @author Mikey Austin
+ * @date   2014
  */
 
 #ifndef UTILS_DEFINED
