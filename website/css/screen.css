@@ -213,12 +213,22 @@ code {
         margin-left: 30px;
     }
 
+    .tile.wide {
+        float: none;
+        padding-left: 15px;
+        padding-right: 15px;
+        width: 50%;
+        display: table-cell;
+    }
+
     .tile:first-of-type {
+        margin-left: 0;
         padding-left: 0;
     }
 
-    .tile.wide {
-        width: 45%;
+    .tile:last-of-type {
+        margin-right: 0;
+        padding-right: 0;
     }
 
     .banner h2 {
