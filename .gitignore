@@ -35,6 +35,7 @@ check/data/permitted_domains.txt
 check/data/config_test2.conf
 check/data/config_test3.conf
 check/data/lexer_source_1.conf
+check/data/lexer_source_2.conf.gz
 check/run_tests.pl
 check/.deps/*
 check/test_*
