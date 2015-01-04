@@ -20,13 +20,21 @@
  * @author Mikey Austin
  * @date   2014
  */
+ 
+#include <config.h> 
 
-#include <db.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+
+#ifdef HAVE_DB4
+#  include <db4/db.h>
+#else
+#  include <db.h>
+#endif
 
 #include "../src/failures.h"
 #include "../src/greydb.h"

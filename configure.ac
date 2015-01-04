@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 AC_INIT([greyd], [0.1.0], [bugs@greyd.org])
-AM_INIT_AUTOMAKE([parallel-tests])
+AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
 AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
@@ -63,6 +63,9 @@ AC_SUBST([optional_ldadd])
 #
 # Berkeley db driver library & header checks.
 #
+AC_ARG_WITH([db4], [AS_HELP_STRING([--with-db4], [build against Berkeley DB version 4])],
+    [db4=yes], [db4=no])
+
 AC_ARG_WITH([bdb], [AS_HELP_STRING([--with-bdb], [build the Berkeley database driver])],
     [bdb_driver=yes], [bdb_driver=no])
 
@@ -71,12 +74,19 @@ if test "x${bdb_driver}" = xyes; then
     have_bdb=no
     AC_CHECK_LIB([db], [db_create], [have_bdb=yes])
     if test "x${have_bdb}" = xyes; then
-       AC_CHECK_HEADERS([db.h], [], [have_bdb=no])
+       if test "x${db4}" = xyes; then
+          AC_CHECK_HEADERS([db4/db.h], [], [have_bdb=no])
+       else
+          AC_CHECK_HEADERS([db.h], [], [have_bdb=no])
+       fi
     fi
 
     if test "x${have_bdb}" = xyes; then
        bdb_LIBS="${bdb_LIBS} -ldb"
        AC_DEFINE([HAVE_LIBDB], [1], [Berkeley DB development library])
+       if test "x${db4}" = xyes; then
+           AC_DEFINE([HAVE_DB4], [1], [Berkeley DB version 4 development library])
+       fi
     else
        AC_MSG_FAILURE([libdb is required to build the Berkeley database driver])
     fi
