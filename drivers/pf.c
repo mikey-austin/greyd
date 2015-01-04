@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014, 2015 Mikey Austin <mikey@greyd.org>
+ * Copyright (c) 2004-2006 Bob Beck.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,59 +22,209 @@
  * @date   2014
  */
 
+#include <config.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+
 #include <stdio.h>
+#include <fcntl.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
 
-#include <firewall.h>
-#include <config_section.h>
-#include <list.h>
-#include <ip.h>
+#include "../src/failures.h"
+#include "../src/firewall.h"
+#include "../src/config_section.h"
+#include "../src/list.h"
+#include "../src/ip.h"
 
-#define PATH_PFCTL    "/sbin/pfctl"
-#define DEFAULT_TABLE "greyd"
+#define PFCTL_PATH "/sbin/pfctl"
+#define PFDEV_PATH "/dev/pf"
+#define MAX_PFDEV  63
+
+#define satosin(sa)  ((struct sockaddr_in *)(sa))
+#define satosin6(sa) ((struct sockaddr_in6 *)(sa))
 
 /**
  * Setup a pipe for communication with the control command.
  */
-FILE *Mod_setup_cntl_pipe(char *command, char **argv);
-
-void
-Mod_fw_init(Config_section_T section)
-{
-    /* NOOP. */
-}
+static FILE *setup_cntl_pipe(char *, char **, int *);
+static int server_lookup4(int, struct sockaddr_in *, struct sockaddr_in *,
+                          struct sockaddr_in *);
+static int server_lookup6(int, struct sockaddr_in6 *, struct sockaddr_in6 *,
+                          struct sockaddr_in6 *);
 
 int
-Mod_fw_replace_networks(Config_section_T section, List_T cidrs)
+Mod_fw_open(FW_handle_T handle)
 {
-	char *argv[9] = { "pfctl", "-q", "-t", DEFAULT_TABLE, "-T", "replace",
-	    "-f" "-", NULL };
-    char *cidr, *pfctl_path = PATH_PFCTL;
-	static FILE *pf = NULL;
-    struct List_entry *entry;
+    char *pfdev_path;
+    int *pfdev = NULL;
 
-    /*
-     * Pull out the custom paths and/or table names from the config section.
-     */
-    pfctl_path = Config_section_get_str(section, "pfctl_path", PATH_PFCTL);
-    argv[3]    = Config_section_get_str(section, "table_name", DEFAULT_TABLE);
+    pfdev_path = Config_get_str(handle->config, "pfdev_path",
+                                "firewall", PFDEV_PATH);
 
-    if((pf = Mod_setup_cntl_pipe(pfctl_path, argv)) == NULL) {
+    if((pfdev = malloc(sizeof(*pfdev))) == NULL)
+        return -1;
+
+    *pfdev = open(pfdev_path, O_RDWR);
+    if(*pfdev < 1 || *pfdev > MAX_PFDEV) {
+        i_warning("could not open %s: %s", pfdev_path,
+                  strerror(errno));
         return -1;
     }
 
-    LIST_FOREACH(cidrs, entry) {
-        cidr = List_entry_value(entry);
-        if(cidr != NULL) {
-            fprintf(pf, "%s\n", cidr);
-        }
-    }
+    handle->fwh = pfdev;
 
     return 0;
 }
 
-FILE
-*Mod_setup_cntl_pipe(char *command, char **argv)
+void
+Mod_fw_close(FW_handle_T handle)
+{
+    int *pfdev = handle->fwh;
+
+    if(pfdev != NULL) {
+        close(*pfdev);
+        free(pfdev);
+    }
+    handle->fwh = NULL;
+}
+
+int
+Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
+{
+    int fd, nadded = 0, child = -1, status, *pfdev;
+    char *cidr, *fd_path = NULL, *pfctl_path = PFCTL_PATH;
+    char *table = (char *) set_name;
+    static FILE *pf = NULL;
+    struct List_entry *entry;
+    char *argv[11] = { "pfctl", "-p", PFDEV_PATH, "-q", "-t", table,
+                       "-T", "replace", "-f", "-", NULL };
+
+    pfctl_path = Config_get_str(handle->config, "pfctl_path",
+                                "firewall", PFCTL_PATH);
+
+    pfdev = handle->fwh;
+    if(asprintf(&fd_path, "/dev/fd/%d", *pfdev) == -1)
+        return -1;
+    argv[2] = fd_path;
+
+    if((pf = setup_cntl_pipe(pfctl_path, argv, &child)) == NULL) {
+        free(fd_path);
+        fd_path = NULL;
+        goto err;
+    }
+    free(fd_path);
+    fd_path = NULL;
+
+    LIST_FOREACH(cidrs, entry) {
+        if((cidr = List_entry_value(entry)) != NULL) {
+            fprintf(pf, "%s\n", cidr);
+            nadded++;
+        }
+    }
+
+    waitpid(child, &status, 0);
+    if(WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        i_warning("%s returned status %d", pfctl_path,
+                  WEXITSTATUS(status));
+        goto err;
+    }
+    else if(WIFSIGNALED(status)) {
+        i_warning("%s died on signal %d", pfctl_path,
+                  WTERMSIG(status));
+        goto err;
+    }
+
+    return nadded;
+
+err:
+    return -1;
+}
+
+int
+Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
+                       struct sockaddr *proxy, struct sockaddr *orig_dst)
+{
+    int *pfdev = handle->fwh;
+
+    if(src->sa_family == AF_INET) {
+        return server_lookup4(*pfdev, satosin(src), satosin(proxy),
+                              satosin(orig_dst));
+    }
+
+    if(src->sa_family == AF_INET6) {
+        return server_lookup6(*pfdev, satosin6(src), satosin6(proxy),
+                              satosin6(orig_dst));
+    }
+
+    errno = EPROTONOSUPPORT;
+    return -1;
+}
+
+static int
+server_lookup4(int pfdev, struct sockaddr_in *client, struct sockaddr_in *proxy,
+               struct sockaddr_in *server)
+{
+    struct pfioc_natlook pnl;
+
+    memset(&pnl, 0, sizeof pnl);
+    pnl.direction = PF_OUT;
+    pnl.af = AF_INET;
+    pnl.proto = IPPROTO_TCP;
+    memcpy(&pnl.saddr.v4, &client->sin_addr.s_addr, sizeof pnl.saddr.v4);
+    memcpy(&pnl.daddr.v4, &proxy->sin_addr.s_addr, sizeof pnl.daddr.v4);
+    pnl.sport = client->sin_port;
+    pnl.dport = proxy->sin_port;
+
+    if(ioctl(pfdev, DIOCNATLOOK, &pnl) == -1)
+        return -1;
+
+    memset(server, 0, sizeof(struct sockaddr_in));
+    server->sin_len = sizeof(struct sockaddr_in);
+    server->sin_family = AF_INET;
+    memcpy(&server->sin_addr.s_addr, &pnl.rdaddr.v4,
+           sizeof(server->sin_addr.s_addr));
+    server->sin_port = pnl.rdport;
+
+    return 0;
+}
+
+static int
+server_lookup6(int pfdev, struct sockaddr_in6 *client, struct sockaddr_in6 *proxy,
+               struct sockaddr_in6 *server)
+{
+    struct pfioc_natlook pnl;
+
+    memset(&pnl, 0, sizeof pnl);
+    pnl.direction = PF_OUT;
+    pnl.af = AF_INET6;
+    pnl.proto = IPPROTO_TCP;
+    memcpy(&pnl.saddr.v6, &client->sin6_addr.s6_addr, sizeof pnl.saddr.v6);
+    memcpy(&pnl.daddr.v6, &proxy->sin6_addr.s6_addr, sizeof pnl.daddr.v6);
+    pnl.sport = client->sin6_port;
+    pnl.dport = proxy->sin6_port;
+
+    if(ioctl(pfdev, DIOCNATLOOK, &pnl) == -1)
+        return -1;
+
+    memset(server, 0, sizeof(struct sockaddr_in6));
+    server->sin6_len = sizeof(struct sockaddr_in6);
+    server->sin6_family = AF_INET6;
+    memcpy(&server->sin6_addr.s6_addr, &pnl.rdaddr.v6,
+           sizeof(server->sin6_addr));
+    server->sin6_port = pnl.rdport;
+
+    return 0;
+}
+
+static FILE
+*setup_cntl_pipe(char *command, char **argv, int *pid)
 {
     int pdes[2];
     FILE *out;
@@ -81,7 +232,7 @@ FILE
     if(pipe(pdes) != 0)
         return NULL;
 
-    switch(fork()) {
+    switch((*pid = fork())) {
     case -1:
         close(pdes[0]);
         close(pdes[1]);

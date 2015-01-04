@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#include <err.h>
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
@@ -129,16 +128,19 @@ Mod_fw_open(FW_handle_T handle)
     cap_t caps;
 
     if((fwh = malloc(sizeof(*fwh))) == NULL)
-        err(1, "malloc");
+        i_critical("malloc");
     handle->fwh = fwh;
 
     fwh->nl = mnl_socket_open(NETLINK_NETFILTER);
     if(fwh->nl == NULL) {
-        warn("mnl_socket_open");
+        i_warning("mnl_socket_open");
+        goto err;
     }
     else {
-        if (mnl_socket_bind(fwh->nl, 0, MNL_SOCKET_AUTOPID) < 0)
-            warn("mnl_socket_bind");
+        if (mnl_socket_bind(fwh->nl, 0, MNL_SOCKET_AUTOPID) < 0) {
+            i_warning("mnl_socket_bind");
+            goto err;
+        }
     }
 
     /* Log handle initialized when needed. */
@@ -147,8 +149,10 @@ Mod_fw_open(FW_handle_T handle)
     ipset_load_types();
     fwh->session = ipset_session_init(printf);
     ipset_envopt_parse(fwh->session, IPSET_ENV_EXIST, NULL);
-    if(fwh->session == NULL)
-        warn("ipset_session_init");
+    if(fwh->session == NULL) {
+        i_warning("ipset_session_init");
+        goto err;
+    }
 
     if(Config_get_int(handle->config, "drop_privs", NULL, 1)) {
         /*
@@ -158,12 +162,18 @@ Mod_fw_open(FW_handle_T handle)
         caps = cap_get_proc();
         cap_set_flag(caps, CAP_PERMITTED, 1, cap_values, CAP_SET);
         cap_set_proc(caps);
-        if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) == -1)
-            warn("prctl");
         cap_free(caps);
+
+        if(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) == -1) {
+            i_warning("prctl");
+            goto err;
+        }
     }
 
     return 0;
+
+err:
+    return -1;
 }
 
 void
@@ -185,7 +195,7 @@ Mod_fw_close(FW_handle_T handle)
         cap_clear(caps);
         cap_set_proc(caps);
         if(prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == -1)
-            warn("prctl");
+            i_warning("prctl");
         cap_free(caps);
     }
 }
@@ -234,7 +244,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 
     ct = nfct_new();
     if(ct == NULL) {
-        warn("nfct_new");
+        i_warning("nfct_new");
         return 0;
     }
 
@@ -265,7 +275,7 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 
     ret = mnl_socket_sendto(nl, nlh, nlh->nlmsg_len);
     if(ret == -1)
-        warn("mnl_socket_sendto");
+        i_warning("mnl_socket_sendto");
 
     ret = mnl_socket_recvfrom(nl, buf, sizeof(buf));
     while(ret > 0) {
@@ -302,7 +312,7 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     }
 
     if((lh = malloc(sizeof(*lh))) == NULL)
-        err(1, "malloc");
+        i_critical("malloc");
     fwh->log = lh;
 
     /*
@@ -404,7 +414,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     LIST_FOREACH(cidrs, entry) {
         if((cidr = List_entry_value(entry)) != NULL) {
             if(ipset_add(session, stage_set_name, cidr, af) == -1) {
-                warnx("invalid cidr %s", cidr);
+                i_warning("invalid cidr %s", cidr);
                 return -1;
             }
             nadded++;
@@ -514,7 +524,7 @@ ipset_create(struct ipset_session *session, const char *set_name,
     u_int32_t timeout = 0;   /* Unlimited. */
 
     if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0) {
-        warnx("ipset create %s: %s", set_name,
+        i_warning("ipset create %s: %s", set_name,
               ipset_session_error(session));
         return -1;
     }
@@ -522,7 +532,7 @@ ipset_create(struct ipset_session *session, const char *set_name,
     ipset_session_data_set(session, IPSET_OPT_TYPENAME, "hash:net");
 
     if((type = ipset_type_get(session, IPSET_CMD_CREATE)) == NULL) {
-        warnx("ipset type get %s: %s", set_name,
+        i_warning("ipset type get %s: %s", set_name,
               ipset_session_error(session));
         return -1;
     }
@@ -536,7 +546,7 @@ ipset_create(struct ipset_session *session, const char *set_name,
     ipset_session_data_set(session, IPSET_OPT_TIMEOUT, &timeout);
 
     if(ipset_cmd(session, IPSET_CMD_CREATE, 0) == -1) {
-        warnx("ipset create %s: %s", set_name,
+        i_warning("ipset create %s: %s", set_name,
               ipset_session_error(session));
         return -1;
     }
@@ -589,7 +599,7 @@ ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
     }
 
     if(ipset_cmd(session, IPSET_CMD_ADD, 0) == -1) {
-        warnx("ipset add %s: %s", set_name,
+        i_warning("ipset add %s: %s", set_name,
               ipset_session_error(session));
         return -1;
     }
@@ -608,7 +618,7 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
         return -1;
 
     if(ipset_cmd(session, IPSET_CMD_SWAP, 0) != 0) {
-        warnx("ipset swap %s <-> %s: %s", set_name, stage_set_name,
+        i_warning("ipset swap %s <-> %s: %s", set_name, stage_set_name,
               ipset_session_error(session));
         return -1;
     }
@@ -621,7 +631,7 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
         return -1;
 
     if(ipset_cmd(session, IPSET_CMD_DESTROY, 0) == -1) {
-        warnx("ipset destroy %s: %s", stage_set_name,
+        i_warning("ipset destroy %s: %s", stage_set_name,
               ipset_session_error(session));
         return -1;
     }
@@ -633,10 +643,10 @@ static void
 setup_nflog_handle(struct nflog_handle **handle, short af)
 {
     if((*handle = nflog_open()) == NULL)
-        err(1, "nflog_open");
+        i_critical("nflog_open");
 
     if(nflog_bind_pf(*handle, af) < 0)
-        err(1, "nflog_bind_pf");
+        i_critical("nflog_bind_pf");
 }
 
 static void
@@ -644,16 +654,16 @@ setup_nflog_group(struct nflog_handle *handle, struct nflog_g_handle **group,
                    int group_num)
 {
     if((*group = nflog_bind_group(handle, group_num)) == NULL)
-        err(1, "nflog_bind_group");
+        i_critical("nflog_bind_group");
 
     if(nflog_set_mode(*group, NFULNL_COPY_PACKET, NFLOG_WHOLE_PACKET) < 0)
-        err(1, "nflog_set_mode");
+        i_critical("nflog_set_mode");
 
     if(nflog_set_nlbufsiz(*group, NFLOG_BUF) < 0)
-        err(1, "nflog_set_nlbufsize");
+        i_critical("nflog_set_nlbufsize");
 
     if(nflog_set_timeout(*group, NFLOG_TIMEOUT) < 0)
-        err(1, "nflog_set_timeout");
+        i_critical("nflog_set_timeout");
 }
 
 static int
@@ -708,9 +718,9 @@ set_effective_caps()
     caps = cap_get_proc();
     cap_clear(caps);
     if(cap_set_flag(caps, CAP_PERMITTED, 1, cap_values, CAP_SET) == -1)
-        warn("cap_set_flag");
+        i_warning("cap_set_flag");
     if(cap_set_flag(caps, CAP_EFFECTIVE, 1, cap_values, CAP_SET) == -1)
-        warn("cap_set_flag");
+        i_warning("cap_set_flag");
     cap_set_proc(caps);
     cap_free(caps);
 }
