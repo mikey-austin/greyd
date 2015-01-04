@@ -47,7 +47,7 @@ main(void)
     int i = 0;
     struct sockaddr_storage ss;
 
-    TEST_START(23);
+    TEST_START(22);
 
     start = stoi("192.168.1.0");
     end = stoi("192.168.1.100");
@@ -147,9 +147,6 @@ main(void)
     TEST_OK((i == -1), "match fail as expected");
 
     i = IP_check_addr("1.2.3.4");
-    TEST_OK((i == AF_INET), "match as expected");
-
-    i = IP_check_addr("1.2.3");
     TEST_OK((i == AF_INET), "match as expected");
 
     i = IP_check_addr("2001::fad3:1");
