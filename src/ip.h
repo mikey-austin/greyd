@@ -35,6 +35,11 @@
 #define IP_MAX_MASKBITS    128
 #define IP_MAX_MASKBITS_V4 32
 
+/* Convenience macro to work around a getnameinfo inconsistency. */
+#define IP_SOCKADDR_LEN(sock) ((sock)->sa_family == AF_INET \
+                                   ? sizeof(struct sockaddr_in) \
+                                   : sizeof(struct sockaddr_in6))
+
 /**
  * Structure to house a single IPv4 CIDR network.
  */

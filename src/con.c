@@ -25,6 +25,17 @@
 
 #include <config.h>
 
+#include <sys/socket.h>
+
+#include <errno.h>
+#include <err.h>
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netdb.h>
+#include <unistd.h>
+
+#include "ip.h"
 #include "constants.h"
 #include "failures.h"
 #include "con.h"
@@ -33,15 +44,6 @@
 #include "hash.h"
 #include "utils.h"
 #include "grey.h"
-
-#include <errno.h>
-#include <err.h>
-#include <time.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
 
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
@@ -93,8 +95,8 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
         ? 0 : Config_get_int(state->config, "stutter", NULL, CON_STUTTER);
 
     memcpy(&(con->src), src, sizeof(*src));
-    ret = getnameinfo((struct sockaddr *) src, sizeof(*src), con->src_addr,
-                      sizeof(con->src_addr), NULL, 0, NI_NUMERICHOST);
+    ret = getnameinfo((struct sockaddr *) src, IP_SOCKADDR_LEN(((struct sockaddr *) src)),
+                      con->src_addr, sizeof(con->src_addr), NULL, 0, NI_NUMERICHOST);
     if(ret != 0)
         i_critical("getnameinfo: %s", gai_strerror(ret));
 
@@ -790,7 +792,8 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
         return;
     }
 
-    if(getnameinfo((struct sockaddr *) &orig_dst, sizeof(orig_dst),
+    if(getnameinfo((struct sockaddr *) &orig_dst,
+                   IP_SOCKADDR_LEN(((struct sockaddr *) &orig_dst)),
                    con->dst_addr, sizeof(con->dst_addr),
                    NULL, 0, NI_NUMERICHOST) != 0)
     {
