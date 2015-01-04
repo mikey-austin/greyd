@@ -119,7 +119,7 @@ main(void)
         "greyd@domain3.com",
         "domain4.com"
     };
-    LIST_FOREACH(greylister->domains, entry) {
+    LIST_EACH(greylister->domains, entry) {
         domain = List_entry_value(entry);
         TEST_OK(!strcmp(permitted_domains[i++], domain), "domain loaded ok");
     }

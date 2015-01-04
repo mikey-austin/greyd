@@ -70,7 +70,7 @@ main(void)
     TEST_OK(c3 != v3 && c3->v.l != v3->v.l &&
             (List_size(v3->v.l) == 2), "List cloned correctly");
 
-    LIST_FOREACH(v3->v.l, entry) {
+    LIST_EACH(v3->v.l, entry) {
         val = List_entry_value(entry);
         switch(val->type) {
         case CONFIG_VAL_TYPE_INT:

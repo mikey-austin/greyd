@@ -80,7 +80,7 @@ main(void)
     keys = Hash_keys(hash);
     TEST_OK(List_size(keys) == 3, "Hash keys list size ok");
     i = 0;
-    LIST_FOREACH(keys, entry) {
+    LIST_EACH(keys, entry) {
         key = List_entry_value(entry);
         if(!strcmp(key, TEST_KEY3))
             i++;

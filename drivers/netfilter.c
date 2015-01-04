@@ -411,7 +411,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     if(ipset_create(session, stage_set_name, hash_size, max_elem, af) == -1)
         return -1;
 
-    LIST_FOREACH(cidrs, entry) {
+    LIST_EACH(cidrs, entry) {
         if((cidr = List_entry_value(entry)) != NULL) {
             if(ipset_add(session, stage_set_name, cidr, af) == -1) {
                 i_warning("invalid cidr %s", cidr);

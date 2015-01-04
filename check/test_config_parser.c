@@ -97,7 +97,7 @@ main(void)
     TEST_OK((List_size(cv_list(v)) == 2), "List size is as expected");
 
     i = 1;
-    LIST_FOREACH(cv_list(v), curr) {
+    LIST_EACH(cv_list(v), curr) {
         v2 = List_entry_value(curr);
         switch(i++) {
         case 1:
@@ -119,7 +119,7 @@ main(void)
     TEST_OK((List_size(cv_list(v)) == 3), "List size is as expected");
 
     i = 1;
-    LIST_FOREACH(cv_list(v), curr) {
+    LIST_EACH(cv_list(v), curr) {
         v2 = List_entry_value(curr);
         TEST_OK((cv_int(v2) == i), "List value is correct");
         i++;

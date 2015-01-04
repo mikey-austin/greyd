@@ -88,7 +88,7 @@ main(void)
     Blacklist_add_range(bl, a3, b3, BL_TYPE_WHITE);
 
     cidrs = Blacklist_collapse(bl);
-    LIST_FOREACH(cidrs, entry) {
+    LIST_EACH(cidrs, entry) {
         c = List_entry_value(entry);
         switch(i) {
         case 0:

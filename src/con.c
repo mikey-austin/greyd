@@ -124,7 +124,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
 
     /* Lookup any blacklists based on this client's src IP address. */
     if((bl_names = Hash_keys(state->blacklists)) != NULL) {
-        LIST_FOREACH(bl_names, entry) {
+        LIST_EACH(bl_names, entry) {
             bl_name = List_entry_value(entry);
             blacklist = Hash_get(state->blacklists, bl_name);
             IP_sockaddr_to_addr(&con->src, &ipaddr);
@@ -205,7 +205,7 @@ extern char
     *lists = '\0';
 
     out_size = CON_BL_SUMMARY_SIZE - strlen(CON_BL_SUMMARY_ETC);
-    LIST_FOREACH(con->blacklists, entry) {
+    LIST_EACH(con->blacklists, entry) {
         blacklist = List_entry_value(entry);
 
         if(strlen(lists) + strlen(blacklist->name) + 1 >= out_size) {
@@ -723,7 +723,7 @@ Con_build_reply(struct Con *con, char *error_code)
          * For blacklisted connections, expand and output each
          * blacklist's rejection message, in the SMTP format.
          */
-        LIST_FOREACH(con->blacklists, entry) {
+        LIST_EACH(con->blacklists, entry) {
             blacklist = List_entry_value(entry);
             appended = 0;
             reply = con->out_buf + off;

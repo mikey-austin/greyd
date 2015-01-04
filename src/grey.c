@@ -582,7 +582,7 @@ trap_check(List_T domains, DB_handle_T db, char *to)
 
     if(List_size(domains) > 0) {
         to_len = strlen(to);
-        LIST_FOREACH(domains, entry) {
+        LIST_EACH(domains, entry) {
             domain = List_entry_value(entry);
             from_pos = to_len - strlen(domain);
 

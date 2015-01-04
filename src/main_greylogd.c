@@ -198,7 +198,7 @@ main(int argc, char **argv)
            && List_size(entries) > 0)
         {
             now = time(NULL);
-            LIST_FOREACH(entries, entry) {
+            LIST_EACH(entries, entry) {
                 key.data.s = List_entry_value(entry);
                 key.type = DB_KEY_IP;
 

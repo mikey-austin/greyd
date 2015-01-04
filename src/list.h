@@ -26,7 +26,7 @@
 
 #include <stdlib.h>
 
-#define LIST_FOREACH(list, curr) \
+#define LIST_EACH(list, curr) \
     for(curr = list->head; curr != NULL; curr = curr->next)
 
 /**

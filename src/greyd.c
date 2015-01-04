@@ -67,7 +67,7 @@ Greyd_process_config(int fd, struct Greyd_state *state)
         ips = Config_get_list(message, "ips", NULL);
         if(bl_name && bl_msg && ips) {
             blacklist = Blacklist_create(bl_name, bl_msg);
-            LIST_FOREACH(ips, entry) {
+            LIST_EACH(ips, entry) {
                 value = List_entry_value(entry);
                 if((addr = cv_str(value)) != NULL)
                     Blacklist_add(blacklist, addr);
@@ -92,7 +92,7 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
         fprintf(out, "name=\"%s\"\nmessage=\"%s\"\nips=[",
                 bl_name, bl_msg);
 
-        LIST_FOREACH(ips, entry) {
+        LIST_EACH(ips, entry) {
             ip = List_entry_value(entry);
             af = IP_check_addr(ip);
             fprintf(out, "%s\"%s/%d\"", (first ? "" : ","),

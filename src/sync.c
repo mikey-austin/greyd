@@ -93,7 +93,7 @@ Sync_init(Config_T config)
     engine->port = Config_get_int(config, "port", "sync", GREYD_SYNC_PORT);
 
     sync_hosts = Config_get_list(config, "hosts", "sync");
-    LIST_FOREACH(sync_hosts, entry) {
+    LIST_EACH(sync_hosts, entry) {
         val = List_entry_value(entry);
         if(cv_str(val) && Sync_add_host(engine, cv_str(val)) != 0) {
             /*
@@ -686,7 +686,7 @@ send_sync_message(Sync_engine_T engine, struct iovec *iov, int iovlen)
             i_warning("sendmsg: %s", strerror(errno));
     }
 
-    LIST_FOREACH(engine->sync_hosts, entry) {
+    LIST_EACH(engine->sync_hosts, entry) {
         host = List_entry_value(entry);
         i_debug("sending sync message to %s (%s)",
                 host->name, inet_ntoa(host->addr.sin_addr));

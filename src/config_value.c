@@ -119,7 +119,7 @@ Config_value_clone(Config_value_T value)
         break;
 
     case CONFIG_VAL_TYPE_LIST:
-        LIST_FOREACH(value->v.l, entry) {
+        LIST_EACH(value->v.l, entry) {
             value_list_entry = List_entry_value(entry);
             entry_clone = Config_value_clone(value_list_entry);
             List_insert_after(clone->v.l, entry_clone);

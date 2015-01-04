@@ -24,11 +24,14 @@
 
 #include <config.h>
 
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <net/pfvar.h>
+#include <arpa/inet.h>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -41,7 +44,6 @@
 #include "../src/firewall.h"
 #include "../src/config_section.h"
 #include "../src/list.h"
-#include "../src/ip.h"
 
 #define PFCTL_PATH "/sbin/pfctl"
 #define PFDEV_PATH "/dev/pf"
@@ -106,6 +108,9 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     char *argv[11] = { "pfctl", "-p", PFDEV_PATH, "-q", "-t", table,
                        "-T", "replace", "-f", "-", NULL };
 
+    if(List_size(cidrs) == 0)
+        return 0;
+
     pfctl_path = Config_get_str(handle->config, "pfctl_path",
                                 "firewall", PFCTL_PATH);
 
@@ -122,12 +127,13 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     free(fd_path);
     fd_path = NULL;
 
-    LIST_FOREACH(cidrs, entry) {
+    LIST_EACH(cidrs, entry) {
         if((cidr = List_entry_value(entry)) != NULL) {
             fprintf(pf, "%s\n", cidr);
             nadded++;
         }
     }
+    fclose(pf);
 
     waitpid(child, &status, 0);
     if(WIFEXITED(status) && WEXITSTATUS(status) != 0) {

@@ -261,7 +261,7 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
 
     if(!greyonly) {
         /* Append this blacklist's cidrs to the global list. */
-        LIST_FOREACH(cidrs, entry) {
+        LIST_EACH(cidrs, entry) {
             cidr = List_entry_value(entry);
             List_insert_after(all_cidrs, strdup(cidr));
         }
@@ -378,7 +378,7 @@ main(int argc, char **argv)
     /*
      * Loop through lists configured in the configuration.
      */
-    LIST_FOREACH(lists, entry) {
+    LIST_EACH(lists, entry) {
         val = List_entry_value(entry);
         if((list_name = cv_str(val)) == NULL)
             continue;

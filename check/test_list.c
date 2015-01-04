@@ -51,7 +51,7 @@ main(void)
      * Test list iteration.
      */
     i = 0;
-    LIST_FOREACH(list, curr) {
+    LIST_EACH(list, curr) {
         if(i < 3) {
             TEST_OK((curr != NULL), "List iteration is as expected");
 

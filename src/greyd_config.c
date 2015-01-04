@@ -177,7 +177,7 @@ Config_merge(Config_T config, Config_T from)
     if(!config || !from || (keys = Hash_keys(from->sections)) == NULL)
         return;
 
-    LIST_FOREACH(keys, entry) {
+    LIST_EACH(keys, entry) {
         key = List_entry_value(entry);
 
         /* Create the section if it doesn't exist. */
@@ -190,7 +190,7 @@ Config_merge(Config_T config, Config_T from)
         if((section_keys = Hash_keys(from_section->vars)) == NULL)
             continue;
 
-        LIST_FOREACH(section_keys, keys_entry) {
+        LIST_EACH(section_keys, keys_entry) {
             section_key = List_entry_value(keys_entry);
             from_val = Hash_get(from_section->vars, section_key);
             to_val = Config_value_clone(from_val);

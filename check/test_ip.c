@@ -75,7 +75,7 @@ main(void)
     end = ntohl(stoi("192.168.0.25"));
     IP_range_to_cidr_list(cidrs, start, end);
 
-    LIST_FOREACH(cidrs, entry) {
+    LIST_EACH(cidrs, entry) {
         c = List_entry_value(entry);
         switch(i) {
         case 0:
