@@ -219,6 +219,5 @@ AC_CONFIG_FILES([Makefile
                  check/data/config_test1.conf
                  check/data/config_test2.conf
                  check/data/config_test3.conf
-                 check/data/lexer_source_1.conf
-                 check/data/lexer_source_2.conf.gz])
+                 check/data/lexer_source_1.conf])
 AC_OUTPUT
