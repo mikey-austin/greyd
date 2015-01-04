@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <net/pfvar.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -104,6 +105,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     char *cidr, *fd_path = NULL, *pfctl_path = PFCTL_PATH;
     char *table = (char *) set_name;
     static FILE *pf = NULL;
+    void *handler;
     struct List_entry *entry;
     char *argv[11] = { "pfctl", "-p", PFDEV_PATH, "-q", "-t", table,
                        "-T", "replace", "-f", "-", NULL };
@@ -119,6 +121,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
         return -1;
     argv[2] = fd_path;
 
+    handler = signal(SIGCHLD, SIG_DFL);
     if((pf = setup_cntl_pipe(pfctl_path, argv, &child)) == NULL) {
         free(fd_path);
         fd_path = NULL;
@@ -146,6 +149,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
                   WTERMSIG(status));
         goto err;
     }
+    signal(SIGCHLD, handler);
 
     return nadded;
 
