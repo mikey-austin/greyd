@@ -25,6 +25,7 @@
 #ifndef SYNC_DEFINED
 #define SYNC_DEFINED
 
+#include <netinet/in.h>
 #include <openssl/sha.h>
 
 #include "greyd_config.h"

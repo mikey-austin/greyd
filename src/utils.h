@@ -26,7 +26,9 @@
 
 #include <stdlib.h>
 
-#define MAX(a, b) (((a) >= (b)) ? (a) : (b))
+#ifndef MAX
+#  define MAX(a, b) (((a) >= (b)) ? (a) : (b))
+#endif
 
 /**
  * Appends src to string dst of size dsize (unlike strncat, dsize is the

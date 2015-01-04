@@ -26,6 +26,8 @@
 
 #include "list.h"
 
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
