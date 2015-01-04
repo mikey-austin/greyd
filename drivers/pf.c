@@ -167,6 +167,21 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
     return -1;
 }
 
+void
+Mod_fw_start_log_capture(FW_handle_T handle)
+{
+}
+
+void
+Mod_fw_end_log_capture(FW_handle_T handle)
+{
+}
+
+List_T
+Mod_fw_capture_log(FW_handle_T handle)
+{
+}
+
 static int
 server_lookup4(int pfdev, struct sockaddr_in *client, struct sockaddr_in *proxy,
                struct sockaddr_in *server)
