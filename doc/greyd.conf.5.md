@@ -110,7 +110,7 @@ The following options are common to all firewall drivers:
 
 ### Netfilter firewall driver
 
-This firewall driver makes use of *libipset*, *libnetfilter_conntrack* and *libnetfilter_log*.
+This driver runs on GNU/Linux systems and makes use of *libipset*, *libnetfilter_conntrack* and *libnetfilter_log*.
 
 * **max_elements** = *number*:
   Maximum number of ipset elements. Defaults to *200,000*.
@@ -127,6 +127,22 @@ This firewall driver makes use of *libipset*, *libnetfilter_conntrack* and *libn
 * **outbound_group** = *number*:
   The *--nflog-group* to indicate outbound SMTP connections.
 
+### PF firewall driver
+
+This driver runs on BSD systems making use of the PF firewall. The driver makes use of *libpcap*.
+
+* **pfdev_path** = *string*:
+  Path to pfdev, defaults to */dev/pf*.
+
+* **pfctl_path** = *string*:
+  Path to pfctl utility, defaults to */sbin/pfctl*.
+
+* **pflog_if** = *string*:
+  Pflog interface to listen for logged packets, defaults to *pflog0*.
+
+* **net_if** = *string*:
+  Network interface to restrict monitored logged packets to. Not set by default.
+
 ## DATABASE SECTION
 
 The following options are common to all database drivers:
@@ -141,6 +157,8 @@ The following options are common to all database drivers:
         }
 
 ### Berkeley DB database driver
+
+The Berkeley database driver runs on all systems providing libdb version > 4. On OpenBSD, the db4 port will need to be installed, and the **--with-db4** configure flag specified.
 
 * **path** = *string*:
   The filesystem path to the Berkeley DB environment.

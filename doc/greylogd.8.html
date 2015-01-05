@@ -121,6 +121,14 @@
 }
 </code></pre>
 
+<p>For the <em>pf</em> firewall driver, the following PF rules will log the packets appropriately:</p>
+
+<pre><code>table &lt;greyd-whitelist> persist
+pass in on egress proto tcp from any to any port smtp rdr-to 127.0.0.1 port 8025
+pass in log on egress proto tcp from &lt;greyd-whitelist> to any port smtp
+pass out log on egress proto tcp to any port smtp
+</code></pre>
+
 <p>See <strong>greyd.conf</strong>(5) for more details.</p>
 
 <h2 id="SYNCHRONISATION">SYNCHRONISATION</h2>

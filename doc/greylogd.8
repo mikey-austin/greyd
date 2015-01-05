@@ -89,6 +89,22 @@ section firewall {
 .IP "" 0
 .
 .P
+For the \fIpf\fR firewall driver, the following PF rules will log the packets appropriately:
+.
+.IP "" 4
+.
+.nf
+
+table <greyd\-whitelist> persist
+pass in on egress proto tcp from any to any port smtp rdr\-to 127\.0\.0\.1 port 8025
+pass in log on egress proto tcp from <greyd\-whitelist> to any port smtp
+pass out log on egress proto tcp to any port smtp
+.
+.fi
+.
+.IP "" 0
+.
+.P
 See \fBgreyd\.conf\fR(5) for more details\.
 .
 .SH "SYNCHRONISATION"

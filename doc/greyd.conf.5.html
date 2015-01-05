@@ -165,7 +165,7 @@ include "/etc/greyd/conf.d/*.conf"
 
 <h3 id="Netfilter-firewall-driver">Netfilter firewall driver</h3>
 
-<p>This firewall driver makes use of <em>libipset</em>, <em>libnetfilter_conntrack</em> and <em>libnetfilter_log</em>.</p>
+<p>This driver runs on GNU/Linux systems and makes use of <em>libipset</em>, <em>libnetfilter_conntrack</em> and <em>libnetfilter_log</em>.</p>
 
 <dl>
 <dt><strong>max_elements</strong> = <em>number</em></dt><dd><p>Maximum number of ipset elements. Defaults to <em>200,000</em>.</p></dd>
@@ -173,6 +173,18 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>track_outbound</strong> = <em>boolean</em></dt><dd><p>Track outbound connections. See <strong>greylogd</strong>(8) for more details.</p></dd>
 <dt><strong>inbound_group</strong> = <em>number</em></dt><dd><p>The <em>--nflog-group</em> to indicate inbound SMTP connections.</p></dd>
 <dt><strong>outbound_group</strong> = <em>number</em></dt><dd><p>The <em>--nflog-group</em> to indicate outbound SMTP connections.</p></dd>
+</dl>
+
+
+<h3 id="PF-firewall-driver">PF firewall driver</h3>
+
+<p>This driver runs on BSD systems making use of the PF firewall. The driver makes use of <em>libpcap</em>.</p>
+
+<dl>
+<dt><strong>pfdev_path</strong> = <em>string</em></dt><dd><p>Path to pfdev, defaults to <em>/dev/pf</em>.</p></dd>
+<dt><strong>pfctl_path</strong> = <em>string</em></dt><dd><p>Path to pfctl utility, defaults to <em>/sbin/pfctl</em>.</p></dd>
+<dt><strong>pflog_if</strong> = <em>string</em></dt><dd><p>Pflog interface to listen for logged packets, defaults to <em>pflog0</em>.</p></dd>
+<dt><strong>net_if</strong> = <em>string</em></dt><dd><p>Network interface to restrict monitored logged packets to. Not set by default.</p></dd>
 </dl>
 
 
@@ -193,6 +205,8 @@ include "/etc/greyd/conf.d/*.conf"
 
 
 <h3 id="Berkeley-DB-database-driver">Berkeley DB database driver</h3>
+
+<p>The Berkeley database driver runs on all systems providing libdb version > 4. On OpenBSD, the db4 port will need to be installed, and the <strong>--with-db4</strong> configure flag specified.</p>
 
 <dl>
 <dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the Berkeley DB environment.</p></dd>
@@ -294,7 +308,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>December 2014</li>
+    <li class='tc'>January 2015</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 

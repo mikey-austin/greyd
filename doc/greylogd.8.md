@@ -52,6 +52,13 @@ For the *netfilter* driver, the above default configuration may be overridden in
         ...
     }
 
+For the *pf* firewall driver, the following PF rules will log the packets appropriately:
+
+    table <greyd-whitelist> persist
+    pass in on egress proto tcp from any to any port smtp rdr-to 127.0.0.1 port 8025
+    pass in log on egress proto tcp from <greyd-whitelist> to any port smtp
+    pass out log on egress proto tcp to any port smtp
+
 See **greyd.conf**(5) for more details.
 
 ## SYNCHRONISATION

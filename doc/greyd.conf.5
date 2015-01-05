@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "December 2014" "" ""
+.TH "GREYD\.CONF" "5" "January 2015" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -172,7 +172,7 @@ The driver shared object location\. May be either an absolute or relative path\.
 
 .
 .SS "Netfilter firewall driver"
-This firewall driver makes use of \fIlibipset\fR, \fIlibnetfilter_conntrack\fR and \fIlibnetfilter_log\fR\.
+This driver runs on GNU/Linux systems and makes use of \fIlibipset\fR, \fIlibnetfilter_conntrack\fR and \fIlibnetfilter_log\fR\.
 .
 .TP
 \fBmax_elements\fR = \fInumber\fR
@@ -193,6 +193,25 @@ The \fI\-\-nflog\-group\fR to indicate inbound SMTP connections\.
 .TP
 \fBoutbound_group\fR = \fInumber\fR
 The \fI\-\-nflog\-group\fR to indicate outbound SMTP connections\.
+.
+.SS "PF firewall driver"
+This driver runs on BSD systems making use of the PF firewall\. The driver makes use of \fIlibpcap\fR\.
+.
+.TP
+\fBpfdev_path\fR = \fIstring\fR
+Path to pfdev, defaults to \fI/dev/pf\fR\.
+.
+.TP
+\fBpfctl_path\fR = \fIstring\fR
+Path to pfctl utility, defaults to \fI/sbin/pfctl\fR\.
+.
+.TP
+\fBpflog_if\fR = \fIstring\fR
+Pflog interface to listen for logged packets, defaults to \fIpflog0\fR\.
+.
+.TP
+\fBnet_if\fR = \fIstring\fR
+Network interface to restrict monitored logged packets to\. Not set by default\.
 .
 .SH "DATABASE SECTION"
 The following options are common to all database drivers:
@@ -217,6 +236,7 @@ The driver shared object location\. May be either an absolute or relative path\.
 
 .
 .SS "Berkeley DB database driver"
+The Berkeley database driver runs on all systems providing libdb version > 4\. On OpenBSD, the db4 port will need to be installed, and the \fB\-\-with\-db4\fR configure flag specified\.
 .
 .TP
 \fBpath\fR = \fIstring\fR
