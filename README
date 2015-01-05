@@ -16,7 +16,8 @@ to **spamd**, **greyd** aims to:
 
   - Be firewall agnostic, and provide a generic interface for pluggable modules,
     to allow operation with *any* suitable firewall (eg iptables/ipset/netfilter, FreeBSD's
-    IPFW, etc.).
+    IPFW, etc.). Currently **greyd** can transparently make use of **PF** and **Netfilter**
+    with the appropriate drivers.
 
   - Provide a generic database interface for pluggable modules to work with a variety
     of different databases (eg Berkeley DB, SQLite, MySQL, Postgres, etc.).
@@ -31,6 +32,11 @@ to **spamd**, **greyd** aims to:
 
   - Be able to import the same blacklists & whitelists that **spamd** can import.
 
+Platforms
+---------
+
+Greyd runs on both **GNU/Linux** and **OpenBSD** systems. Greyd will be ported to the other BSDs shortly.
+
 The greyd suite
 -----------------
 
@@ -44,18 +50,18 @@ The greyd suite
 Development Status
 ------------------
 
-**greyd** is currently under active development and is now fully functional. All of the features from **spamd**
+**greyd** is fully functional and is under active development. All of the features from **spamd**
 have now been implemented, including synchronization support.
 
 A database driver has been implemented for Berkeley DB (4.x onwards), which makes full use of transactions (in contrast to the OpenBSD version). After the first
 release, a MySQL driver will be implemented.
 
-A firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
+For GNU/Linux, a firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
   * **libipset** for IP set management
   * **libnetfilter-log** for the tracking and auto-whitelisting of connections
   * **libnetfilter-conntrack** for the DNAT original destination lookups
 
-Firewall drivers for PF & IPFW are planned as well, which will allow **greyd** to run in a BSD environment.
+For OpenBSD (& friends), a PF firewall driver has been implemented.
 
 Before the first proper release, there is still the following to be done:
   * Testing in the wild on different setups

@@ -205,10 +205,10 @@ void
 Mod_fw_start_log_capture(FW_handle_T handle)
 {
     struct fw_handle *fwh = handle->fwh;
-	struct bpf_program	bpfp;
+    struct bpf_program  bpfp;
     char *pflog_if, *net_if;
     char errbuf[PCAP_ERRBUF_SIZE];
-	char filter[PCAPFSIZ] = "ip and port 25 and action pass "
+    char filter[PCAPFSIZ] = "ip and port 25 and action pass "
         "and tcp[13]&0x12=0x2";
 
     pflog_if = Config_get_str(handle->config, "pflog_if", "firewall",
@@ -216,34 +216,34 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     net_if = Config_get_str(handle->config, "net_if", "firewall",
                             NULL);
 
-	if((fwh->pcap_handle = pcap_open_live(pflog_if, PCAPSNAP, 1, PCAPTIMO,
+    if((fwh->pcap_handle = pcap_open_live(pflog_if, PCAPSNAP, 1, PCAPTIMO,
                                           errbuf)) == NULL)
     {
-		i_critical("failed to initialize: %s", errbuf);
-	}
+        i_critical("failed to initialize: %s", errbuf);
+    }
 
-	if(pcap_datalink(fwh->pcap_handle) != DLT_PFLOG) {
-		pcap_close(fwh->pcap_handle);
-		fwh->pcap_handle = NULL;
-		i_critical("invalid datalink type");
-	}
+    if(pcap_datalink(fwh->pcap_handle) != DLT_PFLOG) {
+        pcap_close(fwh->pcap_handle);
+        fwh->pcap_handle = NULL;
+        i_critical("invalid datalink type");
+    }
 
-	if(net_if != NULL) {
-		sstrncat(filter, " and on ", PCAPFSIZ);
-		sstrncat(filter, net_if, PCAPFSIZ);
-	}
+    if(net_if != NULL) {
+        sstrncat(filter, " and on ", PCAPFSIZ);
+        sstrncat(filter, net_if, PCAPFSIZ);
+    }
 
-	if((pcap_compile(fwh->pcap_handle, &bpfp, filter, PCAPOPTZ, 0) == -1)
+    if((pcap_compile(fwh->pcap_handle, &bpfp, filter, PCAPOPTZ, 0) == -1)
        || (pcap_setfilter(fwh->pcap_handle, &bpfp) == -1))
     {
-		i_critical("%s", pcap_geterr(fwh->pcap_handle));
-	}
+        i_critical("%s", pcap_geterr(fwh->pcap_handle));
+    }
 
-	pcap_freecode(&bpfp);
+    pcap_freecode(&bpfp);
 
-	if(ioctl(pcap_fileno(fwh->pcap_handle), BIOCLOCK) < 0) {
-		i_critical("BIOCLOCK: %s", strerror(errno));
-	}
+    if(ioctl(pcap_fileno(fwh->pcap_handle), BIOCLOCK) < 0) {
+        i_critical("BIOCLOCK: %s", strerror(errno));
+    }
 
     fwh->entries = List_create(destroy_log_entry);
 }
@@ -274,53 +274,53 @@ packet_received(u_char *args, const struct pcap_pkthdr *h, const u_char *sp)
 {
     FW_handle_T handle = (FW_handle_T) args;
     struct fw_handle *fwh = handle->fwh;
-	sa_family_t	af;
-	u_int8_t hdrlen;
-	u_int32_t caplen = h->caplen;
-	const struct ip	*ip = NULL;
-	const struct pfloghdr *hdr;
-	char addr[INET6_ADDRSTRLEN] = { '\0' };
+    sa_family_t af;
+    u_int8_t hdrlen;
+    u_int32_t caplen = h->caplen;
+    const struct ip *ip = NULL;
+    const struct pfloghdr *hdr;
+    char addr[INET6_ADDRSTRLEN] = { '\0' };
     int track_outbound;
 
     track_outbound = Config_get_int(handle->config, "track_outbound",
                                     "firewall", TRACK_OUTBOUND);
 
-	hdr = (const struct pfloghdr *)sp;
-	if(hdr->length < MIN_PFLOG_HDRLEN) {
-		i_warning("invalid pflog header length (%u/%u). "
-		    "packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
-		return;
-	}
-	hdrlen = BPF_WORDALIGN(hdr->length);
+    hdr = (const struct pfloghdr *)sp;
+    if(hdr->length < MIN_PFLOG_HDRLEN) {
+        i_warning("invalid pflog header length (%u/%u). "
+            "packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
+        return;
+    }
+    hdrlen = BPF_WORDALIGN(hdr->length);
 
-	if(caplen < hdrlen) {
-		i_warning("pflog header larger than caplen (%u/%u). "
-		    "packet dropped.", hdrlen, caplen);
-		return;
-	}
+    if(caplen < hdrlen) {
+        i_warning("pflog header larger than caplen (%u/%u). "
+            "packet dropped.", hdrlen, caplen);
+        return;
+    }
 
-	/* We're interested in passed packets */
-	if(hdr->action != PF_PASS)
-		return;
+    /* We're interested in passed packets */
+    if(hdr->action != PF_PASS)
+        return;
 
-	af = hdr->af;
-	if(af == AF_INET) {
-		ip = (const struct ip *) (sp + hdrlen);
-		if(hdr->dir == PF_IN) {
-			inet_ntop(af, &ip->ip_src, addr,
+    af = hdr->af;
+    if(af == AF_INET) {
+        ip = (const struct ip *) (sp + hdrlen);
+        if(hdr->dir == PF_IN) {
+            inet_ntop(af, &ip->ip_src, addr,
                       sizeof(addr));
         }
-		else if(hdr->dir == PF_OUT && track_outbound) {
-			inet_ntop(af, &ip->ip_dst, addr,
+        else if(hdr->dir == PF_OUT && track_outbound) {
+            inet_ntop(af, &ip->ip_dst, addr,
                       sizeof(addr));
         }
-	}
+    }
 
-	if(addr[0] != '\0') {
+    if(addr[0] != '\0') {
         i_debug("packet received: direction = %s, addr = %s",
                 (hdr->dir == PF_IN ? "in" : "out"), addr);
         List_insert_after(fwh->entries, strdup(addr));
-	}
+    }
 }
 
 static int
