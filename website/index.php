@@ -32,7 +32,7 @@
         <div class="tile">
             <h3>Which systems are supported?</h3>
             <p>
-                <em>greyd</em> runs on GNU/Linux systems (with the <em>netfilter</em> firewall driver, and BSD (with the <em>pf</em> firewall driver).
+                <em>greyd</em> runs on <strong>GNU/Linux</strong> systems (with the <em>netfilter</em> firewall driver), and <strong>BSD</strong> (with the <em>pf</em> firewall driver).
             </p>
             <p>
                 <em>greyd</em> closely integrates with the firewall, and provides an abstract interface to theoretically support any appropriate firewall system.
