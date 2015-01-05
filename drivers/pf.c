@@ -28,12 +28,13 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
 #include <net/if.h>
 #include <netinet/in.h>
 #include <net/pfvar.h>
 #include <arpa/inet.h>
+#include <pcap.h>
 #include <signal.h>
-
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -45,13 +46,28 @@
 #include "../src/firewall.h"
 #include "../src/config_section.h"
 #include "../src/list.h"
+#include "../src/utils.h"
+#include "../src/constants.h"
 
 #define PFCTL_PATH "/sbin/pfctl"
 #define PFDEV_PATH "/dev/pf"
+#define PFLOG_IF   "pflog0"
 #define MAX_PFDEV  63
+
+#define MIN_PFLOG_HDRLEN 45
+#define PCAPSNAP         512
+#define PCAPTIMO         500  /* ms */
+#define PCAPOPTZ         1    /* optimize filter */
+#define PCAPFSIZ         512  /* pcap filter string size */
 
 #define satosin(sa)  ((struct sockaddr_in *)(sa))
 #define satosin6(sa) ((struct sockaddr_in6 *)(sa))
+
+struct fw_handle {
+    int pfdev;
+    pcap_t *pcap_handle;
+    List_T entries;
+};
 
 /**
  * Setup a pipe for communication with the control command.
@@ -61,27 +77,32 @@ static int server_lookup4(int, struct sockaddr_in *, struct sockaddr_in *,
                           struct sockaddr_in *);
 static int server_lookup6(int, struct sockaddr_in6 *, struct sockaddr_in6 *,
                           struct sockaddr_in6 *);
+static void destroy_log_entry(void *);
+static void packet_received(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 int
 Mod_fw_open(FW_handle_T handle)
 {
+    struct fw_handle *fwh = NULL;
     char *pfdev_path;
-    int *pfdev = NULL;
+    int pfdev;
 
     pfdev_path = Config_get_str(handle->config, "pfdev_path",
                                 "firewall", PFDEV_PATH);
 
-    if((pfdev = malloc(sizeof(*pfdev))) == NULL)
+    if((fwh = malloc(sizeof(*fwh))) == NULL)
         return -1;
 
-    *pfdev = open(pfdev_path, O_RDWR);
-    if(*pfdev < 1 || *pfdev > MAX_PFDEV) {
+    pfdev = open(pfdev_path, O_RDWR);
+    if(pfdev < 1 || pfdev > MAX_PFDEV) {
         i_warning("could not open %s: %s", pfdev_path,
                   strerror(errno));
         return -1;
     }
 
-    handle->fwh = pfdev;
+    fwh->pfdev = pfdev;
+    fwh->pcap_handle = NULL;
+    handle->fwh = fwh;
 
     return 0;
 }
@@ -89,11 +110,11 @@ Mod_fw_open(FW_handle_T handle)
 void
 Mod_fw_close(FW_handle_T handle)
 {
-    int *pfdev = handle->fwh;
+    struct fw_handle *fwh = handle->fwh;
 
-    if(pfdev != NULL) {
-        close(*pfdev);
-        free(pfdev);
+    if(fwh) {
+        close(fwh->pfdev);
+        free(fwh);
     }
     handle->fwh = NULL;
 }
@@ -101,7 +122,8 @@ Mod_fw_close(FW_handle_T handle)
 int
 Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
 {
-    int fd, nadded = 0, child = -1, status, *pfdev;
+    struct fw_handle *fwh = handle->fwh;
+    int fd, nadded = 0, child = -1, status;
     char *cidr, *fd_path = NULL, *pfctl_path = PFCTL_PATH;
     char *table = (char *) set_name;
     static FILE *pf = NULL;
@@ -116,8 +138,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
     pfctl_path = Config_get_str(handle->config, "pfctl_path",
                                 "firewall", PFCTL_PATH);
 
-    pfdev = handle->fwh;
-    if(asprintf(&fd_path, "/dev/fd/%d", *pfdev) == -1)
+    if(asprintf(&fd_path, "/dev/fd/%d", fwh->pfdev) == -1)
         return -1;
     argv[2] = fd_path;
 
@@ -161,15 +182,15 @@ int
 Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
                        struct sockaddr *proxy, struct sockaddr *orig_dst)
 {
-    int *pfdev = handle->fwh;
+    struct fw_handle *fwh = handle->fwh;
 
     if(src->sa_family == AF_INET) {
-        return server_lookup4(*pfdev, satosin(src), satosin(proxy),
+        return server_lookup4(fwh->pfdev, satosin(src), satosin(proxy),
                               satosin(orig_dst));
     }
 
     if(src->sa_family == AF_INET6) {
-        return server_lookup6(*pfdev, satosin6(src), satosin6(proxy),
+        return server_lookup6(fwh->pfdev, satosin6(src), satosin6(proxy),
                               satosin6(orig_dst));
     }
 
@@ -180,16 +201,123 @@ Mod_fw_lookup_orig_dst(FW_handle_T handle, struct sockaddr *src,
 void
 Mod_fw_start_log_capture(FW_handle_T handle)
 {
+    struct fw_handle *fwh = handle->fwh;
+	struct bpf_program	bpfp;
+    char *pflog_if, *net_if;
+    char errbuf[PCAP_ERRBUF_SIZE];
+	char filter[PCAPFSIZ] = "ip and port 25 and action pass "
+        "and tcp[13]&0x12=0x2";
+
+    pflog_if = Config_get_str(handle->config, "pflog_if", "firewall",
+                             PFLOG_IF);
+    net_if = Config_get_str(handle->config, "net_if", "firewall",
+                            NULL);
+
+	if((fwh->pcap_handle = pcap_open_live(pflog_if, PCAPSNAP, 1, PCAPTIMO,
+                                          errbuf)) == NULL)
+    {
+		i_critical("Failed to initialize: %s", errbuf);
+	}
+
+	if(pcap_datalink(fwh->pcap_handle) != DLT_PFLOG) {
+		pcap_close(fwh->pcap_handle);
+		fwh->pcap_handle = NULL;
+		i_critical("Invalid datalink type");
+	}
+
+	if(net_if != NULL) {
+		sstrncat(filter, " and on ", PCAPFSIZ);
+		sstrncat(filter, net_if, PCAPFSIZ);
+	}
+
+	if((pcap_compile(fwh->pcap_handle, &bpfp, filter, PCAPOPTZ, 0) == -1)
+       || (pcap_setfilter(fwh->pcap_handle, &bpfp) == -1))
+    {
+		i_critical("%s", pcap_geterr(fwh->pcap_handle));
+	}
+
+	pcap_freecode(&bpfp);
+
+	if(ioctl(pcap_fileno(fwh->pcap_handle), BIOCLOCK) < 0) {
+		i_critical("BIOCLOCK: %s", strerror(errno));
+	}
+
+    lh->entries = List_create(destroy_log_entry);
 }
 
 void
 Mod_fw_end_log_capture(FW_handle_T handle)
 {
+    struct fw_handle *fwh = handle->fwh;
+
+    List_destroy(&fwh->entries);
+    pcap_close(fwh->pcap_handle);
 }
 
 List_T
 Mod_fw_capture_log(FW_handle_T handle)
 {
+    struct fw_handle *fwh = handle->fwh;
+    pcap_handler ph = packet_received;
+
+    List_remove_all(fwh->entries);
+    pcap_dispatch(fwh->pcap_handle, 0, ph, handle);
+
+    return fwh->entries;
+}
+
+static void
+packet_received(u_char *args, const struct pcap_pkthdr *h, const u_char *sp)
+{
+    FW_handle_T handle = (FW_handle_T) args;
+    struct fw_handle *fwh = handle->fwh;
+	sa_family_t	af;
+	u_int8_t hdrlen;
+	u_int32_t caplen = h->caplen;
+	const struct ip	*ip = NULL;
+	const struct pfloghdr *hdr;
+	char addr[INET6_ADDRSTRLEN] = { '\0' };
+    int track_outbound;
+
+    track_outbound = Config_get_int(handle->config, "track_outbound",
+                                    "firewall", TRACK_OUTBOUND);
+
+	hdr = (const struct pfloghdr *)sp;
+	if(hdr->length < MIN_PFLOG_HDRLEN) {
+		i_warning"invalid pflog header length (%u/%u). "
+		    "packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
+		return;
+	}
+	hdrlen = BPF_WORDALIGN(hdr->length);
+
+	if(caplen < hdrlen) {
+		i_warning"pflog header larger than caplen (%u/%u). "
+		    "packet dropped.", hdrlen, caplen);
+		return;
+	}
+
+	/* We're interested in passed packets */
+	if(hdr->action != PF_PASS)
+		return;
+
+	af = hdr->af;
+	if(af == AF_INET) {
+		ip = (const struct ip *) (sp + hdrlen);
+		if(hdr->dir == PF_IN) {
+			inet_ntop(af, &ip->ip_src, addr,
+                      sizeof(addr));
+        }
+		else if(hdr->dir == PF_OUT && track_outbound) {
+			inet_ntop(af, &ip->ip_dst, addr,
+                      sizeof(addr));
+        }
+	}
+
+	if(addr[0] != '\0') {
+        i_debug("packet received: direction = %s, addr = %s"
+                (hdr->dir == PF_IN ? "in" : "out"), addr);
+        List_insert_after(fwh->entries, strdup(addr));
+	}
 }
 
 static int
@@ -285,4 +413,11 @@ static FILE
     }
 
     return out;
+}
+
+static void
+destroy_log_entry(void *entry)
+{
+    if(entry != NULL)
+        free(entry);
 }
