@@ -32,6 +32,20 @@
 
 #include <config.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <err.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <zlib.h>
+#include <netdb.h>
+
 #include "log.h"
 #include "utils.h"
 #include "greyd_config.h"
@@ -42,19 +56,6 @@
 #include "firewall.h"
 #include "greyd.h"
 #include "constants.h"
-
-#include <err.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <zlib.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 
 #define DEFAULT_CONFIG  "/etc/greyd/greyd.conf"
 #define DEFAULT_CURL    "/bin/curl"
@@ -99,20 +100,15 @@ free_cidr(void *value)
 static int
 file_get(char *url, char *curl_path)
 {
-    char *argv[4];
+    char *argv[4] = { curl_path, "-s", url, NULL };
 
     if(curl_path == NULL)
         return -1;
 
-    argv[0] = curl_path;
-    argv[1] = "-s";
-    argv[2] = url;
-    argv[3] = NULL;
-
     if(debug)
        fprintf(stderr, "Getting %s\n", url);
 
-    return (open_child(curl_path, argv));
+    return open_child(curl_path, argv);
 }
 
 /**
@@ -143,7 +139,10 @@ open_child(char *file, char **argv)
             dup2(pdes[1], STDOUT_FILENO);
             close(pdes[1]);
         }
-        execvp(file, argv);
+
+        if(execvp(file, argv) == -1)
+            err(1, "could not execute %s", file);
+
         _exit(1);
     }
 
