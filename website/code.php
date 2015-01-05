@@ -47,8 +47,7 @@ $ make check</code>
             <p>On OpenBSD, the following configure flags should to the trick:</p>
 
             <div class="highlight">
-<code>$./configure LDFLAGS="-L/usr/local/lib" CPPFLAGS="-I/usr/local/include" CFLAGS="-g -O0 -I/usr/local/include" --with-bdb --with-db4 --disable-shared --with-pf
-$ make check</code>
+                <code>$./configure LDFLAGS="-L/usr/local/lib" CPPFLAGS="-I/usr/local/include" CFLAGS="-g -O0 -I/usr/local/include" --with-bdb --with-db4 --with-pf</code>
             </div>
 
             <p>
@@ -62,10 +61,10 @@ $ make check</code>
                 <code>$ export LD_LIBRARY_PATH="${PWD}/drivers/.libs"</code>
             </div>
             <p>
-                To get around the above, you may disable shared libraries when configuring:
+                To get around the above, you may disable shared libraries when configuring, eg:
             </p>
             <div class="highlight">
-                <code>$ ./configure --disable-shared --with-bdb --with-netfilter</code>
+                <code>$ ./configure --disable-shared ...</code>
             </div>
         </div>
     </div>
