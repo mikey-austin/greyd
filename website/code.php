@@ -40,7 +40,7 @@
             <div class="highlight">
 <code>$ git clone https://github.com/mikey-austin/greyd.git
 $ cd greyd && autoreconf -i
-$ ./configure CC="-g -O0" --with-bdb --with-netfilter
+$ ./configure CFLAGS="-g -O0" --with-bdb --with-netfilter
 $ make check</code>
             </div>
 
