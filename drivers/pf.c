@@ -30,7 +30,10 @@
 #include <sys/wait.h>
 
 #include <net/if.h>
+#include <net/if_pflog.h>
 #include <netinet/in.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
 #include <net/pfvar.h>
 #include <arpa/inet.h>
 #include <pcap.h>
@@ -216,13 +219,13 @@ Mod_fw_start_log_capture(FW_handle_T handle)
 	if((fwh->pcap_handle = pcap_open_live(pflog_if, PCAPSNAP, 1, PCAPTIMO,
                                           errbuf)) == NULL)
     {
-		i_critical("Failed to initialize: %s", errbuf);
+		i_critical("failed to initialize: %s", errbuf);
 	}
 
 	if(pcap_datalink(fwh->pcap_handle) != DLT_PFLOG) {
 		pcap_close(fwh->pcap_handle);
 		fwh->pcap_handle = NULL;
-		i_critical("Invalid datalink type");
+		i_critical("invalid datalink type");
 	}
 
 	if(net_if != NULL) {
@@ -242,7 +245,7 @@ Mod_fw_start_log_capture(FW_handle_T handle)
 		i_critical("BIOCLOCK: %s", strerror(errno));
 	}
 
-    lh->entries = List_create(destroy_log_entry);
+    fwh->entries = List_create(destroy_log_entry);
 }
 
 void
@@ -261,7 +264,7 @@ Mod_fw_capture_log(FW_handle_T handle)
     pcap_handler ph = packet_received;
 
     List_remove_all(fwh->entries);
-    pcap_dispatch(fwh->pcap_handle, 0, ph, handle);
+    pcap_dispatch(fwh->pcap_handle, 0, ph, (u_char *) handle);
 
     return fwh->entries;
 }
@@ -284,14 +287,14 @@ packet_received(u_char *args, const struct pcap_pkthdr *h, const u_char *sp)
 
 	hdr = (const struct pfloghdr *)sp;
 	if(hdr->length < MIN_PFLOG_HDRLEN) {
-		i_warning"invalid pflog header length (%u/%u). "
+		i_warning("invalid pflog header length (%u/%u). "
 		    "packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
 		return;
 	}
 	hdrlen = BPF_WORDALIGN(hdr->length);
 
 	if(caplen < hdrlen) {
-		i_warning"pflog header larger than caplen (%u/%u). "
+		i_warning("pflog header larger than caplen (%u/%u). "
 		    "packet dropped.", hdrlen, caplen);
 		return;
 	}
@@ -314,7 +317,7 @@ packet_received(u_char *args, const struct pcap_pkthdr *h, const u_char *sp)
 	}
 
 	if(addr[0] != '\0') {
-        i_debug("packet received: direction = %s, addr = %s"
+        i_debug("packet received: direction = %s, addr = %s",
                 (hdr->dir == PF_IN ? "in" : "out"), addr);
         List_insert_after(fwh->entries, strdup(addr));
 	}

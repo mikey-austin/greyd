@@ -187,6 +187,22 @@ AC_ARG_WITH([pf], [AS_HELP_STRING([--with-pf], [build the PF firewall driver])],
     [pf_driver=yes], [pf_driver=no])
 
 if test "x${pf_driver}" = xyes; then
+    pf_LIBS=""
+    have_pf=no
+    AC_CHECK_LIB([pcap], [pcap_open_live], [have_pf=yes])
+    if test "x${have_pf}" = xyes; then
+       AC_CHECK_HEADERS([pcap.h], [], [have_pf=no])
+    fi
+
+    if test "x${have_pf}" = xyes; then
+       pf_LIBS="$pf_LIBS -lpcap"
+       AC_DEFINE([HAVE_LIBPCAP], [1], [Packet capture library])
+       AC_SUBST([pf_LIBS], ["$pf_LIBS"])
+       LIBS="${LIBS} ${pf_LIBS}"
+    else
+       AC_MSG_FAILURE([libpcap is required to build the pf driver])
+    fi
+
    AC_DEFINE([WITH_PF], [1], [with the PF firewall driver])
    optional_drivers="${optional_drivers} greyd_pf.la"
    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_pf.la"

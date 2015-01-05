@@ -179,6 +179,8 @@ main(int argc, char **argv)
         }
     }
 
+    FW_start_log_capture(fw_handle);
+
     if(db_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
         if(setgroups(1, &db_pw->pw_gid)
            || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
@@ -191,7 +193,6 @@ main(int argc, char **argv)
 
     white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
     DB_open(db_handle, 0);
-    FW_start_log_capture(fw_handle);
 
     while(!Greylogd_shutdown) {
         if((entries = FW_capture_log(fw_handle)) != NULL
