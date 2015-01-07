@@ -7,6 +7,6 @@ greyd.conf: greyd.conf.in
 		-e 's,[@]libdir[@],$(libdir),g' \
 		-e 's,[@]localstatedir[@],$(localstatedir),g' \
 		-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
-		<greyd.conf.in >greyd.conf
+		<$(srcdir)/greyd.conf.in >greyd.conf
 
 CLEANFILES = greyd.conf

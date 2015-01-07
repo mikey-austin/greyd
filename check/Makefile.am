@@ -7,6 +7,8 @@ dist_data_DATA = data/lexer_source_2.conf.gz
 data/lexer_source_2.conf.gz: data/lexer_source_1.conf
 	gzip -c data/lexer_source_1.conf >data/lexer_source_2.conf.gz
 
+CLEANFILES = data/lexer_source_2.conf.gz
+
 test_ldflags = -Wl,-E
 test_ldadd =  $(optional_ldadd)
 test_cflags = -I$(top_srcdir)/../src
