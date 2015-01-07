@@ -419,7 +419,9 @@ main(int argc, char **argv)
         count = blacklist->count;
         res = Spamd_parser_start(parser, blacklist, bltype);
         if(res != SPAMD_PARSER_OK) {
-            warnx("Blacklist parse error");
+            warnx("blacklist parse error processing %s, line %d col %d",
+                  list_name, parser->lexer->current_line,
+                  parser->lexer->current_line_pos);
         }
 
         if(debug) {
