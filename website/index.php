@@ -3,7 +3,7 @@
 <section class="banner home">
     <div class="content">
         <h2>
-            Block spam before it steps foot in your network.
+            Block spam before it sets foot in your network.
         </h2>
     </div>
 </section>
