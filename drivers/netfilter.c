@@ -299,9 +299,6 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     struct log_handle *lh;
     int group_in, group_out;
 
-    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
-        set_effective_caps();
-
     group_in = Config_get_int(handle->config, "inbound_group", "firewall", NFLOG_GROUP_IN);
     group_out = Config_get_int(handle->config, "outbound_group", "firewall", NFLOG_GROUP_OUT);
 
@@ -359,6 +356,9 @@ Mod_fw_capture_log(FW_handle_T handle)
     char buf[NFLOG_BUF];
     struct pollfd fd;
     int size;
+
+    if(Config_get_int(handle->config, "drop_privs", NULL, 1))
+        set_effective_caps();
 
     memset(&fd, 0, sizeof(fd));
     memset(buf, 0, sizeof(buf));
