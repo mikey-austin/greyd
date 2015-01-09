@@ -28,35 +28,33 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define T Config_parser_T
-
 /*
  * Parser utility/helper functions.
  */
-static int  accept(T parser, int tok);
-static int  accept_no_advance(T parser, int tok);
-static void advance(T parser);
+static int  accept(Config_parser_T parser, int tok);
+static int  accept_no_advance(Config_parser_T parser, int tok);
+static void advance(Config_parser_T parser);
 
 /*
  * Parser grammar functions.
  */
-static int grammar_statement(T parser);
-static int grammar_statements(T parser);
-static int grammar_assignment(T parser);
-static int grammar_list(T parser);
-static int grammar_list_statements(T parser);
-static int grammar_list_value(T parser);
-static int grammar_list_values(T parser);
-static int grammar_section(T parser);
-static int grammar_section_type(T parser);
-static int grammar_section_statements(T parser);
-static int grammar_section_assignments(T parser);
-static int grammar_include(T parser);
+static int grammar_statement(Config_parser_T parser);
+static int grammar_statements(Config_parser_T parser);
+static int grammar_assignment(Config_parser_T parser);
+static int grammar_list(Config_parser_T parser);
+static int grammar_list_statements(Config_parser_T parser);
+static int grammar_list_value(Config_parser_T parser);
+static int grammar_list_values(Config_parser_T parser);
+static int grammar_section(Config_parser_T parser);
+static int grammar_section_type(Config_parser_T parser);
+static int grammar_section_statements(Config_parser_T parser);
+static int grammar_section_assignments(Config_parser_T parser);
+static int grammar_include(Config_parser_T parser);
 
-extern T
+extern Config_parser_T
 Config_parser_create(Lexer_T lexer)
 {
-    T parser;
+    Config_parser_T parser;
 
     if((parser = malloc(sizeof(*parser))) == NULL) {
         i_critical("Could not create parser");
@@ -72,7 +70,7 @@ Config_parser_create(Lexer_T lexer)
 }
 
 extern void
-Config_parser_destroy(T *parser)
+Config_parser_destroy(Config_parser_T *parser)
 {
     if(parser == NULL || *parser == NULL)
         return;
@@ -86,7 +84,7 @@ Config_parser_destroy(T *parser)
 }
 
 extern int
-Config_parser_start(T parser, Config_T config)
+Config_parser_start(Config_parser_T parser, Config_T config)
 {
     Config_section_T global_section;
 
@@ -120,13 +118,13 @@ Config_parser_start(T parser, Config_T config)
 }
 
 static int
-accept_no_advance(T parser, int tok)
+accept_no_advance(Config_parser_T parser, int tok)
 {
     return (tok == parser->curr);
 }
 
 static int
-accept(T parser, int tok)
+accept(Config_parser_T parser, int tok)
 {
     if(accept_no_advance(parser, tok)) {
         /*
@@ -151,13 +149,13 @@ accept(T parser, int tok)
 }
 
 static void
-advance(T parser)
+advance(Config_parser_T parser)
 {
     parser->curr = Lexer_next_token(parser->lexer);
 }
 
 static int
-grammar_statements(T parser)
+grammar_statements(Config_parser_T parser)
 {
     if(accept(parser, CONFIG_LEXER_TOK_EOL) && grammar_statement(parser)
        && grammar_statements(parser))
@@ -170,7 +168,7 @@ grammar_statements(T parser)
 }
 
 static int
-grammar_statement(T parser)
+grammar_statement(Config_parser_T parser)
 {
     if(grammar_assignment(parser)
        || grammar_section(parser)
@@ -183,7 +181,7 @@ grammar_statement(T parser)
 }
 
 static int
-grammar_assignment(T parser)
+grammar_assignment(Config_parser_T parser)
 {
     char varname[LEXER_MAX_STR_LEN + 1];
     int len, isint = 0, isstr = 0;
@@ -238,7 +236,7 @@ grammar_assignment(T parser)
 }
 
 static int
-grammar_list(T parser)
+grammar_list(Config_parser_T parser)
 {
     if(accept(parser, CONFIG_LEXER_TOK_SQBRACK_L)) {
         /*
@@ -261,7 +259,7 @@ grammar_list(T parser)
 }
 
 static int
-grammar_list_statements(T parser)
+grammar_list_statements(Config_parser_T parser)
 {
     /*
      * There must be at least one list statement.
@@ -274,7 +272,7 @@ grammar_list_statements(T parser)
 }
 
 static int
-grammar_list_value(T parser)
+grammar_list_value(Config_parser_T parser)
 {
     Config_value_T value;
 
@@ -299,7 +297,7 @@ grammar_list_value(T parser)
 }
 
 static int
-grammar_list_values(T parser)
+grammar_list_values(Config_parser_T parser)
 {
     if(accept(parser, CONFIG_LEXER_TOK_COMMA)
        && ((accept(parser, CONFIG_LEXER_TOK_EOL)
@@ -314,7 +312,7 @@ grammar_list_values(T parser)
 }
 
 static int
-grammar_section(T parser)
+grammar_section(Config_parser_T parser)
 {
     char secname[LEXER_MAX_STR_LEN + 1];
     int len;
@@ -371,7 +369,7 @@ grammar_section(T parser)
 }
 
 static int
-grammar_section_type(T parser)
+grammar_section_type(Config_parser_T parser)
 {
     if(accept_no_advance(parser, CONFIG_LEXER_TOK_SECTION)
        || accept_no_advance(parser, CONFIG_LEXER_TOK_BLACKLIST)
@@ -387,7 +385,7 @@ grammar_section_type(T parser)
 }
 
 static int
-grammar_section_statements(T parser)
+grammar_section_statements(Config_parser_T parser)
 {
     /*
      * There must be at least one statement.
@@ -400,7 +398,7 @@ grammar_section_statements(T parser)
 }
 
 static int
-grammar_section_assignments(T parser)
+grammar_section_assignments(Config_parser_T parser)
 {
     if(accept(parser, CONFIG_LEXER_TOK_COMMA)
        && accept(parser, CONFIG_LEXER_TOK_EOL)
@@ -415,7 +413,7 @@ grammar_section_assignments(T parser)
 }
 
 static int
-grammar_include(T parser)
+grammar_include(Config_parser_T parser)
 {
     if(accept(parser, CONFIG_LEXER_TOK_INCLUDE)
        && accept_no_advance(parser, CONFIG_LEXER_TOK_STR))
@@ -431,5 +429,3 @@ grammar_include(T parser)
 
     return CONFIG_PARSER_ERR;
 }
-
-#undef T
