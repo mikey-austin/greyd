@@ -120,6 +120,12 @@ extern List_T Config_get_list(Config_T config, const char *varname,
                               const char *section_name);
 
 /**
+ * Delete the specifed value from the specified section.
+ */
+extern void Config_delete(Config_T config, const char *varname,
+                          const char *section_name);
+
+/**
  * Append the supplied string to the list, creating it if it doesn't exist.
  */
 extern void Config_append_list_str(Config_T config, const char *varname,

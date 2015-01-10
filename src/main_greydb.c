@@ -289,7 +289,7 @@ int
 main(int argc, char **argv)
 {
     int option, type = TYPE_WHITE, action = ACTION_LIST, i, ret = 0, c = 0;
-    char *config_path = DEFAULT_CONFIG;
+    char *config_file = DEFAULT_CONFIG;
     Config_T config, opts;
     DB_handle_T db;
     Sync_engine_T syncer = NULL;
@@ -319,7 +319,7 @@ main(int argc, char **argv)
             break;
 
         case 'f':
-            config_path = optarg;
+            config_file = optarg;
             break;
 
         case 'Y':
@@ -338,9 +338,12 @@ main(int argc, char **argv)
     }
 
     config = Config_create();
-    Config_load_file(config, config_path);
+    Config_load_file(config, config_file);
     Config_merge(config, opts);
     Config_destroy(&opts);
+
+    /* Ensure that the sync bind address is not set. */
+    Config_delete(config, "bind_address", "sync");
 
     /* Ensure syslog output is disabled. */
     Config_set_int(config, "syslog_enable", NULL, 0);

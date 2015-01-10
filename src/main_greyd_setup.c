@@ -57,7 +57,6 @@
 #include "greyd.h"
 #include "constants.h"
 
-#define DEFAULT_CONFIG  "/etc/greyd/greyd.conf"
 #define DEFAULT_CURL    "/bin/curl"
 #define DEFAULT_MSG     "You have been blacklisted..."
 #define PROG_NAME        "greyd-setup"
@@ -309,7 +308,7 @@ main(int argc, char **argv)
 {
     int option, dryrun = 0, greyonly = 1, daemonize = 0;
     int bltype, res, count;
-    char *config_path = DEFAULT_CONFIG, *list_name, *message;
+    char *config_file = DEFAULT_CONFIG, *list_name, *message;
     Spamd_parser_T parser;
     Config_T config;
     Config_section_T section;
@@ -322,7 +321,7 @@ main(int argc, char **argv)
     while((option = getopt(argc, argv, "f:bdDn")) != -1) {
         switch(option) {
         case 'f':
-            config_path = optarg;
+            config_file = optarg;
             break;
 
         case 'n':
@@ -353,7 +352,7 @@ main(int argc, char **argv)
     }
 
     config = Config_create();
-    Config_load_file(config, config_path);
+    Config_load_file(config, config_file);
 
     if(daemonize) {
         daemon(0, 0);
@@ -364,7 +363,7 @@ main(int argc, char **argv)
 
     lists = Config_get_list(config, "lists", "setup");
     if(lists == NULL || List_size(lists) == 0) {
-        errx(1, "no lists configured in %s", config_path);
+        errx(1, "no lists configured in %s", config_file);
     }
 
     Log_setup(config, PROG_NAME);

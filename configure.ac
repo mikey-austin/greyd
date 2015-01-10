@@ -60,6 +60,11 @@ optional_ldadd=
 AC_SUBST([optional_drivers])
 AC_SUBST([optional_ldadd])
 
+AC_ARG_VAR([DEFAULT_CONFIG], [default greyd configuration path])
+if test -z ${DEFAULT_CONFIG}; then
+   DEFAULT_CONFIG="${sysconfdir}/greyd/greyd.conf"
+fi
+
 #
 # Berkeley db driver library & header checks.
 #

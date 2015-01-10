@@ -116,7 +116,7 @@ main(int argc, char **argv)
     Sync_engine_T syncer = NULL;
     Greylister_T greylister;
     Config_T config, opts;
-    char *config_file = NULL, hostname[MAX_HOST_NAME];
+    char *config_file = DEFAULT_CONFIG, hostname[MAX_HOST_NAME];
     char *bind_addr, *bind_addr6;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
     int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
@@ -289,16 +289,11 @@ main(int argc, char **argv)
         }
     }
 
-    if(config_file != NULL) {
-        config = Config_create();
-        Config_load_file(config, config_file);
-        Config_merge(config, opts);
-        Config_destroy(&opts);
-        state.config = config;
-    }
-    else {
-        state.config = opts;
-    }
+    config = Config_create();
+    Config_load_file(config, config_file);
+    Config_merge(config, opts);
+    Config_destroy(&opts);
+    state.config = config;
 
     if(sync_send == 0
        && (hosts = Config_get_list(state.config, "hosts", "sync")))

@@ -73,7 +73,7 @@ int
 main(int argc, char **argv)
 {
     Config_T config, opts;
-    char *config_file = NULL, *db_user;
+    char *config_file = DEFAULT_CONFIG, *db_user;
     struct passwd *db_pw;
     int option, white_expiry, sync_send = 0;
     FW_handle_T fw_handle;
@@ -124,15 +124,13 @@ main(int argc, char **argv)
         }
     }
 
-    if(config_file != NULL) {
-        config = Config_create();
-        Config_load_file(config, config_file);
-        Config_merge(config, opts);
-        Config_destroy(&opts);
-    }
-    else {
-        config = opts;
-    }
+    config = Config_create();
+    Config_load_file(config, config_file);
+    Config_merge(config, opts);
+    Config_destroy(&opts);
+
+    /* Ensure that the sync bind address is not set. */
+    Config_delete(config, "bind_address", "sync");
 
     if(sync_send == 0
        && (hosts = Config_get_list(config, "hosts", "sync")))

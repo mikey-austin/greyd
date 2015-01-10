@@ -44,7 +44,7 @@ main(void)
     List_T list;
     int *count;
 
-    TEST_START(31);
+    TEST_START(34);
 
     c = Config_create();
     TEST_OK((c != NULL), "Config created successfully");
@@ -139,8 +139,13 @@ main(void)
 
     TEST_OK(!strcmp(Config_get_str(m, "mystr1", NULL, NULL), "mystr value"), "str overwritten ok");
     TEST_OK(!strcmp(Config_get_str(m, "mystr1", "mysection1", NULL), "mystr1 value"), "new str/section ok");
+    Config_delete(m, "mystr1", "mysection1");
+    TEST_OK(Config_get_str(m, "mystr1", "mysection1", NULL) == NULL, "str deleted ok");
+
     TEST_OK(Config_get_int(m, "myint86", NULL, 0) == 4, "new int ok");
     TEST_OK(Config_get_int(m, "myint1", "mysection2", 0) == 1234, "int overwrite");
+    Config_delete(m, "myint1", "mysection2");
+    TEST_OK(Config_get_int(m, "myint1", "mysection2", -1000) == -1000, "int deleted ok");
 
     Config_append_list_str(m, "newlist", "newsection", "my str var");
     Config_append_list_str(m, "newlist", "newsection", "another var");
@@ -148,6 +153,13 @@ main(void)
     list = Config_get_list(m, "newlist", "newsection");
     TEST_OK((list != NULL), "list created successfully");
     TEST_OK((List_size(list) == 2), "list entries ok");
+
+    Config_delete(m, "newlist", "newsection");
+    list = Config_get_list(m, "newlist", "newsection");
+    TEST_OK((list == NULL), "list deleted successfully");
+
+    /* Test deleting a non-existant value. */
+    Config_delete(m, "i dont exist", "no section");
 
     Config_destroy(&c);
     Config_destroy(&m);

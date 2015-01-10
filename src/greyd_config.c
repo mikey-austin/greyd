@@ -318,6 +318,20 @@ Config_set_str(Config_T config, const char *varname,
 }
 
 extern void
+Config_delete(Config_T config, const char *varname,
+               const char *section_name)
+{
+    Config_section_T section;
+
+    if(section_name == NULL)
+        section_name = CONFIG_DEFAULT_SECTION;
+
+    if((section = Hash_get(config->sections, section_name)) != NULL) {
+        Config_section_delete(section, varname);
+    }
+}
+
+extern void
 Config_append_list_str(Config_T config, const char *varname,
                        const char *section_name, const char *str)
 {
