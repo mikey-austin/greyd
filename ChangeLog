@@ -1,4 +1,9 @@
-2015-01-08  Mikey Austin  <mikey@dexter.ayuda>
+2015-01-10  Mikey Austin  <mikey@greyd.org>
+
+	* Bug fixes in sync engine
+	* Consistent default config path handling
+
+2015-01-08  Mikey Austin  <mikey@greyd.org>
 
 	* Minor bug fix in netfilter driver preventing greylogd from operating.
 
