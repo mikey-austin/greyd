@@ -307,7 +307,7 @@ main(int argc, char **argv)
     }
 
     if(sync_recv == 0
-       && Config_get_str(state.config, "bind_addr", "sync", NULL) != NULL)
+       && Config_get_str(state.config, "bind_address", "sync", NULL) != NULL)
     {
         sync_recv = 1;
     }
