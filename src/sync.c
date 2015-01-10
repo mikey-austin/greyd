@@ -92,15 +92,16 @@ Sync_init(Config_T config)
     engine->sync_hosts = List_create(destroy_sync_host);
     engine->port = Config_get_int(config, "port", "sync", GREYD_SYNC_PORT);
 
-    sync_hosts = Config_get_list(config, "hosts", "sync");
-    LIST_EACH(sync_hosts, entry) {
-        val = List_entry_value(entry);
-        if(cv_str(val) && Sync_add_host(engine, cv_str(val)) != 0) {
-            /*
-             * This was not a host address, so treat it as an
-             * interface name.
-             */
-            engine->iface = cv_str(val);
+    if((sync_hosts = Config_get_list(config, "hosts", "sync")) != NULL) {
+        LIST_EACH(sync_hosts, entry) {
+            val = List_entry_value(entry);
+            if(cv_str(val) && Sync_add_host(engine, cv_str(val)) != 0) {
+                /*
+                 * This was not a host address, so treat it as an
+                 * interface name.
+                 */
+                engine->iface = cv_str(val);
+            }
         }
     }
 
