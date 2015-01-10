@@ -78,6 +78,12 @@ extern void Hash_insert(Hash_T hash, const char *key, void *value);
 extern void *Hash_get(Hash_T hash, const char *key);
 
 /**
+ * Delete an element from the hash, and call the configured
+ * element destructor on it.
+ */
+extern void Hash_delete(Hash_T hash, const char *key);
+
+/**
  * Return a list of the set keys in the supplied hash. Note, the
  * order of the keys in the returned list is undefined.
  */

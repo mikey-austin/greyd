@@ -157,6 +157,19 @@ extern void
     return entry->v;
 }
 
+extern void
+Hash_delete(Hash_T hash, const char *key)
+{
+    struct Hash_entry *entry;
+
+    entry = Hash_find_entry(hash, key);
+    if(entry->v != NULL) {
+        hash->destroy(entry);
+        Hash_init_entry(entry);
+        hash->num_entries--;
+    }
+}
+
 extern List_T
 Hash_keys(Hash_T hash)
 {

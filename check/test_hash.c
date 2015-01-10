@@ -59,7 +59,7 @@ main(void)
     /* Test hash creation. */
     hash = Hash_create(HASH_SIZE, destroy);
 
-    TEST_START(17);
+    TEST_START(19);
 
     /* Create a hash string keys to string values. */
     TEST_OK((hash->size == HASH_SIZE), "Hash size is set correctly");
@@ -116,6 +116,12 @@ main(void)
 
     s = Hash_get(hash, TEST_KEY5);
     TEST_OK((strcmp(s, TEST_VAL5) == 0), "Hash entry 5 inserted correctly");
+
+    i = hash->num_entries;
+    Hash_delete(hash, TEST_KEY5);
+    s = Hash_get(hash, TEST_KEY5);
+    TEST_OK((s == NULL), "Hash entry 5 deleted correctly");
+    TEST_OK(((i - 1) == hash->num_entries), "Hash size is as expected");
 
     /* Test the ability to overwrite values. */
     i = hash->num_entries;
