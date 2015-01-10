@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([greyd], [0.2.1], [bugs@greyd.org])
+AC_INIT([greyd], [0.2.2], [mikey@greyd.org])
 AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
 AC_CONFIG_SRCDIR([src/main_greyd.c])
