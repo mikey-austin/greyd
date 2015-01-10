@@ -83,6 +83,12 @@ Config_section_get(Config_section_T section, const char *varname)
 }
 
 extern void
+Config_section_delete(Config_section_T section, const char *varname)
+{
+    Hash_delete(section->vars, varname);
+}
+
+extern void
 Config_section_set(Config_section_T section, const char *varname, Config_value_T value)
 {
     Hash_insert(section->vars, varname, (Config_value_T) value);

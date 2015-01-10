@@ -40,7 +40,7 @@ main(void)
     Config_section_T s1;
     Config_value_T v;
 
-    TEST_START(6);
+    TEST_START(7);
 
     s1 = Config_section_create(SEC1);
     TEST_OK((strcmp(s1->name, SEC1) == 0), "Section created successfully");
@@ -59,6 +59,10 @@ main(void)
     Config_section_set_int(s1, VAR1, VAL2);
     v = Config_section_get(s1, VAR1);
     TEST_OK((v->v.i == VAL2), "String value overwritten with int successfully");
+
+    Config_section_delete(s1, VAR1);
+    v = Config_section_get(s1, VAR1);
+    TEST_OK((v == NULL), "String value deleted successfully");
 
     /* Test overwriting int value with an string. */
     Config_section_set_str(s1, VAR2, VAL1);

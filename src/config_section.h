@@ -55,6 +55,11 @@ extern void Config_section_destroy(Config_section_T *section);
 extern Config_value_T Config_section_get(Config_section_T section, const char *varname);
 
 /**
+ * Delete a variable from the section if it exists.
+ */
+extern void Config_section_delete(Config_section_T section, const char *varname);
+
+/**
  * Set the specified variable and value into the specified section.
  * Overwriting varname is permitted, with the overwritten value safely
  * handled.
