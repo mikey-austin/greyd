@@ -166,7 +166,7 @@ Con_close(struct Con *con, struct Greyd_state *state)
     time(&now);
     i_info("%s: disconnected after %lld seconds.%s%s",
            con->src_addr, (long long) (now - con->s),
-           (List_size(con->blacklists) > 0 ? " lists:" : ""),
+           (List_size(con->blacklists) > 0 ? " lists: " : ""),
            (List_size(con->blacklists) > 0 ? con->lists : ""));
 
     if(con->lists != NULL) {
