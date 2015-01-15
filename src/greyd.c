@@ -169,12 +169,13 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
             dst[0] = '\0';
         }
 
-        fprintf(out, "dst = \"%s\"\n%%\n", dst);
+        fprintf(out, "dst=\"%s\"\n%%\n", dst);
         if(fflush(out) == EOF)
             i_debug("dnat lookup: fflush failed");
     }
     else if(strncmp(type, MSG_TYPE_REPLACE,
                     sizeof(MSG_TYPE_REPLACE)) == 0)
     {
+        // TODO: send list of addresses to firewall.
     }
 }

@@ -792,9 +792,14 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
         return;
     }
 
-    fprintf(state->fw_out, "type=\"nat\"\nsrc=\"%s\"\nproxy=\"%s\"\n%%",
+    fprintf(state->fw_out,
+            "type=\"nat\"\n"
+            "src=\"%s\"\n"
+            "proxy=\"%s\"\n%%\n",
             con->src_addr, proxy);
     fflush(state->fw_out);
+
+    // TODO: read dst from fw_in pipe
 }
 
 extern void
