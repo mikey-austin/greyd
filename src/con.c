@@ -777,28 +777,24 @@ error:
 extern void
 Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
 {
-    struct sockaddr_storage proxy, orig_dst;
-    socklen_t proxy_len = sizeof(proxy);
+    struct sockaddr_storage ss_proxy;
+    socklen_t proxy_len = sizeof(ss_proxy);
+    char proxy[INET6_ADDRSTRLEN];
 
-    *con->dst_addr = '\0';
-    if(getsockname(con->fd, (struct sockaddr *) &proxy, &proxy_len) == -1)
+    if(getsockname(con->fd, (struct sockaddr *) &ss_proxy, &proxy_len) == -1)
         return;
 
-    if(FW_lookup_orig_dst(state->fw_handle,
-                          (struct sockaddr *) &con->src,
-                          (struct sockaddr *) &proxy,
-                          (struct sockaddr *) &orig_dst) == -1)
-    {
-        return;
-    }
-
-    if(getnameinfo((struct sockaddr *) &orig_dst,
-                   IP_SOCKADDR_LEN(((struct sockaddr *) &orig_dst)),
-                   con->dst_addr, sizeof(con->dst_addr),
+    if(getnameinfo((struct sockaddr *) &ss_proxy,
+                   IP_SOCKADDR_LEN(((struct sockaddr *) &ss_proxy)),
+                   proxy, sizeof(proxy),
                    NULL, 0, NI_NUMERICHOST) != 0)
     {
-        con->dst_addr[0] = '\0';
+        return;
     }
+
+    fprintf(state->fw_out, "type=\"nat\"\nsrc=\"%s\"\nproxy=\"%s\"\n%%",
+            con->src_addr, proxy);
+    fflush(state->fw_out);
 }
 
 extern void

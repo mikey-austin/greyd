@@ -21,8 +21,13 @@
  * @date   2014
  */
 
+#include <sys/socket.h>
+
 #include <errno.h>
 #include <string.h>
+#include <string.h>
+#include <netdb.h>
+#include <unistd.h>
 
 #include "failures.h"
 #include "greyd_config.h"
@@ -32,6 +37,10 @@
 #include "list.h"
 #include "config_parser.h"
 #include "blacklist.h"
+#include "firewall.h"
+
+#define MSG_TYPE_NAT     "nat"
+#define MSG_TYPE_REPLACE "replace"
 
 extern void
 Greyd_process_config(int fd, struct Greyd_state *state)
@@ -109,4 +118,63 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
 extern void
 Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
 {
+    char *type, *src, *proxy, dst[INET6_ADDRSTRLEN];
+    struct sockaddr_storage ss_src, ss_proxy, ss_dst;
+    struct addrinfo hints, *res;
+
+    if((type = Config_get_str(message, "type", NULL, NULL)) == NULL)
+        return;
+
+    if(strncmp(type, MSG_TYPE_NAT, sizeof(MSG_TYPE_NAT)) == 0) {
+        /*
+         * Perform a DNAT lookup and return the original destination.
+         */
+        src = Config_get_str(message, "src", NULL, "");
+        proxy = Config_get_str(message, "proxy", NULL, "");
+
+        memset(dst, 0, sizeof(dst));
+        memset(&ss_src, 0, sizeof(ss_src));
+        memset(&ss_proxy, 0, sizeof(ss_proxy));
+        memset(&ss_dst, 0, sizeof(ss_dst));
+        memset(&hints, 0, sizeof(hints));
+
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_DGRAM;  /* Dummy. */
+        hints.ai_protocol = IPPROTO_UDP; /* Dummy. */
+        hints.ai_flags = AI_NUMERICHOST;
+
+        if(getaddrinfo(src, NULL, &hints, &res) != 0)
+            return;
+        memcpy(&ss_src, res->ai_addr, res->ai_addrlen);
+        free(res);
+
+        if(getaddrinfo(proxy, NULL, &hints, &res) != 0)
+            return;
+        memcpy(&ss_proxy, res->ai_addr, res->ai_addrlen);
+        free(res);
+
+        if(FW_lookup_orig_dst(fw_handle,
+                              (struct sockaddr *) &ss_src,
+                              (struct sockaddr *) &ss_proxy,
+                              (struct sockaddr *) &ss_dst) == -1)
+        {
+            return;
+        }
+
+        if(getnameinfo((struct sockaddr *) &ss_dst,
+                       IP_SOCKADDR_LEN(((struct sockaddr *) &ss_dst)),
+                       dst, sizeof(dst),
+                       NULL, 0, NI_NUMERICHOST) != 0)
+        {
+            dst[0] = '\0';
+        }
+
+        fprintf(out, "dst = \"%s\"\n%%\n", dst);
+        if(fflush(out) == EOF)
+            i_debug("dnat lookup: fflush failed");
+    }
+    else if(strncmp(type, MSG_TYPE_REPLACE,
+                    sizeof(MSG_TYPE_REPLACE)) == 0)
+    {
+    }
 }
