@@ -50,6 +50,8 @@
 #include "greyd.h"
 #include "hash.h"
 #include "log.h"
+#include "config_parser.h"
+#include "lexer_source.h"
 
 #define PROG_NAME "greyd"
 
@@ -60,6 +62,7 @@ static void usage(void);
 static int max_files(void);
 static void destroy_blacklist(struct Hash_entry *entry);
 static void shutdown_greyd(int sig);
+static int start_fw_child(Config_T, int, int);
 
 struct Greyd_state *Greyd_state = NULL;
 
@@ -109,6 +112,73 @@ destroy_blacklist(struct Hash_entry *entry)
     }
 }
 
+static int
+start_fw_child(Config_T config, int in_fd, int out_fd)
+{
+    FW_handle_T fw_handle;
+    FILE *out;
+    Lexer_source_T source;
+    Lexer_T lexer;
+    Config_parser_T parser;
+    Config_T message;
+    struct passwd *main_pw;
+    char *main_user, *chroot_dir;
+    int ret;
+
+    /* Setup the firewall handle before dropping privileges. */
+    if((fw_handle = FW_open(config)) == NULL)
+        i_critical("could not obtain firewall handle");
+
+    if(Config_get_int(config, "chroot", NULL, GREYD_CHROOT)) {
+        chroot_dir = Config_get_str(config, "chroot_dir", NULL,
+                                    GREYD_CHROOT_DIR);
+        if(chroot(chroot_dir) == -1)
+            i_critical("cannot chroot to %s", chroot_dir);
+    }
+
+    main_user = Config_get_str(config, "user", NULL, GREYD_MAIN_USER);
+    if((main_pw = getpwnam(main_user)) == NULL)
+        errx(1, "no such user %s", main_user);
+
+    if(main_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
+        if(setgroups(1, &main_pw->pw_gid)
+           || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
+           || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
+        {
+            i_critical("failed to drop privileges");
+        }
+    }
+
+    if((out = fdopen(out_fd, "w")) == NULL)
+        i_critical("fdopen: %s", strerror(errno));
+
+    source = Lexer_source_create_from_fd(in_fd);
+    lexer = Config_lexer_create(source);
+    parser = Config_parser_create(lexer);
+
+    for(;;) {
+        message = Config_create();
+        ret = Config_parser_start(parser, message);
+        switch(ret) {
+        case CONFIG_PARSER_OK:
+            Greyd_process_fw_message(message, fw_handle, out);
+            break;
+
+        case CONFIG_PARSER_ERR:
+            goto cleanup;
+        }
+
+        Config_destroy(&message);
+    }
+
+cleanup:
+    Config_destroy(&message);
+    Config_parser_destroy(&parser);
+    FW_close(&fw_handle);
+
+    return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -120,6 +190,7 @@ main(int argc, char **argv)
     char *bind_addr, *bind_addr6;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
     int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
+    int fw_pipe[2], nat_pipe[2];
     u_short port, cfg_port;
     unsigned long long grey_time, white_time, pass_time;
     struct rlimit limit;
@@ -432,7 +503,39 @@ main(int argc, char **argv)
             err(1, "daemon");
     }
 
+    state.fw_out = NULL;
+    state.fw_in = NULL;
+    state.fw_pid = -1;
+
     if(Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
+        if(pipe(fw_pipe) == -1)
+            i_critical("firewall pipe: %s", strerror(errno));
+
+        if(pipe(nat_pipe) == -1)
+            i_critical("firewall nat pipe: %s", strerror(errno));
+
+        /* Fork the firewall process. */
+        state.fw_pid = fork();
+        switch(state.fw_pid) {
+        case -1:
+            i_error("fork firewall failed: %s", strerror(errno));
+
+        case 0:
+            /* In child. */
+            close(nat_pipe[0]);
+            close(fw_pipe[1]);
+            return start_fw_child(state.config, fw_pipe[0], nat_pipe[1]);
+        }
+
+        /* In parent. */
+        if((state.fw_out = fdopen(fw_pipe[1], "w")) == NULL)
+            i_critical("fdopen: %s", strerror(errno));
+        close(fw_pipe[0]);
+
+        if((state.fw_in = fdopen(nat_pipe[0], "r")) == NULL)
+            i_critical("fdopen: %s", strerror(errno));
+        close(nat_pipe[1]);
+
         /* Ensure that the the grey connections outweigh the blacklisted. */
         state.max_black = (state.max_black >= state.max_cons
                            ? state.max_cons - 100 : state.max_black);
@@ -468,6 +571,7 @@ main(int argc, char **argv)
 
         /* In parent. Run the greylisting engine. */
         greylister = Grey_setup(state.config);
+        greylister->fw_out = state.fw_out;
 
         if(syncer)
             greylister->syncer = syncer;
@@ -493,10 +597,6 @@ jail:
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
-
-    /* Setup the firewall handle before dropping privileges. */
-    if((state.fw_handle = FW_open(state.config)) == NULL)
-        i_critical("could not obtain firewall handle");
 
     if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
         chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
@@ -785,7 +885,6 @@ shutdown:
     free(state.cons);
     fclose(state.grey_out);
     Hash_destroy(&state.blacklists);
-    FW_close(&state.fw_handle);
     Config_destroy(&state.config);
 
     return 0;

@@ -87,6 +87,7 @@ struct Greylister_T {
     List_T      domains;
     FILE       *trap_out;
     FILE       *grey_in;
+    FILE       *fw_out;
     pid_t       grey_pid;
     pid_t       reader_pid;
     time_t      startup;

@@ -25,7 +25,6 @@
 #define GREYD_DEFINED
 
 #include "hash.h"
-#include "firewall.h"
 
 #include <stdio.h>
 
@@ -45,10 +44,12 @@ struct Greyd_state {
     int clients;
     int black_clients;
 
+    pid_t fw_pid;
     FILE *grey_out;
+    FILE *fw_out;
+    FILE *fw_in;
 
     Hash_T blacklists;
-    FW_handle_T fw_handle;
 };
 
 /**

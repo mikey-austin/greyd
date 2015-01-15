@@ -105,3 +105,8 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
             i_debug("configure_greyd: fflush failed");
     }
 }
+
+extern void
+Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
+{
+}
