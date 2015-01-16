@@ -42,6 +42,8 @@
 #define MSG_TYPE_NAT     "nat"
 #define MSG_TYPE_REPLACE "replace"
 
+#define CMP(a, b) strncmp((a), (b), sizeof((b)))
+
 extern void
 Greyd_process_config(int fd, struct Greyd_state *state)
 {
@@ -125,7 +127,7 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
     if((type = Config_get_str(message, "type", NULL, NULL)) == NULL)
         return;
 
-    if(strncmp(type, MSG_TYPE_NAT, sizeof(MSG_TYPE_NAT)) == 0) {
+    if(CMP(type, MSG_TYPE_NAT) == 0) {
         /*
          * Perform a DNAT lookup and return the original destination.
          */
@@ -173,9 +175,7 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
         if(fflush(out) == EOF)
             i_debug("dnat lookup: fflush failed");
     }
-    else if(strncmp(type, MSG_TYPE_REPLACE,
-                    sizeof(MSG_TYPE_REPLACE)) == 0)
-    {
+    else if(CMP(type, MSG_TYPE_REPLACE) == 0) {
         // TODO: send list of addresses to firewall.
     }
 }

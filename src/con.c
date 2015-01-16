@@ -34,6 +34,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "ip.h"
 #include "constants.h"
@@ -44,6 +45,7 @@
 #include "hash.h"
 #include "utils.h"
 #include "grey.h"
+#include "config_parser.h"
 
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
@@ -779,7 +781,13 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
 {
     struct sockaddr_storage ss_proxy;
     socklen_t proxy_len = sizeof(ss_proxy);
-    char proxy[INET6_ADDRSTRLEN];
+    char proxy[INET6_ADDRSTRLEN], *dst;
+    Lexer_source_T source;
+    Lexer_T lexer;
+    Config_parser_T parser;
+    Config_T message;
+    struct pollfd fd;
+    int ret;
 
     if(getsockname(con->fd, (struct sockaddr *) &ss_proxy, &proxy_len) == -1)
         return;
@@ -799,7 +807,44 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
             con->src_addr, proxy);
     fflush(state->fw_out);
 
-    // TODO: read dst from fw_in pipe
+    /* Fetch response from firewall thread. */
+    memset(&fd, 0, sizeof(fd));
+    memset(dst, 0, sizeof(dst));
+
+    fd.fd = fileno(state->fw_in);
+    fd.events = POLLIN;
+    if(poll(&fd, 1, 1000) == -1) {
+        i_warning("poll original dst: %s", strerror(errno));
+        goto error;
+    }
+
+    if(fd.revents & POLLIN) {
+        source = Lexer_source_create_from_fd(fd.fd);
+        lexer = Config_lexer_create(source);
+        message = Config_create();
+        parser = Config_parser_create(lexer);
+
+        ret = Config_parser_start(parser, message);
+        switch(ret) {
+        case CONFIG_PARSER_OK:
+            dst = Config_get_str(message, "dst", NULL, "");
+            break;
+
+        case CONFIG_PARSER_ERR:
+            Config_destroy(&message);
+            Config_parser_destroy(&parser);
+            goto error;
+        }
+
+        Config_destroy(&message);
+        Config_parser_destroy(&parser);
+        sstrncpy(con->dst_addr, dst, sizeof(con->dst_addr));
+        return;
+    }
+
+error:
+    *con->dst_addr = '\0';
+    return;
 }
 
 extern void
