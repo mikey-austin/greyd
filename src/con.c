@@ -47,6 +47,8 @@
 #include "grey.h"
 #include "config_parser.h"
 
+#define DNAT_LOOKUP_TIMEOUT 1000 /* In ms. */
+
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
 static void set_log(char *, size_t, char *);
@@ -815,7 +817,7 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
 
     fd.fd = fileno(state->fw_in);
     fd.events = POLLIN;
-    if(poll(&fd, 1, 1000) == -1) {
+    if(poll(&fd, 1, DNAT_LOOKUP_TIMEOUT) == -1) {
         i_warning("poll original dst: %s", strerror(errno));
         return;
     }
