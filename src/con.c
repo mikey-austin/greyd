@@ -804,7 +804,8 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
             "src=\"%s\"\n"
             "proxy=\"%s\"\n%%\n",
             con->src_addr, proxy);
-    fflush(state->fw_out);
+    if(fflush(state->fw_out) == EOF)
+        return;
 
     /* Fetch response from firewall thread. */
     memset(&fd, 0, sizeof(fd));
