@@ -130,10 +130,8 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
     List_T whitelist, ips;
     short af;
 
-    if((type = Config_get_str(message, "type", NULL, NULL)) == NULL) {
-        i_critical("unknown message type");
+    if((type = Config_get_str(message, "type", NULL, NULL)) == NULL)
         return;
-    }
 
     if(CMP(type, MSG_TYPE_NAT) == 0) {
         /*
@@ -204,6 +202,10 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
             i_debug("dnat lookup: fflush failed");
     }
     else if(CMP(type, MSG_TYPE_REPLACE) == 0) {
+        /*
+         * Retrieve list of ip addresses to send to the
+         * firewall.
+         */
         name = Config_get_str(message, "name", NULL, "");
         af = Config_get_int(message, "af", NULL, AF_INET);
         ips = Config_get_list(message, "ips", NULL);
