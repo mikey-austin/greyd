@@ -141,12 +141,14 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     if((main_pw = getpwnam(main_user)) == NULL)
         errx(1, "no such user %s", main_user);
 
+#ifndef WITH_PF
     if(Config_get_int(config, "chroot", NULL, GREYD_CHROOT)) {
         chroot_dir = Config_get_str(config, "chroot_dir", NULL,
                                     GREYD_CHROOT_DIR);
         if(chroot(chroot_dir) == -1)
             i_critical("cannot chroot to %s", chroot_dir);
     }
+#endif
 
     if(main_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
         if(setgroups(1, &main_pw->pw_gid)
