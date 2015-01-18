@@ -47,7 +47,7 @@
 #include "grey.h"
 #include "config_parser.h"
 
-#define DNAT_LOOKUP_TIMEOUT -1 /* In ms. */
+#define DNAT_LOOKUP_TIMEOUT 5000 /* In ms. */
 
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
@@ -855,8 +855,6 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
         Config_destroy(&message);
         Config_parser_destroy(&parser);
     }
-
-    i_debug("nat lookup: src=%s proxy=%s dst=%s", con->src_addr, proxy, con->dst_addr);
 }
 
 extern void
