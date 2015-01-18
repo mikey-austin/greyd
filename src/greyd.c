@@ -185,7 +185,6 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
                               (struct sockaddr *) &ss_proxy,
                               (struct sockaddr *) &ss_dst) == -1)
         {
-            i_debug("firewall original destination lookup failed");
             return;
         }
 

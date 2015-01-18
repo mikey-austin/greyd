@@ -47,7 +47,7 @@
 #include "grey.h"
 #include "config_parser.h"
 
-#define DNAT_LOOKUP_TIMEOUT 5000 /* In ms. */
+#define DNAT_LOOKUP_TIMEOUT 1000 /* In ms. */
 
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
