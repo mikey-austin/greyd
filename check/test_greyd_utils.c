@@ -22,6 +22,7 @@
  */
 
 #include "test.h"
+#include <greyd_config.h>
 #include <greyd.h>
 #include <blacklist.h>
 #include <hash.h>
