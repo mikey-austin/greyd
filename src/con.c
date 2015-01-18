@@ -47,7 +47,7 @@
 #include "grey.h"
 #include "config_parser.h"
 
-#define DNAT_LOOKUP_TIMEOUT 1000 /* In ms. */
+#define DNAT_LOOKUP_TIMEOUT -1 /* In ms. */
 
 static int match(const char *, const char *);
 static void get_helo(char *, size_t, char *);
@@ -789,6 +789,8 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
     Config_parser_T parser;
     Config_T message;
     struct pollfd fd;
+    unsigned short src_port, proxy_port;
+    int read_fd;
 
     if(getsockname(con->fd, (struct sockaddr *) &ss_proxy, &proxy_len) == -1)
         return;
@@ -801,21 +803,38 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
         return;
     }
 
+    if(((struct sockaddr *) &con->src)->sa_family == AF_INET) {
+        src_port = ((struct sockaddr_in *) &con->src)->sin_port;
+        proxy_port = ((struct sockaddr_in *) &ss_proxy)->sin_port;
+    }
+    else {
+        src_port = ((struct sockaddr_in6 *) &con->src)->sin6_port;
+        proxy_port = ((struct sockaddr_in6 *) &ss_proxy)->sin6_port;
+    }
+
     fprintf(state->fw_out,
             "type=\"nat\"\n"
             "src=\"%s\"\n"
-            "proxy=\"%s\"\n%%\n",
-            con->src_addr, proxy);
+            "src_port=%u\n"
+            "proxy=\"%s\"\n"
+            "proxy_port=%u\n%%\n",
+            con->src_addr, src_port,
+            proxy, proxy_port);
     if(fflush(state->fw_out) == EOF)
         return;
 
     /* Fetch response from firewall thread. */
-    memset(&fd, 0, sizeof(fd));
-    memset(dst, 0, sizeof(dst));
-
     *con->dst_addr = '\0';
 
-    fd.fd = fileno(state->fw_in);
+    /*
+     * Duplicate the descriptor so that the pipe isn't closed
+     * upon destroying the lexer source.
+     */
+    if((read_fd = dup(fileno(state->fw_in))) == -1)
+        i_critical("dup: %s", strerror(errno));
+
+    memset(&fd, 0, sizeof(fd));
+    fd.fd = read_fd;
     fd.events = POLLIN;
     if(poll(&fd, 1, DNAT_LOOKUP_TIMEOUT) == -1) {
         i_warning("poll original dst: %s", strerror(errno));
@@ -836,6 +855,8 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
         Config_destroy(&message);
         Config_parser_destroy(&parser);
     }
+
+    i_debug("nat lookup: src=%s proxy=%s dst=%s", con->src_addr, proxy, con->dst_addr);
 }
 
 extern void

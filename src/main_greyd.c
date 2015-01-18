@@ -124,6 +124,14 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     struct passwd *main_pw;
     char *main_user, *chroot_dir;
     int ret;
+    struct sigaction sa;
+
+    memset(&sa, 0, sizeof(sa));
+    sigfillset(&sa.sa_mask);
+    sa.sa_handler = shutdown_greyd;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
 
     /* Setup the firewall handle before dropping privileges. */
     if((fw_handle = FW_open(config)) == NULL)
@@ -145,7 +153,7 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
            || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
            || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
         {
-            i_critical("failed to drop privileges");
+            i_critical("failed to drop privileges: %s", strerror(errno));
         }
     }
 
@@ -157,6 +165,11 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     parser = Config_parser_create(lexer);
 
     for(;;) {
+        if(Greyd_state->shutdown) {
+            i_info("stopping firewall process");
+            goto cleanup;
+        }
+
         message = Config_create();
         ret = Config_parser_start(parser, message);
         switch(ret) {
@@ -172,9 +185,11 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     }
 
 cleanup:
-    Config_destroy(&message);
+    if(message != NULL)
+        Config_destroy(&message);
     Config_parser_destroy(&parser);
     FW_close(&fw_handle);
+    Config_destroy(&config);
 
     return 0;
 }
@@ -219,11 +234,15 @@ main(int argc, char **argv)
         Config_set_str(opts, "hostname", NULL, hostname);
     }
 
+    state.shutdown = 0;
     state.max_files = max_files();
     state.max_cons = (CON_DEFAULT_MAX > state.max_files
                       ? state.max_files : CON_DEFAULT_MAX);
     state.max_black = (CON_DEFAULT_MAX > state.max_files
                       ? state.max_files : CON_DEFAULT_MAX);
+
+    /* Global reference only to be used for signal handlers. */
+    Greyd_state = &state;
 
     while((option =
            getopt(argc, argv, "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1)
@@ -392,13 +411,6 @@ main(int argc, char **argv)
             err(1, "setrlimit");
     }
 
-    state.cons = calloc(state.max_cons, sizeof(*state.cons));
-    if(state.cons == NULL)
-        err(1, "calloc");
-
-    for(i = 0; i < state.max_cons; i++)
-        state.cons[i].fd = -1;
-
     signal(SIGPIPE, SIG_IGN);
 
     port = Config_get_int(state.config, "port", NULL, GREYD_PORT);
@@ -479,20 +491,6 @@ main(int argc, char **argv)
 
     if(bind(cfg_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
         err(1, "bind local");
-
-    if((sync_send || sync_recv)
-       && (syncer = Sync_init(state.config)) == NULL)
-    {
-        i_warning("sync disabled by configuration");
-        sync_send = 0;
-        sync_recv = 0;
-    }
-    else if(syncer && Sync_start(syncer) == -1) {
-        i_warning("could not start sync engine");
-        Sync_stop(&syncer);
-        sync_send = 0;
-        sync_recv = 0;
-    }
 
     main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
     if((main_pw = getpwnam(main_user)) == NULL)
@@ -590,8 +588,20 @@ main(int argc, char **argv)
     }
 
 jail:
-    state.shutdown = 0;
-    Greyd_state = &state;
+    if((sync_send || sync_recv)
+       && (syncer = Sync_init(state.config)) == NULL)
+    {
+        i_warning("sync disabled by configuration");
+        sync_send = 0;
+        sync_recv = 0;
+    }
+    else if(syncer && Sync_start(syncer) == -1) {
+        i_warning("could not start sync engine");
+        Sync_stop(&syncer);
+        sync_send = 0;
+        sync_recv = 0;
+    }
+
     sigfillset(&sa.sa_mask);
     sa.sa_handler = shutdown_greyd;
     sigaction(SIGTERM, &sa, NULL);
@@ -610,7 +620,7 @@ jail:
            || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
            || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
         {
-            i_critical("failed to drop privileges");
+            i_critical("failed to drop privileges: %s", strerror(errno));
         }
     }
 
@@ -631,6 +641,13 @@ jail:
     state.slow_until = 0;
     state.clients = state.black_clients = 0;
     state.blacklists = Hash_create(NUM_BLACKLISTS, destroy_blacklist);
+
+    state.cons = calloc(state.max_cons, sizeof(*state.cons));
+    if(state.cons == NULL)
+        err(1, "calloc");
+
+    for(i = 0; i < state.max_cons; i++)
+        state.cons[i].fd = -1;
 
     for(;;) {
         int max_fd, writers, timeout;

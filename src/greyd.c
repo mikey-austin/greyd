@@ -123,9 +123,12 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
     char *type, *src, *proxy, dst[INET6_ADDRSTRLEN];
     struct sockaddr_storage ss_src, ss_proxy, ss_dst;
     struct addrinfo hints, *res;
+    unsigned short src_port = 0, proxy_port = 0;
 
-    if((type = Config_get_str(message, "type", NULL, NULL)) == NULL)
+    if((type = Config_get_str(message, "type", NULL, NULL)) == NULL) {
+        i_critical("unknown message type");
         return;
+    }
 
     if(CMP(type, MSG_TYPE_NAT) == 0) {
         /*
@@ -133,6 +136,12 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
          */
         src = Config_get_str(message, "src", NULL, "");
         proxy = Config_get_str(message, "proxy", NULL, "");
+        src_port = Config_get_int(message, "src_port", NULL, 0);
+        proxy_port = Config_get_int(message, "proxy_port", NULL, 0);
+        if(src_port == 0 || proxy_port == 0) {
+            i_debug("nat lookup: expecting non-zero src & proxy ports");
+            return;
+        }
 
         memset(dst, 0, sizeof(dst));
         memset(&ss_src, 0, sizeof(ss_src));
@@ -145,21 +154,35 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
         hints.ai_protocol = IPPROTO_UDP; /* Dummy. */
         hints.ai_flags = AI_NUMERICHOST;
 
-        if(getaddrinfo(src, NULL, &hints, &res) != 0)
+        if(getaddrinfo(src, NULL, &hints, &res) != 0) {
+            i_debug("getaddrinfo: %s", strerror(errno));
             return;
+        }
         memcpy(&ss_src, res->ai_addr, res->ai_addrlen);
         free(res);
 
-        if(getaddrinfo(proxy, NULL, &hints, &res) != 0)
+        if(getaddrinfo(proxy, NULL, &hints, &res) != 0) {
+            i_debug("getaddrinfo: %s", strerror(errno));
             return;
+        }
         memcpy(&ss_proxy, res->ai_addr, res->ai_addrlen);
         free(res);
+
+        if(((struct sockaddr *) &ss_src)->sa_family == AF_INET) {
+            ((struct sockaddr_in *) &ss_src)->sin_port = src_port;
+            ((struct sockaddr_in *) &ss_proxy)->sin_port = proxy_port;
+        }
+        else {
+            ((struct sockaddr_in6 *) &ss_src)->sin6_port = src_port;
+            ((struct sockaddr_in6 *) &ss_proxy)->sin6_port = proxy_port;
+        }
 
         if(FW_lookup_orig_dst(fw_handle,
                               (struct sockaddr *) &ss_src,
                               (struct sockaddr *) &ss_proxy,
                               (struct sockaddr *) &ss_dst) == -1)
         {
+            i_debug("firewall original destination lookup failed");
             return;
         }
 
