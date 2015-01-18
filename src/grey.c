@@ -620,7 +620,38 @@ trap_check(List_T domains, DB_handle_T db, char *to)
 static void
 update_firewall(Greylister_T greylister, int af)
 {
-    // TODO: send list of whitelist ip addresses to fw process over pipe
+    List_T ips;
+    struct List_entry *entry;
+    char *ip, *name;
+    int first = 1;
+
+    if(af == AF_INET) {
+        name = greylister->whitelist_name;
+        ips = greylister->whitelist;
+    }
+    else {
+        name = greylister->whitelist_name_ipv6;
+        ips = greylister->whitelist_ipv6;
+    }
+
+    if(List_size(ips) > 0) {
+        fprintf(greylister->fw_out,
+                "type=\"replace\"\n"
+                "name=\"%s\"\n"
+                "af=%u\n"
+                "ips=[",
+                name, af);
+
+        LIST_EACH(ips, entry) {
+            ip = List_entry_value(entry);
+            fprintf(greylister->fw_out, "%s\"%s\"", (first ? "" : ","), ip);
+            first = 0;
+        }
+        fprintf(greylister->fw_out, "]\n%%\n");
+
+        if(fflush(greylister->fw_out) == EOF)
+            i_debug("update firewall: fflush failed");
+    }
 }
 
 static void

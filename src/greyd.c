@@ -124,6 +124,11 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
     struct sockaddr_storage ss_src, ss_proxy, ss_dst;
     struct addrinfo hints, *res;
     unsigned short src_port = 0, proxy_port = 0;
+    Config_value_T value;
+    struct List_entry *entry;
+    char *addr, *name;
+    List_T whitelist, ips;
+    short af;
 
     if((type = Config_get_str(message, "type", NULL, NULL)) == NULL) {
         i_critical("unknown message type");
@@ -199,6 +204,24 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
             i_debug("dnat lookup: fflush failed");
     }
     else if(CMP(type, MSG_TYPE_REPLACE) == 0) {
-        // TODO: send list of addresses to firewall.
+        name = Config_get_str(message, "name", NULL, "");
+        af = Config_get_int(message, "af", NULL, AF_INET);
+        ips = Config_get_list(message, "ips", NULL);
+        whitelist = List_create(NULL);
+
+        if(ips && List_size(ips) > 0) {
+            LIST_EACH(ips, entry) {
+                value = List_entry_value(entry);
+                if((addr = cv_str(value)) != NULL
+                   && IP_check_addr(addr) != -1)
+                {
+                    List_insert_after(whitelist, addr);
+                }
+            }
+        }
+
+        if(List_size(whitelist) > 0)
+            FW_replace(fw_handle, name, whitelist, af);
+        List_destroy(&whitelist);
     }
 }
