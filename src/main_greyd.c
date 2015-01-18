@@ -137,16 +137,16 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     if((fw_handle = FW_open(config)) == NULL)
         i_critical("could not obtain firewall handle");
 
+    main_user = Config_get_str(config, "user", NULL, GREYD_MAIN_USER);
+    if((main_pw = getpwnam(main_user)) == NULL)
+        errx(1, "no such user %s", main_user);
+
     if(Config_get_int(config, "chroot", NULL, GREYD_CHROOT)) {
         chroot_dir = Config_get_str(config, "chroot_dir", NULL,
                                     GREYD_CHROOT_DIR);
         if(chroot(chroot_dir) == -1)
             i_critical("cannot chroot to %s", chroot_dir);
     }
-
-    main_user = Config_get_str(config, "user", NULL, GREYD_MAIN_USER);
-    if((main_pw = getpwnam(main_user)) == NULL)
-        errx(1, "no such user %s", main_user);
 
     if(main_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
         if(setgroups(1, &main_pw->pw_gid)
@@ -492,10 +492,6 @@ main(int argc, char **argv)
     if(bind(cfg_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
         err(1, "bind local");
 
-    main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
-    if((main_pw = getpwnam(main_user)) == NULL)
-        errx(1, "no such user %s", main_user);
-
     if(Config_get_int(state.config, "daemonize", NULL, 1)) {
         if(daemon(1, 1) == -1)
             err(1, "daemon");
@@ -606,6 +602,10 @@ jail:
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
+
+    main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
+    if((main_pw = getpwnam(main_user)) == NULL)
+        errx(1, "no such user %s", main_user);
 
     if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
         chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
