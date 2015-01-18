@@ -116,6 +116,7 @@ if test "x${netfilter_driver}" = xyes; then
     AC_CHECK_LIB([cap], [cap_get_proc], [have_netfilter=yes])
     if test "x${have_netfilter}" = xyes; then
        AC_CHECK_HEADERS([sys/capability.h], [], [have_netfilter=no])
+       AC_CHECK_HEADERS([sys/prctl.h], [], [have_netfilter=no])
     fi
 
     if test "x${have_netfilter}" = xyes; then

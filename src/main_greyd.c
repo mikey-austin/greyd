@@ -569,7 +569,6 @@ main(int argc, char **argv)
 
         /* In parent. Run the greylisting engine. */
         greylister = Grey_setup(state.config);
-        greylister->fw_out = state.fw_out;
 
         if(syncer)
             greylister->syncer = syncer;
@@ -582,7 +581,7 @@ main(int argc, char **argv)
             i_critical("fdopen: %s", strerror(errno));
         close(trap_pipe[0]);
 
-        Grey_start(greylister, grey_pid, grey_in, trap_out);
+        Grey_start(greylister, grey_pid, grey_in, trap_out, state.fw_out);
 
         /* Not reached. */
     }

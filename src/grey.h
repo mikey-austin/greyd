@@ -95,7 +95,6 @@ struct Greylister_T {
     time_t      trap_exp;
     time_t      white_exp;
     time_t      pass_time;
-    FW_handle_T fw_handle;
 
     struct DB_handle_T   *db_handle;
     struct Sync_engine_T *syncer;
@@ -111,7 +110,7 @@ extern Greylister_T Grey_setup(Config_T config);
  * Start the greylisting engine.
  */
 extern void Grey_start(Greylister_T greylister, pid_t grey_pid,
-                       FILE *grey_in, FILE *trap_out);
+                       FILE *grey_in, FILE *trap_out, FILE *fw_out);
 
 /**
  * Stop the greylisting engine and cleanup afterwards.

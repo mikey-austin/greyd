@@ -82,10 +82,6 @@ Grey_setup(Config_T config)
     greylister->syncer     = NULL;
     greylister->shutdown   = 0;
 
-    if((greylister->fw_handle = FW_open(config)) == NULL) {
-        i_critical("Could not create firewall handle");
-    }
-
     /*
      * Gather configuration from the grey section.
      */
@@ -128,7 +124,7 @@ Grey_setup(Config_T config)
 
 extern void
 Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
-           FILE *trap_out)
+           FILE *trap_out, FILE *fw_out)
 {
     struct sigaction sa;
 
@@ -137,6 +133,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
     greylister->startup  = time(NULL);
     greylister->grey_in  = grey_in;
     greylister->trap_out = trap_out;
+    greylister->fw_out = fw_out;
 
     /*
      * Set a global reference to the configured greylister state,
@@ -173,8 +170,9 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
          * greyd process.
          */
         fclose(greylister->trap_out);
+        fclose(greylister->fw_out);
         greylister->trap_out = NULL;
-        FW_close(&(greylister->fw_handle));
+        greylister->fw_out = NULL;
 
         /* TODO: Set proc title to "(greyd db update)". */
 
@@ -212,7 +210,6 @@ Grey_finish(Greylister_T *greylister)
 
     (*greylister)->config = NULL;
 
-    FW_close(&((*greylister)->fw_handle));
     DB_close(&((*greylister)->db_handle));
     List_destroy(&((*greylister)->whitelist));
     List_destroy(&((*greylister)->whitelist_ipv6));
@@ -224,6 +221,9 @@ Grey_finish(Greylister_T *greylister)
 
     if((*greylister)->grey_in != NULL)
         fclose((*greylister)->grey_in);
+
+    if((*greylister)->fw_out != NULL)
+        fclose((*greylister)->fw_out);
 
     free(*greylister);
     *greylister = NULL;
@@ -426,7 +426,7 @@ Grey_scan_db(Greylister_T greylister)
                       greylister->traplist_name,
                       greylister->traplist_msg,
                       greylister->traplist);
-
+/*
     FW_replace(greylister->fw_handle, greylister->whitelist_name,
                greylister->whitelist, AF_INET);
 
@@ -436,7 +436,7 @@ Grey_scan_db(Greylister_T greylister)
         FW_replace(greylister->fw_handle, greylister->whitelist_name_ipv6,
                    greylister->whitelist_ipv6, AF_INET6);
     }
-
+    */
     List_remove_all(greylister->whitelist);
     List_remove_all(greylister->whitelist_ipv6);
     List_remove_all(greylister->traplist);
