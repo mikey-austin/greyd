@@ -61,6 +61,7 @@ static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *);
 static int trap_check(List_T, DB_handle_T, char *);
 static int db_addr_state(DB_handle_T, char *);
+static void update_firewall(Greylister_T, int);
 
 Greylister_T Grey_greylister = NULL;
 
@@ -426,17 +427,14 @@ Grey_scan_db(Greylister_T greylister)
                       greylister->traplist_name,
                       greylister->traplist_msg,
                       greylister->traplist);
-/*
-    FW_replace(greylister->fw_handle, greylister->whitelist_name,
-               greylister->whitelist, AF_INET);
 
+    update_firewall(greylister, AF_INET);
     if(Config_get_int(greylister->config, "enable_ipv6", NULL,
                       IPV6_ENABLED))
     {
-        FW_replace(greylister->fw_handle, greylister->whitelist_name_ipv6,
-                   greylister->whitelist_ipv6, AF_INET6);
+        update_firewall(greylister, AF_INET6);
     }
-    */
+
     List_remove_all(greylister->whitelist);
     List_remove_all(greylister->whitelist_ipv6);
     List_remove_all(greylister->traplist);
@@ -617,6 +615,12 @@ trap_check(List_T domains, DB_handle_T db, char *to)
         DB_rollback_txn(db);
         return -1;
     }
+}
+
+static void
+update_firewall(Greylister_T greylister, int af)
+{
+    // TODO: send list of whitelist ip addresses to fw process over pipe
 }
 
 static void
