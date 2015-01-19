@@ -131,6 +131,7 @@ main(void)
 
     greylister->startup  = time(NULL) - 120; /* Simulate a startup time in the past. */
     greylister->grey_in  = grey_in;
+    greylister->fw_out = NULL;
 
     /* Start the grey reader child process. */
     switch(reader_pid = fork()) {

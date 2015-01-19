@@ -634,7 +634,7 @@ update_firewall(Greylister_T greylister, int af)
         ips = greylister->whitelist_ipv6;
     }
 
-    if(List_size(ips) > 0) {
+    if(greylister->fw_out != NULL && List_size(ips) > 0) {
         fprintf(greylister->fw_out,
                 "type=\"replace\"\n"
                 "name=\"%s\"\n"
