@@ -63,10 +63,11 @@ main(void)
     Greylister_T greylister;
     Config_T c, message;
     Config_section_T section;
-    int ret, grey[2], trap[2], i;
+    int ret, grey[2], trap[2], fw[2], i;
     FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
     char *domain;
+    FW_handle_T fw_handle;
     char *conf =
         "drop_privs = 0\n"
         "low_prio_mx = \"192.179.21.3\"\n"
@@ -91,7 +92,7 @@ main(void)
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
-    TEST_START(33);
+    TEST_START(36);
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -263,6 +264,13 @@ main(void)
     DB_close(&db);
 
     /*
+     * Setup dummy fw pipe.
+     */
+    fw_handle = FW_open(c);
+    pipe(fw);
+    greylister->fw_out = fdopen(fw[1], "w");
+
+    /*
      * Test scan db routine for the sending of traplist entries over the
      * trap pipe.
      */
@@ -272,6 +280,25 @@ main(void)
 
     Grey_scan_db(greylister);
 
+    /* Check the whitelist. */
+    message_source = Lexer_source_create_from_fd(fw[0]);
+    message_lexer = Config_lexer_create(message_source);
+    message_parser = Config_parser_create(message_lexer);
+    message = Config_create();
+
+    ret = Config_parser_start(message_parser, message);
+    TEST_OK((ret == CONFIG_PARSER_OK), "Parsed whitelist message");
+    TEST_OK(!strcmp(Config_get_str(message, "name", NULL, ""), "greyd-whitelist"),
+            "whitelist name ok");
+    TEST_OK((Config_get_int(message, "af", NULL, 0) == AF_INET),
+            "address family name ok");
+
+    Greyd_process_fw_message(message, fw_handle, NULL);
+    FW_close(&fw_handle);
+    Config_destroy(&message);
+    Config_parser_destroy(&message_parser);
+
+    /* Check the traplist. */
     message_source = Lexer_source_create_from_fd(trap[0]);
     message_lexer = Config_lexer_create(message_source);
     message_parser = Config_parser_create(message_lexer);
