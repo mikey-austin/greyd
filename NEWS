@@ -1,2 +1,10 @@
+2015-01-19
+        There has been an internal re-shuffle in order to isolate the parts of the
+        system that hold a firewall handle to one unprivileged process, with the main
+        connection handling process & grey processes communicating with it over a pipe.
+        Now the main connection handling process has no privileges, and runs chrooted
+        with no direct access to the database (may run as a different user) nor the
+        firewall.
+
 2015-01-07
         Greyd now has a new PF firewall driver, and will be included in release 0.2.0.

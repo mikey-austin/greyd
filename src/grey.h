@@ -24,11 +24,11 @@
 #ifndef GREY_DEFINED
 #define GREY_DEFINED
 
+#include <stdio.h>
+
 #include "firewall.h"
 #include "greyd_config.h"
 #include "list.h"
-
-#include <stdio.h>
 
 #define GREY_MAX_MAIL         1024
 #define GREY_MAX_KEY          45
@@ -74,27 +74,27 @@ struct Sync_engine_T;
  */
 typedef struct Greylister_T *Greylister_T;
 struct Greylister_T {
-    Config_T    config;
-    int         shutdown;
-    char       *low_prio_mx;
-    char       *traplist_name;
-    char       *traplist_msg;
-    char       *whitelist_name;
-    char       *whitelist_name_ipv6;
-    List_T      whitelist;
-    List_T      whitelist_ipv6;
-    List_T      traplist;
-    List_T      domains;
-    FILE       *trap_out;
-    FILE       *grey_in;
-    FILE       *fw_out;
-    pid_t       grey_pid;
-    pid_t       reader_pid;
-    time_t      startup;
-    time_t      grey_exp;
-    time_t      trap_exp;
-    time_t      white_exp;
-    time_t      pass_time;
+    Config_T  config;
+    int       shutdown;
+    char     *low_prio_mx;
+    char     *traplist_name;
+    char     *traplist_msg;
+    char     *whitelist_name;
+    char     *whitelist_name_ipv6;
+    List_T    whitelist;
+    List_T    whitelist_ipv6;
+    List_T    traplist;
+    List_T    domains;
+    FILE     *trap_out;
+    FILE     *grey_in;
+    FILE     *fw_out;
+    pid_t     grey_pid;
+    pid_t     reader_pid;
+    time_t    startup;
+    time_t    grey_exp;
+    time_t    trap_exp;
+    time_t    white_exp;
+    time_t    pass_time;
 
     struct DB_handle_T   *db_handle;
     struct Sync_engine_T *syncer;

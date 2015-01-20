@@ -16,16 +16,16 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="downloads/greyd-0.3.0.tar.gz">greyd-0.3.0.tar.gz</a> - 2015-01-20
+                </li>
+                <li>
                     <a href="downloads/greyd-0.2.2.tar.gz">greyd-0.2.2.tar.gz</a> - 2015-01-10
                 </li>
                 <li>
                     <a href="downloads/greyd-0.2.1.tar.gz">greyd-0.2.1.tar.gz</a> - 2015-01-08
                 </li>
                 <li>
-                    <a href="downloads/greyd-0.2.0.tar.gz">greyd-0.2.0.tar.gz</a> - 2015-01-07 (with PF support)
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.1.0.tar.gz">greyd-0.1.0.tar.gz</a> - 2015-01-01
+                    <a href="downloads/greyd-0.2.0.tar.gz">greyd-0.2.0.tar.gz</a> - 2015-01-07
                 </li>
             </ul>
             <p>
@@ -35,10 +35,17 @@
                 <li>libltdl (Libtool's libdl abstraction)</li>
                 <li>zlib</li>
                 <li>OpenSSL (libcrypto)</li>
-                <li>Berkeley DB (tested with >= 4.7 & 5.3)</li>
+                <li>Berkeley DB (tested with 4.x & 5.x)</li>
+            </ul>
+
+            <p>
+                To build the netfilter driver, you will need the following packages:
+            </p>
+            <ul>
                 <li>libnetfilter_conntrack</li>
                 <li>libnetfilter_log</li>
                 <li>libipset</li>
+                <li>libcap</li>
             </ul>
         </div>
 

@@ -1,3 +1,7 @@
+2015-01-19  Mikey Austin  <mikey@greyd.org>
+
+	* Refactored internal firewall access between greyd processes.
+
 2015-01-10  Mikey Austin  <mikey@greyd.org>
 
 	* Bug fixes in sync engine
