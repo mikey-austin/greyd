@@ -24,6 +24,7 @@
 #ifndef UTILS_DEFINED
 #define UTILS_DEFINED
 
+#include <pwd.h>
 #include <stdlib.h>
 
 #ifndef MAX
@@ -51,5 +52,10 @@ extern size_t sstrncpy(char *dst, const char *src, size_t dsize);
  * and ensure that it is lower case.
  */
 extern void normalize_email_addr(const char *addr, char *buf, int buf_size);
+
+/**
+ * Drop privileges to the supplied user.
+ */
+extern int drop_privs(struct passwd *user);
 
 #endif

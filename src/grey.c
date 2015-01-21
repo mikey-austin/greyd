@@ -36,6 +36,7 @@
 #include <limits.h>
 
 #include "constants.h"
+#include "utils.h"
 #include "failures.h"
 #include "grey.h"
 #include "sync.h"
@@ -53,7 +54,7 @@
 #define GREY_WHITE_NAME_IPV6 "greyd-whitelist-ipv6"
 
 static void destroy_address(void *);
-static void drop_privs(Greylister_T);
+static void drop_grey_privs(Greylister_T);
 static void shutdown_greyd(int);
 static int push_addr(List_T, char *);
 static void process_message(Greylister_T, Config_T);
@@ -163,7 +164,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
         if((greylister->db_handle = DB_init(greylister->config)) == NULL)
             i_critical("Could not create db handle");
 
-        drop_privs(greylister);
+        drop_grey_privs(greylister);
 
         /*
          * This process has no access to the firewall configuration
@@ -194,7 +195,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
 
     fclose(greylister->grey_in);
     greylister->grey_in = NULL;
-    drop_privs(greylister);
+    drop_grey_privs(greylister);
 
     /* TODO: Set proc title "(greyd fw whitelist update)". */
 
@@ -911,7 +912,7 @@ destroy_address(void *address)
 }
 
 static void
-drop_privs(Greylister_T greylister)
+drop_grey_privs(Greylister_T greylister)
 {
     char *db_user;
     struct passwd *db_pw;
@@ -921,13 +922,10 @@ drop_privs(Greylister_T greylister)
     if((db_pw = getpwnam(db_user)) == NULL)
         i_critical("no such user %s", db_user);
 
-    if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)) {
-        if(setgroups(1, &db_pw->pw_gid)
-           || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
-           || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
-        {
-            i_critical("failed to drop privileges");
-        }
+    if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)
+       && drop_privs(db_pw) == -1)
+    {
+        i_critical("failed to drop privileges");
     }
 }
 

@@ -19,9 +19,12 @@
  * @brief  Support utilities for use throughout the system.
  */
 
+#include <config.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <pwd.h>
 
 #include "utils.h"
 
@@ -75,4 +78,26 @@ normalize_email_addr(const char *addr, char *buf, int buf_size)
         *cp = tolower((unsigned char) *cp);
         cp++;
     }
+}
+
+extern int
+drop_privs(struct passwd *user)
+{
+#ifdef HAVE_SETRESGID
+    if(setgroups(1, &user->pw_gid)
+       || setresgid(user->pw_gid, user->pw_gid, user->pw_gid)
+       || setresuid(user->pw_uid, user->pw_uid, user->pw_uid))
+    {
+        return -1;
+    }
+#elif HAVE_SETREGID
+    if(setgroups(1, &user->pw_gid)
+       || setregid(user->pw_gid, user->pw_gid)
+       || setreuid(user->pw_uid, user->pw_uid))
+    {
+        return -1;
+    }
+#endif
+
+    return 0;
 }

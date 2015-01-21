@@ -150,13 +150,10 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     }
 #endif
 
-    if(main_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
-        if(setgroups(1, &main_pw->pw_gid)
-           || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
-           || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
-        {
-            i_critical("failed to drop privileges: %s", strerror(errno));
-        }
+    if(main_pw && Config_get_int(config, "drop_privs", NULL, 1)
+       && drop_privs(main_pw) == -1)
+    {
+        i_critical("failed to drop privileges: %s", strerror(errno));
     }
 
     if((out = fdopen(out_fd, "w")) == NULL)
@@ -616,13 +613,10 @@ jail:
             i_critical("cannot chroot to %s", chroot_dir);
     }
 
-    if(main_pw && Config_get_int(state.config, "drop_privs", NULL, 1)) {
-        if(setgroups(1, &main_pw->pw_gid)
-           || setresgid(main_pw->pw_gid, main_pw->pw_gid, main_pw->pw_gid)
-           || setresuid(main_pw->pw_uid, main_pw->pw_uid, main_pw->pw_uid))
-        {
-            i_critical("failed to drop privileges: %s", strerror(errno));
-        }
+    if(main_pw && Config_get_int(state.config, "drop_privs", NULL, 1)
+       && drop_privs(main_pw) == -1)
+    {
+        i_critical("failed to drop privileges: %s", strerror(errno));
     }
 
     if(listen(main_sock, GREYD_BACKLOG) == -1)
