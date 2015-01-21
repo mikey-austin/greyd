@@ -43,6 +43,7 @@
 #include "firewall.h"
 #include "greydb.h"
 #include "log.h"
+#include "utils.h"
 #include "sync.h"
 
 #define PROG_NAME "greylogd"
@@ -179,14 +180,11 @@ main(int argc, char **argv)
 
     FW_start_log_capture(fw_handle);
 
-    if(db_pw && Config_get_int(config, "drop_privs", NULL, 1)) {
-        if(setgroups(1, &db_pw->pw_gid)
-           || setresgid(db_pw->pw_gid, db_pw->pw_gid, db_pw->pw_gid)
-           || setresuid(db_pw->pw_uid, db_pw->pw_uid, db_pw->pw_uid))
-        {
-            i_warning("could not drop privileges: %s", strerror(errno));
-            goto shutdown;
-        }
+    if(db_pw && Config_get_int(config, "drop_privs", NULL, 1)
+       && drop_privs(db_pw) == -1)
+    {
+        i_warning("could not drop privileges: %s", strerror(errno));
+        goto shutdown;
     }
 
     white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
