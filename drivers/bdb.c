@@ -20,8 +20,8 @@
  * @author Mikey Austin
  * @date   2014
  */
- 
-#include <config.h> 
+
+#include <config.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -30,9 +30,13 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#ifdef HAVE_DB4
+#ifdef HAVE_DB5_DB_H
+#  include <db5/db.h>
+#endif
+#ifdef HAVE_DB4_DB_H
 #  include <db4/db.h>
-#else
+#endif
+#ifdef HAVE_DB_H
 #  include <db.h>
 #endif
 
