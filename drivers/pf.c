@@ -240,10 +240,11 @@ Mod_fw_start_log_capture(FW_handle_T handle)
     }
 
     pcap_freecode(&bpfp);
-
+#ifdef BIOCLOCK
     if(ioctl(pcap_fileno(fwh->pcap_handle), BIOCLOCK) < 0) {
         i_critical("BIOCLOCK: %s", strerror(errno));
     }
+#endif
 
     fwh->entries = List_create(destroy_log_entry);
 }
