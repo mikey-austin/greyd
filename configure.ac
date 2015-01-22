@@ -201,6 +201,45 @@ if test "x${pf_driver}" = xyes; then
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_pf.la"
 fi
 
+#
+# NPF firewall driver.
+#
+AC_ARG_WITH([npf], [AS_HELP_STRING([--with-npf], [build the NPF firewall driver])],
+    [npf_driver=yes], [npf_driver=no])
+
+if test "x${npf_driver}" = xyes; then
+    npf_LIBS=""
+    have_npf=no
+    AC_CHECK_LIB([pcap], [pcap_open_live], [have_npf=yes])
+    if test "x${have_npf}" = xyes; then
+        AC_CHECK_HEADERS([pcap.h], [], [have_npf=no])
+    fi
+
+    if test "x${have_npf}" = xyes; then
+        npf_LIBS="$npf_LIBS -lpcap"
+        AC_DEFINE([HAVE_LIBPCAP], [1], [Packet capture library])
+        AC_SUBST([npf_LIBS], ["$npf_LIBS"])
+        LIBS="${LIBS} ${npf_LIBS}"
+    else
+        AC_MSG_FAILURE([libpcap is required to build the npf driver])
+    fi
+
+    AC_CHECK_LIB([npf], [npf_parse_cidr], [have_npf=yes])
+    if test "x${have_npf}" = xyes; then
+        npf_LIBS="$npf_LIBS -lnpf"
+        AC_DEFINE([HAVE_LIBNPF], [1], [NPF control library])
+        AC_SUBST([npf_LIBS], ["$npf_LIBS"])
+        LIBS="${LIBS} ${npf_LIBS}"
+    else
+        AC_MSG_FAILURE([libnpf is required to build the npf driver])
+    fi
+
+
+    AC_DEFINE([WITH_NPF], [1], [with the npf firewall driver])
+    optional_drivers="${optional_drivers} greyd_npf.la"
+    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_npf.la"
+fi
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT64_T
 AC_TYPE_INT8_T
@@ -211,9 +250,6 @@ AC_TYPE_SSIZE_T
 # Checks for library functions.
 AC_FUNC_CHOWN
 AC_FUNC_FORK
-#AC_FUNC_MALLOC
-#AC_FUNC_REALLOC
-#AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([dup2 getcwd gethostname inet_ntoa memset mkdir socket strchr strdup strerror strncasecmp strpbrk strtol tzset strnlen setresgid setresuid setregid setreuid])
 
 AC_CONFIG_FILES([Makefile
