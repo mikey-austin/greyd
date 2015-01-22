@@ -1,4 +1,4 @@
-EXTRA_LTLIBRARIES = greyd_bdb.la greyd_netfilter.la greyd_pf.la
+EXTRA_LTLIBRARIES = greyd_bdb.la greyd_netfilter.la greyd_pf.la greyd_npf.la
 pkglib_LTLIBRARIES = $(optional_drivers)
 noinst_LTLIBRARIES = greyd_fw_dummy.la
 
@@ -13,3 +13,6 @@ greyd_netfilter_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
 
 greyd_pf_la_SOURCES = pf.c
 greyd_pf_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
+
+greyd_npf_la_SOURCES = npf.c
+greyd_npf_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
