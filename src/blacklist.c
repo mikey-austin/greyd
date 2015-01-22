@@ -113,53 +113,15 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 extern int
 Blacklist_add(Blacklist_T list, const char *address)
 {
-    int ret, af, i, j;
-    unsigned int maskbits;
-    char parsed[INET6_ADDRSTRLEN];
     struct IP_addr *m, *n;
+    int i;
 
     grow_entries(list);
     i = list->count++;
     n = &(list->entries[i].address);
     m = &(list->entries[i].mask);
 
-    ret = sscanf(address, "%39[^/]/%u", parsed, &maskbits);
-    if(ret != 2 || maskbits == 0 || maskbits > IP_MAX_MASKBITS) {
-        goto parse_error;
-    }
-
-    af = (strchr(parsed, ':') != NULL ? AF_INET6 : AF_INET);
-    if(af == AF_INET && maskbits > IP_MAX_MASKBITS_V4) {
-        goto parse_error;
-    }
-
-    if((ret = inet_pton(af, parsed, n)) != 1) {
-        goto parse_error;
-    }
-
-    for(i = 0, j = 0; i < 4; i++)
-        m->addr32[i] = 0;
-
-    while(maskbits >= 32) {
-        m->addr32[j++] = 0xffffffff;
-        maskbits -= 32;
-    }
-
-    for(i = 31; i > (31 - maskbits); --i)
-        m->addr32[j] |= (1 << i);
-
-    if(maskbits)
-        m->addr32[j] = htonl(m->addr32[j]);
-
-    /* Mask off address bits that won't ever be used. */
-    for(i = 0; i < 4; i++)
-        n->addr32[i] = n->addr32[i] & m->addr32[i];
-
-    return 0;
-
-parse_error:
-    i_debug("Error parsing address %s", address);
-    return -1;
+    return IP_str_to_addr_mask(address, n, m);
 }
 
 extern void

@@ -67,6 +67,11 @@ struct IP_addr {
 };
 
 /**
+ * Convert a string address to a binary address/netmask.
+ */
+extern int IP_str_to_addr_mask(const char *address, 
+                               struct IP_addr *n, struct IP_addr *m);
+/**
  * Convert the supplied cidr into it's corresponding range.
  */
 extern void IP_cidr_to_range(struct IP_cidr *cidr, u_int32_t *start,
