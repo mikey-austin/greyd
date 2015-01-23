@@ -24,9 +24,10 @@
 #ifndef GREYD_DEFINED
 #define GREYD_DEFINED
 
-#include "hash.h"
-
 #include <stdio.h>
+
+#include "firewall.h"
+#include "hash.h"
 
 /**
  * Structure to encapsulate the state of the main
@@ -62,5 +63,10 @@ extern void Greyd_process_config(int fd, struct Greyd_state *state);
  * Send blacklist configuration to the specified file descriptor.
  */
 extern void Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips);
+
+/**
+ * Process a request for the firewall process.
+ */
+extern void Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out);
 
 #endif

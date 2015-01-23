@@ -24,6 +24,8 @@
 #ifndef GREY_DEFINED
 #define GREY_DEFINED
 
+#include <sys/types.h>
+
 #include <stdio.h>
 
 #include "firewall.h"

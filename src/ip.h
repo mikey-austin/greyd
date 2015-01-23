@@ -24,13 +24,15 @@
 #ifndef IP_DEFINED
 #define IP_DEFINED
 
-#include "list.h"
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include <netinet/in.h>
-#include <sys/socket.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+
+#include "list.h"
 
 #define IP_MAX_MASKBITS    128
 #define IP_MAX_MASKBITS_V4 32

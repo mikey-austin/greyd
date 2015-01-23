@@ -73,7 +73,7 @@ AC_ARG_WITH([bdb], [AS_HELP_STRING([--with-bdb], [build the Berkeley database dr
 
 if test "x${bdb_driver}" = xyes; then
     have_bdb=no
-    AC_SEARCH_LIBS([db_env_create], [db5 db4 db], [have_bdb=yes])
+    AC_SEARCH_LIBS([db_env_create], [db-5.3 db5 db4 db], [have_bdb=yes])
     if test "x${have_bdb}" = xyes; then
         AC_CHECK_HEADERS([db5/db.h db4/db.h db.h], [have_bdb=yes;break], [have_bdb=no])
     fi

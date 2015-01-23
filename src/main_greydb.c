@@ -37,6 +37,7 @@
 #include "sync.h"
 #include "ip.h"
 #include "log.h"
+#include "failures.h"
 
 #define PROG_NAME "greydb"
 

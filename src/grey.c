@@ -34,6 +34,7 @@
 #include <string.h>
 #include <grp.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "constants.h"
 #include "utils.h"
