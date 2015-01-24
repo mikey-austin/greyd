@@ -864,7 +864,8 @@ jail:
                 Greyd_process_config(trap_fd, &state);
             }
             else if(fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP)) {
-                i_warning("trap pipe poll error");
+                if(fds[trap_fd % max_fd].revents & POLLERR)
+                    i_warning("trap pipe poll error");
                 goto shutdown;
             }
         }
