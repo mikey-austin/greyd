@@ -1,6 +1,8 @@
 greyd - greylisting & blacklisting daemon
 ================================================
 
+[![Build Status](https://travis-ci.org/mikey-austin/greyd.svg?branch=master)](https://travis-ci.org/mikey-austin/greyd)
+
 Project Website
 ---------------
 
