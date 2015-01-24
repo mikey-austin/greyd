@@ -57,7 +57,7 @@ $ make check</code>
             </div>
 
             <p>
-                The above configure command assumes that the required ports have been installed, including **db** (either db4 or db5 depending on the OS, and **libltdl**.
+                The above configure command assumes that the required ports have been installed, including **db** (either db4 or db5 depending on the OS), and **libltdl**.
             </p>
 
             <p>
