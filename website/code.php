@@ -44,14 +44,20 @@ $ ./configure CFLAGS="-g -O0" --with-bdb --with-netfilter
 $ make check</code>
             </div>
 
-            <p>On OpenBSD, the following configure flags should to the trick:</p>
+            <p>On OpenBSD &amp; FreeBSD, the following configure flags should to the trick:</p>
 
             <div class="highlight">
-                <code>$./configure LDFLAGS="-L/usr/local/lib" CPPFLAGS="-I/usr/local/include" CFLAGS="-g -O0 -I/usr/local/include" --with-bdb --with-db4 --with-pf</code>
+                <code>$./configure LDFLAGS="-L/usr/local/lib" CPPFLAGS="-I/usr/local/include" CFLAGS="-I/usr/local/include" --with-bdb --with-pf</code>
+            </div>
+
+            <p>On NetBSD:</p>
+
+            <div class="highlight">
+                <code>$./configure LDFLAGS="-L/usr/pkg/lib" CPPFLAGS="-I/usr/pkg/include" CFLAGS="-I/usr/pkg/include" --with-bdb --with-pf</code>
             </div>
 
             <p>
-                The above configure command assumes that the required ports have been installed, including **db4** and **libltdl**.
+                The above configure command assumes that the required ports have been installed, including **db** (either db4 or db5 depending on the OS, and **libltdl**.
             </p>
 
             <p>

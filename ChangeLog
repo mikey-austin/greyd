@@ -3,6 +3,7 @@
 	* Fixed issues with sending sync messages.
 	* Fixed issue with firewall process not terminating at shutdown.
 	* Added support for NetBSD.
+	* Added support for FreeBSD.
 
 2015-01-19  Mikey Austin  <mikey@greyd.org>
 

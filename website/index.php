@@ -32,10 +32,10 @@
         <div class="tile">
             <h3>Which systems are supported?</h3>
             <p>
-                <em>greyd</em> runs on <strong>GNU/Linux</strong> systems (with the <em>netfilter</em> firewall driver), and <strong>BSD</strong> (with the <em>pf</em> firewall driver).
+                <em>greyd</em> runs on <strong>GNU/Linux</strong>, <strong>OpenBSD</strong>, <strong>NetBSD</strong> &amp; <strong>FreeBSD</strong>.
             </p>
             <p>
-                <em>greyd</em> closely integrates with the firewall, and provides an abstract interface to theoretically support any appropriate firewall system.
+                <em>greyd</em> closely integrates with the firewall, and provides an abstract interface to theoretically support any appropriate firewall system (<strong>Netfilter</strong> &amp; <strong>PF</strong> are currenly supported).
             </p>
             <p>
                 One of the goals of the <em>greyd</em> project is to support a wide variety of systems, firewalls and databases.

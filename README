@@ -22,7 +22,7 @@ to **spamd**, **greyd** aims to:
   - Provide a generic database interface for pluggable modules to work with a variety
     of different databases (eg Berkeley DB, SQLite, MySQL, Postgres, etc.).
 
-  - Be portable and run on many different systems (eg GNU/Linux, the BSD's, etc.)
+  - Be portable and run on many different systems (currently builds and runs on GNU/Linux, OpenBSD, NetBSD & FreeBSD)
 
   - Have all of the programs in the **greyd** suite be driven by flexible configuration files,
     in addition to supporting the same command line switches as **spamd** & friends.
@@ -35,7 +35,7 @@ to **spamd**, **greyd** aims to:
 Platforms
 ---------
 
-Greyd runs on both **GNU/Linux** and **OpenBSD** systems. Greyd will be ported to the other BSDs shortly.
+Greyd runs on **GNU/Linux**, **OpenBSD**, **NetBSD** & **FreeBSD**, and they can all sync to each other.
 
 The greyd suite
 -----------------
@@ -61,7 +61,7 @@ For GNU/Linux, a firewall driver has been implemented for the netfilter ecosyste
   * **libnetfilter-log** for the tracking and auto-whitelisting of connections
   * **libnetfilter-conntrack** for the DNAT original destination lookups
 
-For OpenBSD (& friends), a PF firewall driver has been implemented.
+For the BSDs, a PF firewall driver has been implemented.
 
 Before the first proper release, there is still the following to be done:
   * Testing in the wild on different setups
