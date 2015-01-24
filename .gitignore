@@ -42,7 +42,6 @@ check/.deps/*
 check/test_*
 !check/test_*.c
 m4/*.m4
-tap-driver.pl
 test-driver
 src/.deps/*
 aclocal.m4
