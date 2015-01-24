@@ -562,11 +562,7 @@ main(int argc, char **argv)
             goto jail;
         }
 
-        /* In parent. Run the greylisting engine. */
         greylister = Grey_setup(state.config);
-
-        if(syncer)
-            greylister->syncer = syncer;
 
         if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
@@ -582,6 +578,12 @@ main(int argc, char **argv)
     }
 
 jail:
+    /*
+     * We only process sync messages in this process. As we don't
+     * send them, delete the sync hosts config.
+     */
+    Config_delete(state.config, "hosts", "sync");
+
     if((sync_send || sync_recv)
        && (syncer = Sync_init(state.config)) == NULL)
     {

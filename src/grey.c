@@ -129,6 +129,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
            FILE *trap_out, FILE *fw_out)
 {
     struct sigaction sa;
+    List_T hosts;
 
     memset(&sa, 0, sizeof(sa));
     greylister->grey_pid = grey_pid;
@@ -163,6 +164,20 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
          */
         if((greylister->db_handle = DB_init(greylister->config)) == NULL)
             i_critical("Could not create db handle");
+
+        /*
+         * Setup the sync engine for sending only.
+         */
+        Config_delete(greylister->config, "bind_address", "sync");
+
+        if((hosts = Config_get_list(greylister->config, "hosts", "sync"))
+           && List_size(hosts) > 0
+           && (greylister->syncer = Sync_init(greylister->config))
+           && Sync_start(greylister->syncer) == -1)
+        {
+            i_warning("could not start sync engine");
+            Sync_stop(&greylister->syncer);
+        }
 
         drop_grey_privs(greylister);
 
