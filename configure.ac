@@ -4,7 +4,6 @@ AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
 AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
-AC_PROG_RANLIB
 AC_CONFIG_MACRO_DIR([m4])
 AC_REQUIRE_AUX_FILE([tap-driver.pl])
 
