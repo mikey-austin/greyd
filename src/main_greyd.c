@@ -895,6 +895,9 @@ shutdown:
     if(syncer)
         Sync_stop(&syncer);
 
+    if(state.fw_pid != -1)
+        kill(state.fw_pid, SIGTERM);
+
     free(fds);
     free(state.cons);
     fclose(state.grey_out);
