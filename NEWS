@@ -1,3 +1,7 @@
+2015-01-24
+        NetBSD is now supported using the pf firewall driver. Syncing works between
+        any host running greyd.
+
 2015-01-19
         There has been an internal re-shuffle in order to isolate the parts of the
         system that hold a firewall handle to one unprivileged process, with the main
