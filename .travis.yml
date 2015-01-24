@@ -6,6 +6,8 @@ compiler:
 
 before_install:
     - sudo apt-get update
-    - sudo apt-get install libltdl-dev libdb-dev zlib1g-dev libssl-dev
+    - sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev
 
 script: ./configure --with-bdb --disable-shared && make && make check
+
+before_script: autoreconf -i

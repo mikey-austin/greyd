@@ -1,4 +1,4 @@
-AC_PREREQ([2.69])
+AC_PREREQ([2.68])
 AC_INIT([greyd], [0.4.0], [mikey@greyd.org])
 AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
