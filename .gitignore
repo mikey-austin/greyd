@@ -12,7 +12,6 @@ greylogd
 *.tar.gz
 *.scan
 *.log
-configure
 autom4te.cache*
 *.swp
 Makefile
