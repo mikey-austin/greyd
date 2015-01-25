@@ -99,6 +99,10 @@ main(int argc, char **argv)
             Config_set_int(opts, "port", "sync", atoi(optarg));
             break;
 
+        case 'P':
+            Config_set_str(opts, "greylogd_pidfile", NULL, GREYLOGD_PIDFILE);
+            break;
+
         case 'd':
             Config_set_int(opts, "debug", NULL, 1);
             break;

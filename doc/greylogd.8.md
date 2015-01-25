@@ -17,6 +17,9 @@ The options are as follows:
 * **-d**:
   Debugging mode. **greylogd** displays debug messages (suppressed by default).
 
+* **-P** *greylogd pidfile*:
+Specify the location for the pidfile.
+
 * **-I**:
   Specify that **greylogd** is only to whitelist inbound SMTP connections. By default **greylogd** will whitelist the source of inbound SMTP connections, and the target of outbound SMTP connections.
 

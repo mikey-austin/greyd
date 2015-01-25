@@ -64,6 +64,16 @@ if test -z ${DEFAULT_CONFIG}; then
     DEFAULT_CONFIG="${sysconfdir}/greyd/greyd.conf"
 fi
 
+AC_ARG_VAR([GREYD_PIDFILE], [default greyd pidfile path])
+if test -z ${GREYD_PIDFILE}; then
+    GREYD_PIDFILE="${localstatedir}/run/greyd.pid"
+fi
+
+AC_ARG_VAR([GREYLOGD_PIDFILE], [default greylogd pidfile path])
+if test -z ${GREYLOGD_PIDFILE}; then
+    GREYLOGD_PIDFILE="${localstatedir}/run/greylogd.pid"
+fi
+
 #
 # Berkeley db driver library & header checks.
 #

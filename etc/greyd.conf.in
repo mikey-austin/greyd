@@ -64,6 +64,12 @@ chroot     = 1
 chroot_dir = "/var/empty/greyd"
 
 #
+# Pidfile locations for greyd & greylogd daemons.
+#
+greyd_pidfile = "@GREYD_PIDFILE@"
+greylogd_pidfile = "@GREYLOGD_PIDFILE@"
+
+#
 # The firewall configuration.
 #
 section firewall {

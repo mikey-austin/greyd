@@ -4,6 +4,8 @@ dist_data_DATA = greyd.conf.in
 
 greyd.conf: greyd.conf.in
 	$(SED) -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+		-e 's,[@]GREYD_PIDFILE[@],$(GREYD_PIDFILE),g' \
+		-e 's,[@]GREYLOGD_PIDFILE[@],$(GREYLOGD_PIDFILE),g' \
 		-e 's,[@]libdir[@],$(libdir),g' \
 		-e 's,[@]localstatedir[@],$(localstatedir),g' \
 		-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
