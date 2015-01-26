@@ -254,9 +254,16 @@ shutdown:
     FW_end_log_capture(fw_handle);
     FW_close(&fw_handle);
     DB_close(&db_handle);
-    Config_destroy(&config);
+
     if(sync_send)
         Sync_stop(&syncer);
+
+    if(unlink(pidfile) != 0) {
+        i_warning("could not unlink %s: %s",
+                  pidfile, strerror(errno));
+    }
+
+    Config_destroy(&config);
 
     return 0;
 }

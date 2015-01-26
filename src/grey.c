@@ -219,19 +219,6 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
     fclose(greylister->grey_in);
     greylister->grey_in = NULL;
 
-    pidfile = Config_get_str(greylister->config, "greyd_pidfile",
-                             NULL, GREYD_PIDFILE);
-    switch(write_pidfile(db_pw, pidfile)) {
-    case -1:
-        i_warning("could not write pidfile %s: %s", pidfile,
-                  strerror(errno));
-        goto error;
-
-    case -2:
-        i_warning("pidfile %s exists", pidfile);
-        goto error;
-    }
-
     drop_grey_privs(greylister, db_pw);
 
     /* TODO: Set proc title "(greyd fw whitelist update)". */
