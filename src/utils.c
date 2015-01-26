@@ -22,9 +22,12 @@
 #include <config.h>
 
 #include <sys/param.h>
-#include <unistd.h>
+#include <sys/types.h>
 
+#include <errno.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -101,6 +104,30 @@ drop_privs(struct passwd *user)
         return -1;
     }
 #endif
+
+    return 0;
+}
+
+extern int
+write_pidfile(struct passwd *user, const char *path)
+{
+    FILE *pidfile;
+    int ret;
+
+    if((ret = access(path, F_OK)) == 0) {
+        return -2;
+    }
+    else if(ret == -1 && errno != ENOENT) {
+        return -1;
+    }
+
+    if((pidfile = fopen(path, "w")) == NULL)
+       return -1;
+    fprintf(pidfile, "%u\n", getpid());
+    fclose(pidfile);
+
+    if(chown(path, user->pw_uid, user->pw_gid) == -1)
+        return -1;
 
     return 0;
 }

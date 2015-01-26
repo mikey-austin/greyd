@@ -74,7 +74,7 @@ int
 main(int argc, char **argv)
 {
     Config_T config, opts;
-    char *config_file = DEFAULT_CONFIG, *db_user;
+    char *config_file = DEFAULT_CONFIG, *db_user, *pidfile;
     struct passwd *db_pw;
     int option, white_expiry, sync_send = 0;
     FW_handle_T fw_handle;
@@ -89,7 +89,7 @@ main(int argc, char **argv)
     tzset();
     opts = Config_create();
 
-    while((option = getopt(argc, argv, "DIW:Y:f:")) != -1) {
+    while((option = getopt(argc, argv, "DIW:Y:f:P:")) != -1) {
         switch (option) {
         case 'f':
             config_file = optarg;
@@ -100,7 +100,7 @@ main(int argc, char **argv)
             break;
 
         case 'P':
-            Config_set_str(opts, "greylogd_pidfile", NULL, GREYLOGD_PIDFILE);
+            Config_set_str(opts, "greylogd_pidfile", NULL, optarg);
             break;
 
         case 'd':
@@ -155,6 +155,21 @@ main(int argc, char **argv)
 
     Log_setup(config, PROG_NAME);
 
+    db_user = Config_get_str(config, "user", "grey", GREYD_DB_USER);
+    if((db_pw = getpwnam(db_user)) == NULL)
+        i_critical("getpwnam: %s", strerror(errno));
+
+    pidfile = Config_get_str(config, "greylogd_pidfile",
+                             NULL, GREYLOGD_PIDFILE);
+    switch(write_pidfile(db_pw, pidfile)) {
+    case -1:
+        i_critical("could not write pidfile %s: %s", pidfile,
+                   strerror(errno));
+
+    case -2:
+        i_critical("pidfile %s exists", pidfile);
+    }
+
     i_info("Listening, %s",
            Config_get_int(config, "track_outbound", "firewall", TRACK_OUTBOUND)
            ? "in both directions" : "inbound direction only");
@@ -168,12 +183,6 @@ main(int argc, char **argv)
     signal(SIGINT , sighandler_shutdown);
     signal(SIGQUIT, sighandler_shutdown);
     signal(SIGTERM, sighandler_shutdown);
-
-    db_user = Config_get_str(config, "user", "grey", GREYD_DB_USER);
-    if((db_pw = getpwnam(db_user)) == NULL) {
-        i_warning("getpwnam: %s", strerror(errno));
-        goto shutdown;
-    }
 
     if(Config_get_int(config, "daemonize", NULL, 1)) {
         if(daemon(1, 1) == -1) {

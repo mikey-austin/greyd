@@ -74,6 +74,12 @@ The following options may be specified outside of a section. A *boolean* value i
 * **port** = *number*:
   The port to listen on. Defaults to *8025*.
 
+* **greyd_config** = *string*:
+  The greyd pidfile path.
+
+* **greylogd_config** = *string*:
+  The greylogd pidfile path.
+
 * **hostname** = *string*:
   The hostname to display to clients in the initial SMTP banner.
 

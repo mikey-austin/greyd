@@ -243,8 +243,8 @@ main(int argc, char **argv)
     /* Global reference only to be used for signal handlers. */
     Greyd_state = &state;
 
-    while((option =
-           getopt(argc, argv, "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1)
+    while((option = getopt(argc, argv,
+                           "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:P:")) != -1)
     {
         switch(option) {
         case 'f':
@@ -296,7 +296,7 @@ main(int argc, char **argv)
             break;
 
         case 'P':
-            Config_set_str(opts, "greyd_pidfile", NULL, GREYD_PIDFILE);
+            Config_set_str(opts, "greyd_pidfile", NULL, optarg);
             break;
 
         case 'd':

@@ -55,7 +55,7 @@
 #define GREY_WHITE_NAME_IPV6 "greyd-whitelist-ipv6"
 
 static void destroy_address(void *);
-static void drop_grey_privs(Greylister_T);
+static void drop_grey_privs(Greylister_T, struct passwd *);
 static void shutdown_greyd(int);
 static int push_addr(List_T, char *);
 static void process_message(Greylister_T, Config_T);
@@ -129,6 +129,8 @@ extern void
 Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
            FILE *trap_out, FILE *fw_out)
 {
+    char *pidfile, *db_user;
+    struct passwd *db_pw;
     struct sigaction sa;
     List_T hosts;
 
@@ -152,6 +154,11 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
+
+    db_user = Config_get_str(greylister->config, "user", "grey",
+                             GREYD_DB_USER);
+    if((db_pw = getpwnam(db_user)) == NULL)
+        i_critical("no such user %s", db_user);
 
     switch((greylister->reader_pid = fork()))
     {
@@ -180,7 +187,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
             Sync_stop(&greylister->syncer);
         }
 
-        drop_grey_privs(greylister);
+        drop_grey_privs(greylister, db_pw);
 
         /*
          * This process has no access to the firewall configuration
@@ -211,13 +218,30 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
 
     fclose(greylister->grey_in);
     greylister->grey_in = NULL;
-    drop_grey_privs(greylister);
+
+    pidfile = Config_get_str(greylister->config, "greyd_pidfile",
+                             NULL, GREYD_PIDFILE);
+    switch(write_pidfile(db_pw, pidfile)) {
+    case -1:
+        i_warning("could not write pidfile %s: %s", pidfile,
+                  strerror(errno));
+        goto error;
+
+    case -2:
+        i_warning("pidfile %s exists", pidfile);
+        goto error;
+    }
+
+    drop_grey_privs(greylister, db_pw);
 
     /* TODO: Set proc title "(greyd fw whitelist update)". */
 
     Grey_start_scanner(greylister);
+    /* Not reached. */
 
-    exit(1); /* Not-reached. */
+error:
+    Grey_finish(&greylister);
+    exit(1);
 }
 
 extern void
@@ -928,18 +952,10 @@ destroy_address(void *address)
 }
 
 static void
-drop_grey_privs(Greylister_T greylister)
+drop_grey_privs(Greylister_T greylister, struct passwd *user)
 {
-    char *db_user;
-    struct passwd *db_pw;
-
-    db_user = Config_get_str(greylister->config, "user", "grey",
-                             GREYD_DB_USER);
-    if((db_pw = getpwnam(db_user)) == NULL)
-        i_critical("no such user %s", db_user);
-
-    if(db_pw && Config_get_int(greylister->config, "drop_privs", NULL, 1)
-       && drop_privs(db_pw) == -1)
+    if(user && Config_get_int(greylister->config, "drop_privs", NULL, 1)
+       && drop_privs(user) == -1)
     {
         i_critical("failed to drop privileges");
     }

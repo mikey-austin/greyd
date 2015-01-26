@@ -58,4 +58,9 @@ extern void normalize_email_addr(const char *addr, char *buf, int buf_size);
  */
 extern int drop_privs(struct passwd *user);
 
+/**
+ * Write the pidfile to the specified location and chown it.
+ */
+extern int write_pidfile(struct passwd *user, const char *pidfile);
+
 #endif
