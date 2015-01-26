@@ -133,6 +133,7 @@ main(int argc, char **argv)
     Config_load_file(config, config_file);
     Config_merge(config, opts);
     Config_destroy(&opts);
+    Log_setup(config, PROG_NAME);
 
     /* Ensure that the sync bind address is not set. */
     Config_delete(config, "bind_address", "sync");
@@ -152,8 +153,6 @@ main(int argc, char **argv)
         Sync_stop(&syncer);
         sync_send = 0;
     }
-
-    Log_setup(config, PROG_NAME);
 
     db_user = Config_get_str(config, "user", "grey", GREYD_DB_USER);
     if((db_pw = getpwnam(db_user)) == NULL)
