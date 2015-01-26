@@ -30,11 +30,22 @@
 #include <sys/wait.h>
 
 #include <net/if.h>
-#include <net/if_pflog.h>
+#ifdef HAVE_NET_PF_IF_PFLOG_H
+#  include <net/pf/if_pflog.h>
+#endif
+#ifdef HAVE_NET_IF_PFLOG_H
+#  include <net/if_pflog.h>
+#endif
+#ifdef HAVE_NET_PF_PFVAR_H
+#  include <net/pf/pfvar.h>
+#endif
+#ifdef HAVE_NET_PFVAR_H
+#  include <net/pfvar.h>
+#endif
+
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
-#include <net/pfvar.h>
 #include <arpa/inet.h>
 #include <pcap.h>
 #include <signal.h>

@@ -205,6 +205,28 @@ if test "x${pf_driver}" = xyes; then
         AC_MSG_FAILURE([libpcap is required to build the pf driver])
     fi
 
+    if test "x${have_pf}" = xyes; then
+        AC_CHECK_HEADERS([net/pvar.h net/pf/pfvar.h], [have_pf=yes;break], [have_pf=no],
+        [[
+         #include <net/if.h>
+         ]])
+    fi
+
+    if test "x${have_pf}" != xyes; then
+        AC_MSG_FAILURE([net/pfvar.h header missing])
+    fi
+
+    if test "x${have_pf}" = xyes; then
+        AC_CHECK_HEADERS([net/if_pflog.h net/pf/if_pflog.h], [have_pf=yes;break], [have_pf=no],
+        [[
+         #include <net/if.h>
+         ]])
+    fi
+
+    if test "x${have_pf}" != xyes; then
+        AC_MSG_FAILURE([net/if_pflog.h header missing])
+    fi
+
     AC_DEFINE([WITH_PF], [1], [with the PF firewall driver])
     optional_drivers="${optional_drivers} greyd_pf.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_pf.la"
