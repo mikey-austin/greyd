@@ -12,7 +12,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_SED
 AM_PROG_CC_C_O
-AC_CHECK_PROGS([VALGRIND], [valgrind], )
 
 # Checks for common libraries.
 AC_CHECK_LIB([ltdl], [lt_dlopen], [have_ltdl="yes"])
@@ -226,6 +225,8 @@ if test "x${pf_driver}" = xyes; then
     if test "x${have_pf}" != xyes; then
         AC_MSG_FAILURE([net/if_pflog.h header missing])
     fi
+
+    AC_CHECK_PROGS([PFCTL], [/sbin/pfctl /usr/sbin/pfctl], )
 
     AC_DEFINE([WITH_PF], [1], [with the PF firewall driver])
     optional_drivers="${optional_drivers} greyd_pf.la"
