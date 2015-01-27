@@ -205,9 +205,12 @@ if test "x${pf_driver}" = xyes; then
     fi
 
     if test "x${have_pf}" = xyes; then
-        AC_CHECK_HEADERS([net/pvar.h net/pf/pfvar.h], [have_pf=yes;break], [have_pf=no],
+        AC_CHECK_HEADERS([net/pfvar.h net/pf/pfvar.h], [have_pf=yes;break], [have_pf=no],
         [[
+         #include <sys/types.h>
+         #include <sys/socket.h>
          #include <net/if.h>
+         #include <netinet/in.h>
          ]])
     fi
 
@@ -218,6 +221,9 @@ if test "x${pf_driver}" = xyes; then
     if test "x${have_pf}" = xyes; then
         AC_CHECK_HEADERS([net/if_pflog.h net/pf/if_pflog.h], [have_pf=yes;break], [have_pf=no],
         [[
+         #include <sys/types.h>
+         #include <sys/socket.h>
+         #include <netinet/in.h>
          #include <net/if.h>
          ]])
     fi
