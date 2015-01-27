@@ -1,3 +1,6 @@
+2015-01-28
+        DragonFly BSD is now supported using the pf firewall driver.
+
 2015-01-24
         NetBSD is now supported using the pf firewall driver. Syncing works between
         any host running greyd.
