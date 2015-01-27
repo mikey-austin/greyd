@@ -63,7 +63,6 @@
 #include "../src/utils.h"
 #include "../src/constants.h"
 
-#define PFCTL_PATH "/sbin/pfctl"
 #define PFDEV_PATH "/dev/pf"
 #define PFLOG_IF   "pflog0"
 #define MAX_PFDEV  63

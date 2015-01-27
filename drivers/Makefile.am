@@ -1,3 +1,5 @@
+AM_CPPFLAGS = -DPFCTL_PATH='"$(PFCTL)"'
+
 EXTRA_LTLIBRARIES = greyd_bdb.la greyd_netfilter.la greyd_pf.la greyd_npf.la
 pkglib_LTLIBRARIES = $(optional_drivers)
 noinst_LTLIBRARIES = greyd_fw_dummy.la

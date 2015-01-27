@@ -226,7 +226,7 @@ if test "x${pf_driver}" = xyes; then
         AC_MSG_FAILURE([net/if_pflog.h header missing])
     fi
 
-    AC_CHECK_PROGS([PFCTL], [/sbin/pfctl /usr/sbin/pfctl], )
+    AC_CHECK_PROGS([PFCTL], [/sbin/pfctl /usr/sbin/pfctl], [/sbin/pfctl])
 
     AC_DEFINE([WITH_PF], [1], [with the PF firewall driver])
     optional_drivers="${optional_drivers} greyd_pf.la"
