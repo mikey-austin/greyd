@@ -32,7 +32,7 @@
         <div class="tile">
             <h3>Which systems are supported?</h3>
             <p>
-                <em>greyd</em> runs on <strong>GNU/Linux</strong>, <strong>OpenBSD</strong>, <strong>NetBSD</strong> &amp; <strong>FreeBSD</strong>.
+                <em>greyd</em> runs on <strong>GNU/Linux</strong>, <strong>OpenBSD</strong>, <strong>NetBSD</strong>,  <strong>FreeBSD</strong> &amp; <strong>DragonFly BSD</strong>.
             </p>
             <p>
                 <em>greyd</em> closely integrates with the firewall, and provides an abstract interface to theoretically support any appropriate firewall system (<strong>Netfilter</strong> &amp; <strong>PF</strong> are currenly supported).
