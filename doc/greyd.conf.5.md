@@ -74,10 +74,10 @@ The following options may be specified outside of a section. A *boolean* value i
 * **port** = *number*:
   The port to listen on. Defaults to *8025*.
 
-* **greyd_config** = *string*:
+* **greyd_pidfile** = *string*:
   The greyd pidfile path.
 
-* **greylogd_config** = *string*:
+* **greylogd_pidfile** = *string*:
   The greylogd pidfile path.
 
 * **hostname** = *string*:

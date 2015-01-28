@@ -3,7 +3,7 @@ greyd(8) -- spam deferral daemon
 
 ## SYNOPSIS
 
-`greyd` [**-456bdv**] [**-f** config] [**-B** maxblack] [**-c** maxcon] [**-G** passtime:greyexp:whiteexp] [**-h** hostname] [**-l** address] [**-L** address] [**-M** address] [**-n** name] [**-p** port] [**-S** secs] [**-s** secs] [**-w** window] [**-Y** synctarget] [**-y** synclisten]
+`greyd` [**-456bdv**] [**-f** config] [**-B** maxblack] [**-c** maxcon] [**-G** passtime:greyexp:whiteexp] [**-h** hostname] [**-l** address] [**-L** address] [**-M** address] [**-n** name] [**-p** port] [**-P** pidfile] [**-S** secs] [**-s** secs] [**-w** window] [**-Y** synctarget] [**-y** synclisten]
 
 ## DESCRIPTION
 
