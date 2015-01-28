@@ -16,6 +16,9 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="downloads/greyd-0.5.0.tar.gz">greyd-0.5.tar.gz</a> - 2015-01-28
+                </li>
+                <li>
                     <a href="downloads/greyd-0.4.0.tar.gz">greyd-0.4.tar.gz</a> - 2015-01-24
                 </li>
                 <li>
