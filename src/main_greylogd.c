@@ -158,6 +158,14 @@ main(int argc, char **argv)
     if((db_pw = getpwnam(db_user)) == NULL)
         i_critical("getpwnam: %s", strerror(errno));
 
+
+    if(Config_get_int(config, "daemonize", NULL, 1)) {
+        if(daemon(1, 1) == -1) {
+            i_warning("daemon: %s", strerror(errno));
+            goto shutdown;
+        }
+    }
+
     pidfile = Config_get_str(config, "greylogd_pidfile",
                              NULL, GREYLOGD_PIDFILE);
     switch(write_pidfile(db_pw, pidfile)) {
@@ -182,13 +190,6 @@ main(int argc, char **argv)
     signal(SIGINT , sighandler_shutdown);
     signal(SIGQUIT, sighandler_shutdown);
     signal(SIGTERM, sighandler_shutdown);
-
-    if(Config_get_int(config, "daemonize", NULL, 1)) {
-        if(daemon(1, 1) == -1) {
-            i_warning("daemon: %s", strerror(errno));
-            goto shutdown;
-        }
-    }
 
     FW_start_log_capture(fw_handle);
 
