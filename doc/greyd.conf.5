@@ -23,7 +23,8 @@ variable = "value"
 variable = 10  # Another comment\.
 
 # A list value may contain strings or numbers\.
-variable = [ 10, "value" ]
+# Trailing commas are allowed\.
+variable = [ 10, "value", ]
 .
 .fi
 .
@@ -33,7 +34,7 @@ variable = [ 10, "value" ]
 Comments, whitespace and blank lines are ignored\.
 .
 .P
-\fISections\fR may contain many assignments, separated by a comma and a newline\. The last assignment in a section may not have a trailing comma\.
+\fISections\fR may contain many assignments, separated by a comma and a newline\.
 .
 .IP "" 4
 .
@@ -42,7 +43,7 @@ Comments, whitespace and blank lines are ignored\.
 section sectionname {
     var1 = "val1",
     var2 = 10,
-    var3 = [ 1, 2, 3 ]
+    var3 = [ 1, 2, 3 ],
 }
 .
 .fi

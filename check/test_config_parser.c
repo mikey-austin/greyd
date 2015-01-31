@@ -47,7 +47,7 @@ main(void)
         "section test_section_1 {\n\n\n"
         "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
         "    test_var_3 = 12,\n"
-        "    test_var_4 = [ 4321, \"a string\" ]\n"
+        "    test_var_4 = [ 4321, \"a string\", ], # trailing comma\n"
         "} \n"
         "blacklist spews {\n"
         "    test_var_5 = [\n"

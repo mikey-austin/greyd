@@ -351,8 +351,9 @@ grammar_section(Config_parser_T parser)
             }
 
             if(grammar_section_statements(parser)
-               && accept(parser, CONFIG_LEXER_TOK_EOL)
-               && accept(parser, CONFIG_LEXER_TOK_BRACKET_R))
+               && ((accept(parser, CONFIG_LEXER_TOK_EOL)
+		    && accept(parser, CONFIG_LEXER_TOK_BRACKET_R))
+		   || accept(parser, CONFIG_LEXER_TOK_BRACKET_R)))
             {
                 /*
                  * Remove the reference as we are now finished with this

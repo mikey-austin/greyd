@@ -16,16 +16,17 @@ The syntax consists of sequences of assignments, each terminated by a newline:
     variable = 10  # Another comment.
 
     # A list value may contain strings or numbers.
-    variable = [ 10, "value" ]
+    # Trailing commas are allowed.
+    variable = [ 10, "value", ]
 
 Comments, whitespace and blank lines are ignored.
 
-*Sections* may contain many assignments, separated by a comma and a newline. The last assignment in a section may not have a trailing comma.
+*Sections* may contain many assignments, separated by a comma and a newline.
 
     section sectionname {
         var1 = "val1",
         var2 = 10,
-        var3 = [ 1, 2, 3 ]
+        var3 = [ 1, 2, 3 ],
     }
 
 *Blacklists* and *whitelists* use the same syntax as the *section* above (see [BLACKLIST CONFIGURATION][]):
