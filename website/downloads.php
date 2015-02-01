@@ -16,22 +16,16 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
-                    <a href="downloads/greyd-0.5.0.tar.gz">greyd-0.5.tar.gz</a> - 2015-01-28
+                    <a href="downloads/greyd-0.6.0.tar.gz">greyd-0.6.0.tar.gz</a> - 2015-02-01
                 </li>
                 <li>
-                    <a href="downloads/greyd-0.4.0.tar.gz">greyd-0.4.tar.gz</a> - 2015-01-24
+                    <a href="downloads/greyd-0.5.0.tar.gz">greyd-0.5.0.tar.gz</a> - 2015-01-28
+                </li>
+                <li>
+                    <a href="downloads/greyd-0.4.0.tar.gz">greyd-0.4.0.tar.gz</a> - 2015-01-24
                 </li>
                 <li>
                     <a href="downloads/greyd-0.3.0.tar.gz">greyd-0.3.0.tar.gz</a> - 2015-01-20
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.2.2.tar.gz">greyd-0.2.2.tar.gz</a> - 2015-01-10
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.2.1.tar.gz">greyd-0.2.1.tar.gz</a> - 2015-01-08
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.2.0.tar.gz">greyd-0.2.0.tar.gz</a> - 2015-01-07
                 </li>
             </ul>
             <p>

@@ -61,6 +61,7 @@
                 <li>if the spammer sends mail to a designated spamtrap address (setup via <a href="man.php?name=greydb">greydb</a>)</li>
                 <li>if the spammer sends mail to a non-existant address</li>
                 <li>if the spammer sends mail to a designated backup MX out of order</li>
+                <li>if the spammer spoofs a from address, and SPF validation fails accordingly</li>
             </ul>
             <p>
                 Trapped hosts are treated in the same fashion as blacklisted hosts.
