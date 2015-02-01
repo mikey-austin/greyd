@@ -1,3 +1,6 @@
+2015-02-01
+        Added new SPF validation functionality.
+
 2015-01-28
         DragonFly BSD is now supported using the pf firewall driver.
 

@@ -1,3 +1,8 @@
+2015-02-01  Mikey Austin  <mikey@greyd.org>
+
+	* Added new SPF validation functionality.
+	* Fixed some minor bugs.
+
 2015-01-28  Mikey Austin  <mikey@greyd.org>
 
 	* Added greyd_pidfile & greylogd_pidfile functionality
