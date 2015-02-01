@@ -215,7 +215,7 @@ main(int argc, char **argv)
     char *main_user;
     pid_t grey_pid;
     FILE *grey_in, *trap_out;
-    char *chroot_dir;
+    char *chroot_dir = NULL;
     time_t now;
     int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
     struct pollfd *fds = NULL;
