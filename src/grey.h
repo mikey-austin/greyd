@@ -24,7 +24,22 @@
 #ifndef GREY_DEFINED
 #define GREY_DEFINED
 
+#include <config.h>
+
 #include <sys/types.h>
+
+#ifdef HAVE_SPF
+#  include <sys/types.h>
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#  include <net/if.h>
+#endif
+#ifdef HAVE_SPF2_SPF_H
+#  include <spf2/spf.h>
+#endif
+#ifdef HAVE_SPF_H
+#  include <spf.h>
+#endif
 
 #include <stdio.h>
 
@@ -100,6 +115,10 @@ struct Greylister_T {
 
     struct DB_handle_T   *db_handle;
     struct Sync_engine_T *syncer;
+
+#ifdef HAVE_SPF
+    SPF_server_t *spf_server;
+#endif
 };
 
 /**

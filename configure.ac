@@ -278,6 +278,31 @@ if test "x${npf_driver}" = xyes; then
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_npf.la"
 fi
 
+#
+# SPF support via libspf2.
+#
+AC_ARG_WITH([spf], [AS_HELP_STRING([--with-spf], [include spf support via libspf2])],
+    [spf_module=yes], [spf_module=no])
+
+if test "x${spf_module}" = xyes; then
+    have_spf=no
+    AC_SEARCH_LIBS([SPF_server_new], [spf2 spf], [have_spf=yes])
+    if test "x${have_spf}" = xyes; then
+        AC_CHECK_HEADERS([spf2/spf.h spf.h], [have_spf=yes;break], [have_spf=no],
+        [[
+         #include <sys/socket.h>
+         #include <netinet/in.h>
+         #include <arpa/inet.h>
+        ]])
+    fi
+
+    if test "x${have_spf}" = xyes; then
+        AC_DEFINE([HAVE_SPF], [1], [spf functionality])
+    else
+        AC_MSG_FAILURE([libspf2 is required for spf support])
+    fi
+fi
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT64_T
 AC_TYPE_INT8_T

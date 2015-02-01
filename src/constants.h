@@ -41,5 +41,8 @@
 #define GREYD_BANNER        "greyd IP-based SPAM blocker"
 #define NUM_BLACKLISTS      10
 #define TRACK_OUTBOUND       1
+#define SPF_ENABLED          1
+#define SPF_WHITELIST_PASS   0
+#define SPF_TRAP_SOFTFAIL    1
 
 #endif

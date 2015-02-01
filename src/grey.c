@@ -36,6 +36,19 @@
 #include <limits.h>
 #include <ctype.h>
 
+#ifdef HAVE_SPF
+#  include <sys/types.h>
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#  include <net/if.h>
+#endif
+#ifdef HAVE_SPF2_SPF_H
+#  include <spf2/spf.h>
+#endif
+#ifdef HAVE_SPF_H
+#  include <spf.h>
+#endif
+
 #include "constants.h"
 #include "utils.h"
 #include "failures.h"
@@ -64,6 +77,9 @@ static void process_non_grey(Greylister_T, int, char *, char *, char *);
 static int trap_check(List_T, DB_handle_T, char *);
 static int db_addr_state(DB_handle_T, char *);
 static void update_firewall(Greylister_T, int);
+#ifdef HAVE_SPF
+static int spf_lookup(Greylister_T, struct Grey_tuple *);
+#endif
 
 Greylister_T Grey_greylister = NULL;
 
@@ -121,6 +137,10 @@ Grey_setup(Config_T config)
     greylister->domains = List_create(destroy_address);
 
     Grey_load_domains(greylister);
+
+#ifdef HAVE_SPF
+    greylister->spf_server = NULL;
+#endif
 
     return greylister;
 }
@@ -199,6 +219,15 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
         greylister->trap_out = NULL;
         greylister->fw_out = NULL;
 
+#ifdef HAVE_SPF
+        if(Config_get_int(greylister->config, "enable", "spf", SPF_ENABLED))
+        {
+            greylister->spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
+            if(greylister->spf_server == NULL)
+                i_critical("could not create SPF server");
+        }
+#endif
+
         /* TODO: Set proc title to "(greyd db update)". */
 
         if(Grey_start_reader(greylister) == -1) {
@@ -253,6 +282,11 @@ Grey_finish(Greylister_T *greylister)
 
     if((*greylister)->fw_out != NULL)
         fclose((*greylister)->fw_out);
+
+#ifdef HAVE_SPF
+        if((*greylister)->spf_server != NULL)
+            SPF_server_free((*greylister)->spf_server);
+#endif
 
     free(*greylister);
     *greylister = NULL;
@@ -690,7 +724,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     struct DB_val val;
     struct Grey_data gd;
     time_t now, expire;
-    int spamtrap;
+    int spamtrap, spfres;
 
     now = time(NULL);
     DB_open(db, 0);
@@ -716,6 +750,45 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         goto rollback;
         break;
     }
+
+#ifdef HAVE_SPF
+    if(!spamtrap) {
+        spfres = spf_lookup(greylister, gt);
+        switch(spfres) {
+        case 0:
+            if(Config_get_int(greylister->config, "whitelist_on_pass",
+                              "spf", SPF_WHITELIST_PASS))
+            {
+                /* Whitelist IP address. */
+                key.type = DB_KEY_IP;
+                key.data.s = gt->ip;
+
+                gd.pass = now;
+                gd.expire = now + greylister->white_exp;
+                gd.first = now;
+                gd.bcount = 0;
+                gd.pcount = 0;
+                val.type = DB_VAL_GREY;
+                val.data.gd = gd;
+
+                if(!(DB_put(db, &key, &val) == GREYDB_OK))
+                    goto rollback;
+
+                i_debug("whitelisting %s", gt->ip);
+                return;
+            }
+            break;
+
+        case 2:
+            /* Trap address. */
+            spamtrap = 1;
+            expire = greylister->trap_exp;
+            key.type = DB_KEY_IP;
+            key.data.s = gt->ip;
+            break;
+        }
+    }
+#endif
 
     DB_start_txn(db);
     switch(DB_get(db, &key, &val)) {
@@ -913,8 +986,9 @@ process_message(Greylister_T greylister, Config_T message)
         gt.helo = Config_get_str(message, "helo", NULL, NULL);
         gt.from = Config_get_str(message, "from", NULL, NULL);
         gt.to   = Config_get_str(message, "to", NULL, NULL);
-        if(gt.ip && gt.helo && gt.from && gt.to)
+        if(gt.ip && gt.helo && gt.from && gt.to) {
             process_grey(greylister, &gt, sync, dst_ip);
+        }
         break;
 
     case GREY_MSG_TRAP:
@@ -955,3 +1029,79 @@ shutdown_greyd(int sig)
         Grey_greylister->shutdown = 1;
     }
 }
+
+#ifdef HAVE_SPF
+/**
+ * Perform SPF lookup against the MAIL FROM first, and followed by another
+ * against the RCPT TO on failure.
+ *
+ * @return -1 on error
+ * @return  0 on pass
+ * @return  1 on no result
+ * @return  2 on validation failure
+ */
+static int
+spf_lookup(Greylister_T greylister, struct Grey_tuple *gt)
+{
+    SPF_request_t *req;
+    SPF_response_t *res = NULL;
+    int result = -1;
+
+    if(greylister->spf_server == NULL)
+        return 1;
+
+    req = SPF_request_new(greylister->spf_server);
+    if(SPF_request_set_ipv4_str(req, gt->ip))
+        goto error;
+
+    if(SPF_request_set_env_from(req, gt->from))
+        goto error;
+
+    if(SPF_request_set_helo_dom(req, gt->helo))
+        goto error;
+
+    SPF_request_query_mailfrom(req, &res);
+    switch(SPF_response_result(res))
+    {
+    case SPF_RESULT_PASS:
+        result = 0;
+        i_info("SPF passed for %s %s to %s helo %s",
+               gt->ip, gt->from, gt->to, gt->helo);
+        break;
+
+    case SPF_RESULT_NEUTRAL:
+    case SPF_RESULT_NONE:
+        result = 1;
+        break;
+
+    case SPF_RESULT_SOFTFAIL:
+        if(!Config_get_int(greylister->config, "trap_on_softfail",
+                          "spf", SPF_TRAP_SOFTFAIL))
+        {
+            result = 1;
+            break;
+        }
+        /* Fallthrough. */
+
+    case SPF_RESULT_FAIL:
+        result = 2;
+        i_warning("SPF failure for %s %s -> %s helo %s",
+                  gt->ip, gt->from, gt->to, gt->helo);
+        break;
+
+    default:
+        i_warning("SPF error for %s %s -> %s helo %s: %s (%d)",
+                  gt->ip, gt->from, gt->to, gt->helo,
+                  SPF_strerror(SPF_response_errcode(res)),
+                  SPF_response_errcode(res));
+        break;
+    }
+
+error:
+    if(res)
+        SPF_response_free(res);
+    SPF_request_free(req);
+
+    return result;
+}
+#endif
