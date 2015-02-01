@@ -57,6 +57,7 @@
     <a href="#SYNOPSIS">SYNOPSIS</a>
     <a href="#DESCRIPTION">DESCRIPTION</a>
     <a href="#GREYTRAPPING">GREYTRAPPING</a>
+    <a href="#SPF-VALIDATION">SPF VALIDATION</a>
     <a href="#BLACKLIST-ONLY-MODE">BLACKLIST-ONLY MODE</a>
     <a href="#CONFIGURATION-CONNECTIONS">CONFIGURATION CONNECTIONS</a>
     <a href="#SYNCHRONISATION">SYNCHRONISATION</a>
@@ -216,6 +217,14 @@
 
 <p>Note that it is important to ensure that a host running <strong>greyd</strong> with the low priority MX address active must see all the greylist changes for a higher priority MX host for the same domains. This is best done by the host itself receiving the connections to the higher priority MX on another IP address (which may be an IP alias). This will ensure that hosts are not trapped erroneously if the higher priority MX is unavailable. For example, on a host which is an existing MX record for a domain of value 10, a second IP address with MX of value 99 (a higher number, and therefore lower priority) would ensure that any RFC conformant client would attempt delivery to the IP address with the MX value of 10 first, and should not attempt to deliver to the address with MX value 99.</p>
 
+<h2 id="SPF-VALIDATION">SPF VALIDATION</h2>
+
+<p>This module makes use of libspf2 for the validation of grey entries, and can be configured to whitelist SPF validated hosts in addition to the default trapping of failed hosts. In a nutshell, if billing@yourbank.com emails you asking for your login details, and yourbank.com has a suitable SPF record, the spammer will be trapped.</p>
+
+<p>The SPF checking takes place when processing grey entries, and happens after checking spamtrap addresses &amp; permitted domains.</p>
+
+<p>This functionality is not compiled in by default. The <em>--with-spf</em> configure flag must be used when configuring.</p>
+
 <h2 id="BLACKLIST-ONLY-MODE">BLACKLIST-ONLY MODE</h2>
 
 <p>When running in default mode, the <em>iptables</em> rules described above are sufficient (when using the <em>netfilter</em> firewall driver). However when running in blacklist-only mode, a slightly modified iptables ruleset is required, redirecting any addresses found in the ⟨<em>greyd-blacklist</em>⟩ IPSet to <strong>greyd</strong>. Any other addresses are passed to the real MTA. For example:</p>
@@ -297,7 +306,7 @@ ips = [ "1.3.4.2/31", "2.3.4.5/30", "1.2.3.4/32" ]
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>January 2015</li>
+    <li class='tc'>February 2015</li>
     <li class='tr'>greyd(8)</li>
   </ol>
 

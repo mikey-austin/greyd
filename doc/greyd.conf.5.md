@@ -240,6 +240,19 @@ The Berkeley database driver runs on all systems providing libdb version > 4. On
 * **mcast_address** = *string*:
   The multicast group address for sync messages.
 
+## SPF SECTION
+
+This section controls the operation of the SPF validation functionality.
+
+* **enable** = *boolean*
+  Enable the SPF checking functionality.
+
+* **trap_on_softfail** = *boolean*
+  Trap a host producing an SPF softfail. SPF hardfails are always trapped.
+
+* **whitelist_on_pass** = *boolean*
+  Whitelist a host which passes SPF validation. This is disabled by default.
+
 ## SETUP SECTION
 
 This section controls the operation of the **greyd-setup**(8) program.

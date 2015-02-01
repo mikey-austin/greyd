@@ -114,6 +114,20 @@ section sync {
 }
 
 #
+# SPF validation
+#
+section spf {
+    enable = 1,
+
+    # Whitelist hosts that pass SPF validation.
+    whitelist_on_pass = 0,
+
+    # Trap hosts on softfail, in addition to
+    # hardfail.
+    trap_on_softfail = 1
+}
+
+#
 # Greylist engine configuration.
 #
 section grey {

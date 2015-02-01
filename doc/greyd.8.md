@@ -168,6 +168,14 @@ A low priority MX IP address may be specified with the -M option. When **greyd**
 
 Note that it is important to ensure that a host running **greyd** with the low priority MX address active must see all the greylist changes for a higher priority MX host for the same domains. This is best done by the host itself receiving the connections to the higher priority MX on another IP address (which may be an IP alias). This will ensure that hosts are not trapped erroneously if the higher priority MX is unavailable. For example, on a host which is an existing MX record for a domain of value 10, a second IP address with MX of value 99 (a higher number, and therefore lower priority) would ensure that any RFC conformant client would attempt delivery to the IP address with the MX value of 10 first, and should not attempt to deliver to the address with MX value 99.
 
+## SPF VALIDATION
+
+This module makes use of libspf2 for the validation of grey entries, and can be configured to whitelist SPF validated hosts in addition to the default trapping of failed hosts. In a nutshell, if billing@yourbank.com emails you asking for your login details, and yourbank.com has a suitable SPF record, the spammer will be trapped.
+
+The SPF checking takes place when processing grey entries, and happens after checking spamtrap addresses & permitted domains.
+
+This functionality is not compiled in by default. The *--with-spf* configure flag must be used when configuring.
+
 ## BLACKLIST-ONLY MODE
 
 When running in default mode, the *iptables* rules described above are sufficient (when using the *netfilter* firewall driver). However when running in blacklist-only mode, a slightly modified iptables ruleset is required, redirecting any addresses found in the ⟨*greyd-blacklist*⟩ IPSet to **greyd**. Any other addresses are passed to the real MTA. For example:

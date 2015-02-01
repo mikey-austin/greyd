@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "January 2015" "" ""
+.TH "GREYD\.CONF" "5" "February 2015" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -342,6 +342,20 @@ The filesystem path to the key used to verify sync messages\.
 .TP
 \fBmcast_address\fR = \fIstring\fR
 The multicast group address for sync messages\.
+.
+.SH "SPF SECTION"
+This section controls the operation of the SPF validation functionality\.
+.
+.IP "\(bu" 4
+\fBenable\fR = \fIboolean\fR Enable the SPF checking functionality\.
+.
+.IP "\(bu" 4
+\fBtrap_on_softfail\fR = \fIboolean\fR Trap a host producing an SPF softfail\. SPF hardfails are always trapped\.
+.
+.IP "\(bu" 4
+\fBwhitelist_on_pass\fR = \fIboolean\fR Whitelist a host which passes SPF validation\. This is disabled by default\.
+.
+.IP "" 0
 .
 .SH "SETUP SECTION"
 This section controls the operation of the \fBgreyd\-setup\fR(8) program\.

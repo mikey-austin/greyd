@@ -61,6 +61,7 @@
     <a href="#DATABASE-SECTION">DATABASE SECTION</a>
     <a href="#GREY-SECTION">GREY SECTION</a>
     <a href="#SYNCHRONISATION-SECTION">SYNCHRONISATION SECTION</a>
+    <a href="#SPF-SECTION">SPF SECTION</a>
     <a href="#SETUP-SECTION">SETUP SECTION</a>
     <a href="#BLACKLIST-CONFIGURATION">BLACKLIST CONFIGURATION</a>
     <a href="#SEE-ALSO">SEE ALSO</a>
@@ -250,6 +251,20 @@ include "/etc/greyd/conf.d/*.conf"
 </dl>
 
 
+<h2 id="SPF-SECTION">SPF SECTION</h2>
+
+<p>This section controls the operation of the SPF validation functionality.</p>
+
+<ul>
+<li><p><strong>enable</strong> = <em>boolean</em>
+Enable the SPF checking functionality.</p></li>
+<li><p><strong>trap_on_softfail</strong> = <em>boolean</em>
+Trap a host producing an SPF softfail. SPF hardfails are always trapped.</p></li>
+<li><p><strong>whitelist_on_pass</strong> = <em>boolean</em>
+Whitelist a host which passes SPF validation. This is disabled by default.</p></li>
+</ul>
+
+
 <h2 id="SETUP-SECTION">SETUP SECTION</h2>
 
 <p>This section controls the operation of the <strong>greyd-setup</strong>(8) program.</p>
@@ -311,7 +326,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>January 2015</li>
+    <li class='tc'>February 2015</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 
