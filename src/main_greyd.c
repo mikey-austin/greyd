@@ -73,7 +73,7 @@ usage(void)
         "usage: %s [-f config] [-45bdv] [-B maxblack] [-c maxcon] "
         "[-G passtime:greyexp:whiteexp]\n"
         "\t[-h hostname] [-l address] [-M address] [-n name] [-p port]\n"
-        "\t[-S secs] [-s secs] [-L ipv6 address]\n"
+        "\t[-P pidfile] [-S secs] [-s secs] [-L ipv6 address]\n"
         "[-w window] [-Y synctarget] [-y synclisten]\n",
         PROG_NAME);
 

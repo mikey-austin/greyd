@@ -58,7 +58,7 @@ usage(void)
 {
     fprintf(stderr,
             "usage: %s [-dI] [-f config] [-W whiteexp] "
-            "[-Y synctarget] [-p syncport]\n",
+            "[-Y synctarget] [-p syncport] [-P pidfile]\n",
             PROG_NAME);
     exit(1);
 }
