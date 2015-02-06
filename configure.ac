@@ -290,6 +290,7 @@ if test "x${spf_module}" = xyes; then
     if test "x${have_spf}" = xyes; then
         AC_CHECK_HEADERS([spf2/spf.h spf.h], [have_spf=yes;break], [have_spf=no],
         [[
+         #include <time.h>
          #include <sys/socket.h>
          #include <netinet/in.h>
          #include <arpa/inet.h>
