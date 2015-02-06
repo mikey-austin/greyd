@@ -255,14 +255,11 @@ include "/etc/greyd/conf.d/*.conf"
 
 <p>This section controls the operation of the SPF validation functionality.</p>
 
-<ul>
-<li><p><strong>enable</strong> = <em>boolean</em>
-Enable the SPF checking functionality.</p></li>
-<li><p><strong>trap_on_softfail</strong> = <em>boolean</em>
-Trap a host producing an SPF softfail. SPF hardfails are always trapped.</p></li>
-<li><p><strong>whitelist_on_pass</strong> = <em>boolean</em>
-Whitelist a host which passes SPF validation. This is disabled by default.</p></li>
-</ul>
+<dl>
+<dt><strong>enable</strong> = <em>boolean</em></dt><dd><p>Enable the SPF checking functionality.</p></dd>
+<dt><strong>trap_on_softfail</strong> = <em>boolean</em></dt><dd><p>Trap a host producing an SPF softfail. SPF hardfails are always trapped.</p></dd>
+<dt><strong>whitelist_on_pass</strong> = <em>boolean</em></dt><dd><p>Whitelist a host which passes SPF validation. This is disabled by default.</p></dd>
+</dl>
 
 
 <h2 id="SETUP-SECTION">SETUP SECTION</h2>

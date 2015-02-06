@@ -116,7 +116,7 @@
 <dt><strong>-M</strong> <em>address</em></dt><dd><p>Specify a local IP address which is listed as a low priority MX record, used to identify and trap hosts that connect to MX hosts out of order. See <a href="#GREYTRAPPING" title="GREYTRAPPING" data-bare-link="true">GREYTRAPPING</a> below for details.</p></dd>
 <dt class="flush"><strong>-n</strong> <em>name</em></dt><dd><p>The SMTP version banner that is reported upon initial connection.</p></dd>
 <dt class="flush"><strong>-p</strong> <em>port</em></dt><dd><p>Specify a different port number from the default port that <strong>greyd</strong> should listen for redirected SMTP connections on.</p></dd>
-<dt><strong>-P</strong> <em>greyd pidfile</em></dt><dd><p>Specify the location for the pidfile.</p></dd>
+<dt><strong>-P</strong> <em>pidfile</em></dt><dd><p>Specify the location for the pidfile.</p></dd>
 <dt class="flush"><strong>-S</strong> <em>secs</em></dt><dd><p>Stutter at greylisted connections for the specified amount of seconds, after which the connection is not stuttered at. The default is 10; maximum is 90.</p></dd>
 <dt class="flush"><strong>-s</strong> <em>secs</em></dt><dd><p>Delay each character sent to the client by the specified amount of seconds. The default is 1; maximum is 10.</p></dd>
 <dt class="flush"><strong>-v</strong></dt><dd><p>Enable verbose logging. By default <strong>greyd</strong> logs connections, disconnections and blacklist matches to syslog at <em>LOG_INFO</em> level. With verbose logging enabled, message detail including subject and recipient information is logged at <em>LOG_INFO</em>, along with the message body and SMTP dialogue being logged at <em>LOG_DEBUG</em> level.</p></dd>

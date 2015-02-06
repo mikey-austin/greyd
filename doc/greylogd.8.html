@@ -86,7 +86,7 @@
 <dl>
 <dt><strong>-f</strong> <em>config</em></dt><dd><p>The main greyd configuration file.</p></dd>
 <dt class="flush"><strong>-d</strong></dt><dd><p>Debugging mode. <strong>greylogd</strong> displays debug messages (suppressed by default).</p></dd>
-<dt><strong>-P</strong> <em>greylogd pidfile</em></dt><dd><p>Specify the location for the pidfile.</p></dd>
+<dt><strong>-P</strong> <em>pidfile</em></dt><dd><p>Specify the location for the pidfile.</p></dd>
 <dt class="flush"><strong>-I</strong></dt><dd><p>Specify that <strong>greylogd</strong> is only to whitelist inbound SMTP connections. By default <strong>greylogd</strong> will whitelist the source of inbound SMTP connections, and the target of outbound SMTP connections.</p></dd>
 <dt><strong>-W</strong> <em>whiteexp</em></dt><dd><p>Adjust the time for <em>whiteexp</em> in hours. The default is 864 hours (approximately 36 days); maximum is 2160 hours (approximately 90 days).</p></dd>
 <dt><strong>-Y</strong> <em>synctarget</em></dt><dd><p>Add a target to receive synchronisation messages; see <a href="#SYNCHRONISATION" title="SYNCHRONISATION" data-bare-link="true">SYNCHRONISATION</a> below. This option can be specified multiple times.</p></dd>
@@ -147,7 +147,7 @@ pass out log on egress proto tcp to any port smtp
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>January 2015</li>
+    <li class='tc'>February 2015</li>
     <li class='tr'>greylogd(8)</li>
   </ol>
 

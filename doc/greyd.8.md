@@ -68,7 +68,7 @@ The SMTP version banner that is reported upon initial connection.
 * **-p** *port*:
 Specify a different port number from the default port that **greyd** should listen for redirected SMTP connections on.
 
-* **-P** *greyd pidfile*:
+* **-P** *pidfile*:
 Specify the location for the pidfile.
 
 * **-S** *secs*:

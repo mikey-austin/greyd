@@ -244,13 +244,13 @@ The Berkeley database driver runs on all systems providing libdb version > 4. On
 
 This section controls the operation of the SPF validation functionality.
 
-* **enable** = *boolean*
+* **enable** = *boolean*:
   Enable the SPF checking functionality.
 
-* **trap_on_softfail** = *boolean*
+* **trap_on_softfail** = *boolean*:
   Trap a host producing an SPF softfail. SPF hardfails are always trapped.
 
-* **whitelist_on_pass** = *boolean*
+* **whitelist_on_pass** = *boolean*:
   Whitelist a host which passes SPF validation. This is disabled by default.
 
 ## SETUP SECTION

@@ -346,16 +346,17 @@ The multicast group address for sync messages\.
 .SH "SPF SECTION"
 This section controls the operation of the SPF validation functionality\.
 .
-.IP "\(bu" 4
-\fBenable\fR = \fIboolean\fR Enable the SPF checking functionality\.
+.TP
+\fBenable\fR = \fIboolean\fR
+Enable the SPF checking functionality\.
 .
-.IP "\(bu" 4
-\fBtrap_on_softfail\fR = \fIboolean\fR Trap a host producing an SPF softfail\. SPF hardfails are always trapped\.
+.TP
+\fBtrap_on_softfail\fR = \fIboolean\fR
+Trap a host producing an SPF softfail\. SPF hardfails are always trapped\.
 .
-.IP "\(bu" 4
-\fBwhitelist_on_pass\fR = \fIboolean\fR Whitelist a host which passes SPF validation\. This is disabled by default\.
-.
-.IP "" 0
+.TP
+\fBwhitelist_on_pass\fR = \fIboolean\fR
+Whitelist a host which passes SPF validation\. This is disabled by default\.
 .
 .SH "SETUP SECTION"
 This section controls the operation of the \fBgreyd\-setup\fR(8) program\.

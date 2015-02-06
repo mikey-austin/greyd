@@ -17,7 +17,7 @@ The options are as follows:
 * **-d**:
   Debugging mode. **greylogd** displays debug messages (suppressed by default).
 
-* **-P** *greylogd pidfile*:
+* **-P** *pidfile*:
 Specify the location for the pidfile.
 
 * **-I**:
