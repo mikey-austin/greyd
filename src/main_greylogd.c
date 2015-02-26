@@ -51,7 +51,7 @@
 extern char *optarg;
 extern int optind, opterr, optopt;
 
-static int Greylogd_shutdown = 0;
+static volatile sig_atomic_t Greylogd_shutdown = 0;
 
 void
 usage(void)
