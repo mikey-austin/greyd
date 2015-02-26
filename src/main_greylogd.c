@@ -85,6 +85,7 @@ main(int argc, char **argv)
     struct DB_val val;
     time_t now;
     Sync_engine_T syncer = NULL;
+    struct sigaction act;
 
     tzset();
     opts = Config_create();
@@ -187,9 +188,11 @@ main(int argc, char **argv)
     if((db_handle = DB_init(config)) == NULL)
         i_critical("could not obtain database handle");
 
-    signal(SIGINT , sighandler_shutdown);
-    signal(SIGQUIT, sighandler_shutdown);
-    signal(SIGTERM, sighandler_shutdown);
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = sighandler_shutdown;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
 
     FW_start_log_capture(fw_handle);
 
