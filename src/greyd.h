@@ -25,6 +25,7 @@
 #define GREYD_DEFINED
 
 #include <stdio.h>
+#include <signal.h>
 
 #include "firewall.h"
 #include "hash.h"
@@ -36,7 +37,8 @@
 struct Greyd_state {
     Config_T config;
     int slow_until;
-    int shutdown;
+
+    volatile sig_atomic_t shutdown;
 
     struct Con *cons;
     int max_files;
