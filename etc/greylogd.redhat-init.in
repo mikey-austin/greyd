@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# greylogd        Start greylogd
+#
+# chkconfig: 2345 08 92
+# description:  Starts, stops greylogd daemon
+#
+# config: @DEFAULT_CONFIG@
+
+# Source function library.
+. /etc/init.d/functions
+
+GREYLOGD=greylogd
+PIDFILE="@GREYLOGD_PIDFILE@"
+CONFIG="@DEFAULT_CONFIG@"
+
+start() {
+    echo -n $"Starting greylogd: "
+    daemon @sbindir@/$GREYLOGD -f $CONFIG  -P $PIDFILE
+    RETVAL=$?
+    echo
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping greylogd: "
+    killproc -p $PIDFILE $GREYLOGD -TERM
+    RETVAL=$?
+    echo
+    return $RETVAL
+}
+
+status() {
+    if [ ! -f "$PIDFILE" ]; then
+        echo $"greylogd is stopped."
+        return 1
+    fi
+
+    echo "greylogd (pid `cat $PIDFILE`) is running..."
+
+    return $RETVAL
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit $?
