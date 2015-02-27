@@ -20,6 +20,7 @@ config.guess
 config.status
 config.sub
 etc/greyd.conf
+etc/greyd.redhat-init
 src/Makefile
 configure
 install-sh

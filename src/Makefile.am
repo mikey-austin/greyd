@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -DDEFAULT_CONFIG='"$(DEFAULT_CONFIG)"' -DGREYD_PIDFILE='"$(GREYD_PIDFILE)"' -DGREYLOGD_PIDFILE='"$(GREYLOGD_PIDFILE)"'
 
-bin_PROGRAMS = greyd greylogd greydb greyd-setup
+sbin_PROGRAMS = greyd greylogd greydb greyd-setup
 noinst_HEADERS = blacklist.h con.h config_lexer.h config_parser.h config_section.h config_value.h failures.h firewall.h grey.h greydb.h greyd.h greyd_config.h hash.h ip.h lexer.h lexer_source.h list.h log.h queue.h sync.h utils.h mod.h spamd_parser.h spamd_lexer.h constants.h
 
 greyd_LDFLAGS = -Wl,-E
