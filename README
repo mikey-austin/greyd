@@ -61,7 +61,7 @@ release, a MySQL driver will be implemented.
 For GNU/Linux, a firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
   * **libipset** for IP set management
   * **libnetfilter-log** for the tracking and auto-whitelisting of connections
-  * **libnetfilter-conntrack** for the DNAT original destination lookups
+  * **libnetfilter-conntrack** (version >= 1.0.4) for the DNAT original destination lookups
 
 For the BSDs, a PF firewall driver has been implemented.
 

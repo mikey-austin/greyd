@@ -146,6 +146,7 @@ if test "x${netfilter_driver}" = xyes; then
     fi
 
     AC_CHECK_LIB([netfilter_conntrack], [nfct_new], [have_netfilter=yes])
+    AC_CHECK_LIB([netfilter_conntrack], [nfct_nlmsg_build], [have_netfilter=yes], [have_netfilter=no])
     if test "x${have_netfilter}" = xyes; then
         AC_CHECK_HEADERS([libnetfilter_conntrack/libnetfilter_conntrack.h], [], [have_netfilter=no])
     fi

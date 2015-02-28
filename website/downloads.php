@@ -45,7 +45,7 @@
                 To build the netfilter driver, you will need the following packages:
             </p>
             <ul>
-                <li>libnetfilter_conntrack</li>
+                <li>libnetfilter_conntrack (version >= 1.0.4)</li>
                 <li>libnetfilter_log</li>
                 <li>libipset</li>
                 <li>libcap</li>
