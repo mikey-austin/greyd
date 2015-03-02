@@ -64,9 +64,12 @@ chroot     = 1
 chroot_dir = "/var/empty/greyd"
 
 #
-# Pidfile locations for greyd & greylogd daemons.
+# Pidfile locations for greyd & greylogd daemons. If
+# chrooting, the greyd_pidfile must reside withing the
+# chroot_dir, and the main greyd user must have permission
+# to remove the file in the chroot directory.
 #
-greyd_pidfile = "@GREYD_PIDFILE@"
+greyd_pidfile = "/var/empty/greyd/greyd.pid"
 greylogd_pidfile = "@GREYLOGD_PIDFILE@"
 
 #
@@ -162,6 +165,11 @@ section grey {
 # The configuration section for greyd-setup.
 #
 section setup {
+    #
+    # Place blacklists & whitelists here. Note, the lists are applied
+    # in order. Whitelists are subtracted from the blacklists that
+    # come before them.
+    #
     lists     = [ "nixspam", "uatraps" ],
     curl_path = "/bin/curl"
 }
