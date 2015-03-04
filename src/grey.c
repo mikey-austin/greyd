@@ -71,7 +71,7 @@ static void destroy_address(void *);
 static void drop_grey_privs(Greylister_T, struct passwd *);
 static void shutdown_greyd(int);
 static int push_addr(List_T, char *);
-static void process_message(Greylister_T, Config_T);
+static int process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *);
 static int trap_check(List_T, DB_handle_T, char *);
@@ -322,7 +322,8 @@ Grey_start_reader(Greylister_T greylister)
         ret = Config_parser_start(parser, message);
         switch(ret) {
         case CONFIG_PARSER_OK:
-            process_message(greylister, message);
+            if(process_message(greylister, message) == -1)
+                goto cleanup;
             break;
 
         case CONFIG_PARSER_ERR:
@@ -973,7 +974,7 @@ rollback:
     DB_rollback_txn(db);
 }
 
-static void
+static int
 process_message(Greylister_T greylister, Config_T message)
 {
     int type, sync;
@@ -1009,6 +1010,10 @@ process_message(Greylister_T greylister, Config_T message)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
                              ip, source, expires);
         break;
+
+    default:
+        i_debug("unexpected grey message via grey_in");
+        return -1;
     }
 }
 
