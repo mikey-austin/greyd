@@ -421,8 +421,7 @@ Mod_fw_replace(FW_handle_T handle, const char *set_name, List_T cidrs, short af)
         }
     }
 
-    if(ipset_create(session, set_name, hash_size, max_elem, af) == -1)
-        return -1;
+    ipset_create(session, set_name, hash_size, max_elem, af);
 
     if(ipset_swap_and_destroy(session, set_name, stage_set_name) == -1)
         return -1;
