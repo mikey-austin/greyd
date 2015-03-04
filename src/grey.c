@@ -1015,6 +1015,8 @@ process_message(Greylister_T greylister, Config_T message)
         i_debug("unexpected grey message via grey_in");
         return -1;
     }
+
+    return 0;
 }
 
 static void
