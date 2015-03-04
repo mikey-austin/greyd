@@ -308,8 +308,8 @@ main(int argc, char **argv)
             break;
 
         case 'G':
-            if (sscanf(optarg, "%llu:%llu:%llu", &pass_time, &grey_time,
-                       &white_time) != 3)
+            if(sscanf(optarg, "%llu:%llu:%llu", &pass_time, &grey_time,
+                      &white_time) != 3)
             {
                 usage();
             }

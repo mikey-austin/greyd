@@ -299,7 +299,7 @@ Grey_start_reader(Greylister_T greylister)
     Lexer_source_T source;
     Lexer_T lexer;
     Config_parser_T parser;
-    Config_T message;
+    Config_T message = NULL;
     int ret, fd;
 
     fd = fileno(greylister->grey_in);
@@ -315,9 +315,7 @@ Grey_start_reader(Greylister_T greylister)
     for(;;) {
         if(greylister->shutdown) {
             i_debug("stopping grey reader");
-            Config_parser_destroy(&parser);
-            Grey_finish(&greylister);
-            return 0;
+            goto cleanup;
         }
 
         message = Config_create();
@@ -332,11 +330,22 @@ Grey_start_reader(Greylister_T greylister)
         }
 
         Config_destroy(&message);
+
+        /*
+         * Check if an error occured on the grey_in end of the pipe, as
+         * we can't distinguish between a legitimate EOF and an error.
+         */
+        if(Lexer_source_error(source)) {
+            i_debug("error detected on grey_in: %s", strerror(errno));
+            goto cleanup;
+        }
     }
 
 cleanup:
-    Config_destroy(&message);
+    if(message != NULL)
+        Config_destroy(&message);
     Config_parser_destroy(&parser);
+    Grey_finish(&greylister);
 
     return 0;
 }
