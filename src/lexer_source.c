@@ -49,14 +49,17 @@ static Lexer_source_T source_create(void);
 static void  source_data_file_destroy(void *data);
 static int   source_data_file_getc(void *data);
 static void  source_data_file_ungetc(void *data, int c);
+static int   source_data_file_error(void *data);
 
 static void  source_data_str_destroy(void *data);
 static int   source_data_str_getc(void *data);
 static void  source_data_str_ungetc(void *data, int c);
+static int   source_data_str_error(void *data);
 
 static void  source_data_gz_destroy(void *data);
 static int   source_data_gz_getc(void *data);
 static void  source_data_gz_ungetc(void *data, int c);
+static int   source_data_gz_error(void *data);
 
 extern Lexer_source_T
 Lexer_source_create_from_file(const char *filename)
@@ -88,6 +91,7 @@ Lexer_source_create_from_file(const char *filename)
         source->_getc    = source_data_file_getc;
         source->_ungetc  = source_data_file_ungetc;
         source->_destroy = source_data_file_destroy;
+        source->_error   = source_data_file_error;
     }
 
     return source;
@@ -118,6 +122,7 @@ Lexer_source_create_from_fd(int fd)
         source->_getc    = source_data_file_getc;
         source->_ungetc  = source_data_file_ungetc;
         source->_destroy = source_data_file_destroy;
+        source->_error   = source_data_file_error;
     }
 
     return source;
@@ -145,6 +150,7 @@ Lexer_source_create_from_str(const char *buf, int len)
         source->_getc    = source_data_str_getc;
         source->_ungetc  = source_data_str_ungetc;
         source->_destroy = source_data_str_destroy;
+        source->_error   = source_data_str_error;
     }
 
     return source;
@@ -169,6 +175,7 @@ Lexer_source_create_from_gz(gzFile gzf)
         source->_getc    = source_data_gz_getc;
         source->_ungetc  = source_data_gz_ungetc;
         source->_destroy = source_data_gz_destroy;
+        source->_error   = source_data_gz_error;
     }
 
     return source;
@@ -195,6 +202,12 @@ extern void
 Lexer_source_ungetc(Lexer_source_T source, int c)
 {
     source->_ungetc(source->data, c);
+}
+
+extern int
+Lexer_source_error(Lexer_source_T source)
+{
+    return source->_error(source->data);
 }
 
 static Lexer_source_T
@@ -251,6 +264,13 @@ source_data_file_ungetc(void *data, int c)
     ungetc(c, data_file->handle);
 }
 
+static int
+source_data_file_error(void *data)
+{
+    struct source_data_file *data_file = (struct source_data_file *) data;
+    return ferror(data_file->handle);
+}
+
 static void
 source_data_str_destroy(void *data)
 {
@@ -290,6 +310,12 @@ source_data_str_ungetc(void *data, int c)
     }
 }
 
+static int
+source_data_str_error(void *data)
+{
+    return 0;
+}
+
 static void
 source_data_gz_destroy(void *data)
 {
@@ -319,4 +345,18 @@ source_data_gz_ungetc(void *data, int c)
 {
    struct source_data_gz *data_gz = (struct source_data_gz *) data;
    gzungetc(c, data_gz->gzf);
+}
+
+static int
+source_data_gz_error(void *data)
+{
+   struct source_data_gz *data_gz = (struct source_data_gz *) data;
+   int errnum;
+   const char *errmsg;
+
+   errmsg = gzerror(data_gz->gzf, &errnum);
+   if(errmsg != NULL)
+       return errnum;
+
+   return 0;
 }

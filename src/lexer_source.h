@@ -40,6 +40,7 @@ struct Lexer_source_T {
     int  (*_getc)(void *data);
     void (*_ungetc)(void *data, int c);
     void (*_destroy)(void *data);
+    int (*_error)(void *data);
 };
 
 /**
@@ -79,5 +80,10 @@ extern int Lexer_source_getc(Lexer_source_T source);
  * this function multiple times before a getc will yield undefined results.
  */
 extern void Lexer_source_ungetc(Lexer_source_T source, int c);
+
+/**
+ * Return 1 if an error occurred, 0 otherwise.
+ */
+extern int Lexer_source_error(Lexer_source_T source);
 
 #endif
