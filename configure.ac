@@ -6,6 +6,7 @@ AC_CONFIG_SRCDIR([src/main_greyd.c])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_REQUIRE_AUX_FILE([tap-driver.pl])
+AC_PATH_PROG([VALGRIND], [valgrind])
 
 # Checks for programs.
 AC_PROG_CC
@@ -323,7 +324,7 @@ AC_CONFIG_FILES([Makefile
         doc/Makefile
         etc/Makefile
         check/Makefile
-        check/run_tests.pl
+        check/test-wrapper
         check/data/permitted_domains.txt
         check/data/config_lexer_test1.conf
         check/data/config_test1.conf
