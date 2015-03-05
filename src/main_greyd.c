@@ -496,7 +496,7 @@ main(int argc, char **argv)
         err(1, "bind local");
 
     if(Config_get_int(state.config, "daemonize", NULL, 1)) {
-        if(daemon(1, 1) == -1)
+        if(daemon(1, 0) == -1)
             err(1, "daemon");
     }
 
