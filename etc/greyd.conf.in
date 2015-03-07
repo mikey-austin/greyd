@@ -151,14 +151,14 @@ section grey {
     pass_time    = 600,     # 10 minutes.
     grey_expiry  = 14400,   # 4 hours.
     white_expiry = 2678400, # 31 days.
-    trap_expiry  = 86400    # 1 day.
+    trap_expiry  = 86400,   # 1 day.
 
     #
     # If this file is specified (and exists), any message received
     # with a RCPT TO domain *not* matching an entry in the below file
     # will be grey-trapped (ie blacklisted).
     #
-    #permitted_domains = "@sysconfdir@/@PACKAGE@/permitted_domains.txt"
+    #permitted_domains = "@sysconfdir@/@PACKAGE@/permitted_domains"
 }
 
 #
