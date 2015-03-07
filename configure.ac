@@ -7,6 +7,7 @@ AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_REQUIRE_AUX_FILE([tap-driver.pl])
 AC_PATH_PROG([VALGRIND], [valgrind])
+AC_PATH_PROG([CURL], [curl])
 
 # Checks for programs.
 AC_PROG_CC
@@ -66,12 +67,12 @@ fi
 
 AC_ARG_VAR([GREYD_PIDFILE], [default greyd pidfile path])
 if test -z ${GREYD_PIDFILE}; then
-    GREYD_PIDFILE="${localstatedir}/run/greyd.pid"
+    GREYD_PIDFILE="${localstatedir}/empty/greyd/greyd.pid"
 fi
 
 AC_ARG_VAR([GREYLOGD_PIDFILE], [default greylogd pidfile path])
 if test -z ${GREYLOGD_PIDFILE}; then
-    GREYLOGD_PIDFILE="${localstatedir}/run/greylogd.pid"
+    GREYLOGD_PIDFILE="${localstatedir}/empty/greylogd/greylogd.pid"
 fi
 
 #
@@ -330,5 +331,6 @@ AC_CONFIG_FILES([Makefile
         check/data/config_test1.conf
         check/data/config_test2.conf
         check/data/config_test3.conf
+        packages/rpm/greyd.spec
         check/data/lexer_source_1.conf])
 AC_OUTPUT

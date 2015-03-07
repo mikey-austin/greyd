@@ -1,0 +1,92 @@
+Name:      @PACKAGE@
+Summary:   Greylisting & blacklisting daemon
+Version:   @PACKAGE_VERSION@
+Release:   1
+License:   OpenBSD
+Group:     Applications/Internet
+URL:       http://greyd.org
+Source0:   %{name}-%{version}.tar.gz
+Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
+
+Requires: libtool-ltdl, zlib, openssl, libdb, libcap, ipset, libmnl, libnetfilter_conntrack >= 1.0.4, libnetfilter_log, libspf2
+
+BuildRequires: libtool-ltdl-devel, zlib-devel, openssl-devel, libdb-devel, libcap-devel, ipset-devel, libmnl-devel, libnetfilter_conntrack-devel >= 1.0.4, libnetfilter_log-devel, libspf2-devel
+
+%description
+Greyd is a lightweight greylisting & blacklisting daemon. It runs on your gateway and pretends to be a real mail server. It keeps track of all hosts who connect, and automatically whitelists hosts after a period.
+
+%prep
+%setup -q
+
+%build
+./configure DEFAULT_CONFIG="/etc/greyd/greyd.conf" \
+            GREYD_PIDFILE="/var/empty/greyd/greyd.pid" \
+            GREYLOGD_PIDFILE="/var/empty/greylogd/greylogd.pid" \
+            --prefix=%{_prefix} \
+            --sysconfdir=%{_sysconfdir} \
+            --localstatedir=%{_var}/lib \
+            --sbindir=%{_sbindir} \
+            --libdir=%{_libdir} \
+            --includedir=%{_includedir} \
+            --with-bdb \
+            --with-netfilter \
+            --with-spf
+make
+
+%install
+rm -fr %{buildroot}
+mkdir -p -m755 %{buildroot}%{_sysconfdir}/greyd
+mkdir -p -m755 %{buildroot}%{_var}/lib/greyd
+mkdir -p -m755 %{buildroot}%{_var}/empty/greyd
+mkdir -p -m755 %{buildroot}%{_var}/empty/greylogd
+mkdir -p -m755 %{buildroot}%{_sysconfdir}/rc.d/init.d
+make install DESTDIR=%{buildroot}
+
+cp %{buildroot}%{_sysconfdir}/greyd/greyd.redhat-init %{buildroot}%{_sysconfdir}/rc.d/init.d/greyd
+cp %{buildroot}%{_sysconfdir}/greyd/greylogd.redhat-init %{buildroot}%{_sysconfdir}/rc.d/init.d/greylogd
+
+%clean
+#rm -fr %{buildroot}
+
+%pre
+/sbin/groupadd greyd
+/sbin/groupadd greydb
+/sbin/useradd -M -g greyd -d /var/empty/greyd -s /bin/false -K MAIL_DIR=/dev/null greyd 2>/dev/null
+/sbin/useradd -M -g greydb -d /var/lib/greyd -s /bin/false -K MAIL_DIR=/dev/null greydb 2>/dev/null
+
+%post
+/sbin/chkconfig --add greyd
+/sbin/chkconfig --add greylogd
+
+%preun
+if [ $1 = 0 ]; then # package is being erased, not upgraded
+    /sbin/service greyd stop > /dev/null 2>&1
+    /sbin/service greylogd stop > /dev/null 2>&1
+    /sbin/chkconfig --del greyd
+    /sbin/chkconfig --del greylogd
+
+    /sbin/userdel greyd
+    /sbin/userdel greydb
+fi
+
+%postun
+if [ $1 != 0 ]; then
+    # Upgrade
+    /sbin/service greyd restart > /dev/null 2>&1
+    /sbin/service greylogd restart > /dev/null 2>&1
+fi
+
+%files
+%defattr(-,root,root)
+%define _unpackaged_files_terminate_build 0
+%doc README COPYING AUTHORS
+%config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
+%attr(0750,root,root) %{_sbindir}/grey*
+%attr(0755,root,root) %config /etc/rc.d/init.d/greyd
+%attr(0755,root,root) %config /etc/rc.d/init.d/greylogd
+%{_mandir}/man8/grey*.8*
+%{_mandir}/man5/grey*.5*
+%dir %attr(0750,greyd,greyd) %{_var}/empty/greyd
+%dir %attr(0750,greydb,greydb) %{_var}/empty/greylogd
+%dir %attr(0750,greydb,greydb) %{_var}/lib/greyd
+%attr(0755,root,root) %{_libdir}/greyd/greyd_*.so

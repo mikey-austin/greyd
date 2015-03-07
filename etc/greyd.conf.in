@@ -27,7 +27,7 @@ port = 8025
 #
 # This will be obtained via "hostname" if not set.
 #
-hostname = "greyd.org"
+#hostname = "greyd.org"
 
 #
 # Enable listening on IPv6 socket.
@@ -69,7 +69,7 @@ chroot_dir = "/var/empty/greyd"
 # chroot_dir, and the main greyd user must have permission
 # to remove the file in the chroot directory.
 #
-greyd_pidfile = "/var/empty/greyd/greyd.pid"
+greyd_pidfile = "@GREYD_PIDFILE@"
 greylogd_pidfile = "@GREYLOGD_PIDFILE@"
 
 #
@@ -171,7 +171,7 @@ section setup {
     # come before them.
     #
     lists     = [ "nixspam", "uatraps" ],
-    curl_path = "/bin/curl"
+    curl_path = "@CURL@"
 }
 
 blacklist uatraps {

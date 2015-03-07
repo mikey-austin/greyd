@@ -7,6 +7,7 @@ greyd.conf: greyd.conf.in
 		-e 's,[@]GREYD_PIDFILE[@],$(GREYD_PIDFILE),g' \
 		-e 's,[@]GREYLOGD_PIDFILE[@],$(GREYLOGD_PIDFILE),g' \
 		-e 's,[@]DEFAULT_CONFIG[@],$(DEFAULT_CONFIG),g' \
+		-e 's,[@]CURL[@],$(CURL),g' \
 		-e 's,[@]libdir[@],$(libdir),g' \
 		-e 's,[@]sbindir[@],$(sbindir),g' \
 		-e 's,[@]localstatedir[@],$(localstatedir),g' \
