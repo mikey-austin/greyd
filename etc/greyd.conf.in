@@ -106,7 +106,7 @@ section database {
 # Sync configuration.
 #
 section sync {
-    enable        = 0
+    enable        = 0,
     #hosts         = [ "eth0:2", "jackiemclean.net" ],
     #ttl           = 2,
     #port          = 8025,
