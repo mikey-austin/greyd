@@ -1,3 +1,15 @@
+2015-03-08  Mikey Austin  <mikey@greyd.org>
+
+	* Minor internal refactoring & cleanups.
+	* Cleanup the test framework and added support for unit testing through valgrind.
+	* Added RPM packaging capabilities to build system.
+	* Added RHEL-based init scripts.
+	* Minor bug fixes & updates to default configuration file.
+
+2015-02-06  Mikey Austin  <mikey@greyd.org>
+
+	* Minor documentation fixes & updates.
+
 2015-02-01  Mikey Austin  <mikey@greyd.org>
 
 	* Added new SPF validation functionality.

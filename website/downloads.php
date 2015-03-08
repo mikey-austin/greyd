@@ -16,19 +16,10 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="downloads/greyd-0.7.0.tar.gz">greyd-0.7.0.tar.gz</a> - 2015-03-08
+                </li>
+                <li>
                     <a href="downloads/greyd-0.6.1.tar.gz">greyd-0.6.1.tar.gz</a> - 2015-02-06
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.6.0.tar.gz">greyd-0.6.0.tar.gz</a> - 2015-02-01
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.5.0.tar.gz">greyd-0.5.0.tar.gz</a> - 2015-01-28
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.4.0.tar.gz">greyd-0.4.0.tar.gz</a> - 2015-01-24
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.3.0.tar.gz">greyd-0.3.0.tar.gz</a> - 2015-01-20
                 </li>
             </ul>
             <p>
@@ -49,6 +40,7 @@
                 <li>libnetfilter_log</li>
                 <li>libipset</li>
                 <li>libcap</li>
+                <li>libmnl</li>
             </ul>
         </div>
 
@@ -67,14 +59,12 @@ $ sudo make install</code>
             </div>
 
             <p>
-                Note that by default, everything will be installed into <em>/usr/local</em>. The following configure flags may be used to override these locations:
+                On an RPM-based distribution, you can easily make a package by the following:
             </p>
 
-            <ul>
-                <li><strong>--prefix</strong> (eg /usr)</li>
-                <li><strong>--sysconfdir</strong> (eg /etc)</li>
-                <li><strong>--localstatedir</strong> (eg /var)</li>
-            </ul>
+            <div class="highlight">
+<code>$ make rpm</code>
+            </div>
         </div>
     </div>
 </section>
