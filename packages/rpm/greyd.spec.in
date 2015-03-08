@@ -49,13 +49,13 @@ cp %{buildroot}%{_sysconfdir}/greyd/greylogd.redhat-init %{buildroot}%{_sysconfd
 #rm -fr %{buildroot}
 
 %pre
-groups greyd
+groups greyd 2>&1 >/dev/null
 if [ "$?" != "0" ]; then
     /sbin/groupadd greyd
     /sbin/useradd -M -g greyd -d /var/empty/greyd -s /bin/false -K MAIL_DIR=/dev/null greyd 2>/dev/null
 fi
 
-groups greydb
+groups greydb 2>&1 >/dev/null
 if [ "$?" != "0" ]; then
     /sbin/groupadd greydb
     /sbin/useradd -M -g greydb -d /var/lib/greyd -s /bin/false -K MAIL_DIR=/dev/null greydb 2>/dev/null
