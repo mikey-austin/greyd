@@ -1,7 +1,7 @@
 Name:      @PACKAGE@
 Summary:   Greylisting & blacklisting daemon
 Version:   @PACKAGE_VERSION@
-Release:   1
+Release:   2
 License:   OpenBSD
 Group:     Applications/Internet
 URL:       http://greyd.org
@@ -49,10 +49,17 @@ cp %{buildroot}%{_sysconfdir}/greyd/greylogd.redhat-init %{buildroot}%{_sysconfd
 #rm -fr %{buildroot}
 
 %pre
-/sbin/groupadd greyd
-/sbin/groupadd greydb
-/sbin/useradd -M -g greyd -d /var/empty/greyd -s /bin/false -K MAIL_DIR=/dev/null greyd 2>/dev/null
-/sbin/useradd -M -g greydb -d /var/lib/greyd -s /bin/false -K MAIL_DIR=/dev/null greydb 2>/dev/null
+groups greyd
+if [ "$?" != "0" ]; then
+    /sbin/groupadd greyd
+    /sbin/useradd -M -g greyd -d /var/empty/greyd -s /bin/false -K MAIL_DIR=/dev/null greyd 2>/dev/null
+fi
+
+groups greydb
+if [ "$?" != "0" ]; then
+    /sbin/groupadd greydb
+    /sbin/useradd -M -g greydb -d /var/lib/greyd -s /bin/false -K MAIL_DIR=/dev/null greydb 2>/dev/null
+fi
 
 %post
 /sbin/chkconfig --add greyd
