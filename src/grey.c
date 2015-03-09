@@ -762,7 +762,8 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     }
 
 #ifdef HAVE_SPF
-    if(!spamtrap) {
+    /* Avoid checking SPF on synced grey entries. */
+    if(!spamtrap && !sync) {
         spfres = spf_lookup(greylister, gt);
         switch(spfres) {
         case 0:
@@ -1081,8 +1082,8 @@ spf_lookup(Greylister_T greylister, struct Grey_tuple *gt)
     {
     case SPF_RESULT_PASS:
         result = 0;
-        i_info("SPF passed for %s %s to %s helo %s",
-               gt->ip, gt->from, gt->to, gt->helo);
+        i_info("SPF passed for %s %s helo %s",
+               gt->ip, gt->from, gt->helo);
         break;
 
     case SPF_RESULT_NEUTRAL:
@@ -1101,13 +1102,13 @@ spf_lookup(Greylister_T greylister, struct Grey_tuple *gt)
 
     case SPF_RESULT_FAIL:
         result = 2;
-        i_warning("SPF failure for %s %s -> %s helo %s",
-                  gt->ip, gt->from, gt->to, gt->helo);
+        i_warning("SPF failure for %s %s helo %s",
+                  gt->ip, gt->from, gt->helo);
         break;
 
     default:
-        i_warning("SPF error for %s %s -> %s helo %s: %s (%d)",
-                  gt->ip, gt->from, gt->to, gt->helo,
+        i_warning("SPF error for %s %s helo %s: %s (%d)",
+                  gt->ip, gt->from, gt->helo,
                   SPF_strerror(SPF_response_errcode(res)),
                   SPF_response_errcode(res));
         break;
