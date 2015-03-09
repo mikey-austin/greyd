@@ -54,6 +54,11 @@ static void Hash_init_entry(struct Hash_entry *entry);
  */
 static int Hash_lookup(const char *key);
 
+/**
+ * Create and initialize the hash's array of entries.
+ */
+static void Hash_create_entries(Hash_T hash);
+
 extern Hash_T
 Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
 {
@@ -65,20 +70,12 @@ Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
         errx(1, "Could not allocate hash");
     }
 
-    new->size        = size;
+    new->size    = size;
+    new->destroy = destroy;
+
+    /* Leave the entries uninitialized until the first insert. */
+    new->entries     = NULL;
     new->num_entries = 0;
-    new->destroy     = destroy;
-
-    new->entries = (struct Hash_entry*) calloc(sizeof(*(new->entries)), size);
-    if(!new->entries) {
-        free(new);
-        new = NULL;
-        errx(1, "Could not allocate hash entries of size %d", size);
-    }
-
-    /* Initialise the entries to NULL. */
-    for(i=0; i < new->size; i++)
-        Hash_init_entry(new->entries + i);
 
     return new;
 }
@@ -92,21 +89,19 @@ Hash_destroy(Hash_T *hash)
         return;
     }
 
-    if((*hash)->destroy) {
-        for(i=0; i < (*hash)->size; i++) {
+    if((*hash)->destroy && (*hash)->num_entries > 0) {
+        for(i = 0; i < (*hash)->size; i++) {
             (*hash)->destroy(((*hash)->entries + i));
         }
     }
 
-    if(*hash && (*hash)->entries) {
-        free((*hash)->entries);
-        (*hash)->entries = NULL;
+    if(*hash) {
+        if((*hash)->entries) {
+            free((*hash)->entries);
+            (*hash)->entries = NULL;
+        }
         free(*hash);
         *hash = NULL;
-    }
-    else {
-        i_error("Tried to free NULL hash (hash %d, entries %d)",
-              *hash, (*hash ? (*hash)->entries : 0x0));
     }
 }
 
@@ -114,6 +109,9 @@ extern void
 Hash_reset(Hash_T hash)
 {
     int i;
+
+    if(hash->num_entries == 0)
+        return;
 
     for(i=0; i < hash->size; i++) {
         hash->destroy((hash->entries + i));
@@ -129,13 +127,16 @@ Hash_insert(Hash_T hash, const char *key, void *value)
 {
     struct Hash_entry *entry;
 
-    /* Check if there is space and resize if required. */
-    if(hash->num_entries >= hash->size) {
+    if(hash->entries == NULL) {
+        Hash_create_entries(hash);
+    }
+    else if(hash->num_entries >= hash->size) {
         Hash_resize(hash, (2 * hash->size));
     }
 
     entry = Hash_find_entry(hash, key);
-    if(entry->v != NULL) {
+    if(entry->v != NULL)
+    {
         /* An entry exists, clear contents before overwriting. */
         hash->destroy(entry);
     }
@@ -153,6 +154,10 @@ extern void
 *Hash_get(Hash_T hash, const char *key)
 {
     struct Hash_entry *entry;
+
+    if(hash->entries == NULL)
+        return NULL;
+
     entry = Hash_find_entry(hash, key);
     return entry->v;
 }
@@ -161,6 +166,9 @@ extern void
 Hash_delete(Hash_T hash, const char *key)
 {
     struct Hash_entry *entry;
+
+    if(hash->entries == NULL)
+        return;
 
     entry = Hash_find_entry(hash, key);
     if(entry->v != NULL) {
@@ -250,6 +258,23 @@ Hash_resize(Hash_T hash, int new_size)
     /* Cleanup the old entries. */
     free(old_entries);
     old_entries = NULL;
+}
+
+static void
+Hash_create_entries(Hash_T hash)
+{
+    int i;
+
+    hash->entries = (struct Hash_entry*) calloc(sizeof(*(hash->entries)), hash->size);
+    if(!hash->entries) {
+        errx(1, "Could not allocate hash entries of size %d", hash->size);
+    }
+
+    /* Initialise the entries to NULL. */
+    for(i = 0; i < hash->size; i++)
+        Hash_init_entry(hash->entries + i);
+
+    hash->num_entries = 0;
 }
 
 static void
