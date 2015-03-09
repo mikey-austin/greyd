@@ -52,7 +52,7 @@ static void Hash_init_entry(struct Hash_entry *entry);
 /**
  * The hash function to map a key to an index in the array of hash entries.
  */
-static int Hash_lookup(const char *key);
+static unsigned int Hash_lookup(const char *key);
 
 /**
  * Create and initialize the hash's array of entries.
@@ -201,7 +201,7 @@ Hash_keys(Hash_T hash)
 static struct Hash_entry
 *Hash_find_entry(Hash_T hash, const char *key)
 {
-    int i, j;
+    unsigned int i, j;
     struct Hash_entry *curr;
 
     i = j = (Hash_lookup(key) % hash->size);
@@ -285,8 +285,17 @@ Hash_init_entry(struct Hash_entry *entry)
     entry->v    = NULL;
 }
 
-static int
+/*
+ * Use the djb2 string hash function.
+ */
+static unsigned int
 Hash_lookup(const char *key)
 {
-    return strlen(key);
+    int c;
+    unsigned int hash = 5381;
+
+    while(c = *key++)
+        hash = ((hash << 5) + hash) + c;
+
+    return hash;
 }
