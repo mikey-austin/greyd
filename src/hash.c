@@ -45,11 +45,6 @@ static struct Hash_entry *Hash_find_entry(Hash_T hash, const char *key);
 static void Hash_resize(Hash_T hash, int new_size);
 
 /**
- * Initialise a hash entry safely.
- */
-static void Hash_init_entry(struct Hash_entry *entry);
-
-/**
  * The hash function to map a key to an index in the array of hash entries.
  */
 static unsigned int Hash_lookup(const char *key);
@@ -173,7 +168,8 @@ Hash_delete(Hash_T hash, const char *key)
     entry = Hash_find_entry(hash, key);
     if(entry->v != NULL) {
         hash->destroy(entry);
-        Hash_init_entry(entry);
+        *(entry->k) = '\0';
+        entry->v    = NULL;
         hash->num_entries--;
     }
 }
@@ -245,8 +241,6 @@ Hash_resize(Hash_T hash, int new_size)
     /* Re-initialize the hash entries. */
     hash->size = new_size;
     hash->num_entries = 0;
-    for(i = 0; i < hash->size; i++)
-        Hash_init_entry(hash->entries + i);
 
     /* For each non-NULL entry, re-hash into the new entries array. */
     for(i = 0; i < old_size; i++) {
@@ -270,14 +264,6 @@ Hash_create_entries(Hash_T hash)
     if(!hash->entries) {
         errx(1, "Could not allocate hash entries of size %d", hash->size);
     }
-}
-
-static void
-Hash_init_entry(struct Hash_entry *entry)
-{
-    /* Ensure that an empty key contains a null byte. */
-    *(entry->k) = '\0';
-    entry->v    = NULL;
 }
 
 /*
