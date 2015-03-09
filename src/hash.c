@@ -265,16 +265,11 @@ Hash_create_entries(Hash_T hash)
 {
     int i;
 
+    hash->num_entries = 0;
     hash->entries = (struct Hash_entry*) calloc(sizeof(*(hash->entries)), hash->size);
     if(!hash->entries) {
         errx(1, "Could not allocate hash entries of size %d", hash->size);
     }
-
-    /* Initialise the entries to NULL. */
-    for(i = 0; i < hash->size; i++)
-        Hash_init_entry(hash->entries + i);
-
-    hash->num_entries = 0;
 }
 
 static void

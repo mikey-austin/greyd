@@ -33,8 +33,8 @@
 #include <string.h>
 #include <glob.h>
 
-#define CONFIG_INIT_SECTIONS 30
-#define CONFIG_INIT_INCLUDES 50
+#define CONFIG_INIT_SECTIONS 8
+#define CONFIG_INIT_INCLUDES 3
 
 /**
  * Destructor for configuration section hash entries.
