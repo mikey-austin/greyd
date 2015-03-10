@@ -762,8 +762,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     }
 
 #ifdef HAVE_SPF
-    /* Avoid checking SPF on synced grey entries. */
-    if(!spamtrap && !sync) {
+    if(sync && !spamtrap) {
         spfres = spf_lookup(greylister, gt);
         switch(spfres) {
         case 0:
@@ -841,9 +840,11 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
 
         switch(DB_put(db, &key, &val)) {
         case GREYDB_OK:
-            i_debug("new %sentry %s from %s to %s, helo %s",
-                    (spamtrap ? "greytrap " : ""), gt->ip,
-                    gt->from, gt->to, gt->helo );
+            if(sync) {
+                i_debug("new %sentry %s from %s to %s, helo %s",
+                        (spamtrap ? "greytrap " : ""), gt->ip,
+                        gt->from, gt->to, gt->helo );
+            }
             break;
 
         default:
@@ -864,9 +865,11 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
         val.data.gd = gd;
 
         if(DB_put(db, &key, &val) == GREYDB_OK) {
-            i_debug("updated %sentry %s from %s to %s, helo %s",
-                    (spamtrap ? "greytrap " : ""), gt->ip,
-                    gt->from, gt->to, gt->helo );
+            if(sync) {
+                i_debug("updated %sentry %s from %s to %s, helo %s",
+                        (spamtrap ? "greytrap " : ""), gt->ip,
+                        gt->from, gt->to, gt->helo );
+            }
         }
         else {
             goto rollback;
@@ -939,7 +942,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
         val.type = DB_VAL_GREY;
         val.data.gd = gd;
 
-        if(DB_put(db, &key, &val) == GREYDB_OK) {
+        if(DB_put(db, &key, &val) == GREYDB_OK && sync) {
             i_debug("new %s from %s for %s, expires %s",
                     (spamtrap ? "TRAP" : "WHITE"), source, ip,
                     expires);
@@ -958,7 +961,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, 
             val.data.gd.pcount++;
         }
 
-        if(DB_put(db, &key, &val) == GREYDB_OK) {
+        if(DB_put(db, &key, &val) == GREYDB_OK && sync) {
             i_debug("updated %s", ip);
         }
         break;
