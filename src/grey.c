@@ -73,7 +73,7 @@ static void shutdown_greyd(int);
 static int push_addr(List_T, char *);
 static int process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
-static void process_non_grey(Greylister_T, int, char *, char *, char *);
+static void process_non_grey(Greylister_T, int, char *, char *, char *, int);
 static int trap_check(List_T, DB_handle_T, char *);
 static int db_addr_state(DB_handle_T, char *);
 static void update_firewall(Greylister_T, int);
@@ -901,7 +901,8 @@ rollback:
 }
 
 static void
-process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source, char *expires)
+process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
+                 char *expires, int sync)
 {
     DB_handle_T db = greylister->db_handle;
     struct DB_key key;
@@ -1012,7 +1013,7 @@ process_message(Greylister_T greylister, Config_T message)
         expires = Config_get_str(message, "expires", NULL, NULL);
         if(ip && source && expires)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
-                             ip, source, expires);
+                             ip, source, expires, sync);
         break;
 
     default:
