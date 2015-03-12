@@ -307,6 +307,9 @@ if test "x${spf_module}" = xyes; then
     fi
 fi
 
+AC_ARG_WITH([ltdl-fix], [AS_HELP_STRING([--with-ltdl-fix], [enable ltdl.h and .so mismatch on some OSes])],
+    [AC_DEFINE([WITH_LTDL_FIX], [1], [ltdl.h fix])])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT64_T
 AC_TYPE_INT8_T
