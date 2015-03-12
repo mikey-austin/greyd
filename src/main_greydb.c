@@ -343,9 +343,6 @@ main(int argc, char **argv)
     Config_merge(config, opts);
     Config_destroy(&opts);
 
-    /* Ensure that the sync bind address is not set. */
-    Config_delete(config, "bind_address", "sync");
-
     /* Ensure syslog output is disabled. */
     Config_set_int(config, "syslog_enable", NULL, 0);
     Log_setup(config, PROG_NAME);
@@ -359,8 +356,10 @@ main(int argc, char **argv)
         ret = db_list(db);
         break;
 
-    case ACTION_DEL:
     case ACTION_ADD:
+        /* Ensure that the sync bind address is not set. */
+        Config_delete(config, "bind_address", "sync");
+
         if(sync_send == 0
            && (hosts = Config_get_list(config, "hosts", "sync")))
         {
@@ -377,7 +376,9 @@ main(int argc, char **argv)
             Sync_stop(&syncer);
             sync_send = 0;
         }
+        /* Fallthrough. */
 
+    case ACTION_DEL:
         white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
         trap_expiry = Config_get_int(config, "trap_expiry", "grey", GREY_TRAPEXP);
 
