@@ -23,6 +23,10 @@
 
 #include <config.h>
 
+#ifdef WITH_LTDL_FIX
+# define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
+#endif
+
 #ifdef HAVE_LTDL_H
 # include <ltdl.h>
 #else
@@ -30,10 +34,6 @@
 #endif
 
 #include "mod.h"
-
-#ifdef WITH_LTDL_FIX
-# define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
-#endif
 
 extern void
 *Mod_open(Config_section_T section, const char *name)
