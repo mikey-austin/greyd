@@ -1,7 +1,7 @@
 Name:      @PACKAGE@
 Summary:   Greylisting & blacklisting daemon
 Version:   @PACKAGE_VERSION@
-Release:   2
+Release:   1
 License:   OpenBSD
 Group:     Applications/Internet
 URL:       http://greyd.org

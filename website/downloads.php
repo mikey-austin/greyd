@@ -16,6 +16,9 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="downloads/greyd-0.7.1.tar.gz">greyd-0.7.1.tar.gz</a> - 2015-03-12
+                </li>
+                <li>
                     <a href="downloads/greyd-0.7.0.tar.gz">greyd-0.7.0.tar.gz</a> - 2015-03-08
                 </li>
                 <li>
@@ -57,6 +60,10 @@ $ ./configure --with-bdb --with-netfilter
 $ make
 $ sudo make install</code>
             </div>
+
+            <p>
+                There is an issue on some distros (eg Arch Linux) with the system ltdl.h and a missing <strong>lt__PROGRAM__LTX_preloaded_symbols</strong> symbol. The <strong>--with-ltdl-fix</strong> flag will enable a workaround for such situations.
+            </p>
 
             <p>
                 On an RPM-based distribution, you can easily make a package by the following:

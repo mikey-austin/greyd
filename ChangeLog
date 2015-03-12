@@ -1,3 +1,9 @@
+2015-03-12  Mikey Austin  <mikey@greyd.org>
+
+	* Hash performance tuning.
+	* Added --with-ltdl-fix for distros with broken libltdl (credit to Ivan Agarkov (kreon))
+	* Updated sync slave debug messages to be less chatty
+
 2015-03-08  Mikey Austin  <mikey@greyd.org>
 
 	* Minor internal refactoring & cleanups.
