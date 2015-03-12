@@ -31,6 +31,8 @@
 
 #include "mod.h"
 
+#define lt__PROGRAM__LTX_preloaded_symbols lt_libltdl_LTX_preloaded_symbols
+
 extern void
 *Mod_open(Config_section_T section, const char *name)
 {
