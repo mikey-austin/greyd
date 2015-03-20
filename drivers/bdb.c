@@ -136,7 +136,7 @@ Mod_db_open(DB_handle_T handle, int flags)
 {
     struct bdb_handle *bh = handle->dbh;
     char *db_name, *err_log_path;
-        FILE *err_log;
+    FILE *err_log;
     int ret, open_flags;
 
     if(bh->db != NULL)
@@ -454,11 +454,11 @@ pack_key(struct DB_key *key, DBT *dbkey)
     int len, slen = 0;
 
     len = sizeof(short) + (key->type == DB_KEY_TUPLE
-                         ? (slen = (strlen(key->data.gt.ip) + 1
-                                    + strlen(key->data.gt.helo) + 1
-                                    + strlen(key->data.gt.from) + 1
-                                    + strlen(key->data.gt.to) + 1))
-                         : (slen = strlen(key->data.s) + 1));
+                           ? (slen = (strlen(key->data.gt.ip) + 1
+                                      + strlen(key->data.gt.helo) + 1
+                                      + strlen(key->data.gt.from) + 1
+                                      + strlen(key->data.gt.to) + 1))
+                           : (slen = strlen(key->data.s) + 1));
     if((buf = calloc(sizeof(char), len)) == NULL) {
         i_critical("Could not pack key");
     }
@@ -499,8 +499,8 @@ pack_val(struct DB_val *val, DBT *dbval)
     int len, slen = 0;
 
     len = sizeof(short) + (val->type == DB_VAL_GREY
-                         ? sizeof(struct Grey_data)
-                         : (slen = strlen(val->data.s) + 1));
+                           ? sizeof(struct Grey_data)
+                           : (slen = strlen(val->data.s) + 1));
     if((buf = calloc(sizeof(char), len)) == NULL) {
         i_critical("Could not pack val");
     }
