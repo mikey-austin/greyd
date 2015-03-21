@@ -155,7 +155,7 @@ Mod_db_start_txn(DB_handle_T handle)
         return -1;
     }
 
-    ret = sqlite3_exec(dbh->db, "begin", NULL, NULL, &err);
+    ret = sqlite3_exec(dbh->db, "BEGIN TRANSACTION", NULL, NULL, &err);
     if(ret != SQLITE_OK) {
         i_warning("db txn start failed: %s", err);
         sqlite3_free(err);
@@ -183,7 +183,7 @@ Mod_db_commit_txn(DB_handle_T handle)
         return -1;
     }
 
-    ret = sqlite3_exec(dbh->db, "commit", NULL, NULL, &err);
+    ret = sqlite3_exec(dbh->db, "COMMIT", NULL, NULL, &err);
     if(ret != SQLITE_OK) {
         i_warning("db txn commit failed: %s", err);
         sqlite3_free(err);
