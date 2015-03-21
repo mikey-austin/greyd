@@ -119,13 +119,17 @@ test_db(const char *driver)
         return;
     ret = unlink(db_path);
     if(ret < 0 && errno != ENOENT) {
-        printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
+        printf("Error unlinking test DB: %s\n", strerror(errno));
     }
+
+    if(!strcmp(driver, "sqlite"))
+        system("sqlite3 -batch -init ../drivers/sqlite3_schema.sql "
+               "/tmp/greyd_test_db/test_sqlite.db ''");
 
     db = DB_init(c);
     DB_open(db, GREYDB_RW);
     TEST_OK((db != NULL), "DB handle created successfully");
-    TEST_OK((db->dbh != NULL), "BDB handle created successfully");
+    TEST_OK((db->dbh != NULL), "DB handle created successfully");
 
     memset(&gt, 0, sizeof(gt));
     memset(&val1, 0, sizeof(val1));

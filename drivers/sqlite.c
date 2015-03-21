@@ -101,9 +101,7 @@ Mod_db_open(DB_handle_T handle, int flags)
     db_name = Config_get_str(handle->config, "db_name", "database",
                              DEFAULT_DB);
 
-    if(asprintf(&db_path, "file:%s/%s%s", path, db_name,
-                (flags & GREYDB_RO ? "?mode=ro" : "")) != 0)
-    {
+    if(asprintf(&db_path, "%s/%s", path, db_name) <= 0) {
         i_warning("could not create db path");
         goto cleanup;
     }
@@ -185,7 +183,6 @@ Mod_db_rollback_txn(DB_handle_T handle)
     int ret;
 
     if(dbh->txn != 1) {
-        i_warning("cannot rollback, not in transaction");
         return -1;
     }
 
@@ -230,16 +227,16 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql = "INSERT OR IGNORE INTO spamtraps(address) VALUES ('?')";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        sql = "INSERT OR IGNORE INTO spamtraps(address) VALUES (?)";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
             goto err;
         }
         break;
@@ -247,10 +244,10 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     case DB_KEY_IP:
         sql = "INSERT INTO entries "
             "(`ip`, `first`, `pass`, `expire`, `bcount`, `pcount`) "
-            "VALUES ('?', ?, ?, ?, ?, ?)";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+            "VALUES (?, ?, ?, ?, ?, ?)";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
@@ -262,7 +259,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
              && !sqlite3_bind_int(stmt,   5, gd->bcount)
              && !sqlite3_bind_int(stmt,   6, gd->pcount)))
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -271,10 +268,10 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         sql = "INSERT INTO entries "
             "(`ip`, `helo`, `from`, `to`, "
             " `first`, `pass`, `expire`, `bcount`, `pcount`) "
-            "VALUES ('?', '?', '?', '?', ?, ?, ?, ?, ?)";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql), &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
@@ -290,7 +287,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
              && !sqlite3_bind_int(stmt,   8, gd->bcount)
              && !sqlite3_bind_int(stmt,   9, gd->pcount)))
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -301,7 +298,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     ret = sqlite3_step(stmt);
     if(ret != SQLITE_DONE) {
-        i_warn("unexpected sqlite3_step result: %d", ret);
+        i_warning("unexpected sqlite3_step result: %d", ret);
         sqlite3_finalize(stmt);
         return GREYDB_ERR;
     }
@@ -326,17 +323,17 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     switch(key->type) {
     case DB_KEY_MAIL:
         sql = "SELECT 0, 0, 0, 0, -2 "
-            "FROM spamtraps WHERE `address`='?' "
+            "FROM spamtraps WHERE `address`=? "
             "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
             goto err;
         }
         break;
@@ -344,19 +341,19 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     case DB_KEY_IP:
         sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
             "FROM entries "
-            "WHERE `ip`='?' AND `helo` IS NULL AND `from` IS NULL "
+            "WHERE `ip`=? AND `helo` IS NULL AND `from` IS NULL "
             "AND `to` IS NULL "
             "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
         if(sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC)
             != SQLITE_OK)
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -364,11 +361,11 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     case DB_KEY_TUPLE:
         sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
             "FROM entries "
-            "WHERE `ip`='?' AND `helo`='?' AND `from`='?' AND `to`='?' "
+            "WHERE `ip`=? AND `helo`=? AND `from`=? AND `to`=? "
             "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
@@ -378,7 +375,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
              && !sqlite3_bind_text(stmt,  3, gt->from, -1, SQLITE_STATIC)
              && !sqlite3_bind_text(stmt,  4, gt->to, -1, SQLITE_STATIC)))
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -401,7 +398,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     default:
-        i_warn("unexpected sqlite3_step result: %d", ret);
+        i_warning("unexpected sqlite3_step result: %d", ret);
         res = GREYDB_ERR;
         break;
     }
@@ -422,44 +419,42 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql = "DELETE FROM spamtraps WHERE `address`='?' LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        sql = "DELETE FROM spamtraps WHERE `address`=?";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
             goto err;
         }
         break;
 
     case DB_KEY_IP:
-        sql = "DELETE FROM entries WHERE `ip`='?' "
-            "AND `helo` IS NULL AND `from` IS NULL AND `to` IS NULL "
-            "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        sql = "DELETE FROM entries WHERE `ip`=? "
+            "AND `helo` IS NULL AND `from` IS NULL AND `to` IS NULL";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
             goto err;
         }
         break;
 
     case DB_KEY_TUPLE:
-        sql = "DELETE FROM entries WHERE `ip`='?' "
-            "AND `helo`='?' AND `from`='?' AND `to`='?' "
-            "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+        sql = "DELETE FROM entries WHERE `ip`=? "
+            "AND `helo`=? AND `from`=? AND `to`=?";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
@@ -469,7 +464,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
              && !sqlite3_bind_text(stmt,  3, gt->from, -1, SQLITE_STATIC)
              && !sqlite3_bind_text(stmt,  4, gt->to, -1, SQLITE_STATIC)))
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -480,7 +475,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 
     ret = sqlite3_step(stmt);
     if(ret != SQLITE_DONE) {
-        i_warn("unexpected sqlite3_step result: %d", ret);
+        i_warning("unexpected sqlite3_step result: %d", ret);
         sqlite3_finalize(stmt);
         return GREYDB_ERR;
     }
@@ -502,7 +497,7 @@ Mod_db_get_itr(DB_itr_T itr)
     int ret;
 
     if((dbi = malloc(sizeof(*dbi))) == NULL) {
-        i_warn("malloc: %s", strerror(errno));
+        i_warning("malloc: %s", strerror(errno));
         goto err;
     }
     dbi->stmt = NULL;
@@ -510,9 +505,9 @@ Mod_db_get_itr(DB_itr_T itr)
 
     sql = "SELECT `ip`, `helo`, `from`, `to`, "
         "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries";
-    ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &dbi->stmt, NULL);
+    ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &dbi->stmt, NULL);
     if(ret != SQLITE_OK) {
-        i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+        i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
         goto err;
     }
 
@@ -559,7 +554,7 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
         break;
 
     default:
-        i_warn("unexpected sqlite3_step result: %d", ret);
+        i_warning("unexpected sqlite3_step result: %d", ret);
         res = GREYDB_ERR;
         break;
     }
@@ -583,12 +578,11 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
     case DB_KEY_IP:
         sql = "UPDATE entries SET `first`=?, `pass`=?, `expire`=? "
             "`bcount`=?, `pcount`=? "
-            "WHERE `ip`='?' AND `helo` IS NULL AND `from` IS NULL "
-            "AND `to` IS NULL "
-            "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+            "WHERE `ip`=? AND `helo` IS NULL AND `from` IS NULL "
+            "AND `to` IS NULL";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
@@ -601,7 +595,7 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
              && !sqlite3_bind_int(stmt,   5, gd->pcount)
              && !sqlite3_bind_text(stmt,  6, gt->ip, -1, SQLITE_STATIC)))
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -609,11 +603,10 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
     case DB_KEY_TUPLE:
         sql = "UPDATE entries SET `first`=?, `pass`=?, `expire`=? "
             "`bcount`=?, `pcount`=? "
-            "WHERE `ip`='?' AND `helo`='?' AND `from`='?' AND `to`='?' "
-            "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &stmt, NULL);
+            "WHERE `ip`=? AND `helo`=? AND `from`=? AND `to`=?";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
         }
 
@@ -629,7 +622,7 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
              && !sqlite3_bind_text(stmt,  8, gt->from, -1, SQLITE_STATIC)
              && !sqlite3_bind_text(stmt,  9, gt->to, -1, SQLITE_STATIC)))
         {
-            i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -640,7 +633,7 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 
     ret = sqlite3_step(stmt);
     if(ret != SQLITE_DONE) {
-        i_warn("unexpected sqlite3_step result: %d", ret);
+        i_warning("unexpected sqlite3_step result: %d", ret);
         sqlite3_finalize(stmt);
         return GREYDB_ERR;
     }
