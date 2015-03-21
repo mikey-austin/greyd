@@ -21,8 +21,11 @@
  * @date   2014
  */
 
+#include "../src/config.h"
+
 #include "test.h"
 #include <greydb.h>
+#include <firewall.h>
 #include <greyd_config.h>
 #include <lexer.h>
 #include <config_parser.h>
