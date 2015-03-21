@@ -68,7 +68,7 @@ main(void)
     pid_t reader_pid;
     char *domain;
     FW_handle_T fw_handle;
-    char *conf =
+    char *conf, *conf_tmpl =
         "drop_privs = 0\n"
         "low_prio_mx = \"192.179.21.3\"\n"
         "section grey {\n"
@@ -81,7 +81,7 @@ main(void)
         "  driver = \"greyd_fw_dummy.so\"\n"
         "}\n"
         "section database {\n"
-        "  driver = \"greyd_bdb.so\",\n"
+        "  driver = \"%s\",\n"
         "  path   = \"/tmp/greyd_test_grey\",\n"
         "  db_name = \"test_grey.db\"\n"
         "}";
@@ -94,6 +94,7 @@ main(void)
 
     TEST_START(36);
 
+    asprintf(&conf, conf_tmpl, DB_DRIVER);
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
     l = Config_lexer_create(ls);
@@ -338,6 +339,7 @@ cleanup:
     Config_destroy(&message);
     Config_parser_destroy(&cp);
     Config_parser_destroy(&message_parser);
+    free(conf);
 
     TEST_COMPLETE;
 }

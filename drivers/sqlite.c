@@ -113,20 +113,21 @@ Mod_db_open(DB_handle_T handle, int flags)
     }
 
     /* Ensure that the schema is setup appropriately. */
-    sql = "CREATE TABLE IF NOT EXISTS spamtraps( \
-               `address` VARCHAR(1024),          \
-               UNIQUE(`address`)                 \
-           );                                    \
-           CREATE TABLE IF NOT EXISTS entries(   \
-               `ip`     VARCHAR(46),             \
-               `helo`   VARCHAR(1024),           \
-               `from`   VARCHAR(1024),           \
-               `to`     VARCHAR(1024),           \
-               `first`  UNSIGNED BIGINT,         \
-               `pass`   UNSIGNED BIGINT,         \
-               `expire` UNSIGNED BIGINT,         \
-               `bcount` INTEGER,                 \
-               `pcount` INTEGER                  \
+    sql = "CREATE TABLE IF NOT EXISTS spamtraps(        \
+               `address` VARCHAR(1024),                 \
+               PRIMARY KEY(`address`)                   \
+           );                                           \
+           CREATE TABLE IF NOT EXISTS entries(          \
+               `ip`     VARCHAR(46),                    \
+               `helo`   VARCHAR(1024),                  \
+               `from`   VARCHAR(1024),                  \
+               `to`     VARCHAR(1024),                  \
+               `first`  UNSIGNED BIGINT,                \
+               `pass`   UNSIGNED BIGINT,                \
+               `expire` UNSIGNED BIGINT,                \
+               `bcount` INTEGER,                        \
+               `pcount` INTEGER,                        \
+               PRIMARY KEY (`ip`, `helo`, `from`, `to`) \
            );";
     ret = sqlite3_exec(dbh->db, sql, NULL, NULL, &err);
     if(ret != SQLITE_OK) {
@@ -265,9 +266,10 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     case DB_KEY_IP:
-        sql = "INSERT INTO entries "
-            "(`ip`, `first`, `pass`, `expire`, `bcount`, `pcount`) "
-            "VALUES (?, ?, ?, ?, ?, ?)";
+        sql = "INSERT OR REPLACE INTO entries "
+            "(`ip`, `helo`, `from`, `to`, "
+            " `first`, `pass`, `expire`, `bcount`, `pcount`) "
+            "VALUES (?, '', '', '', ?, ?, ?, ?, ?)";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
             i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
@@ -288,7 +290,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     case DB_KEY_TUPLE:
-        sql = "INSERT INTO entries "
+        sql = "INSERT OR REPLACE INTO entries "
             "(`ip`, `helo`, `from`, `to`, "
             " `first`, `pass`, `expire`, `bcount`, `pcount`) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -364,8 +366,8 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     case DB_KEY_IP:
         sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
             "FROM entries "
-            "WHERE `ip`=? AND `helo` IS NULL AND `from` IS NULL "
-            "AND `to` IS NULL "
+            "WHERE `ip`=? AND `helo`='' AND `from`='' "
+            "AND `to`='' "
             "LIMIT 1";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
@@ -458,7 +460,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 
     case DB_KEY_IP:
         sql = "DELETE FROM entries WHERE `ip`=? "
-            "AND `helo` IS NULL AND `from` IS NULL AND `to` IS NULL";
+            "AND `helo`='' AND `from`='' AND `to`=''";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
             i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
@@ -528,7 +530,9 @@ Mod_db_get_itr(DB_itr_T itr)
     itr->dbi = dbi;
 
     sql = "SELECT `ip`, `helo`, `from`, `to`, "
-        "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries";
+        "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries "
+        "UNION "
+        "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps";
     ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &dbi->stmt, NULL);
     if(ret != SQLITE_OK) {
         i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
@@ -594,82 +598,8 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
     struct s3_handle *dbh = itr->handle->dbh;
     struct s3_itr *dbi = itr->dbi;
     struct DB_key *key = dbi->curr;
-    sqlite3_stmt *stmt;
-    char *sql;
-    struct Grey_tuple *gt;
-    struct Grey_data *gd;
-    int ret;
 
-    switch(key->type) {
-    case DB_KEY_IP:
-        sql = "UPDATE entries SET `first`=?, `pass`=?, `expire`=? "
-            "`bcount`=?, `pcount`=? "
-            "WHERE `ip`=? AND `helo` IS NULL AND `from` IS NULL "
-            "AND `to` IS NULL";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
-            goto err;
-        }
-
-        gt = &key->data.gt;
-        gd = &val->data.gd;
-        if(!(!sqlite3_bind_int64(stmt,    1, gd->first)
-             && !sqlite3_bind_int64(stmt, 2, gd->pass)
-             && !sqlite3_bind_int64(stmt, 3, gd->expire)
-             && !sqlite3_bind_int(stmt,   4, gd->bcount)
-             && !sqlite3_bind_int(stmt,   5, gd->pcount)
-             && !sqlite3_bind_text(stmt,  6, gt->ip, -1, SQLITE_STATIC)))
-        {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
-        break;
-
-    case DB_KEY_TUPLE:
-        sql = "UPDATE entries SET `first`=?, `pass`=?, `expire`=? "
-            "`bcount`=?, `pcount`=? "
-            "WHERE `ip`=? AND `helo`=? AND `from`=? AND `to`=?";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
-            goto err;
-        }
-
-        gt = &key->data.gt;
-        gd = &val->data.gd;
-        if(!(!sqlite3_bind_int64(stmt,    1, gd->first)
-             && !sqlite3_bind_int64(stmt, 2, gd->pass)
-             && !sqlite3_bind_int64(stmt, 3, gd->expire)
-             && !sqlite3_bind_int(stmt,   4, gd->bcount)
-             && !sqlite3_bind_int(stmt,   5, gd->pcount)
-             && !sqlite3_bind_text(stmt,  6, gt->ip, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  7, gt->helo, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  8, gt->from, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  9, gt->to, -1, SQLITE_STATIC)))
-        {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
-        break;
-
-    default:
-        return GREYDB_ERR;
-    }
-
-    ret = sqlite3_step(stmt);
-    if(ret != SQLITE_DONE) {
-        i_warning("unexpected sqlite3_step result: %d", ret);
-        sqlite3_finalize(stmt);
-        return GREYDB_ERR;
-    }
-    sqlite3_finalize(stmt);
-    return GREYDB_OK;
-
-err:
-    sqlite3_finalize(stmt);
-    DB_rollback_txn(itr->handle);
-    return GREYDB_ERR;
+    return DB_put(itr->handle, key, val);
 }
 
 extern int
@@ -687,19 +617,33 @@ static void
 populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
 {
     struct Grey_tuple *gt;
-    static char buf[(INET6_ADDRSTRLEN + 1) + 4 * (GREY_MAX_MAIL + 1)];
+    static char buf[(INET6_ADDRSTRLEN + 1) + 3 * (GREY_MAX_MAIL + 1)];
     char *buf_p = buf;
 
     memset(key, 0, sizeof(*key));
     memset(buf, 0, sizeof(buf));
 
-    /* A NULL helo column indicates an IP key type. */
-    key->type = (sqlite3_column_type(stmt, 1) == SQLITE_NULL
-                 ? DB_KEY_IP : DB_KEY_TUPLE);
+    /*
+     * Empty helo, from & to columns indicate a non-grey entry.
+     * A pcount of -2 indicates a spamtrap, which has a key type
+     * of DB_KEY_MAIL.
+     */
+    key->type = ((!strcmp(sqlite3_column_text(stmt, 1), "")
+                  && !strcmp(sqlite3_column_text(stmt, 2), "")
+                  && !strcmp(sqlite3_column_text(stmt, 3), ""))
+                 ? (sqlite3_column_int(stmt, 8) == -2
+                    ? DB_KEY_MAIL : DB_KEY_IP)
+                 : DB_KEY_TUPLE);
+
     if(key->type == DB_KEY_IP) {
         key->data.s = buf_p;
         strncpy(buf_p, sqlite3_column_text(stmt, from + 0),
                 INET6_ADDRSTRLEN + 1);
+    }
+    else if(key->type == DB_KEY_MAIL) {
+        key->data.s = buf_p;
+        strncpy(buf_p, sqlite3_column_text(stmt, from + 0),
+                GREY_MAX_MAIL + 1);
     }
     else {
         gt = &key->data.gt;
