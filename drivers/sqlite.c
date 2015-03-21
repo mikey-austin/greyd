@@ -18,7 +18,7 @@
  * @file   sqlite.c
  * @brief  SQLite DB driver.
  * @author Mikey Austin
- * @date   2014
+ * @date   2015
  */
 
 #include <config.h>
