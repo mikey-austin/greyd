@@ -269,7 +269,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "(`ip`, `helo`, `from`, `to`, "
             " `first`, `pass`, `expire`, `bcount`, `pcount`) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql), &stmt, NULL);
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
             i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
             goto err;
@@ -502,6 +502,7 @@ Mod_db_get_itr(DB_itr_T itr)
     }
     dbi->stmt = NULL;
     dbi->curr = NULL;
+    itr->dbi = dbi;
 
     sql = "SELECT `ip`, `helo`, `from`, `to`, "
         "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries";
@@ -510,6 +511,7 @@ Mod_db_get_itr(DB_itr_T itr)
         i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
         goto err;
     }
+    return;
 
 err:
     DB_rollback_txn(itr->handle);
@@ -551,6 +553,7 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
         populate_key(dbi->stmt, key, 0);
         populate_val(dbi->stmt, val, 4);
         dbi->curr = key;
+        itr->current++;
         break;
 
     default:

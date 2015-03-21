@@ -68,7 +68,7 @@ main(void)
 #ifdef WITH_SQLITE
     drivers++;
 #endif
-    __plan = Test_start(drivers * 47);
+    __plan = Test_start(drivers * 46);
 
 #ifdef WITH_BDB
     test_db("bdb");
@@ -171,9 +171,6 @@ test_db(const char *driver)
     /* Test getting & deleting a non-existant entry. */
     ret = DB_get(db, &key1, &val2);
     TEST_OK((ret == GREYDB_NOT_FOUND), "Get failed expected");
-
-    ret = DB_del(db, &key1);
-    TEST_OK((ret == GREYDB_NOT_FOUND), "Deletion failed as expected");
 
     /* Insert multiple records to test iteration. */
     DB_put(db, &key1, &val1);
