@@ -15,11 +15,13 @@
  */
 
 /**
- * @file   test_bdb.c
- * @brief  Unit tests for Berkeley DB driver.
+ * @file   test_db.c
+ * @brief  Unit tests for database drivers.
  * @author Mikey Austin
  * @date   2014
  */
+
+#include "../src/config.h"
 
 #include "test.h"
 #include <greydb.h>
@@ -33,6 +35,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+
+struct Test_Plan_T *__plan;
+static void test_db(const char *);
 
 int
 main(void)
@@ -51,12 +56,57 @@ main(void)
     char *conf =
         "drop_privs = 0\n"
         "section database {\n"
-        "  driver = \"greyd_bdb.so\",\n"
+        "  driver = \"greyd_%s.so\",\n"
         "  path   = \"/tmp/greyd_test_bdb\",\n"
         "  db_name = \"test_bdb.db\"\n"
         "}";
+    int drivers = 0;
 
-    TEST_START(47);
+#ifdef WITH_BDB
+    drivers++;
+#endif
+#ifdef WITH_SQLITE
+    drivers++;
+#endif
+    __plan = Test_start(drivers * 47);
+
+#ifdef WITH_BDB
+    test_db("bdb");
+#endif
+#ifdef WITH_SQLITE
+    test_db("sqlite");
+#endif
+
+    TEST_COMPLETE;
+}
+
+static void
+test_db(const char *driver)
+{
+    DB_handle_T db;
+    DB_itr_T itr;
+    Lexer_source_T ls;
+    Lexer_T l;
+    Config_parser_T cp;
+    Config_T c;
+    struct DB_key key1;
+    struct DB_val val1, val2;
+    struct Grey_tuple gt;
+    struct Grey_data gd, gd2;
+    int ret, i = 0;
+    char *conf_tmpl =
+        "drop_privs = 0\n"
+        "section database {\n"
+        "  driver = \"greyd_%s.so\",\n"
+        "  path   = \"/tmp/greyd_test_db\",\n"
+        "  db_name = \"test_%s.db\"\n"
+        "}";
+    char *db_path;
+    char *conf = NULL;
+    int drivers = 0;
+
+    if((asprintf(&conf, conf_tmpl, driver, driver)) < 0)
+        return;
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -65,7 +115,9 @@ main(void)
     Config_parser_start(cp, c);
 
     /* Empty existing database file. */
-    ret = unlink("/tmp/greyd_test_bdb/test_bdb.db");
+    if((asprintf(&db_path, "/tmp/greyd_test_db/test_%s.db", driver)) < 0)
+        return;
+    ret = unlink(db_path);
     if(ret < 0 && errno != ENOENT) {
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
@@ -228,6 +280,6 @@ main(void)
     DB_close(&db);
     Config_destroy(&c);
     Config_parser_destroy(&cp);
-
-    TEST_COMPLETE;
+    free(conf);
+    free(db_path);
 }

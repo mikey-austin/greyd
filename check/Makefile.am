@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 LOG_COMPILER = sh ./test-wrapper
 
-check_PROGRAMS = test_bdb test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
+check_PROGRAMS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
 noinst_HEADERS = test.h
 
 # Make a convenience library.
@@ -18,10 +18,10 @@ test_ldflags = -Wl,-E
 test_ldadd =  $(optional_ldadd) libgreyd_test.la
 test_cflags = -I$(top_srcdir)/../src
 
-test_bdb_CFLAGS = $(test_cflags)
-test_bdb_LDFLAGS = $(test_ldflags)
-test_bdb_LDADD = $(test_ldadd)
-test_bdb_SOURCES = test_bdb.c test.c
+test_db_CFLAGS = $(test_cflags)
+test_db_LDFLAGS = $(test_ldflags)
+test_db_LDADD = $(test_ldadd)
+test_db_SOURCES = test_db.c test.c
 
 test_blacklist_LDFLAGS = $(test_ldflags)
 test_blacklist_LDADD = $(test_ldadd)
@@ -115,4 +115,4 @@ test_utils_SOURCES = test_utils.c test.c
 
 LOG_DRIVER = $(top_srcdir)/tap-driver.pl
 
-TESTS = test_bdb test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
+TESTS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
