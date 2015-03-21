@@ -48,6 +48,11 @@ struct s3_handle {
     int txn;
 };
 
+struct s3_itr {
+    sqlite3_stmt *stmt;
+    struct DB_key *curr;
+}
+
 extern void
 Mod_db_init(DB_handle_T handle)
 {
@@ -247,12 +252,12 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         }
 
         gd = &val->data.gd;
-        if(!(!sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC)
+        if(!(!sqlite3_bind_text(stmt,     1, key->data.s, -1, SQLITE_STATIC)
              && !sqlite3_bind_int64(stmt, 2, gd->first)
              && !sqlite3_bind_int64(stmt, 3, gd->pass)
              && !sqlite3_bind_int64(stmt, 4, gd->expire)
-             && !sqlite3_bind_int(stmt, 5, gd->bcount)
-             && !sqlite3_bind_int(stmt, 6, gd->pcount)))
+             && !sqlite3_bind_int(stmt,   5, gd->bcount)
+             && !sqlite3_bind_int(stmt,   6, gd->pcount)))
         {
             i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
@@ -272,15 +277,15 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
         gt = &key->data.gt;
         gd = &val->data.gd;
-        if(!(!sqlite3_bind_text(stmt, 1, gt->ip, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt, 2, gt->helo, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt, 3, gt->from, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt, 4, gt->to, -1, SQLITE_STATIC)
+        if(!(!sqlite3_bind_text(stmt,     1, gt->ip, -1, SQLITE_STATIC)
+             && !sqlite3_bind_text(stmt,  2, gt->helo, -1, SQLITE_STATIC)
+             && !sqlite3_bind_text(stmt,  3, gt->from, -1, SQLITE_STATIC)
+             && !sqlite3_bind_text(stmt,  4, gt->to, -1, SQLITE_STATIC)
              && !sqlite3_bind_int64(stmt, 5, gd->first)
              && !sqlite3_bind_int64(stmt, 6, gd->pass)
              && !sqlite3_bind_int64(stmt, 7, gd->expire)
-             && !sqlite3_bind_int(stmt, 8, gd->bcount)
-             && !sqlite3_bind_int(stmt, 9, gd->pcount)))
+             && !sqlite3_bind_int(stmt,   8, gd->bcount)
+             && !sqlite3_bind_int(stmt,   9, gd->pcount)))
         {
             i_warn("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
             goto err;
@@ -321,27 +326,67 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 extern void
 Mod_db_get_itr(DB_itr_T itr)
 {
+    struct s3_handle *dbh = itr->handle->dbh;
+    struct s3_itr *dbi = NULL;
+    char *sql;
+    int ret;
+
+    if((dbi = malloc(sizeof(*dbi))) == NULL) {
+        i_warn("malloc: %s", strerror(errno));
+        goto err;
+    }
+    dbi->stmt = NULL;
+    dbi->curr = NULL;
+
+    sql = "SELECT * FROM entries";
+    ret = sqlite3_prepare(dbh->db, sql, sizeof(sql), &dbi->stmt, NULL);
+    if(ret != SQLITE_OK) {
+        i_warn("sqlite3_prepare: %s", sqlite3_errstr(ret));
+        goto err;
+    }
+
+err:
+    DB_rollback_txn(itr->handle);
+    sqlite3_close(dbh->db);
+    exit(1);
 }
 
 extern void
 Mod_db_itr_close(DB_itr_T itr)
 {
+    struct s3_handle *dbh = itr->handle->dbh;
+    struct s3_itr *dbi = itr->dbi;
+
+    if(dbi) {
+        dbi->curr = NULL;
+        if(dbi->stmt)
+            sqlite3_finalize(dbi->stmt);
+        free(dbi);
+        itr->dbi = NULL;
+    }
 }
 
 extern int
 Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
 {
+    /* TODO: call sqlite3_step and populate key/val. */
     return GREYDB_ERR;
 }
 
 extern int
 Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 {
+    /* TODO: perform UPDATE query. */
     return GREYDB_ERR;
 }
 
 extern int
 Mod_db_itr_del_curr(DB_itr_T itr)
 {
+    struct s3_itr *dbi = itr->dbi;
+
+    if(dbi && dbi->stmt && dbi->curr)
+        return DB_del(itr->handle, dbi->curr);
+
     return GREYDB_ERR;
 }
