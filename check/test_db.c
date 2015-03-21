@@ -122,10 +122,6 @@ test_db(const char *driver)
         printf("Error unlinking test DB: %s\n", strerror(errno));
     }
 
-    if(!strcmp(driver, "sqlite"))
-        system("sqlite3 -batch -init ../drivers/sqlite3_schema.sql "
-               "/tmp/greyd_test_db/test_sqlite.db ''");
-
     db = DB_init(c);
     DB_open(db, GREYDB_RW);
     TEST_OK((db != NULL), "DB handle created successfully");

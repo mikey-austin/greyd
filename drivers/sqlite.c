@@ -91,7 +91,7 @@ extern void
 Mod_db_open(DB_handle_T handle, int flags)
 {
     struct s3_handle *dbh = handle->dbh;
-    char *db_name, *path, *db_path = NULL;
+    char *db_name, *path, *db_path = NULL, *sql, *err;
     int ret;
 
     if(dbh->db != NULL)
@@ -109,6 +109,29 @@ Mod_db_open(DB_handle_T handle, int flags)
     ret = sqlite3_open(db_path, &dbh->db);
     if(ret != SQLITE_OK) {
         i_warning("could not open %s: %s", db_path, sqlite3_errstr(ret));
+        goto cleanup;
+    }
+
+    /* Ensure that the schema is setup appropriately. */
+    sql = "CREATE TABLE IF NOT EXISTS spamtraps( \
+               `address` VARCHAR(1024),          \
+               UNIQUE(`address`)                 \
+           );                                    \
+           CREATE TABLE IF NOT EXISTS entries(   \
+               `ip`     VARCHAR(46),             \
+               `helo`   VARCHAR(1024),           \
+               `from`   VARCHAR(1024),           \
+               `to`     VARCHAR(1024),           \
+               `first`  UNSIGNED BIGINT,         \
+               `pass`   UNSIGNED BIGINT,         \
+               `expire` UNSIGNED BIGINT,         \
+               `bcount` INTEGER,                 \
+               `pcount` INTEGER                  \
+           );";
+    ret = sqlite3_exec(dbh->db, sql, NULL, NULL, &err);
+    if(ret != SQLITE_OK) {
+        i_warning("db schema init failed: %s", err);
+        sqlite3_free(err);
         goto cleanup;
     }
 

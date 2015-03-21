@@ -6,7 +6,7 @@ compiler:
 
 before_install:
     - sudo apt-get update
-    - sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev valgrind
+    - sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev libsqlite3-dev valgrind
 
 script: ./configure --with-bdb --disable-shared && make && make check
 
