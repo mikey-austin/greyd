@@ -42,30 +42,14 @@ static void test_db(const char *);
 int
 main(void)
 {
-    DB_handle_T db;
-    DB_itr_T itr;
-    Lexer_source_T ls;
-    Lexer_T l;
-    Config_parser_T cp;
-    Config_T c;
-    struct DB_key key1;
-    struct DB_val val1, val2;
-    struct Grey_tuple gt;
-    struct Grey_data gd, gd2;
-    int ret, i = 0;
-    char *conf =
-        "drop_privs = 0\n"
-        "section database {\n"
-        "  driver = \"greyd_%s.so\",\n"
-        "  path   = \"/tmp/greyd_test_bdb\",\n"
-        "  db_name = \"test_bdb.db\"\n"
-        "}";
     int drivers = 0;
-
 #ifdef WITH_BDB
     drivers++;
 #endif
 #ifdef WITH_SQLITE
+    drivers++;
+#endif
+#ifdef WITH_BDB_SQL
     drivers++;
 #endif
     __plan = Test_start(drivers * 46);
@@ -75,6 +59,9 @@ main(void)
 #endif
 #ifdef WITH_SQLITE
     test_db("sqlite");
+#endif
+#ifdef WITH_BDB_SQL
+    test_db("bdb_sql");
 #endif
 
     TEST_COMPLETE;

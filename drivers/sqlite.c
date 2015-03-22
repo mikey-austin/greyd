@@ -33,6 +33,11 @@
 #ifdef HAVE_SQLITE3_H
 #  include <sqlite3.h>
 #endif
+#ifdef HAVE_DBSQL_H
+#  ifdef BUILD_DB_SQL
+#    include <libdb/dbsql.h>
+#  endif
+#endif
 
 #include "../src/failures.h"
 #include "../src/greydb.h"

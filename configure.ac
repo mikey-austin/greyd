@@ -109,7 +109,7 @@ AC_ARG_WITH([sqlite], [AS_HELP_STRING([--with-sqlite], [build the SQLite databas
 
 if test "x${sqlite_driver}" = xyes; then
     have_sqlite=no
-    AC_SEARCH_LIBS([sqlite3_step], [sqlite3], [have_sqlite=yes])
+    AC_CHECK_LIB([sqlite3], [sqlite3_step], [have_sqlite=yes])
     if test "x${have_sqlite}" = xyes; then
         AC_CHECK_HEADERS([sqlite3.h], [have_sqlite=yes;break], [have_sqlite=no])
     fi
@@ -125,6 +125,32 @@ if test "x${sqlite_driver}" = xyes; then
     AC_DEFINE([WITH_SQLITE], [1], [with the SQLite driver])
     optional_drivers="${optional_drivers} greyd_sqlite.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_sqlite.la"
+fi
+
+#
+# bdb_sql db driver library & header checks.
+#
+AC_ARG_WITH([bdb_sql], [AS_HELP_STRING([--with-bdb-sql], [build the Berkeley DB SQL driver])],
+    [bdb_sql_driver=yes], [bdb_sql_driver=no])
+
+if test "x${bdb_sql_driver}" = xyes; then
+    have_bdb_sql=no
+    AC_CHECK_LIB([db_sql], [sqlite3_step], [have_bdb_sql=yes])
+    if test "x${have_bdb_sql}" = xyes; then
+        AC_CHECK_HEADERS([libdb/dbsql.h], [have_bdb_sql=yes;break], [have_bdb_sql=no])
+    fi
+
+    if test "x${have_bdb_sql}" = xyes; then
+        AC_DEFINE([HAVE_BDB_SQL], [1], [Berkeley DB SQL development library])
+    else
+        AC_MSG_FAILURE([libdb_sql is required to build the Berkeley DB SQL database driver])
+    fi
+fi
+
+if test "x${bdb_sql_driver}" = xyes; then
+    AC_DEFINE([WITH_BDB_SQL], [1], [with the Berkeley DB SQL driver])
+    optional_drivers="${optional_drivers} greyd_bdb_sql.la"
+    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb_sql.la"
 fi
 
 #
