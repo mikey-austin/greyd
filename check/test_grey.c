@@ -86,23 +86,27 @@ main(void)
         "section database {\n"
         "  driver = \"%s\",\n"
         "  path   = \"/tmp/greyd_test_grey\",\n"
-        "  db_name = \"test_grey.db\"\n"
+        "  db_name = \"test_grey_%s.db\"\n"
         "}";
-
-    /* Empty existing database file. */
-    ret = unlink("/tmp/greyd_test_grey/test_grey.db");
-    if(ret < 0 && errno != ENOENT) {
-        printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
-    }
 
     TEST_START(36);
 
-    asprintf(&conf, conf_tmpl, DB_DRIVER);
+    asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER);
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
     l = Config_lexer_create(ls);
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
+
+    /* Empty existing database file. */
+    char *db_path;
+    asprintf(&db_path, "%s/%s", Config_get_str(c, "path", "database", NULL),
+             Config_get_str(c, "db_name", "database", NULL));
+    ret = unlink(db_path);
+    if(ret < 0 && errno != ENOENT) {
+        printf("Error unlinking test DB %s: %s\n", db_path, strerror(errno));
+    }
+    free(db_path);
 
     add_spamtrap("trap@domain3.com", c);
 

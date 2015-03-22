@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 LOG_COMPILER = sh ./test-wrapper
 
-check_PROGRAMS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_grey_sqlite test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
+check_PROGRAMS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils test_grey test_grey_sqlite test_grey_bdb_sql
 noinst_HEADERS = test.h
 
 # Make a convenience library.
@@ -13,6 +13,10 @@ data/lexer_source_2.conf.gz: data/lexer_source_1.conf
 	gzip -c data/lexer_source_1.conf >data/lexer_source_2.conf.gz
 
 CLEANFILES = data/lexer_source_2.conf.gz
+
+LOG_DRIVER = $(top_srcdir)/tap-driver.pl
+
+TESTS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_grey_sqlite test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
 
 test_ldflags = -Wl,-E
 test_ldadd =  $(optional_ldadd) libgreyd_test.la
@@ -57,16 +61,6 @@ test_config_value_LDFLAGS = $(test_ldflags)
 test_config_value_LDADD = $(test_ldadd)
 test_config_value_CFLAGS = $(test_cflags)
 test_config_value_SOURCES = test_config_value.c test.c
-
-test_grey_LDFLAGS = $(test_ldflags)
-test_grey_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb.la
-test_grey_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
-test_grey_SOURCES = test_grey.c test.c
-
-test_grey_sqlite_LDFLAGS = $(test_ldflags)
-test_grey_sqlite_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_sqlite.la
-test_grey_sqlite_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
-test_grey_sqlite_SOURCES = test_grey.c test.c
 
 test_greyd_utils_LDFLAGS = $(test_ldflags)
 test_greyd_utils_LDADD = $(test_ldadd)
@@ -118,6 +112,17 @@ test_utils_LDADD = $(test_ldadd)
 test_utils_CFLAGS = $(test_cflags)
 test_utils_SOURCES = test_utils.c test.c
 
-LOG_DRIVER = $(top_srcdir)/tap-driver.pl
+test_grey_LDFLAGS = $(test_ldflags)
+test_grey_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb.la
+test_grey_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
+test_grey_SOURCES = test_grey.c test.c
 
-TESTS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_grey_sqlite test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
+test_grey_sqlite_LDFLAGS = $(test_ldflags)
+test_grey_sqlite_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_sqlite.la
+test_grey_sqlite_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
+test_grey_sqlite_SOURCES = test_grey.c test.c
+
+test_grey_bdb_sql_LDFLAGS = $(test_ldflags)
+test_grey_bdb_sql_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb_sql.la
+test_grey_bdb_sql_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
+test_grey_bdb_sql_SOURCES = test_grey.c test.c
