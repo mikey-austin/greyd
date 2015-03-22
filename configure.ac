@@ -137,7 +137,7 @@ if test "x${bdb_sql_driver}" = xyes; then
     have_bdb_sql=no
     AC_CHECK_LIB([db_sql], [sqlite3_step], [have_bdb_sql=yes])
     if test "x${have_bdb_sql}" = xyes; then
-        AC_CHECK_HEADERS([libdb/dbsql.h], [have_bdb_sql=yes;break], [have_bdb_sql=no])
+        AC_CHECK_HEADERS([libdb/dbsql.h dbsql.h], [have_bdb_sql=yes;break], [have_bdb_sql=no])
     fi
 
     if test "x${have_bdb_sql}" = xyes; then

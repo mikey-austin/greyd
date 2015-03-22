@@ -31,11 +31,18 @@
 #include <errno.h>
 
 #ifdef HAVE_SQLITE3_H
-#  include <sqlite3.h>
+#  ifndef BUILD_DB_SQL
+#    include <sqlite3.h>
+#  endif
+#endif
+#ifdef HAVE_LIBDB_DBSQL_H
+#  ifdef BUILD_DB_SQL
+#    include <libdb/dbsql.h>
+#  endif
 #endif
 #ifdef HAVE_DBSQL_H
 #  ifdef BUILD_DB_SQL
-#    include <libdb/dbsql.h>
+#    include <dbsql.h>
 #  endif
 #endif
 

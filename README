@@ -30,7 +30,7 @@ to **spamd**, **greyd** aims to:
     in addition to supporting the same command line switches as **spamd** & friends.
 
   - Have a clean & modularized internal structure, to facilitate unit & regression testing
-    (there are currently > 480 tests).
+    (there are currently > 650 tests).
 
   - Be able to import the same blacklists & whitelists that **spamd** can import.
 
@@ -53,10 +53,12 @@ Development Status
 ------------------
 
 **greyd** is fully functional and is under active development. All of the features from **spamd**
-have now been implemented, including synchronization support. Additional features not found in **spamd** have also been implemented, such as **SPF** trapping & optional whitelisting.
+have been implemented, including synchronization support. Additional features not found in **spamd** have also been implemented, such as **SPF** trapping & optional whitelisting.
 
-A database driver has been implemented for Berkeley DB (4.x onwards), which makes full use of transactions (in contrast to the OpenBSD version). After the first
-release, a MySQL driver will be implemented.
+The following database drivers have been implemented:
+  * Berkeley DB (4.x onwards), which makes full use of transactions.
+  * Berkeley DB SQL (5.x onwards).
+  * SQLite 3
 
 For GNU/Linux, a firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
   * **libipset** for IP set management
@@ -68,8 +70,8 @@ For the BSDs, a PF firewall driver has been implemented.
 Before the first proper release, there is still the following to be done:
   * <del>autotools build configuration</del>
   * <del>man pages & documentation (install guides, user guides, etc.)</del>
+  * <del>sample init scripts for some RHEL-like systems (and Debian)</del>
   * more testing in the wild on different setups
-  * sample init scripts for some RHEL-like systems (and Debian)
 
 Licensing
 ---------

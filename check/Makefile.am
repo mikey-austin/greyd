@@ -16,7 +16,7 @@ CLEANFILES = data/lexer_source_2.conf.gz
 
 LOG_DRIVER = $(top_srcdir)/tap-driver.pl
 
-TESTS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_grey test_grey_sqlite test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils
+TESTS = test_db test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils test_grey test_grey_sqlite test_grey_bdb_sql
 
 test_ldflags = -Wl,-E
 test_ldadd =  $(optional_ldadd) libgreyd_test.la
