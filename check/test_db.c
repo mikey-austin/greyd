@@ -61,7 +61,7 @@ main(void)
     char *conf = NULL;
 
     if((asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER)) < 0)
-        return;
+        return 1;
 
     c = Config_create();
     ls = Lexer_source_create_from_str(conf, strlen(conf));
@@ -71,7 +71,7 @@ main(void)
 
     /* Empty existing database file. */
     if((asprintf(&db_path, "/tmp/greyd_test_db/test_%s.db", DB_DRIVER)) < 0)
-        return;
+        return 1;
     ret = unlink(db_path);
     if(ret < 0 && errno != ENOENT) {
         printf("Error unlinking test DB: %s\n", strerror(errno));

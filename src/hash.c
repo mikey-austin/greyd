@@ -275,7 +275,7 @@ Hash_lookup(const char *key)
     int c;
     unsigned int hash = 5381;
 
-    while(c = *key++)
+    while((c = *key++))
         hash = ((hash << 5) + hash) + c;
 
     return hash;

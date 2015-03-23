@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -640,42 +641,42 @@ populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
      * A pcount of -2 indicates a spamtrap, which has a key type
      * of DB_KEY_MAIL.
      */
-    key->type = ((!strcmp(sqlite3_column_text(stmt, 1), "")
-                  && !strcmp(sqlite3_column_text(stmt, 2), "")
-                  && !strcmp(sqlite3_column_text(stmt, 3), ""))
+    key->type = ((!memcmp(sqlite3_column_text(stmt, 1), "", 1)
+                  && !memcmp(sqlite3_column_text(stmt, 2), "", 1)
+                  && !memcmp(sqlite3_column_text(stmt, 3), "", 1))
                  ? (sqlite3_column_int(stmt, 8) == -2
                     ? DB_KEY_MAIL : DB_KEY_IP)
                  : DB_KEY_TUPLE);
 
     if(key->type == DB_KEY_IP) {
         key->data.s = buf_p;
-        strncpy(buf_p, sqlite3_column_text(stmt, from + 0),
+        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
                 INET6_ADDRSTRLEN + 1);
     }
     else if(key->type == DB_KEY_MAIL) {
         key->data.s = buf_p;
-        strncpy(buf_p, sqlite3_column_text(stmt, from + 0),
+        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
                 GREY_MAX_MAIL + 1);
     }
     else {
         gt = &key->data.gt;
         gt->ip = buf_p;
-        strncpy(buf_p, sqlite3_column_text(stmt, from + 0),
+        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
                 INET6_ADDRSTRLEN + 1);
         buf_p += INET6_ADDRSTRLEN + 1;
 
         gt->helo = buf_p;
-        strncpy(buf_p, sqlite3_column_text(stmt, from + 1),
+        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 1),
                 GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->from = buf_p;
-        strncpy(buf_p, sqlite3_column_text(stmt, from + 2),
+        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 2),
                 GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->to = buf_p;
-        strncpy(buf_p, sqlite3_column_text(stmt, from + 3),
+        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 3),
                 GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 

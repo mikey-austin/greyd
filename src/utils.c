@@ -31,6 +31,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <pwd.h>
+#include <grp.h>
 
 #include "utils.h"
 

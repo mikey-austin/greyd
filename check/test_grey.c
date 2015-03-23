@@ -31,6 +31,7 @@
 #include <config_parser.h>
 #include <config_lexer.h>
 #include <grey.h>
+#include <greyd.h>
 #include <list.h>
 #include <config_value.h>
 

@@ -1,5 +1,6 @@
 AC_PREREQ([2.68])
 AC_INIT([greyd], [0.7.1], [mikey@greyd.org])
+AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
 AC_CONFIG_SRCDIR([src/main_greyd.c])
