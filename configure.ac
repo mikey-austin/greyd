@@ -136,7 +136,7 @@ AC_ARG_WITH([bdb-sql], [AS_HELP_STRING([--with-bdb-sql], [build the Berkeley DB 
 
 if test "x${bdb_sql_driver}" = xyes; then
     have_bdb_sql=no
-    AC_CHECK_LIB([db_sql], [sqlite3_open], [have_bdb_sql=yes])
+    AC_CHECK_LIB([db_sql], [sqlite3_open], [have_bdb_sql=yes], [-lltdl])
     if test "x${have_bdb_sql}" = xyes; then
         AC_CHECK_HEADERS([libdb/dbsql.h dbsql.h], [have_bdb_sql=yes;break], [have_bdb_sql=no])
     fi
