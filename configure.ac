@@ -110,7 +110,7 @@ AC_ARG_WITH([sqlite], [AS_HELP_STRING([--with-sqlite], [build the SQLite databas
 
 if test "x${sqlite_driver}" = xyes; then
     have_sqlite=no
-    AC_CHECK_LIB([sqlite3], [sqlite3_step], [have_sqlite=yes])
+    AC_CHECK_LIB([sqlite3], [sqlite3_open], [have_sqlite=yes])
     if test "x${have_sqlite}" = xyes; then
         AC_CHECK_HEADERS([sqlite3.h], [have_sqlite=yes;break], [have_sqlite=no])
     fi
@@ -136,7 +136,7 @@ AC_ARG_WITH([bdb_sql], [AS_HELP_STRING([--with-bdb-sql], [build the Berkeley DB 
 
 if test "x${bdb_sql_driver}" = xyes; then
     have_bdb_sql=no
-    AC_CHECK_LIB([db_sql], [sqlite3_step], [have_bdb_sql=yes])
+    AC_CHECK_LIB([db_sql], [sqlite3_open], [have_bdb_sql=yes])
     if test "x${have_bdb_sql}" = xyes; then
         AC_CHECK_HEADERS([libdb/dbsql.h dbsql.h], [have_bdb_sql=yes;break], [have_bdb_sql=no])
     fi
