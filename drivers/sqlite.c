@@ -120,7 +120,7 @@ Mod_db_open(DB_handle_T handle, int flags)
 
     ret = sqlite3_open(db_path, &dbh->db);
     if(ret != SQLITE_OK) {
-        i_warning("could not open %s: %s", db_path, sqlite3_errstr(ret));
+        i_warning("could not open %s: %s", db_path, sqlite3_errmsg(dbh->db));
         goto cleanup;
     }
 
@@ -266,13 +266,13 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         sql = "INSERT OR IGNORE INTO spamtraps(address) VALUES (?)";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -284,7 +284,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "VALUES (?, '', '', '', ?, ?, ?, ?, ?)";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
@@ -308,7 +308,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
@@ -364,13 +364,13 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "LIMIT 1";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -383,7 +383,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "LIMIT 1";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
@@ -402,7 +402,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "LIMIT 1";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
@@ -459,13 +459,13 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
         sql = "DELETE FROM spamtraps WHERE `address`=?";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -475,13 +475,13 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
             "AND `helo`='' AND `from`='' AND `to`=''";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
         ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
         break;
@@ -491,7 +491,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
             "AND `helo`=? AND `from`=? AND `to`=?";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
             goto err;
         }
 
@@ -547,7 +547,7 @@ Mod_db_get_itr(DB_itr_T itr)
         "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps";
     ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &dbi->stmt, NULL);
     if(ret != SQLITE_OK) {
-        i_warning("sqlite3_prepare: %s", sqlite3_errstr(ret));
+        i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
         goto err;
     }
     return;

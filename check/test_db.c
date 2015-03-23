@@ -36,39 +36,8 @@
 #include <errno.h>
 #include <stdio.h>
 
-struct Test_Plan_T *__plan;
-static void test_db(const char *);
-
 int
 main(void)
-{
-    int drivers = 0;
-#ifdef WITH_BDB
-    drivers++;
-#endif
-#ifdef WITH_SQLITE
-    drivers++;
-#endif
-#ifdef WITH_BDB_SQL
-    drivers++;
-#endif
-    __plan = Test_start(drivers * 46);
-
-#ifdef WITH_BDB
-    test_db("bdb");
-#endif
-#ifdef WITH_SQLITE
-    test_db("sqlite");
-#endif
-#ifdef WITH_BDB_SQL
-    test_db("bdb_sql");
-#endif
-
-    TEST_COMPLETE;
-}
-
-static void
-test_db(const char *driver)
 {
     DB_handle_T db;
     DB_itr_T itr;
@@ -84,15 +53,14 @@ test_db(const char *driver)
     char *conf_tmpl =
         "drop_privs = 0\n"
         "section database {\n"
-        "  driver = \"greyd_%s.so\",\n"
+        "  driver = \"%s\",\n"
         "  path   = \"/tmp/greyd_test_db\",\n"
         "  db_name = \"test_%s.db\"\n"
         "}";
     char *db_path;
     char *conf = NULL;
-    int drivers = 0;
 
-    if((asprintf(&conf, conf_tmpl, driver, driver)) < 0)
+    if((asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER)) < 0)
         return;
 
     c = Config_create();
@@ -102,12 +70,14 @@ test_db(const char *driver)
     Config_parser_start(cp, c);
 
     /* Empty existing database file. */
-    if((asprintf(&db_path, "/tmp/greyd_test_db/test_%s.db", driver)) < 0)
+    if((asprintf(&db_path, "/tmp/greyd_test_db/test_%s.db", DB_DRIVER)) < 0)
         return;
     ret = unlink(db_path);
     if(ret < 0 && errno != ENOENT) {
         printf("Error unlinking test DB: %s\n", strerror(errno));
     }
+
+    TEST_START(46);
 
     db = DB_init(c);
     DB_open(db, GREYDB_RW);
@@ -266,4 +236,6 @@ test_db(const char *driver)
     Config_parser_destroy(&cp);
     free(conf);
     free(db_path);
+
+    TEST_COMPLETE;
 }
