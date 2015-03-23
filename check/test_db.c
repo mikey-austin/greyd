@@ -238,4 +238,6 @@ main(void)
     free(db_path);
 
     TEST_COMPLETE;
+
+    return 0;
 }

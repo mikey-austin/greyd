@@ -8,6 +8,6 @@ before_install:
     - sudo apt-get update
     - sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev libsqlite3-dev libdb5.1-sql-dev valgrind
 
-script: ./configure --with-bdb --with-bdb-sql --with-sqlite && LD_LIBRARY_PATH="$PWD/drivers/.libs" make check
+script: ./configure --with-bdb --with-bdb-sql --with-sqlite --disable-shared && make check
 
 before_script: autoreconf -i
