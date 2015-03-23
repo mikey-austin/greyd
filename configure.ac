@@ -131,7 +131,7 @@ fi
 #
 # bdb_sql db driver library & header checks.
 #
-AC_ARG_WITH([bdb_sql], [AS_HELP_STRING([--with-bdb-sql], [build the Berkeley DB SQL driver])],
+AC_ARG_WITH([bdb-sql], [AS_HELP_STRING([--with-bdb-sql], [build the Berkeley DB SQL driver])],
     [bdb_sql_driver=yes], [bdb_sql_driver=no])
 
 if test "x${bdb_sql_driver}" = xyes; then
