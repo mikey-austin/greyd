@@ -42,6 +42,7 @@
 
 #include "../src/failures.h"
 #include "../src/list.h"
+#include "../src/ip.h"
 #include "../src/greydb.h"
 
 #define DEFAULT_PATH "/var/db/greyd"
