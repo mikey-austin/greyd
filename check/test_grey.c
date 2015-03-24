@@ -286,7 +286,8 @@ main(void)
     trap_out = fdopen(trap[1], "w");
     greylister->trap_out = trap_out;
 
-    Grey_scan_db(greylister);
+    if(Grey_scan_db(greylister) < 0)
+        return 1;
 
     /* Check the whitelist. */
     message_source = Lexer_source_create_from_fd(fw[0]);

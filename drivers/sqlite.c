@@ -636,7 +636,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     struct DB_val val, wval;
     struct Grey_tuple gt;
     struct Grey_data gd;
-    int ret = 0;
+    int ret = GREYDB_OK;
 
     itr = DB_get_itr(handle);
     while(DB_itr_next(itr, &key, &val) == GREYDB_FOUND) {
@@ -649,7 +649,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
              * This non-spamtrap entry has expired.
              */
             if(DB_itr_del_curr(itr) != GREYDB_OK) {
-                ret = -1;
+                ret = GREYDB_ERR;
                 goto cleanup;
             }
             else {
@@ -682,7 +682,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
                     continue;
 
                 case -1:
-                    ret = -1;
+                    ret = GREYDB_ERR;
                     goto cleanup;
                 }
 
@@ -703,7 +703,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
                 if(!(DB_put(handle, &wkey, &wval) == GREYDB_OK
                     && DB_itr_del_curr(itr) == GREYDB_OK))
                 {
-                    ret = -1;
+                    ret = GREYDB_ERR;
                     goto cleanup;
                 }
 
