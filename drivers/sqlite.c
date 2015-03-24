@@ -630,98 +630,95 @@ extern int
 Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
 {
-    DB_itr_T itr;
-    List_T list;
-    struct DB_key key, wkey;
-    struct DB_val val, wval;
-    struct Grey_tuple gt;
-    struct Grey_data gd;
+    struct s3_handle *dbh = handle->dbh;
+    sqlite3_stmt *stmt;
+    char *sql;
     int ret = GREYDB_OK;
 
-    itr = DB_get_itr(handle);
-    while(DB_itr_next(itr, &key, &val) == GREYDB_FOUND) {
-        if(val.type != DB_VAL_GREY)
-            continue;
+    /*
+     * Delete expired entries and whitelist appropriate grey entries,
+     * by un-setting the tuple fields (to, from, helo), but only if there
+     * is not already a conflicting entry with the same IP address
+     * (ie an existing trap entry).
+     */
+    sql = "DELETE FROM entries WHERE expire <= ?";
 
-        gd = val.data.gd;
-        if(gd.expire <= *now && gd.pcount != -2) {
-            /*
-             * This non-spamtrap entry has expired.
-             */
-            if(DB_itr_del_curr(itr) != GREYDB_OK) {
-                ret = GREYDB_ERR;
-                goto cleanup;
-            }
-            else {
-                i_debug("deleting expired %sentry %s",
-                        (key.type == DB_KEY_IP
-                         ? (gd.pcount >= 0 ? "white " : "greytrap ")
-                         : "grey "),
-                        (key.type == DB_KEY_IP
-                         ? key.data.s : key.data.gt.ip));
-            }
-            continue;
+    if(!(!sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL)
+         && !sqlite3_bind_int64(stmt, 1, *now)))
+    {
+        i_warning("delete expired entries: %s", sqlite3_errmsg(dbh->db));
+        ret = GREYDB_ERR;
+        goto cleanup;
+    }
+
+    if(sqlite3_step(stmt) != SQLITE_DONE) {
+        i_warning("sqlite3_step: %s", sqlite3_errmsg(dbh->db));
+        ret = GREYDB_ERR;
+        goto cleanup;
+    }
+    sqlite3_finalize(stmt);
+
+    sql = "UPDATE entries "
+        "SET `helo` = '', `from` = '', `to` = '', `expire` = ? "
+        "WHERE `from` <> '' AND `to` <> '' AND `pcount` >= 0 AND `pass` <= ? "
+        "AND `ip` NOT IN ( "
+        "    SELECT `ip` FROM entries WHERE `from` = '' AND `to` = '' "
+        ")";
+
+    if(!(!sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL)
+         && !sqlite3_bind_int64(stmt, 1, *now + *white_exp)
+         && !sqlite3_bind_int64(stmt, 2, *now)))
+    {
+        i_warning("update db entries: %s", sqlite3_errmsg(dbh->db));
+        ret = GREYDB_ERR;
+        goto cleanup;
+    }
+
+    if(sqlite3_step(stmt) != SQLITE_DONE) {
+        i_warning("sqlite3_step: %s", sqlite3_errmsg(dbh->db));
+        ret = GREYDB_ERR;
+        goto cleanup;
+    }
+    sqlite3_finalize(stmt);
+
+    /* Add greytrap & whitelist entries. */
+    sql = "SELECT `ip`, NULL, NULL FROM entries             \
+        WHERE `to`='' AND `from`='' AND `ip` NOT LIKE '%:%' \
+            AND `pcount` >= 0                               \
+        UNION                                               \
+        SELECT NULL, `ip`, NULL FROM entries                \
+        WHERE `to`='' AND `from`='' AND `ip` LIKE '%:%'     \
+            AND `pcount` >= 0                               \
+        UNION                                               \
+        SELECT NULL, NULL, `ip` FROM entries                \
+        WHERE `to`='' AND `from`='' AND `pcount` < 0";
+
+    if(sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL)) {
+        i_warning("fetch white/trap entries: %s", sqlite3_errmsg(dbh->db));
+        ret = GREYDB_ERR;
+        goto cleanup;
+    }
+
+    while(sqlite3_step(stmt) == SQLITE_ROW) {
+        if(sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
+            List_insert_after(
+                whitelist,
+                strdup((const char *) sqlite3_column_text(stmt, 0)));
         }
-        else if(gd.pcount == -1 && key.type == DB_KEY_IP) {
-            /*
-             * This is a greytrap hit.
-             */
-            List_insert_after(traplist, strdup(key.data.s));
+        else if(sqlite3_column_type(stmt, 1) != SQLITE_NULL) {
+            List_insert_after(
+                whitelist_ipv6,
+                strdup((const char *) sqlite3_column_text(stmt, 1)));
         }
-        else if(gd.pcount >= 0 && gd.pass <= *now) {
-            /*
-             * If not already trapped, add the address to the whitelist
-             * and add an address-keyed entry to the database.
-             */
-
-            if(key.type == DB_KEY_TUPLE) {
-                gt = key.data.gt;
-                switch(DB_addr_state(handle, gt.ip)) {
-                case 1:
-                    /* Ignore trapped entries. */
-                    continue;
-
-                case -1:
-                    ret = GREYDB_ERR;
-                    goto cleanup;
-                }
-
-                list = (IP_check_addr(key.data.s) == AF_INET6
-                        ? whitelist_ipv6 : whitelist);
-                List_insert_after(list, strdup(key.data.s));
-
-                /* Re-add entry, keyed only by IP address. */
-                memset(&wkey, 0, sizeof(wkey));
-                wkey.type = DB_KEY_IP;
-                wkey.data.s = gt.ip;
-
-                memset(&wval, 0, sizeof(wval));
-                wval.type = DB_VAL_GREY;
-                gd.expire = *now + *white_exp;
-                wval.data.gd = gd;
-
-                if(!(DB_put(handle, &wkey, &wval) == GREYDB_OK
-                    && DB_itr_del_curr(itr) == GREYDB_OK))
-                {
-                    ret = GREYDB_ERR;
-                    goto cleanup;
-                }
-
-                i_debug("whitelisting %s", gt.ip);
-            }
-            else if(key.type == DB_KEY_IP) {
-                /*
-                 * This must be a whitelist entry.
-                 */
-                list = (IP_check_addr(key.data.s) == AF_INET6
-                        ? whitelist_ipv6 : whitelist);
-                List_insert_after(list, strdup(key.data.s));
-            }
+        else if(sqlite3_column_type(stmt, 2) != SQLITE_NULL) {
+            List_insert_after(
+                traplist,
+                strdup((const char *) sqlite3_column_text(stmt, 2)));
         }
     }
 
 cleanup:
-    DB_close_itr(&itr);
+    sqlite3_finalize(stmt);
     return ret;
 }
 
