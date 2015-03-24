@@ -109,7 +109,7 @@ test_utils_SOURCES = test_utils.c test.c
 
 test_db_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
 test_db_LDFLAGS = $(test_ldflags)
-test_db_LDADD = $(test_ldadd) -dlopen ../drivers/greyd_bdb.la
+test_db_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb.la
 test_db_SOURCES = test_db.c test.c
 
 test_db_sqlite_LDFLAGS = $(test_ldflags)

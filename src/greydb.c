@@ -87,6 +87,9 @@ DB_init(Config_T config)
         Mod_get(handle->driver, "Mod_db_itr_del_curr");
     handle->db_itr_close = (void (*)(DB_itr_T))
         Mod_get(handle->driver, "Mod_db_itr_close");
+    handle->db_scan = (int (*)(DB_handle_T, time_t *, List_T, List_T,
+                               List_T, time_t *))
+        Mod_get(handle->driver, "Mod_scan_db");
 
     /* Initialize the database driver. */
     handle->db_init(handle);
@@ -196,4 +199,37 @@ DB_close_itr(DB_itr_T *itr)
     (*itr)->handle->db_itr_close(*itr);
     free(*itr);
     *itr = NULL;
+}
+
+extern int
+DB_scan(DB_handle_T handle, time_t *now, List_T whitelist,
+        List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
+{
+    return handle->db_scan(handle, now, whitelist, whitelist_ipv6, traplist,
+                           white_exp);
+}
+
+extern int
+DB_addr_state(DB_handle_T handle, char *addr)
+{
+    struct DB_key key;
+    struct DB_val val;
+    struct Grey_data gd;
+    int ret;
+
+    key.type = DB_KEY_IP;
+    key.data.s = addr;
+    ret = DB_get(handle, &key, &val);
+
+    switch(ret) {
+    case GREYDB_NOT_FOUND:
+        return 0;
+
+    case GREYDB_FOUND:
+        gd = val.data.gd;
+        return (gd.pcount == -1 ? 1 : 2);
+
+    default:
+        return -1;
+    }
 }

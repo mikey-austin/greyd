@@ -70,12 +70,10 @@
 static void destroy_address(void *);
 static void drop_grey_privs(Greylister_T, struct passwd *);
 static void shutdown_greyd(int);
-static int push_addr(List_T, char *);
 static int process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *, int);
 static int trap_check(List_T, DB_handle_T, char *);
-static int db_addr_state(DB_handle_T, char *);
 static void update_firewall(Greylister_T, int);
 #ifdef HAVE_SPF
 static int spf_lookup(Greylister_T, struct Grey_tuple *);
@@ -380,119 +378,18 @@ extern int
 Grey_scan_db(Greylister_T greylister)
 {
     DB_handle_T db = greylister->db_handle;
-    DB_itr_T itr;
-    struct DB_key key, wkey;
-    struct DB_val val, wval;
-    struct Grey_tuple gt;
-    struct Grey_data gd;
-    List_T list;
     time_t now = time(NULL);
     int ret = 0;
 
     DB_open(db, 0);
     DB_start_txn(db);
-    itr = DB_get_itr(db);
 
-    while(DB_itr_next(itr, &key, &val) == GREYDB_FOUND) {
-        if(val.type != DB_VAL_GREY)
-            continue;
-
-        gd = val.data.gd;
-        if(gd.expire <= now && gd.pcount != -2) {
-            /*
-             * This non-spamtrap entry has expired.
-             */
-            if(DB_itr_del_curr(itr) != GREYDB_OK) {
-                ret = -1;
-                goto cleanup;
-            }
-            else {
-                i_debug("deleting expired %sentry %s",
-                        (key.type == DB_KEY_IP
-                         ? (gd.pcount >= 0 ? "white " : "greytrap ")
-                         : "grey "),
-                        (key.type == DB_KEY_IP ? key.data.s : key.data.gt.ip));
-            }
-            continue;
-        }
-        else if(gd.pcount == -1 && key.type == DB_KEY_IP) {
-            /*
-             * This is a greytrap hit.
-             */
-            if((push_addr(greylister->traplist, key.data.s) == -1)
-               && DB_itr_del_curr(itr) != GREYDB_OK)
-            {
-                ret = -1;
-                goto cleanup;
-            }
-        }
-        else if(gd.pcount >= 0 && gd.pass <= now) {
-            /*
-             * If not already trapped, add the address to the whitelist
-             * and add an address-keyed entry to the database.
-             */
-
-            if(key.type == DB_KEY_TUPLE) {
-                gt = key.data.gt;
-                switch(db_addr_state(db, gt.ip)) {
-                case 1:
-                    /* Ignore trapped entries. */
-                    continue;
-
-                case -1:
-                    ret = -1;
-                    goto cleanup;
-                }
-
-                list = (IP_check_addr(key.data.s) == AF_INET6
-                        ? greylister->whitelist_ipv6
-                        : greylister->whitelist);
-
-                if((push_addr(list, gt.ip) == -1)
-                   && DB_itr_del_curr(itr) != GREYDB_OK)
-                {
-                    ret = -1;
-                    goto cleanup;
-                }
-
-                /* Re-add entry, keyed only by IP address. */
-                memset(&wkey, 0, sizeof(wkey));
-                wkey.type = DB_KEY_IP;
-                wkey.data.s = gt.ip;
-
-                memset(&wval, 0, sizeof(wval));
-                wval.type = DB_VAL_GREY;
-                gd.expire = now + greylister->white_exp;
-                wval.data.gd = gd;
-
-                if(!(DB_put(db, &wkey, &wval) == GREYDB_OK
-                    && DB_itr_del_curr(itr) == GREYDB_OK))
-                {
-                    ret = -1;
-                    goto cleanup;
-                }
-
-                i_debug("whitelisting %s", gt.ip);
-            }
-            else if(key.type == DB_KEY_IP) {
-                /*
-                 * This must be a whitelist entry.
-                 */
-                list = (IP_check_addr(key.data.s) == AF_INET6
-                        ? greylister->whitelist_ipv6
-                        : greylister->whitelist);
-
-                if((push_addr(list, key.data.s) == -1)
-                   && DB_itr_del_curr(itr) != GREYDB_OK)
-                {
-                    ret = -1;
-                    goto cleanup;
-                }
-            }
-        }
+    if(DB_scan(db, &now, greylister->whitelist, greylister->whitelist_ipv6,
+               greylister->traplist, &greylister->white_exp) != GREYDB_OK)
+    {
+        ret = -1;
+        goto cleanup;
     }
-
-    DB_close_itr(&itr);
     DB_commit_txn(db);
 
     Greyd_send_config(greylister->trap_out,
@@ -501,17 +398,14 @@ Grey_scan_db(Greylister_T greylister)
                       greylister->traplist);
 
     update_firewall(greylister, AF_INET);
-    if(Config_get_int(greylister->config, "enable_ipv6", NULL,
-                      IPV6_ENABLED))
-    {
+    if(Config_get_int(greylister->config, "enable_ipv6", NULL, IPV6_ENABLED))
         update_firewall(greylister, AF_INET6);
-    }
 
+cleanup:
     List_remove_all(greylister->whitelist);
     List_remove_all(greylister->whitelist_ipv6);
     List_remove_all(greylister->traplist);
 
-cleanup:
     if(ret < 0)
         DB_rollback_txn(db);
 
@@ -579,58 +473,6 @@ Grey_load_domains(Greylister_T greylister)
         i_warning("error while loading domains: %s",
                   strerror(errno));
     }
-}
-
-/**
- * Check the state of the supplied address via the opened
- * database handle.
- *
- * @return -1 on error
- * @return 0 when not found
- * @return 1 if greytrapped
- * @return 2 if whitelisted
- */
-static int
-db_addr_state(DB_handle_T db, char *addr)
-{
-    struct DB_key key;
-    struct DB_val val;
-    struct Grey_data gd;
-    int ret;
-
-    key.type = DB_KEY_IP;
-    key.data.s = addr;
-    ret = DB_get(db, &key, &val);
-
-    switch(ret) {
-    case GREYDB_NOT_FOUND:
-        return 0;
-
-    case GREYDB_FOUND:
-        gd = val.data.gd;
-        return (gd.pcount == -1 ? 1 : 2);
-
-    default:
-        return -1;
-    }
-}
-
-/**
- * Validate address as a valid IP address and add to the
- * the specified list.
- *
- * @return 0  Address validated and added to list.
- * @return -1 Address was not added to list.
- */
-static int
-push_addr(List_T list, char *addr)
-{
-    if(IP_check_addr(addr) != -1) {
-        List_insert_after(list, strdup(addr));
-        return 0;
-    }
-
-    return -1;
 }
 
 /**

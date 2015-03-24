@@ -28,6 +28,7 @@
 #include "grey.h"
 
 #include <sys/types.h>
+#include <time.h>
 #include <pwd.h>
 
 #define DB_KEY_IP    1 /**< An ip address. */
@@ -87,6 +88,8 @@ struct DB_handle_T {
     int (*db_itr_replace_curr)(DB_itr_T itr, struct DB_val *val);
     int (*db_itr_del_curr)(DB_itr_T itr);
     void (*db_itr_close)(DB_itr_T itr);
+    int (*db_scan)(DB_handle_T handle, time_t *now, List_T whitelist,
+                   List_T whitelist_ipv6, List_T traplist, time_t *white_exp);
 };
 
 struct DB_itr_T {
@@ -169,5 +172,26 @@ extern int DB_itr_del_curr(DB_itr_T itr);
  * Cleanup a used iterator.
  */
 extern void DB_close_itr(DB_itr_T *itr);
+
+/**
+ * Scan the database and perform 3 main actions:
+ *   - Delete expired entries
+ *   - Populate the whitelist with IP (v4/v6) addresses
+ *   - Populate the traplist with IP addresses
+ */
+extern int DB_scan(DB_handle_T handle, time_t *now, List_T whitelist,
+                   List_T whitelist_ipv6, List_T traplist,
+                   time_t *white_exp);
+
+/**
+ * Check the state of the supplied address via the opened
+ * database handle.
+ *
+ * @return -1 on error
+ * @return 0 when not found
+ * @return 1 if greytrapped
+ * @return 2 if whitelisted
+ */
+extern int DB_addr_state(DB_handle_T handle, char *addr);
 
 #endif

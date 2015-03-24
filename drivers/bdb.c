@@ -41,6 +41,7 @@
 #endif
 
 #include "../src/failures.h"
+#include "../src/list.h"
 #include "../src/greydb.h"
 
 #define DEFAULT_PATH "/var/db/greyd"
@@ -445,6 +446,105 @@ Mod_db_itr_del_curr(DB_itr_T itr)
     }
 
     return GREYDB_ERR;
+}
+
+extern int
+Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
+            List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
+{
+    DB_itr_T itr;
+    List_T list;
+    struct DB_key key, wkey;
+    struct DB_val val, wval;
+    struct Grey_tuple gt;
+    struct Grey_data gd;
+    int ret = 0;
+
+    itr = DB_get_itr(handle);
+    while(DB_itr_next(itr, &key, &val) == GREYDB_FOUND) {
+        if(val.type != DB_VAL_GREY)
+            continue;
+
+        gd = val.data.gd;
+        if(gd.expire <= *now && gd.pcount != -2) {
+            /*
+             * This non-spamtrap entry has expired.
+             */
+            if(DB_itr_del_curr(itr) != GREYDB_OK) {
+                ret = -1;
+                goto cleanup;
+            }
+            else {
+                i_debug("deleting expired %sentry %s",
+                        (key.type == DB_KEY_IP
+                         ? (gd.pcount >= 0 ? "white " : "greytrap ")
+                         : "grey "),
+                        (key.type == DB_KEY_IP
+                         ? key.data.s : key.data.gt.ip));
+            }
+            continue;
+        }
+        else if(gd.pcount == -1 && key.type == DB_KEY_IP) {
+            /*
+             * This is a greytrap hit.
+             */
+            List_insert_after(traplist, strdup(key.data.s));
+        }
+        else if(gd.pcount >= 0 && gd.pass <= *now) {
+            /*
+             * If not already trapped, add the address to the whitelist
+             * and add an address-keyed entry to the database.
+             */
+
+            if(key.type == DB_KEY_TUPLE) {
+                gt = key.data.gt;
+                switch(DB_addr_state(handle, gt.ip)) {
+                case 1:
+                    /* Ignore trapped entries. */
+                    continue;
+
+                case -1:
+                    ret = -1;
+                    goto cleanup;
+                }
+
+                list = (IP_check_addr(key.data.s) == AF_INET6
+                        ? whitelist_ipv6 : whitelist);
+                List_insert_after(list, strdup(key.data.s));
+
+                /* Re-add entry, keyed only by IP address. */
+                memset(&wkey, 0, sizeof(wkey));
+                wkey.type = DB_KEY_IP;
+                wkey.data.s = gt.ip;
+
+                memset(&wval, 0, sizeof(wval));
+                wval.type = DB_VAL_GREY;
+                gd.expire = *now + *white_exp;
+                wval.data.gd = gd;
+
+                if(!(DB_put(handle, &wkey, &wval) == GREYDB_OK
+                    && DB_itr_del_curr(itr) == GREYDB_OK))
+                {
+                    ret = -1;
+                    goto cleanup;
+                }
+
+                i_debug("whitelisting %s", gt.ip);
+            }
+            else if(key.type == DB_KEY_IP) {
+                /*
+                 * This must be a whitelist entry.
+                 */
+                list = (IP_check_addr(key.data.s) == AF_INET6
+                        ? whitelist_ipv6 : whitelist);
+                List_insert_after(list, strdup(key.data.s));
+            }
+        }
+    }
+
+cleanup:
+    DB_close_itr(&itr);
+    return ret;
 }
 
 static void
