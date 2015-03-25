@@ -49,6 +49,7 @@
 
 #include "../src/failures.h"
 #include "../src/greydb.h"
+#include "../src/utils.h"
 
 #define DEFAULT_PATH "/var/db/greyd"
 #define DEFAULT_DB   "greyd.sqlite"
@@ -746,33 +747,33 @@ populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
 
     if(key->type == DB_KEY_IP) {
         key->data.s = buf_p;
-        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
-                INET6_ADDRSTRLEN + 1);
+        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
+                 INET6_ADDRSTRLEN + 1);
     }
     else if(key->type == DB_KEY_MAIL) {
         key->data.s = buf_p;
-        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
-                GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
+                 GREY_MAX_MAIL + 1);
     }
     else {
         gt = &key->data.gt;
         gt->ip = buf_p;
-        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
-                INET6_ADDRSTRLEN + 1);
+        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
+                 INET6_ADDRSTRLEN + 1);
         buf_p += INET6_ADDRSTRLEN + 1;
 
         gt->helo = buf_p;
-        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 1),
-                GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 1),
+                 GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->from = buf_p;
-        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 2),
-                GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 2),
+                 GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->to = buf_p;
-        strncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 3),
+        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 3),
                 GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 

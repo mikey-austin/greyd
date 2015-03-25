@@ -38,9 +38,10 @@ main(void)
     char email3[SIZE] = "test3@email.org";
     char email4[SIZE] = "tesT4@Email.OrG>";
     char email5[SIZE] = "test5@email.ORG";
+    char email6[SIZE] = "<te<st6\\@e\\>mai\"l.<<ORG>";
     char buf[SIZE];
 
-    TEST_START(5);
+    TEST_START(6);
 
     normalize_email_addr(email1, buf, sizeof(buf));
     TEST_OK(!strcmp(buf, "test@email.org"), "normalize ok");
@@ -58,8 +59,12 @@ main(void)
     TEST_OK(!strcmp(buf, "test4@email.org"), "normalize ok");
 
     memset(buf, 0, sizeof(buf));
-    normalize_email_addr(email3, buf, sizeof(buf));
-    TEST_OK(!strcmp(buf, "test3@email.org"), "normalize ok");
+    normalize_email_addr(email5, buf, sizeof(buf));
+    TEST_OK(!strcmp(buf, "test5@email.org"), "normalize ok");
+
+    memset(buf, 0, sizeof(buf));
+    normalize_email_addr(email6, buf, sizeof(buf));
+    TEST_OK(!strcmp(buf, "test6@email.org"), "normalize ok");
 
     TEST_COMPLETE;
 }

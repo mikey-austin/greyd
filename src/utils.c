@@ -75,16 +75,15 @@ normalize_email_addr(const char *addr, char *buf, int buf_size)
     if(*addr == '<')
         addr++;
 
-    sstrncpy(buf, addr, buf_size);
-    cp = strrchr(buf, '>');
-    if(cp != NULL && *(cp + 1) == '\0')
-        *cp = '\0';
-
-    cp = buf;
-    while(*cp != '\0') {
-        *cp = tolower((unsigned char) *cp);
-        cp++;
+    for(cp = buf; buf_size > 0 && *addr != '\0'; addr++) {
+        /*
+         * Copy valid characters into destination buffer. We disallow
+         * backslashes and quote characters.
+         */
+        if(*addr != '\\' && *addr != '"' && *addr != '>' && *addr != '<')
+            *cp++ = tolower((unsigned char) *addr);
     }
+    buf[buf_size - 1] = '\0';
 }
 
 extern int
