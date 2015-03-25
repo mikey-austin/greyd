@@ -159,7 +159,7 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
 
 <pre><code>  section firewall {
-      driver = "netfilter.so",
+      driver = "greyd_netfilter.so",
       # Driver-specific options below.
       ...
   }
@@ -200,7 +200,10 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
 
 <pre><code>  section database {
-      driver = "bdb.so",
+      driver = "greyd_bdb.so",
+      #driver = "greyd_bdb_sql.so",
+      #driver = "greyd_sqlite.so",
+
       # Driver-specific options below.
       ...
   }
@@ -210,11 +213,31 @@ include "/etc/greyd/conf.d/*.conf"
 
 <h3 id="Berkeley-DB-database-driver">Berkeley DB database driver</h3>
 
-<p>The Berkeley database driver runs on all systems providing libdb version > 4. On OpenBSD, the db4 port will need to be installed, and the <strong>--with-db4</strong> configure flag specified.</p>
+<p>The Berkeley database driver runs on all systems providing libdb version > 4 and is built using the <strong>--with-bdb</strong> configure option. On OpenBSD, the db4 port will need to be installed.</p>
 
 <dl>
 <dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the Berkeley DB environment.</p></dd>
-<dt><strong>db_name</strong> = <em>string</em></dt><dd><p>The name of the database file, relative to the specified environment path.</p></dd>
+<dt><strong>db_name</strong> = <em>string</em></dt><dd><p>The name of the database file, relative to the specified environment <strong>path</strong>.</p></dd>
+</dl>
+
+
+<h3 id="Berkeley-DB-SQL-database-driver">Berkeley DB SQL database driver</h3>
+
+<p>The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions > 5.x. This driver is built by specifying the <strong>--with-bdb-sql</strong> configure option.</p>
+
+<dl>
+<dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the directory containing the database files.</p></dd>
+<dt><strong>db_name</strong> = <em>string</em></dt><dd><p>The name of the database file, relative to the specified <strong>path</strong>.</p></dd>
+</dl>
+
+
+<h3 id="SQLite-database-driver">SQLite database driver</h3>
+
+<p>The SQLite database driver makes use of libsqlite3. No special initialization is required as the driver will manage the schema internally. This driver is built by specifying the <strong>--with-sqlite</strong> configure option.</p>
+
+<dl>
+<dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the directory containing the database files.</p></dd>
+<dt><strong>db_name</strong> = <em>string</em></dt><dd><p>The name of the database file, relative to the specified <strong>path</strong>.</p></dd>
 </dl>
 
 
@@ -323,7 +346,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>February 2015</li>
+    <li class='tc'>March 2015</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 

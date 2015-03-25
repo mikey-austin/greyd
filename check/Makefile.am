@@ -1,7 +1,8 @@
 AUTOMAKE_OPTIONS = subdir-objects
 LOG_COMPILER = sh ./test-wrapper
 
-check_PROGRAMS = test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils test_grey test_grey_sqlite test_grey_bdb_sql test_db test_db_sqlite test_db_bdb_sql
+check_PROGRAMS = test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils $(extra_tests)
+EXTRA_PROGRAMS = test_grey test_grey_sqlite test_grey_bdb_sql test_db test_db_sqlite test_db_bdb_sql
 noinst_HEADERS = test.h
 
 # Make a convenience library.
@@ -16,7 +17,7 @@ CLEANFILES = data/lexer_source_2.conf.gz
 
 LOG_DRIVER = $(top_srcdir)/tap-driver.pl
 
-TESTS = test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils test_grey test_db test_db_sqlite test_db_bdb_sql test_grey_sqlite test_grey_bdb_sql
+TESTS = test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils $(extra_tests)
 
 test_ldflags = -Wl,-E
 test_ldadd =  $(optional_ldadd) libgreyd_test.la

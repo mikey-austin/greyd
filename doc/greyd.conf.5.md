@@ -110,7 +110,7 @@ The following options are common to all firewall drivers:
   The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:
 
         section firewall {
-            driver = "netfilter.so",
+            driver = "greyd_netfilter.so",
             # Driver-specific options below.
             ...
         }
@@ -158,20 +158,43 @@ The following options are common to all database drivers:
   The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:
 
         section database {
-            driver = "bdb.so",
+            driver = "greyd_bdb.so",
+            #driver = "greyd_bdb_sql.so",
+            #driver = "greyd_sqlite.so",
+
             # Driver-specific options below.
             ...
         }
 
 ### Berkeley DB database driver
 
-The Berkeley database driver runs on all systems providing libdb version > 4. On OpenBSD, the db4 port will need to be installed, and the **--with-db4** configure flag specified.
+The Berkeley database driver runs on all systems providing libdb version > 4 and is built using the **--with-bdb** configure option. On OpenBSD, the db4 port will need to be installed.
 
 * **path** = *string*:
   The filesystem path to the Berkeley DB environment.
 
 * **db_name** = *string*:
-  The name of the database file, relative to the specified environment path.
+  The name of the database file, relative to the specified environment **path**.
+
+### Berkeley DB SQL database driver
+
+The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions > 5.x. This driver is built by specifying the **--with-bdb-sql** configure option.
+
+* **path** = *string*:
+  The filesystem path to the directory containing the database files.
+
+* **db_name** = *string*:
+  The name of the database file, relative to the specified **path**.
+
+### SQLite database driver
+
+The SQLite database driver makes use of libsqlite3. No special initialization is required as the driver will manage the schema internally. This driver is built by specifying the **--with-sqlite** configure option.
+
+* **path** = *string*:
+  The filesystem path to the directory containing the database files.
+
+* **db_name** = *string*:
+  The name of the database file, relative to the specified **path**.
 
 ## GREY SECTION
 

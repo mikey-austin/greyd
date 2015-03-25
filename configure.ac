@@ -61,6 +61,9 @@ optional_ldadd=
 AC_SUBST([optional_drivers])
 AC_SUBST([optional_ldadd])
 
+extra_tests=
+AC_SUBST([extra_tests])
+
 AC_ARG_VAR([DEFAULT_CONFIG], [default greyd configuration path])
 if test -z ${DEFAULT_CONFIG}; then
     DEFAULT_CONFIG="${sysconfdir}/greyd/greyd.conf"
@@ -100,6 +103,7 @@ if test "x${bdb_driver}" = xyes; then
     AC_DEFINE([WITH_BDB], [1], [with the Berkeley DB driver])
     optional_drivers="${optional_drivers} greyd_bdb.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb.la"
+    extra_tests="${extra_tests} test_db test_grey"
 fi
 
 #
@@ -126,6 +130,7 @@ if test "x${sqlite_driver}" = xyes; then
     AC_DEFINE([WITH_SQLITE], [1], [with the SQLite driver])
     optional_drivers="${optional_drivers} greyd_sqlite.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_sqlite.la"
+    extra_tests="${extra_tests} test_db_sqlite test_grey_sqlite"
 fi
 
 #
@@ -136,7 +141,7 @@ AC_ARG_WITH([bdb-sql], [AS_HELP_STRING([--with-bdb-sql], [build the Berkeley DB 
 
 if test "x${bdb_sql_driver}" = xyes; then
     have_bdb_sql=no
-    AC_CHECK_LIB([db_sql], [sqlite3_open], [have_bdb_sql=yes])
+    AC_CHECK_LIB([db_sql], [sqlite3_open], [have_bdb_sql=yes], [], [-ldl])
     if test "x${have_bdb_sql}" = xyes; then
         AC_CHECK_HEADERS([libdb/dbsql.h dbsql.h], [have_bdb_sql=yes;break], [have_bdb_sql=no])
     fi
@@ -152,6 +157,7 @@ if test "x${bdb_sql_driver}" = xyes; then
     AC_DEFINE([WITH_BDB_SQL], [1], [with the Berkeley DB SQL driver])
     optional_drivers="${optional_drivers} greyd_bdb_sql.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb_sql.la"
+    extra_tests="${extra_tests} test_db_bdb_sql test_grey_bdb_sql"
 fi
 
 #

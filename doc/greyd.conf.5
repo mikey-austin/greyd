@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "February 2015" "" ""
+.TH "GREYD\.CONF" "5" "March 2015" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -170,7 +170,7 @@ The driver shared object location\. May be either an absolute or relative path\.
 .nf
 
   section firewall {
-      driver = "netfilter\.so",
+      driver = "greyd_netfilter\.so",
       # Driver\-specific options below\.
       \.\.\.
   }
@@ -234,7 +234,10 @@ The driver shared object location\. May be either an absolute or relative path\.
 .nf
 
   section database {
-      driver = "bdb\.so",
+      driver = "greyd_bdb\.so",
+      #driver = "greyd_bdb_sql\.so",
+      #driver = "greyd_sqlite\.so",
+
       # Driver\-specific options below\.
       \.\.\.
   }
@@ -245,7 +248,7 @@ The driver shared object location\. May be either an absolute or relative path\.
 
 .
 .SS "Berkeley DB database driver"
-The Berkeley database driver runs on all systems providing libdb version > 4\. On OpenBSD, the db4 port will need to be installed, and the \fB\-\-with\-db4\fR configure flag specified\.
+The Berkeley database driver runs on all systems providing libdb version > 4 and is built using the \fB\-\-with\-bdb\fR configure option\. On OpenBSD, the db4 port will need to be installed\.
 .
 .TP
 \fBpath\fR = \fIstring\fR
@@ -253,7 +256,29 @@ The filesystem path to the Berkeley DB environment\.
 .
 .TP
 \fBdb_name\fR = \fIstring\fR
-The name of the database file, relative to the specified environment path\.
+The name of the database file, relative to the specified environment \fBpath\fR\.
+.
+.SS "Berkeley DB SQL database driver"
+The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions > 5\.x\. This driver is built by specifying the \fB\-\-with\-bdb\-sql\fR configure option\.
+.
+.TP
+\fBpath\fR = \fIstring\fR
+The filesystem path to the directory containing the database files\.
+.
+.TP
+\fBdb_name\fR = \fIstring\fR
+The name of the database file, relative to the specified \fBpath\fR\.
+.
+.SS "SQLite database driver"
+The SQLite database driver makes use of libsqlite3\. No special initialization is required as the driver will manage the schema internally\. This driver is built by specifying the \fB\-\-with\-sqlite\fR configure option\.
+.
+.TP
+\fBpath\fR = \fIstring\fR
+The filesystem path to the directory containing the database files\.
+.
+.TP
+\fBdb_name\fR = \fIstring\fR
+The name of the database file, relative to the specified \fBpath\fR\.
 .
 .SH "GREY SECTION"
 .
