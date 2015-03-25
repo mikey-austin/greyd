@@ -246,8 +246,10 @@ Mod_db_close(DB_handle_T handle)
     struct s3_handle *dbh;
 
     if((dbh = handle->dbh) != NULL) {
-        if(dbh->db)
-            sqlite3_close(dbh->db);
+        if(dbh->db) {
+            if(sqlite3_close(dbh->db) != SQLITE_OK)
+                i_warning("sqlite3_close: %s", sqlite3_errmsg(dbh->db));
+        }
         free(dbh);
         handle->dbh = NULL;
     }

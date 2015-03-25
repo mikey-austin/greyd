@@ -1,12 +1,15 @@
 AUTOMAKE_OPTIONS = subdir-objects
-LOG_COMPILER = sh ./test-wrapper
 
-check_PROGRAMS = test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils $(extra_tests)
-EXTRA_PROGRAMS = test_grey test_grey_sqlite test_grey_bdb_sql test_db test_db_sqlite test_db_bdb_sql
+check_PROGRAMS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t $(extra_tests)
+EXTRA_PROGRAMS = test_grey.t test_grey_sqlite.t test_grey_bdb_sql.t test_db.t test_db_sqlite.t test_db_bdb_sql.t
+TESTS = $(check_PROGRAMS)
+TEST_EXTENSIONS = .t
+T_LOG_COMPILER = $(SH) ./test-wrapper
+T_LOG_DRIVER = $(top_srcdir)/tap-driver.pl
 noinst_HEADERS = test.h
 
 # Make a convenience library.
-noinst_LTLIBRARIES = libgreyd_test.la
+check_LTLIBRARIES = libgreyd_test.la
 libgreyd_test_la_SOURCES = ../src/blacklist.c ../src/con.c ../src/config_lexer.c ../src/config_parser.c ../src/config_section.c ../src/config_value.c ../src/failures.c ../src/firewall.c ../src/grey.c ../src/greydb.c ../src/greyd.c ../src/greyd_config.c ../src/hash.c ../src/ip.c ../src/lexer.c ../src/lexer_source.c ../src/list.c ../src/log.c ../src/queue.c ../src/sync.c ../src/utils.c ../src/mod.c ../src/spamd_parser.c ../src/spamd_lexer.c
 
 dist_data_DATA = data/lexer_source_2.conf.gz
@@ -15,125 +18,121 @@ data/lexer_source_2.conf.gz: data/lexer_source_1.conf
 
 CLEANFILES = data/lexer_source_2.conf.gz
 
-LOG_DRIVER = $(top_srcdir)/tap-driver.pl
-
-TESTS = test_blacklist test_con test_config test_config_lexer test_config_parser test_config_section test_config_value test_greyd_utils test_hash test_ip test_lexer_source test_list test_queue test_spamd_lexer test_spamd_parser test_test_framework test_utils $(extra_tests)
-
 test_ldflags = -Wl,-E
 test_ldadd =  $(optional_ldadd) libgreyd_test.la
 test_cflags = -I$(top_srcdir)/../src
 
-test_blacklist_LDFLAGS = $(test_ldflags)
-test_blacklist_LDADD = $(test_ldadd)
-test_blacklist_CFLAGS = $(test_cflags)
-test_blacklist_SOURCES = test_blacklist.c test.c
+test_blacklist_t_LDFLAGS = $(test_ldflags)
+test_blacklist_t_LDADD = $(test_ldadd)
+test_blacklist_t_CFLAGS = $(test_cflags)
+test_blacklist_t_SOURCES = test_blacklist.c test.c
 
-test_con_LDFLAGS = $(test_ldflags)
-test_con_LDADD = $(test_ldadd)
-test_con_CFLAGS = $(test_cflags)
-test_con_SOURCES = test_con.c test.c
+test_con_t_LDFLAGS = $(test_ldflags)
+test_con_t_LDADD = $(test_ldadd)
+test_con_t_CFLAGS = $(test_cflags)
+test_con_t_SOURCES = test_con.c test.c
 
-test_config_LDFLAGS = $(test_ldflags)
-test_config_LDADD = $(test_ldadd)
-test_config_CFLAGS = $(test_cflags)
-test_config_SOURCES = test_config.c test.c
+test_config_t_LDFLAGS = $(test_ldflags)
+test_config_t_LDADD = $(test_ldadd)
+test_config_t_CFLAGS = $(test_cflags)
+test_config_t_SOURCES = test_config.c test.c
 
-test_config_lexer_LDFLAGS = $(test_ldflags)
-test_config_lexer_LDADD = $(test_ldadd)
-test_config_lexer_CFLAGS = $(test_cflags)
-test_config_lexer_SOURCES = test_config_lexer.c test.c
+test_config_lexer_t_LDFLAGS = $(test_ldflags)
+test_config_lexer_t_LDADD = $(test_ldadd)
+test_config_lexer_t_CFLAGS = $(test_cflags)
+test_config_lexer_t_SOURCES = test_config_lexer.c test.c
 
-test_config_parser_LDFLAGS = $(test_ldflags)
-test_config_parser_LDADD = $(test_ldadd)
-test_config_parser_CFLAGS = $(test_cflags)
-test_config_parser_SOURCES = test_config_parser.c test.c
+test_config_parser_t_LDFLAGS = $(test_ldflags)
+test_config_parser_t_LDADD = $(test_ldadd)
+test_config_parser_t_CFLAGS = $(test_cflags)
+test_config_parser_t_SOURCES = test_config_parser.c test.c
 
-test_config_section_LDFLAGS = $(test_ldflags)
-test_config_section_LDADD = $(test_ldadd)
-test_config_section_CFLAGS = $(test_cflags)
-test_config_section_SOURCES = test_config_section.c test.c
+test_config_section_t_LDFLAGS = $(test_ldflags)
+test_config_section_t_LDADD = $(test_ldadd)
+test_config_section_t_CFLAGS = $(test_cflags)
+test_config_section_t_SOURCES = test_config_section.c test.c
 
-test_config_value_LDFLAGS = $(test_ldflags)
-test_config_value_LDADD = $(test_ldadd)
-test_config_value_CFLAGS = $(test_cflags)
-test_config_value_SOURCES = test_config_value.c test.c
+test_config_value_t_LDFLAGS = $(test_ldflags)
+test_config_value_t_LDADD = $(test_ldadd)
+test_config_value_t_CFLAGS = $(test_cflags)
+test_config_value_t_SOURCES = test_config_value.c test.c
 
-test_greyd_utils_LDFLAGS = $(test_ldflags)
-test_greyd_utils_LDADD = $(test_ldadd)
-test_greyd_utils_CFLAGS = $(test_cflags)
-test_greyd_utils_SOURCES = test_greyd_utils.c test.c
+test_greyd_utils_t_LDFLAGS = $(test_ldflags)
+test_greyd_utils_t_LDADD = $(test_ldadd)
+test_greyd_utils_t_CFLAGS = $(test_cflags)
+test_greyd_utils_t_SOURCES = test_greyd_utils.c test.c
 
-test_hash_LDFLAGS = $(test_ldflags)
-test_hash_LDADD = $(test_ldadd)
-test_hash_CFLAGS = $(test_cflags)
-test_hash_SOURCES = test_hash.c test.c
+test_hash_t_LDFLAGS = $(test_ldflags)
+test_hash_t_LDADD = $(test_ldadd)
+test_hash_t_CFLAGS = $(test_cflags)
+test_hash_t_SOURCES = test_hash.c test.c
 
-test_ip_LDFLAGS = $(test_ldflags)
-test_ip_LDADD = $(test_ldadd)
-test_ip_CFLAGS = $(test_cflags)
-test_ip_SOURCES = test_ip.c test.c
+test_ip_t_LDFLAGS = $(test_ldflags)
+test_ip_t_LDADD = $(test_ldadd)
+test_ip_t_CFLAGS = $(test_cflags)
+test_ip_t_SOURCES = test_ip.c test.c
 
-test_lexer_source_LDFLAGS = $(test_ldflags)
-test_lexer_source_LDADD = $(test_ldadd)
-test_lexer_source_CFLAGS = $(test_cflags)
-test_lexer_source_SOURCES = test_lexer_source.c test.c
+test_lexer_source_t_LDFLAGS = $(test_ldflags)
+test_lexer_source_t_LDADD = $(test_ldadd)
+test_lexer_source_t_CFLAGS = $(test_cflags)
+test_lexer_source_t_SOURCES = test_lexer_source.c test.c
 
-test_list_LDFLAGS = $(test_ldflags)
-test_list_LDADD = $(test_ldadd)
-test_list_CFLAGS = $(test_cflags)
-test_list_SOURCES = test_list.c test.c
+test_list_t_LDFLAGS = $(test_ldflags)
+test_list_t_LDADD = $(test_ldadd)
+test_list_t_CFLAGS = $(test_cflags)
+test_list_t_SOURCES = test_list.c test.c
 
-test_queue_LDFLAGS = $(test_ldflags)
-test_queue_LDADD = $(test_ldadd)
-test_queue_CFLAGS = $(test_cflags)
-test_queue_SOURCES = test_queue.c test.c
+test_queue_t_LDFLAGS = $(test_ldflags)
+test_queue_t_LDADD = $(test_ldadd)
+test_queue_t_CFLAGS = $(test_cflags)
+test_queue_t_SOURCES = test_queue.c test.c
 
-test_spamd_lexer_LDFLAGS = $(test_ldflags)
-test_spamd_lexer_LDADD = $(test_ldadd)
-test_spamd_lexer_CFLAGS = $(test_cflags)
-test_spamd_lexer_SOURCES = test_spamd_lexer.c test.c
+test_spamd_lexer_t_LDFLAGS = $(test_ldflags)
+test_spamd_lexer_t_LDADD = $(test_ldadd)
+test_spamd_lexer_t_CFLAGS = $(test_cflags)
+test_spamd_lexer_t_SOURCES = test_spamd_lexer.c test.c
 
-test_spamd_parser_LDFLAGS = $(test_ldflags)
-test_spamd_parser_LDADD = $(test_ldadd)
-test_spamd_parser_CFLAGS = $(test_cflags)
-test_spamd_parser_SOURCES = test_spamd_parser.c test.c
+test_spamd_parser_t_LDFLAGS = $(test_ldflags)
+test_spamd_parser_t_LDADD = $(test_ldadd)
+test_spamd_parser_t_CFLAGS = $(test_cflags)
+test_spamd_parser_t_SOURCES = test_spamd_parser.c test.c
 
-test_test_framework_LDFLAGS = $(test_ldflags)
-test_test_framework_LDADD = $(test_ldadd)
-test_test_framework_CFLAGS = $(test_cflags)
-test_test_framework_SOURCES = test_test_framework.c test.c
+test_test_framework_t_LDFLAGS = $(test_ldflags)
+test_test_framework_t_LDADD = $(test_ldadd)
+test_test_framework_t_CFLAGS = $(test_cflags)
+test_test_framework_t_SOURCES = test_test_framework.c test.c
 
-test_utils_LDFLAGS = $(test_ldflags)
-test_utils_LDADD = $(test_ldadd)
-test_utils_CFLAGS = $(test_cflags)
-test_utils_SOURCES = test_utils.c test.c
+test_utils_t_LDFLAGS = $(test_ldflags)
+test_utils_t_LDADD = $(test_ldadd)
+test_utils_t_CFLAGS = $(test_cflags)
+test_utils_t_SOURCES = test_utils.c test.c
 
-test_db_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
-test_db_LDFLAGS = $(test_ldflags)
-test_db_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb.la
-test_db_SOURCES = test_db.c test.c
+test_db_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
+test_db_t_LDFLAGS = $(test_ldflags)
+test_db_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb.la
+test_db_t_SOURCES = test_db.c test.c
 
-test_db_sqlite_LDFLAGS = $(test_ldflags)
-test_db_sqlite_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_sqlite.la
-test_db_sqlite_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
-test_db_sqlite_SOURCES = test_db.c test.c
+test_db_sqlite_t_LDFLAGS = $(test_ldflags)
+test_db_sqlite_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_sqlite.la
+test_db_sqlite_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
+test_db_sqlite_t_SOURCES = test_db.c test.c
 
-test_db_bdb_sql_LDFLAGS = $(test_ldflags)
-test_db_bdb_sql_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb_sql.la
-test_db_bdb_sql_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
-test_db_bdb_sql_SOURCES = test_db.c test.c
+test_db_bdb_sql_t_LDFLAGS = $(test_ldflags)
+test_db_bdb_sql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb_sql.la
+test_db_bdb_sql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
+test_db_bdb_sql_t_SOURCES = test_db.c test.c
 
-test_grey_LDFLAGS = $(test_ldflags)
-test_grey_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb.la
-test_grey_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
-test_grey_SOURCES = test_grey.c test.c
+test_grey_t_LDFLAGS = $(test_ldflags)
+test_grey_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb.la
+test_grey_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
+test_grey_t_SOURCES = test_grey.c test.c
 
-test_grey_sqlite_LDFLAGS = $(test_ldflags)
-test_grey_sqlite_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_sqlite.la
-test_grey_sqlite_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
-test_grey_sqlite_SOURCES = test_grey.c test.c
+test_grey_sqlite_t_LDFLAGS = $(test_ldflags)
+test_grey_sqlite_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_sqlite.la
+test_grey_sqlite_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
+test_grey_sqlite_t_SOURCES = test_grey.c test.c
 
-test_grey_bdb_sql_LDFLAGS = $(test_ldflags)
-test_grey_bdb_sql_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb_sql.la
-test_grey_bdb_sql_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
-test_grey_bdb_sql_SOURCES = test_grey.c test.c
+test_grey_bdb_sql_t_LDFLAGS = $(test_ldflags)
+test_grey_bdb_sql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb_sql.la
+test_grey_bdb_sql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
+test_grey_bdb_sql_t_SOURCES = test_grey.c test.c
