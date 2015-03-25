@@ -81,33 +81,6 @@ if test -z ${GREYLOGD_PIDFILE}; then
 fi
 
 #
-# Berkeley db driver library & header checks.
-#
-AC_ARG_WITH([bdb], [AS_HELP_STRING([--with-bdb], [build the Berkeley database driver])],
-    [bdb_driver=yes], [bdb_driver=no])
-
-if test "x${bdb_driver}" = xyes; then
-    have_bdb=no
-    AC_SEARCH_LIBS([db_env_create], [db-5.3 db5 db4 db], [have_bdb=yes])
-    if test "x${have_bdb}" = xyes; then
-        AC_CHECK_HEADERS([db5/db.h db4/db.h db.h], [have_bdb=yes;break], [have_bdb=no])
-    fi
-
-    if test "x${have_bdb}" = xyes; then
-        AC_DEFINE([HAVE_LIBDB], [1], [Berkeley DB development library])
-    else
-        AC_MSG_FAILURE([libdb is required to build the Berkeley database driver])
-    fi
-fi
-
-if test "x${bdb_driver}" = xyes; then
-    AC_DEFINE([WITH_BDB], [1], [with the Berkeley DB driver])
-    optional_drivers="${optional_drivers} greyd_bdb.la"
-    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb.la"
-    extra_tests="${extra_tests} test_db.t test_grey.t"
-fi
-
-#
 # sqlite3 db driver library & header checks.
 #
 AC_ARG_WITH([sqlite], [AS_HELP_STRING([--with-sqlite], [build the SQLite database driver])],
@@ -159,6 +132,38 @@ if test "x${bdb_sql_driver}" = xyes; then
     optional_drivers="${optional_drivers} greyd_bdb_sql.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb_sql.la"
     extra_tests="${extra_tests} test_db_bdb_sql.t test_grey_bdb_sql.t"
+fi
+
+#
+# Berkeley db driver library & header checks.
+#
+AC_ARG_WITH([bdb], [AS_HELP_STRING([--with-bdb], [build the Berkeley database driver])],
+    [bdb_driver=yes], [bdb_driver=no])
+
+if test "x${bdb_driver}" = xno && test "x${sqlite_driver}" = xno && test "x${bdb_sql_driver}" = xno;then
+   # Default to the Berkeley DB driver if none have been selected.
+   bdb_driver=yes
+fi
+
+if test "x${bdb_driver}" = xyes; then
+    have_bdb=no
+    AC_SEARCH_LIBS([db_env_create], [db-5.3 db5 db4 db], [have_bdb=yes])
+    if test "x${have_bdb}" = xyes; then
+        AC_CHECK_HEADERS([db5/db.h db4/db.h db.h], [have_bdb=yes;break], [have_bdb=no])
+    fi
+
+    if test "x${have_bdb}" = xyes; then
+        AC_DEFINE([HAVE_LIBDB], [1], [Berkeley DB development library])
+    else
+        AC_MSG_FAILURE([libdb is required to build the Berkeley database driver])
+    fi
+fi
+
+if test "x${bdb_driver}" = xyes; then
+    AC_DEFINE([WITH_BDB], [1], [with the Berkeley DB driver])
+    optional_drivers="${optional_drivers} greyd_bdb.la"
+    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb.la"
+    extra_tests="${extra_tests} test_db.t test_grey.t"
 fi
 
 #
