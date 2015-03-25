@@ -43,6 +43,7 @@ main(void)
 
     TEST_START(6);
 
+    memset(buf, 0, sizeof(buf));
     normalize_email_addr(email1, buf, sizeof(buf));
     TEST_OK(!strcmp(buf, "test@email.org"), "normalize ok");
 
