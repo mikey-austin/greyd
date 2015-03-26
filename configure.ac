@@ -81,6 +81,34 @@ if test -z ${GREYLOGD_PIDFILE}; then
 fi
 
 #
+# MySQL db driver library & header checks.
+#
+AC_ARG_WITH([mysql], [AS_HELP_STRING([--with-mysql], [build the MySQL database driver])],
+    [mysql_driver=yes], [mysql_driver=no])
+
+if test "x${mysql_driver}" = xyes; then
+    AC_PATH_PROG([MYSQL_CONFIG], [mysql_config])
+    AS_IF([test "x${MYSQL_CONFIG}" = x], [AC_MSG_ERROR([Please install mysql_config])])
+
+    have_mysql=no
+    LIBS="${LIBS} "`${MYSQL_CONFIG} --libs`
+    AC_CHECK_HEADERS([mysql.h mysql/mysql.h], [have_mysql=yes;break], [have_mysql=no])
+
+    if test "x${have_mysql}" = xyes; then
+        AC_DEFINE([HAVE_MYSQL], [1], [MySQL development library])
+    else
+        AC_MSG_FAILURE([libmysqlclient is required to build the MySQL database driver])
+    fi
+fi
+
+if test "x${mysql_driver}" = xyes; then
+    AC_DEFINE([WITH_MYSQL], [1], [with the MySQL driver])
+    optional_drivers="${optional_drivers} greyd_mysql.la"
+    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_mysql.la"
+#    extra_tests="${extra_tests} test_db_mysql.t test_grey_mysql.t"
+fi
+
+#
 # sqlite3 db driver library & header checks.
 #
 AC_ARG_WITH([sqlite], [AS_HELP_STRING([--with-sqlite], [build the SQLite database driver])],
@@ -140,7 +168,7 @@ fi
 AC_ARG_WITH([bdb], [AS_HELP_STRING([--with-bdb], [build the Berkeley database driver])],
     [bdb_driver=yes], [bdb_driver=no])
 
-if test "x${bdb_driver}" = xno && test "x${sqlite_driver}" = xno && test "x${bdb_sql_driver}" = xno;then
+if test "x${bdb_driver}" = xno && test "x${sqlite_driver}" = xno && test "x${bdb_sql_driver}" = xno && test "x${mysql_driver}" = xno; then
    # Default to the Berkeley DB driver if none have been selected.
    bdb_driver=yes
 fi
