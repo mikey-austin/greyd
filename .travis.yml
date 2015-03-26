@@ -11,3 +11,7 @@ before_install:
 script: ./configure --with-bdb --with-bdb-sql --with-sqlite --disable-shared && make check
 
 before_script: autoreconf -i
+
+branches:
+  only:
+    - master
