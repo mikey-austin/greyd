@@ -27,7 +27,7 @@ port = 8025
 #
 # This will be obtained via "hostname" if not set.
 #
-#hostname = "greyd.org"
+#hostname = "mx1.greyd.org"
 
 #
 # Enable listening on IPv6 socket.
@@ -103,12 +103,12 @@ section database {
     path    = "@localstatedir@/@PACKAGE@",
     db_name = "@PACKAGE@.db"
 
-    #driver  = "@libdir@/@PACKAGE@/greyd_mysql.so",
-    #db_host = "localhost",
-    #db_port = 3306,
-    #db_name = "greyd",
-    #db_user = "greyd",
-    #db_pass = "greyd",
+    #driver = "@libdir@/@PACKAGE@/greyd_mysql.so",
+    #host   = "localhost",
+    #port   = 3306,
+    #name   = "greyd",
+    #user   = "greyd",
+    #pass   = "greyd",
 }
 
 #
