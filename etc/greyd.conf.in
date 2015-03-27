@@ -97,6 +97,8 @@ section firewall {
 # The greylisting database configuration.
 #
 section database {
+    #driver  = "@libdir@/@PACKAGE@/greyd_sqlite.so",
+    #driver  = "@libdir@/@PACKAGE@/greyd_bdb_sql.so",
     driver  = "@libdir@/@PACKAGE@/greyd_bdb.so",
     path    = "@localstatedir@/@PACKAGE@",
     db_name = "@PACKAGE@.db"
