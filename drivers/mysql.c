@@ -51,6 +51,7 @@
  */
 struct mysql_handle {
     MYSQL *db;
+    char *greyd_host;
     int txn;
     int connected;
 };
@@ -60,22 +61,29 @@ struct s3_itr {
     struct DB_key *curr;
 };
 
-static void populate_key(MYSQL_RES *, struct DB_key *, int);
-static void populate_val(MYSQL_RES *, struct DB_val *, int);
+static void populate_key(MYSQL_ROW, struct DB_key *, int);
+static void populate_val(MYSQL_ROW, struct DB_val *, int);
 
 extern void
 Mod_db_init(DB_handle_T handle)
 {
     struct mysql_handle *dbh;
     char *path;
-    int ret, flags, uid_changed = 0;
+    int ret, flags, uid_changed = 0, len;
 
     if((dbh = malloc(sizeof(*dbh))) == NULL)
         i_critical("malloc: %s", strerror(errno));
+
+    handle->dbh = dbh;
     dbh->db = mysql_init(NULL);
     dbh->txn = 0;
     dbh->connected = 0;
-    handle->dbh = dbh;
+
+    /* Escape and store the hostname in a static buffer. */
+    dbh->greyd_host = Config_get_str(handle->config, "hostname", NULL, '');
+    static char host_esc[2 * (len = strlen(dbh->greyd_host)) + 1];
+    mysql_real_escape(dbh->db, host_esc, dbh->greyd_host, len);
+    dbh->greyd_host = host_esc;
 }
 
 extern void
@@ -199,77 +207,71 @@ Mod_db_close(DB_handle_T handle)
 extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    struct s3_handle *dbh = handle->dbh;
-    sqlite3_stmt *stmt;
+    struct mysql_handle *dbh = handle->dbh;
     char *sql, *sql_tmpl;
     struct Grey_tuple *gt;
     struct Grey_data *gd;
-    int ret;
+    unsigned long len;
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql_tmpl = "INSERT OR IGNORE INTO spamtraps(address) VALUES ('%s')";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
+        sql_tmpl = "INSERT IGNORE INTO spamtraps(address) VALUES ('%s')";
 
-        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+        char add_esc[2 * (len = strlen(key->data.s)) + 1];
+        mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
+
+        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
 
     case DB_KEY_IP:
-        sql = "INSERT OR REPLACE INTO entries "
+        sql_tmpl = "REPLACE INTO entries "
             "(`ip`, `helo`, `from`, `to`, "
-            " `first`, `pass`, `expire`, `bcount`, `pcount`) "
-            "VALUES (?, '', '', '', ?, ?, ?, ?, ?)";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
+            " `first`, `pass`, `expire`, `bcount`, `pcount`, `greyd_host`) "
+            "VALUES "
+            "('%s', '', '', '', %lld, %lld, %lld, %ld, %ld, '%s')";
+
+        char ip_esc[2 * (len = strlen(key->data.s)) + 1];
+        mysql_real_escape_string(dbh->db, ip_esc, key->data.s, len);
 
         gd = &val->data.gd;
-        if(!(!sqlite3_bind_text(stmt,     1, key->data.s, -1, SQLITE_STATIC)
-             && !sqlite3_bind_int64(stmt, 2, gd->first)
-             && !sqlite3_bind_int64(stmt, 3, gd->pass)
-             && !sqlite3_bind_int64(stmt, 4, gd->expire)
-             && !sqlite3_bind_int(stmt,   5, gd->bcount)
-             && !sqlite3_bind_int(stmt,   6, gd->pcount)))
+        if(asprintf(&sql, sql_tmpl, ip_esc, gd->first, gd->pass,
+                    gd->expire, gd->bcount, gd->pcount,
+                    dbh->greyd_host) == -1)
         {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
 
     case DB_KEY_TUPLE:
-        sql = "INSERT OR REPLACE INTO entries "
+        sql_tmpl = "REPLACE INTO entries "
             "(`ip`, `helo`, `from`, `to`, "
-            " `first`, `pass`, `expire`, `bcount`, `pcount`) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
+            " `first`, `pass`, `expire`, `bcount`, `pcount`, `greyd_host`) "
+            "VALUES "
+            "('%s', '%s', '%s', '%s', %lld, %lld, %lld, %ld, %ld, '%s')";
 
         gt = &key->data.gt;
+        char ip_esc[2 * (len = strlen(gt->ip)) + 1];
+        mysql_real_escape_string(dbh->db, ip_esc, gt->ip, len);
+
+        char helo_esc[2 * (len = strlen(gt->helo)) + 1];
+        mysql_real_escape_string(dbh->db, helo_esc, gt->helo, len);
+
+        char from_esc[2 * (len = strlen(gt->from)) + 1];
+        mysql_real_escape_string(dbh->db, from_esc, gt->from, len);
+
+        char to_esc[2 * (len = strlen(gt->to)) + 1];
+        mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
+
         gd = &val->data.gd;
-        if(!(!sqlite3_bind_text(stmt,     1, gt->ip, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  2, gt->helo, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  3, gt->from, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  4, gt->to, -1, SQLITE_STATIC)
-             && !sqlite3_bind_int64(stmt, 5, gd->first)
-             && !sqlite3_bind_int64(stmt, 6, gd->pass)
-             && !sqlite3_bind_int64(stmt, 7, gd->expire)
-             && !sqlite3_bind_int(stmt,   8, gd->bcount)
-             && !sqlite3_bind_int(stmt,   9, gd->pcount)))
+        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc, to_esc,
+                    gd->first, gd->pass, gd->expire, gd->bcount, gd->pcount,
+                    dbh->greyd_host) == -1)
         {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
@@ -278,17 +280,15 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         return GREYDB_ERR;
     }
 
-    ret = sqlite3_step(stmt);
-    if(ret != SQLITE_DONE) {
-        i_warning("unexpected sqlite3_step result: %d", ret);
-        sqlite3_finalize(stmt);
-        return GREYDB_ERR;
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        free(sql);
+        goto err;
     }
-    sqlite3_finalize(stmt);
+    free(sql);
     return GREYDB_OK;
 
 err:
-    sqlite3_finalize(stmt);
     DB_rollback_txn(handle);
     return GREYDB_ERR;
 }
@@ -296,26 +296,23 @@ err:
 extern int
 Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    struct s3_handle *dbh = handle->dbh;
-    sqlite3_stmt *stmt;
-    char *sql;
+    struct mysql_handle *dbh = handle->dbh;
+    char *sql = NULL, *sql_tmpl;
     struct Grey_tuple *gt;
-    int ret, res;
+    unsigned long len;
+    int res = GREYDB_NOT_FOUND;
 
     switch(key->type) {
     case DB_KEY_MAIL:
         sql = "SELECT 0, 0, 0, 0, -2 "
-            "FROM spamtraps WHERE `address`=? "
+            "FROM spamtraps WHERE `address`='%s' "
             "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
 
-        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+        char add_esc[2 * (len = strlen(key->data.s)) + 1];
+        mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
+
+        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
@@ -323,19 +320,14 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     case DB_KEY_IP:
         sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
             "FROM entries "
-            "WHERE `ip`=? AND `helo`='' AND `from`='' "
-            "AND `to`='' "
+            "WHERE `ip`='%s' AND `helo`='' AND `from`='' AND `to`='' "
             "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
 
-        if(sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC)
-            != SQLITE_OK)
-        {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+        char add_esc[2 * (len = strlen(key->data.s)) + 1];
+        mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
+
+        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
@@ -343,21 +335,27 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     case DB_KEY_TUPLE:
         sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
             "FROM entries "
-            "WHERE `ip`=? AND `helo`=? AND `from`=? AND `to`=? "
+            "WHERE `ip`='%s' AND `helo`='%s' AND `from`='%s' AND `to`='%s' "
             "LIMIT 1";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
 
         gt = &key->data.gt;
-        if(!(!sqlite3_bind_text(stmt,     1, gt->ip, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  2, gt->helo, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  3, gt->from, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  4, gt->to, -1, SQLITE_STATIC)))
+        char ip_esc[2 * (len = strlen(gt->ip)) + 1];
+        mysql_real_escape_string(dbh->db, ip_esc, gt->ip, len);
+
+        char helo_esc[2 * (len = strlen(gt->helo)) + 1];
+        mysql_real_escape_string(dbh->db, helo_esc, gt->helo, len);
+
+        char from_esc[2 * (len = strlen(gt->from)) + 1];
+        mysql_real_escape_string(dbh->db, from_esc, gt->from, len);
+
+        char to_esc[2 * (len = strlen(gt->to)) + 1];
+        mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
+
+        gd = &val->data.gd;
+        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
+                    to_esc) == -1)
         {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
@@ -366,87 +364,91 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         return GREYDB_ERR;
     }
 
-    ret = sqlite3_step(stmt);
-    switch(ret) {
-    case SQLITE_DONE:
-        /* Not found as there are no rows returned. */
-        res = GREYDB_NOT_FOUND;
-        break;
+    MYSQL_RES *result = NULL;
+    MYSQL_ROW row;
+    MYSQL_FIELD *field;
+    unsigned int expected_fields = 5;
 
-    case SQLITE_ROW:
-        /* We have a result. */
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        goto err;
+    }
+
+    if((result = mysql_store_result(dbh->db)) != NULL
+       && mysql_num_fields(result) == expected_fields
+       && mysql_num_rows(result) == 1)
+    {
         res = GREYDB_FOUND;
-        populate_val(stmt, val, 0);
-        break;
-
-    default:
-        i_warning("unexpected sqlite3_step result: %d", ret);
-        res = GREYDB_ERR;
-        break;
+        row = mysql_fetch_row(result);
+        populate_val(row, val, 0);
     }
 
 err:
-    sqlite3_finalize(stmt);
+    if(sql != NULL)
+        free(sql);
+    if(result != NULL)
+        mysql_free_result(result);
     return res;
 }
 
 extern int
 Mod_db_del(DB_handle_T handle, struct DB_key *key)
 {
-    struct s3_handle *dbh = handle->dbh;
-    struct Grey_tuple *gt;
-    sqlite3_stmt *stmt;
-    char *sql;
-    int ret;
+    struct mysql_handle *dbh = handle->dbh;
+    char *sql, *sql_tmpl;
+    struct Grey_data *gd;
+    unsigned long len;
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql = "DELETE FROM spamtraps WHERE `address`=?";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
+        sql_tmpl = "DELETE FROM spamtraps WHERE `address`='%s'";
 
-        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+        char add_esc[2 * (len = strlen(key->data.s)) + 1];
+        mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
+
+        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
 
     case DB_KEY_IP:
-        sql = "DELETE FROM entries WHERE `ip`=? "
-            "AND `helo`='' AND `from`='' AND `to`=''";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
+        sql = "DELETE FROM entries WHERE `ip`='%s' "
+            "AND `helo`='' AND `from`='' AND `to`=''"
+            "AND `greyd_host`='%s'";
 
-        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+        char add_esc[2 * (len = strlen(key->data.s)) + 1];
+        mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
+
+        if(asprintf(&sql, sql_tmpl, add_esc, dbh->greyd_host) == -1) {
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
 
     case DB_KEY_TUPLE:
-        sql = "DELETE FROM entries WHERE `ip`=? "
-            "AND `helo`=? AND `from`=? AND `to`=?";
-        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
-        if(ret != SQLITE_OK) {
-            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
-            goto err;
-        }
+        sql = "DELETE FROM entries WHERE `ip`='%s' "
+            "AND `helo`='%s' AND `from`='%s' AND `to`='%s' "
+            "AND `greyd_host`='%s'";
 
         gt = &key->data.gt;
-        if(!(!sqlite3_bind_text(stmt,     1, gt->ip, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  2, gt->helo, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  3, gt->from, -1, SQLITE_STATIC)
-             && !sqlite3_bind_text(stmt,  4, gt->to, -1, SQLITE_STATIC)))
+        char ip_esc[2 * (len = strlen(gt->ip)) + 1];
+        mysql_real_escape_string(dbh->db, ip_esc, gt->ip, len);
+
+        char helo_esc[2 * (len = strlen(gt->helo)) + 1];
+        mysql_real_escape_string(dbh->db, helo_esc, gt->helo, len);
+
+        char from_esc[2 * (len = strlen(gt->from)) + 1];
+        mysql_real_escape_string(dbh->db, from_esc, gt->from, len);
+
+        char to_esc[2 * (len = strlen(gt->to)) + 1];
+        mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
+
+        gd = &val->data.gd;
+        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc, to_esc,
+                    dbh->greyd_host) == -1)
         {
-            i_warning("sqlite3_bind_*: %s", sqlite3_errmsg(dbh->db));
+            i_warning("mysql asprintf error");
             goto err;
         }
         break;
@@ -455,17 +457,15 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
         return GREYDB_ERR;
     }
 
-    ret = sqlite3_step(stmt);
-    if(ret != SQLITE_DONE) {
-        i_warning("unexpected sqlite3_step result: %d", ret);
-        sqlite3_finalize(stmt);
-        return GREYDB_ERR;
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        free(sql);
+        goto err;
     }
-    sqlite3_finalize(stmt);
+    free(sql);
     return GREYDB_OK;
 
 err:
-    sqlite3_finalize(stmt);
     DB_rollback_txn(handle);
     return GREYDB_ERR;
 }
@@ -667,7 +667,7 @@ cleanup:
 }
 
 static void
-populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
+populate_key(MYSQL_ROW row, struct DB_key *key, int from)
 {
     struct Grey_tuple *gt;
     static char buf[(INET6_ADDRSTRLEN + 1) + 3 * (GREY_MAX_MAIL + 1)];
@@ -681,59 +681,52 @@ populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
      * A pcount of -2 indicates a spamtrap, which has a key type
      * of DB_KEY_MAIL.
      */
-    key->type = ((!memcmp(sqlite3_column_text(stmt, 1), "", 1)
-                  && !memcmp(sqlite3_column_text(stmt, 2), "", 1)
-                  && !memcmp(sqlite3_column_text(stmt, 3), "", 1))
-                 ? (sqlite3_column_int(stmt, 8) == -2
+    key->type = ((!memcmp(row[1], "", 1)
+                  && !memcmp(row[2], "", 1)
+                  && !memcmp(row[3], "", 1))
+                 ? (atoi(row[8]) == -2
                     ? DB_KEY_MAIL : DB_KEY_IP)
                  : DB_KEY_TUPLE);
 
     if(key->type == DB_KEY_IP) {
         key->data.s = buf_p;
-        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
-                 INET6_ADDRSTRLEN + 1);
+        sstrncpy(buf_p, (const char *) row[from + 0]), INET6_ADDRSTRLEN + 1);
     }
     else if(key->type == DB_KEY_MAIL) {
         key->data.s = buf_p;
-        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
-                 GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) row[from + 0], GREY_MAX_MAIL + 1);
     }
     else {
         gt = &key->data.gt;
         gt->ip = buf_p;
-        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
-                 INET6_ADDRSTRLEN + 1);
+        sstrncpy(buf_p, (const char *) row[from + 0], INET6_ADDRSTRLEN + 1);
         buf_p += INET6_ADDRSTRLEN + 1;
 
         gt->helo = buf_p;
-        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 1),
-                 GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) row[from + 1], GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->from = buf_p;
-        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 2),
-                 GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) row[from + 2], GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->to = buf_p;
-        sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 3),
-                GREY_MAX_MAIL + 1);
+        sstrncpy(buf_p, (const char *) row[from + 3], GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
-
     }
 }
 
 static void
-populate_val(sqlite3_stmt *stmt, struct DB_val *val, int from)
+populate_val(MYSQL_ROW row, struct DB_val *val, int from)
 {
     struct Grey_data *gd;
 
     memset(val, 0, sizeof(*val));
     val->type = DB_VAL_GREY;
     gd = &val->data.gd;
-    gd->first = sqlite3_column_int64(stmt,  from + 0);
-    gd->pass = sqlite3_column_int64(stmt,   from + 1);
-    gd->expire = sqlite3_column_int64(stmt, from + 2);
-    gd->bcount = sqlite3_column_int(stmt,   from + 3);
-    gd->pcount = sqlite3_column_int(stmt,   from + 4);
+    gd->first = row[from + 0];
+    gd->pass = row[from + 1];
+    gd->expire = row[from + 2];
+    gd->bcount = row[from + 3];
+    gd->pcount = row[from + 4];
 }
