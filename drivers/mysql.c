@@ -565,8 +565,9 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
 {
     struct mysql_handle *dbh = handle->dbh;
-    sqlite3_stmt *stmt;
-    char *sql;
+    MYSQL_RES *result;
+    MYSQL_ROW row;
+    char *sql, *sql_tmpl;
     int ret = GREYDB_OK;
 
     /*
@@ -575,45 +576,29 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
      * is not already a conflicting entry with the same IP address
      * (ie an existing trap entry).
      */
-    sql = "DELETE FROM entries WHERE expire <= ?";
+    sql_tmpl = "DELETE FROM entries WHERE expire <= UNIX_TIMESTAMP() "
+        "AND `greyd_host`='%s'";
 
-    if(!(!sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL)
-         && !sqlite3_bind_int64(stmt, 1, *now)))
-    {
-        i_warning("delete expired entries: %s", sqlite3_errmsg(dbh->db));
-        ret = GREYDB_ERR;
-        goto cleanup;
+    if(asprintf(&sql, sql_tmpl, dbh->greyd_host) == -1) {
+        i_warning("mysql asprintf error");
+        goto err;
     }
 
-    if(sqlite3_step(stmt) != SQLITE_DONE) {
-        i_warning("sqlite3_step: %s", sqlite3_errmsg(dbh->db));
-        ret = GREYDB_ERR;
-        goto cleanup;
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("delete mysql expired entries: %s", mysql_error(dbh->db));
+        goto err;
     }
-    sqlite3_finalize(stmt);
+    free(sql);
+    sql = NULL;
 
-    sql = "UPDATE entries "
-        "SET `helo` = '', `from` = '', `to` = '', `expire` = ? "
-        "WHERE `from` <> '' AND `to` <> '' AND `pcount` >= 0 AND `pass` <= ? "
+    sql_tmpl = "UPDATE entries "
+        "SET `helo` = '', `from` = '', `to` = '', `expire` = %lld "
+        "WHERE `from` <> '' AND `to` <> '' AND `pcount` >= 0 "
+        "AND `pass` <= %lld AND `greyd_host`='%s' "
         "AND `ip` NOT IN ( "
         "    SELECT `ip` FROM entries WHERE `from` = '' AND `to` = '' "
         ")";
 
-    if(!(!sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL)
-         && !sqlite3_bind_int64(stmt, 1, *now + *white_exp)
-         && !sqlite3_bind_int64(stmt, 2, *now)))
-    {
-        i_warning("update db entries: %s", sqlite3_errmsg(dbh->db));
-        ret = GREYDB_ERR;
-        goto cleanup;
-    }
-
-    if(sqlite3_step(stmt) != SQLITE_DONE) {
-        i_warning("sqlite3_step: %s", sqlite3_errmsg(dbh->db));
-        ret = GREYDB_ERR;
-        goto cleanup;
-    }
-    sqlite3_finalize(stmt);
 
     /* Add greytrap & whitelist entries. */
     sql = "SELECT `ip`, NULL, NULL FROM entries             \
