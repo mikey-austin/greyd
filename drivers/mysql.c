@@ -473,16 +473,15 @@ err:
 extern void
 Mod_db_get_itr(DB_itr_T itr)
 {
-    struct s3_handle *dbh = itr->handle->dbh;
-    struct s3_itr *dbi = NULL;
+    struct mysql_handle *dbh = itr->handle->dbh;
+    struct mysql_itr *dbi = NULL;
     char *sql;
-    int ret;
 
     if((dbi = malloc(sizeof(*dbi))) == NULL) {
         i_warning("malloc: %s", strerror(errno));
         goto err;
     }
-    dbi->stmt = NULL;
+    dbi->res = NULL;
     dbi->curr = NULL;
     itr->dbi = dbi;
 
@@ -490,29 +489,33 @@ Mod_db_get_itr(DB_itr_T itr)
         "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries "
         "UNION "
         "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps";
-    ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &dbi->stmt, NULL);
-    if(ret != SQLITE_OK) {
-        i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
+
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        free(sql);
         goto err;
     }
+
+    dbi->res = mysql_store_result(dbh->db);
+    itr->size = mysql_num_rows(dbi->res);
+
     return;
 
 err:
     DB_rollback_txn(itr->handle);
-    sqlite3_close(dbh->db);
     exit(1);
 }
 
 extern void
 Mod_db_itr_close(DB_itr_T itr)
 {
-    struct s3_handle *dbh = itr->handle->dbh;
-    struct s3_itr *dbi = itr->dbi;
+    struct mysql_handle *dbh = itr->handle->dbh;
+    struct mysql_itr *dbi = itr->dbi;
 
     if(dbi) {
         dbi->curr = NULL;
-        if(dbi->stmt)
-            sqlite3_finalize(dbi->stmt);
+        if(dbi->res != NULL)
+            mysql_free_result(dbi->res);
         free(dbi);
         itr->dbi = NULL;
     }
@@ -521,39 +524,26 @@ Mod_db_itr_close(DB_itr_T itr)
 extern int
 Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
 {
-    struct s3_itr *dbi = itr->dbi;
-    int ret, res;
+    struct mysql_itr *dbi = itr->dbi;
+    MYSQL_ROW row;
 
-    ret = sqlite3_step(dbi->stmt);
-    switch(ret) {
-    case SQLITE_DONE:
-        /* We have reached the end as there are no rows. */
-        res = GREYDB_NOT_FOUND;
-        break;
+    if(dbi->res == NULL && itr->current < itr->size)
+        return GREYDB_NOT_FOUND;
 
-    case SQLITE_ROW:
-        /* We have a result. */
-        res = GREYDB_FOUND;
-        populate_key(dbi->stmt, key, 0);
-        populate_val(dbi->stmt, val, 4);
-        dbi->curr = key;
-        itr->current++;
-        break;
+    row = sqlite3_step(dbi->res);
+    populate_key(row, key, 0);
+    populate_val(row, val, 4);
+    dbi->curr = key;
+    itr->current++;
 
-    default:
-        i_warning("unexpected sqlite3_step result: %d", ret);
-        res = GREYDB_ERR;
-        break;
-    }
-
-    return res;
+    return GREYDB_FOUND;
 }
 
 extern int
 Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 {
-    struct s3_handle *dbh = itr->handle->dbh;
-    struct s3_itr *dbi = itr->dbi;
+    struct mysql_handle *dbh = itr->handle->dbh;
+    struct mysql_itr *dbi = itr->dbi;
     struct DB_key *key = dbi->curr;
 
     return DB_put(itr->handle, key, val);
@@ -562,7 +552,7 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 extern int
 Mod_db_itr_del_curr(DB_itr_T itr)
 {
-    struct s3_itr *dbi = itr->dbi;
+    struct mysql_itr *dbi = itr->dbi;
 
     if(dbi && dbi->stmt && dbi->curr)
         return DB_del(itr->handle, dbi->curr);
@@ -574,7 +564,7 @@ extern int
 Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
 {
-    struct s3_handle *dbh = handle->dbh;
+    struct mysql_handle *dbh = handle->dbh;
     sqlite3_stmt *stmt;
     char *sql;
     int ret = GREYDB_OK;
