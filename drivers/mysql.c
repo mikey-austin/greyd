@@ -34,9 +34,6 @@
 #ifdef HAVE_MYSQL_H
 #  include <mysql.h>
 #endif
-#ifdef HAVE_MY_GLOBAL_H
-#  include <my_global.h>
-#endif
 
 #include "../src/failures.h"
 #include "../src/greydb.h"
@@ -68,7 +65,7 @@ extern void
 Mod_db_init(DB_handle_T handle)
 {
     struct mysql_handle *dbh;
-    char *path;
+    char *path, *hostname;
     int ret, flags, uid_changed = 0, len;
 
     if((dbh = malloc(sizeof(*dbh))) == NULL)
@@ -80,10 +77,10 @@ Mod_db_init(DB_handle_T handle)
     dbh->connected = 0;
 
     /* Escape and store the hostname in a static buffer. */
-    dbh->greyd_host = Config_get_str(handle->config, "hostname", NULL, '');
-    static char host_esc[2 * (len = strlen(dbh->greyd_host)) + 1];
-    mysql_real_escape(dbh->db, host_esc, dbh->greyd_host, len);
-    dbh->greyd_host = host_esc;
+    hostname = Config_get_str(handle->config, "hostname", NULL, "");
+    if((dbh->greyd_host = malloc(2 * (len = strlen(hostname)) + 1)) == NULL)
+        i_critical("malloc: %s", strerror(errno));
+    mysql_real_escape(dbh->db, dbh->greyd_host, hostname, len);
 }
 
 extern void
@@ -97,7 +94,7 @@ Mod_db_open(DB_handle_T handle, int flags)
         return;
 
     host = Config_get_str(handle->config, "host", "database", DEFAULT_HOST);
-    port = Config_get_int(handle->config, "port", "database", DEFAULT_PORT)
+    port = Config_get_int(handle->config, "port", "database", DEFAULT_PORT);
     name = Config_get_str(handle->config, "name", "database", DEFAULT_DB);
     socket = Config_get_str(handle->config, "socket", "database", NULL);
     user = Config_get_str(handle->config, "user", "database", NULL);
@@ -194,9 +191,10 @@ cleanup:
 extern void
 Mod_db_close(DB_handle_T handle)
 {
-    struct s3_handle *dbh;
+    struct mysql_handle *dbh;
 
     if((dbh = handle->dbh) != NULL) {
+        free(dbh->greyd_host);
         if(dbh->db)
             mysql_close(dbh->db);
         free(dbh);
@@ -414,13 +412,12 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 
     case DB_KEY_IP:
         sql = "DELETE FROM entries WHERE `ip`='%s' "
-            "AND `helo`='' AND `from`='' AND `to`=''"
-            "AND `greyd_host`='%s'";
+            "AND `helo`='' AND `from`='' AND `to`=''";
 
         char add_esc[2 * (len = strlen(key->data.s)) + 1];
         mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
 
-        if(asprintf(&sql, sql_tmpl, add_esc, dbh->greyd_host) == -1) {
+        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
             i_warning("mysql asprintf error");
             goto err;
         }
@@ -428,8 +425,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 
     case DB_KEY_TUPLE:
         sql = "DELETE FROM entries WHERE `ip`='%s' "
-            "AND `helo`='%s' AND `from`='%s' AND `to`='%s' "
-            "AND `greyd_host`='%s'";
+            "AND `helo`='%s' AND `from`='%s' AND `to`='%s' ";
 
         gt = &key->data.gt;
         char ip_esc[2 * (len = strlen(gt->ip)) + 1];
@@ -445,8 +441,8 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
         mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
 
         gd = &val->data.gd;
-        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc, to_esc,
-                    dbh->greyd_host) == -1)
+        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
+                    to_esc) == -1)
         {
             i_warning("mysql asprintf error");
             goto err;
@@ -530,7 +526,7 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
     if(dbi->res == NULL && itr->current < itr->size)
         return GREYDB_NOT_FOUND;
 
-    row = sqlite3_step(dbi->res);
+    row = mysql_fetch_row(dbi->res);
     populate_key(row, key, 0);
     populate_val(row, val, 4);
     dbi->curr = key;
@@ -565,8 +561,6 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
 {
     struct mysql_handle *dbh = handle->dbh;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
     char *sql, *sql_tmpl;
     int ret = GREYDB_OK;
 
@@ -594,11 +588,22 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     sql_tmpl = "UPDATE entries "
         "SET `helo` = '', `from` = '', `to` = '', `expire` = %lld "
         "WHERE `from` <> '' AND `to` <> '' AND `pcount` >= 0 "
-        "AND `pass` <= %lld AND `greyd_host`='%s' "
+        "AND `pass` <= UNIX_TIMESTAMP() AND `greyd_host`='%s' "
         "AND `ip` NOT IN ( "
         "    SELECT `ip` FROM entries WHERE `from` = '' AND `to` = '' "
         ")";
 
+    if(asprintf(&sql, sql_tmpl, *now + *white_exp, dbh->greyd_host) == -1) {
+        i_warning("mysql asprintf error");
+        goto err;
+    }
+
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("update mysql entries: %s", mysql_error(dbh->db));
+        goto err;
+    }
+    free(sql);
+    sql = NULL;
 
     /* Add greytrap & whitelist entries. */
     sql = "SELECT `ip`, NULL, NULL FROM entries             \
@@ -612,32 +617,34 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
         SELECT NULL, NULL, `ip` FROM entries                \
         WHERE `to`='' AND `from`='' AND `pcount` < 0";
 
-    if(sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL)) {
-        i_warning("fetch white/trap entries: %s", sqlite3_errmsg(dbh->db));
-        ret = GREYDB_ERR;
-        goto cleanup;
+    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+        i_warning("mysql fetch grey/white entries: %s", mysql_error(dbh->db));
+        goto err;
     }
 
-    while(sqlite3_step(stmt) == SQLITE_ROW) {
-        if(sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
-            List_insert_after(
-                whitelist,
-                strdup((const char *) sqlite3_column_text(stmt, 0)));
-        }
-        else if(sqlite3_column_type(stmt, 1) != SQLITE_NULL) {
-            List_insert_after(
-                whitelist_ipv6,
-                strdup((const char *) sqlite3_column_text(stmt, 1)));
-        }
-        else if(sqlite3_column_type(stmt, 2) != SQLITE_NULL) {
-            List_insert_after(
-                traplist,
-                strdup((const char *) sqlite3_column_text(stmt, 2)));
+    MYSQL_RES *result = mysql_store_result(dbh->db);
+    MYSQL_ROW row;
+
+    if(result && mysql_num_rows(result) > 0) {
+        while((row = mysql_fetch_row(result))) {
+            if(row[0] != NULL) {
+                List_insert_after(
+                    whitelist, strdup((const char *) row[0]));
+            }
+            else if(row[1] != NULL) {
+                List_insert_after(
+                    whitelist_ipv6, strdup((const char *) row[1]));
+            }
+            else if(row[2] != NULL) {
+                List_insert_after(
+                    traplist, strdup((const char *) row[2]));
+            }
         }
     }
 
-cleanup:
-    sqlite3_finalize(stmt);
+err:
+    if(result)
+        mysql_free_result(result);
     return ret;
 }
 

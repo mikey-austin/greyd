@@ -94,7 +94,6 @@ if test "x${mysql_driver}" = xyes; then
     LIBS="${LIBS} "`${MYSQL_CONFIG} --libs`
     CPPFLAGS="${CPPFLAGS} "`${MYSQL_CONFIG} --include`
     AC_CHECK_HEADERS([mysql.h], [have_mysql=yes;break], [have_mysql=no])
-    AC_CHECK_HEADERS([my_global.h], [have_mysql=yes;break], [have_mysql=no])
 
     if test "x${have_mysql}" = xyes; then
         AC_DEFINE([HAVE_MYSQL], [1], [MySQL development library])
