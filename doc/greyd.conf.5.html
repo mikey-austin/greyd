@@ -59,7 +59,6 @@
     <a href="#GENERAL-OPTIONS">GENERAL OPTIONS</a>
     <a href="#FIREWALL-SECTION">FIREWALL SECTION</a>
     <a href="#DATABASE-SECTION">DATABASE SECTION</a>
-    <a href="#MySQL-database-driver">MySQL database driver</a>
     <a href="#GREY-SECTION">GREY SECTION</a>
     <a href="#SYNCHRONISATION-SECTION">SYNCHRONISATION SECTION</a>
     <a href="#SPF-SECTION">SPF SECTION</a>
@@ -160,7 +159,9 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
 
 <pre><code>  section firewall {
+      #driver = "greyd_pf.so",
       driver = "greyd_netfilter.so",
+
       # Driver-specific options below.
       ...
   }
@@ -243,7 +244,7 @@ include "/etc/greyd/conf.d/*.conf"
 </dl>
 
 
-<h2 id="MySQL-database-driver">MySQL database driver</h2>
+<h3 id="MySQL-database-driver">MySQL database driver</h3>
 
 <p>The MySQL driver may be built by specifying the <strong>--with-mysql</strong> configure option. The desired database will need to be setup indenpendently of <em>greyd</em> using the <strong>mysql_schema.sql</strong> DDL distributed with the source distribution.</p>
 

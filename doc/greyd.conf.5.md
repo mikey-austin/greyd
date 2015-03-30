@@ -110,7 +110,9 @@ The following options are common to all firewall drivers:
   The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:
 
         section firewall {
+            #driver = "greyd_pf.so",
             driver = "greyd_netfilter.so",
+
             # Driver-specific options below.
             ...
         }
@@ -197,7 +199,7 @@ The SQLite database driver makes use of libsqlite3. No special initialization is
 * **db_name** = *string*:
   The name of the database file, relative to the specified **path**.
 
-## MySQL database driver
+### MySQL database driver
 
 The MySQL driver may be built by specifying the **--with-mysql** configure option. The desired database will need to be setup indenpendently of *greyd* using the **mysql_schema.sql** DDL distributed with the source distribution.
 

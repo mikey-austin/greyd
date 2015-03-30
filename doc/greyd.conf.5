@@ -170,7 +170,9 @@ The driver shared object location\. May be either an absolute or relative path\.
 .nf
 
   section firewall {
+      #driver = "greyd_pf\.so",
       driver = "greyd_netfilter\.so",
+
       # Driver\-specific options below\.
       \.\.\.
   }
@@ -281,7 +283,7 @@ The filesystem path to the directory containing the database files\.
 \fBdb_name\fR = \fIstring\fR
 The name of the database file, relative to the specified \fBpath\fR\.
 .
-.SH "MySQL database driver"
+.SS "MySQL database driver"
 The MySQL driver may be built by specifying the \fB\-\-with\-mysql\fR configure option\. The desired database will need to be setup indenpendently of \fIgreyd\fR using the \fBmysql_schema\.sql\fR DDL distributed with the source distribution\.
 .
 .TP
