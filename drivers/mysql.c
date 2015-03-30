@@ -58,6 +58,7 @@ struct mysql_itr {
     struct DB_key *curr;
 };
 
+static char *escape(MYSQL *, const char *);
 static void populate_key(MYSQL_ROW, struct DB_key *, int);
 static void populate_val(MYSQL_ROW, struct DB_val *, int);
 
@@ -78,9 +79,12 @@ Mod_db_init(DB_handle_T handle)
 
     /* Escape and store the hostname in a static buffer. */
     hostname = Config_get_str(handle->config, "hostname", NULL, "");
-    if((dbh->greyd_host = malloc(2 * (len = strlen(hostname)) + 1)) == NULL)
+    if((dbh->greyd_host = calloc(2 * (len = strlen(hostname)) + 1,
+                                 sizeof(char))) == NULL)
+    {
         i_critical("malloc: %s", strerror(errno));
-    mysql_real_escape(dbh->db, dbh->greyd_host, hostname, len);
+    }
+    mysql_real_escape_string(dbh->db, dbh->greyd_host, hostname, len);
 }
 
 extern void
@@ -152,7 +156,7 @@ Mod_db_commit_txn(DB_handle_T handle)
         return -1;
     }
 
-    if(!mysql_commit(dbh->db)) {
+    if(mysql_commit(dbh->db)) {
         i_warning("db txn commit failed: %s", mysql_error(dbh->db));
         goto cleanup;
     }
@@ -175,7 +179,7 @@ Mod_db_rollback_txn(DB_handle_T handle)
         return -1;
     }
 
-    if(!mysql_rollback(dbh->db)) {
+    if(mysql_rollback(dbh->db)) {
         i_warning("db txn rollback failed: %s", mysql_error(dbh->db));
         goto cleanup;
     }
@@ -206,37 +210,26 @@ extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     struct mysql_handle *dbh = handle->dbh;
-    char *sql, *sql_tmpl;
+    char *sql = NULL, *sql_tmpl = NULL;
     struct Grey_tuple *gt;
     struct Grey_data *gd;
     unsigned long len;
-
-    /* Escape key fields. */
-    char add_esc[2 * (len = strlen(key->data.s)) + 1];
-    mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
-
-    gt = &key->data.gt;
-    gd = &val->data.gd;
-    char ip_esc[2 * (len = strlen(gt->ip)) + 1];
-    mysql_real_escape_string(dbh->db, ip_esc, gt->ip, len);
-
-    char helo_esc[2 * (len = strlen(gt->helo)) + 1];
-    mysql_real_escape_string(dbh->db, helo_esc, gt->helo, len);
-
-    char from_esc[2 * (len = strlen(gt->from)) + 1];
-    mysql_real_escape_string(dbh->db, from_esc, gt->from, len);
-
-    char to_esc[2 * (len = strlen(gt->to)) + 1];
-    mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
+    char *add_esc = NULL;
+    char *ip_esc = NULL;
+    char *helo_esc = NULL;
+    char *from_esc = NULL;
+    char *to_esc = NULL;
 
     switch(key->type) {
     case DB_KEY_MAIL:
         sql_tmpl = "INSERT IGNORE INTO spamtraps(address) VALUES ('%s')";
+        add_esc = escape(dbh->db, key->data.s);
 
-        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(add_esc);
         break;
 
     case DB_KEY_IP:
@@ -244,15 +237,18 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "(`ip`, `helo`, `from`, `to`, "
             " `first`, `pass`, `expire`, `bcount`, `pcount`, `greyd_host`) "
             "VALUES "
-            "('%s', '', '', '', %lld, %lld, %lld, %ld, %ld, '%s')";
+            "('%s', '', '', '', %lld, %lld, %lld, %d, %d, '%s')";
+        add_esc = escape(dbh->db, key->data.s);
 
-        if(asprintf(&sql, sql_tmpl, add_esc, gd->first, gd->pass,
-                    gd->expire, gd->bcount, gd->pcount,
-                    dbh->greyd_host) == -1)
+        gd = &val->data.gd;
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc, gd->first, gd->pass,
+                               gd->expire, gd->bcount, gd->pcount,
+                               dbh->greyd_host) == -1)
         {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(add_esc);
         break;
 
     case DB_KEY_TUPLE:
@@ -260,15 +256,26 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
             "(`ip`, `helo`, `from`, `to`, "
             " `first`, `pass`, `expire`, `bcount`, `pcount`, `greyd_host`) "
             "VALUES "
-            "('%s', '%s', '%s', '%s', %lld, %lld, %lld, %ld, %ld, '%s')";
+            "('%s', '%s', '%s', '%s', %lld, %lld, %lld, %d, %d, '%s')";
+        gt = &key->data.gt;
+        ip_esc   = escape(dbh->db, gt->ip);
+        helo_esc = escape(dbh->db, gt->helo);
+        from_esc = escape(dbh->db, gt->from);
+        to_esc   = escape(dbh->db, gt->to);
 
-        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc, to_esc,
-                    gd->first, gd->pass, gd->expire, gd->bcount, gd->pcount,
-                    dbh->greyd_host) == -1)
+        gd = &val->data.gd;
+        if(ip_esc && helo_esc && from_esc && to_esc
+           && asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc, to_esc,
+                       gd->first, gd->pass, gd->expire, gd->bcount,
+                       gd->pcount, dbh->greyd_host) == -1)
         {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(ip_esc);
+        free(helo_esc);
+        free(from_esc);
+        free(to_esc);
         break;
 
     default:
@@ -276,7 +283,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     }
 
     if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
-        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        i_warning("put mysql error: %s", mysql_error(dbh->db));
         free(sql);
         goto err;
     }
@@ -292,64 +299,66 @@ extern int
 Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     struct mysql_handle *dbh = handle->dbh;
-    char *sql = NULL, *sql_tmpl;
+    char *sql = NULL, *sql_tmpl = NULL;
     struct Grey_tuple *gt;
     unsigned long len;
     int res = GREYDB_NOT_FOUND;
-
-    /* Escape key fields. */
-    char add_esc[2 * (len = strlen(key->data.s)) + 1];
-    mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
-
-    gt = &key->data.gt;
-    char ip_esc[2 * (len = strlen(gt->ip)) + 1];
-    mysql_real_escape_string(dbh->db, ip_esc, gt->ip, len);
-
-    char helo_esc[2 * (len = strlen(gt->helo)) + 1];
-    mysql_real_escape_string(dbh->db, helo_esc, gt->helo, len);
-
-    char from_esc[2 * (len = strlen(gt->from)) + 1];
-    mysql_real_escape_string(dbh->db, from_esc, gt->from, len);
-
-    char to_esc[2 * (len = strlen(gt->to)) + 1];
-    mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
+    char *add_esc = NULL;
+    char *ip_esc = NULL;
+    char *helo_esc = NULL;
+    char *from_esc = NULL;
+    char *to_esc = NULL;
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql = "SELECT 0, 0, 0, 0, -2 "
+        sql_tmpl = "SELECT 0, 0, 0, 0, -2 "
             "FROM spamtraps WHERE `address`='%s' "
             "LIMIT 1";
+        add_esc = escape(dbh->db, key->data.s);
 
-        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(add_esc);
         break;
 
     case DB_KEY_IP:
-        sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
+        sql_tmpl = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount` "
             "FROM entries "
             "WHERE `ip`='%s' AND `helo`='' AND `from`='' AND `to`='' "
             "LIMIT 1";
+        add_esc = escape(dbh->db, key->data.s);
 
-        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(add_esc);
         break;
 
     case DB_KEY_TUPLE:
-        sql = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount`"
+        sql_tmpl = "SELECT `first`, `pass`, `expire`, `bcount`, `pcount` "
             "FROM entries "
             "WHERE `ip`='%s' AND `helo`='%s' AND `from`='%s' AND `to`='%s' "
             "LIMIT 1";
+        gt = &key->data.gt;
+        ip_esc   = escape(dbh->db, gt->ip);
+        helo_esc = escape(dbh->db, gt->helo);
+        from_esc = escape(dbh->db, gt->from);
+        to_esc   = escape(dbh->db, gt->to);
 
-        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
-                    to_esc) == -1)
+        if(ip_esc && helo_esc && from_esc && to_esc
+           && asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
+                       to_esc) == -1)
         {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(ip_esc);
+        free(helo_esc);
+        free(from_esc);
+        free(to_esc);
         break;
 
     default:
@@ -362,7 +371,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     unsigned int expected_fields = 5;
 
     if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
-        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        i_warning("get mysql error: %s", mysql_error(dbh->db));
         goto err;
     }
 
@@ -387,56 +396,59 @@ extern int
 Mod_db_del(DB_handle_T handle, struct DB_key *key)
 {
     struct mysql_handle *dbh = handle->dbh;
-    char *sql, *sql_tmpl;
+    char *sql = NULL, *sql_tmpl = NULL;
     struct Grey_tuple *gt;
     unsigned long len;
-
-    char add_esc[2 * (len = strlen(key->data.s)) + 1];
-    mysql_real_escape_string(dbh->db, add_esc, key->data.s, len);
-
-    gt = &key->data.gt;
-    char ip_esc[2 * (len = strlen(gt->ip)) + 1];
-    mysql_real_escape_string(dbh->db, ip_esc, gt->ip, len);
-
-    char helo_esc[2 * (len = strlen(gt->helo)) + 1];
-    mysql_real_escape_string(dbh->db, helo_esc, gt->helo, len);
-
-    char from_esc[2 * (len = strlen(gt->from)) + 1];
-    mysql_real_escape_string(dbh->db, from_esc, gt->from, len);
-
-    char to_esc[2 * (len = strlen(gt->to)) + 1];
-    mysql_real_escape_string(dbh->db, to_esc, gt->to, len);
+    char *add_esc = NULL;
+    char *ip_esc = NULL;
+    char *helo_esc = NULL;
+    char *from_esc = NULL;
+    char *to_esc = NULL;
 
     switch(key->type) {
     case DB_KEY_MAIL:
         sql_tmpl = "DELETE FROM spamtraps WHERE `address`='%s'";
+        add_esc = escape(dbh->db, key->data.s);
 
-        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(add_esc);
         break;
 
     case DB_KEY_IP:
-        sql = "DELETE FROM entries WHERE `ip`='%s' "
+        sql_tmpl = "DELETE FROM entries WHERE `ip`='%s' "
             "AND `helo`='' AND `from`='' AND `to`=''";
+        add_esc = escape(dbh->db, key->data.s);
 
-        if(asprintf(&sql, sql_tmpl, add_esc) == -1) {
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(add_esc);
         break;
 
     case DB_KEY_TUPLE:
-        sql = "DELETE FROM entries WHERE `ip`='%s' "
+        sql_tmpl = "DELETE FROM entries WHERE `ip`='%s' "
             "AND `helo`='%s' AND `from`='%s' AND `to`='%s' ";
+        gt = &key->data.gt;
+        ip_esc   = escape(dbh->db, gt->ip);
+        helo_esc = escape(dbh->db, gt->helo);
+        from_esc = escape(dbh->db, gt->from);
+        to_esc   = escape(dbh->db, gt->to);
 
-        if(asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
-                    to_esc) == -1)
+        if(ip_esc && helo_esc && from_esc && to_esc
+           && asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
+                       to_esc) == -1)
         {
             i_warning("mysql asprintf error");
             goto err;
         }
+        free(ip_esc);
+        free(helo_esc);
+        free(from_esc);
+        free(to_esc);
         break;
 
     default:
@@ -444,7 +456,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
     }
 
     if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
-        i_warning("insert mysql error: %s", mysql_error(dbh->db));
+        i_warning("del mysql error: %s", mysql_error(dbh->db));
         free(sql);
         goto err;
     }
@@ -513,16 +525,15 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
     struct mysql_itr *dbi = itr->dbi;
     MYSQL_ROW row;
 
-    if(dbi->res == NULL && itr->current < itr->size)
-        return GREYDB_NOT_FOUND;
+    if(dbi->res && (row = mysql_fetch_row(dbi->res))) {
+        populate_key(row, key, 0);
+        populate_val(row, val, 4);
+        dbi->curr = key;
+        itr->current++;
+        return GREYDB_FOUND;
+    }
 
-    row = mysql_fetch_row(dbi->res);
-    populate_key(row, key, 0);
-    populate_val(row, val, 4);
-    dbi->curr = key;
-    itr->current++;
-
-    return GREYDB_FOUND;
+    return GREYDB_NOT_FOUND;
 }
 
 extern int
@@ -575,13 +586,12 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     free(sql);
     sql = NULL;
 
-    sql_tmpl = "UPDATE entries "
-        "SET `helo` = '', `from` = '', `to` = '', `expire` = %lld "
-        "WHERE `from` <> '' AND `to` <> '' AND `pcount` >= 0 "
-        "AND `pass` <= UNIX_TIMESTAMP() AND `greyd_host`='%s' "
-        "AND `ip` NOT IN ( "
-        "    SELECT `ip` FROM entries WHERE `from` = '' AND `to` = '' "
-        ")";
+    sql_tmpl = "UPDATE entries e LEFT JOIN entries g "
+        "ON g.`ip`=e.`ip` AND g.`to`='' AND g.`from`='' "
+        "SET e.`helo` = '', e.`from` = '', e.`to` = '', e.`expire` = %lld "
+        "WHERE e.`from` <> '' AND e.`to` <> '' AND e.`pcount` >= 0 "
+        "AND g.`ip` IS NULL AND e.`pass` <= UNIX_TIMESTAMP() "
+        "AND e.`greyd_host`='%s'";
 
     if(asprintf(&sql, sql_tmpl, *now + *white_exp, dbh->greyd_host) == -1) {
         i_warning("mysql asprintf error");
@@ -636,6 +646,21 @@ err:
     if(result)
         mysql_free_result(result);
     return ret;
+}
+
+static char
+*escape(MYSQL *db, const char *str)
+{
+    char *esc;
+    size_t len = strlen(str);
+
+    if((esc = calloc(2 * len + 1, sizeof(char))) == NULL) {
+        i_warning("calloc: %s", strerror(errno));
+        return NULL;
+    }
+    mysql_real_escape_string(db, esc, str, len);
+
+    return esc;
 }
 
 static void

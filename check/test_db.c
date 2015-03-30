@@ -37,7 +37,7 @@
 #include <stdio.h>
 
 int
-main(void)
+main(int argc, char *argv[])
 {
     DB_handle_T db;
     DB_itr_T itr;
@@ -64,7 +64,13 @@ main(void)
         return 1;
 
     c = Config_create();
-    ls = Lexer_source_create_from_str(conf, strlen(conf));
+    if(argc > 1 && !strcmp(argv[1], "-")) {
+        /* Read from stdin. */
+        ls = Lexer_source_create_from_fd(0);
+    }
+    else {
+        ls = Lexer_source_create_from_str(conf, strlen(conf));
+    }
     l = Config_lexer_create(ls);
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);

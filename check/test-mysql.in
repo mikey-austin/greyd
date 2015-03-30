@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# Run test programs using a mysql database. To be invoked by:
+#   $ sh ./test-mysql test_db_mysql
+#   AND
+#   $ sh ./test-mysql test_grey_mysql
+#
+
+MYSQL="@MYSQL@"
+host="localhost"
+port="3306"
+user="greyd"
+pass="greyd"
+name="$1"
+
+# Load the schema.
+$MYSQL --host $host --port $port \
+    -u $user -p$pass \
+    -e "DROP DATABASE IF EXISTS $name; CREATE DATABASE $name;"
+$MYSQL --host $host --port $port $name -u $user -p$pass <../drivers/mysql_schema.sql
+
+# Run tests through valgrind if it exists.
+VALGRIND="@VALGRIND@"
+if [ -x $VALGRIND ]; then
+    CMD="$VALGRIND -q --trace-children=yes \
+        --track-origins=yes \
+        --leak-check=full \
+        --error-exitcode=1 \
+        --tool=memcheck ./$1.t"
+else
+    CMD="./$1.t"
+fi
+
+$CMD - <<CONFIG
+drop_privs = 0
+low_prio_mx = "192.179.21.3"
+hostname = "greyd-test.org"
+
+section grey {
+  permitted_domains = "data/permitted_domains.txt",
+  traplist_name    = "test traplist",
+  traplist_message = "you have been trapped",
+  grey_expiry      = 3600,
+}
+
+section firewall {
+  driver = "greyd_fw_dummy.so"
+}
+
+section database {
+    driver = "greyd_mysql.so",
+    host = "$host",
+    port = $port,
+    name = "$name",
+    user = "$user",
+    pass = "$pass",
+}
+CONFIG

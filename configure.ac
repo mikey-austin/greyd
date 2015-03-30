@@ -63,7 +63,9 @@ AC_SUBST([optional_drivers])
 AC_SUBST([optional_ldadd])
 
 extra_tests=
+extra_test_programs=
 AC_SUBST([extra_tests])
+AC_SUBST([extra_test_programs])
 
 AC_ARG_VAR([DEFAULT_CONFIG], [default greyd configuration path])
 if test -z ${DEFAULT_CONFIG}; then
@@ -87,6 +89,7 @@ AC_ARG_WITH([mysql], [AS_HELP_STRING([--with-mysql], [build the MySQL database d
     [mysql_driver=yes], [mysql_driver=no])
 
 if test "x${mysql_driver}" = xyes; then
+    AC_PATH_PROG([MYSQL], [mysql])
     AC_PATH_PROG([MYSQL_CONFIG], [mysql_config])
     AS_IF([test "x${MYSQL_CONFIG}" = x], [AC_MSG_ERROR([Please install mysql_config])])
 
@@ -106,7 +109,8 @@ if test "x${mysql_driver}" = xyes; then
     AC_DEFINE([WITH_MYSQL], [1], [with the MySQL driver])
     optional_drivers="${optional_drivers} greyd_mysql.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_mysql.la"
-#    extra_tests="${extra_tests} test_db_mysql.t test_grey_mysql.t"
+    extra_tests="${extra_tests} test_db_mysql.sh test_grey_mysql.sh"
+    extra_test_programs="${extra_test_programs} test_db_mysql.t test_grey_mysql.t"
 fi
 
 #
@@ -134,6 +138,7 @@ if test "x${sqlite_driver}" = xyes; then
     optional_drivers="${optional_drivers} greyd_sqlite.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_sqlite.la"
     extra_tests="${extra_tests} test_db_sqlite.t test_grey_sqlite.t"
+    extra_test_programs="${extra_test_programs} test_db_sqlite.t test_grey_sqlite.t"
 fi
 
 #
@@ -161,6 +166,7 @@ if test "x${bdb_sql_driver}" = xyes; then
     optional_drivers="${optional_drivers} greyd_bdb_sql.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb_sql.la"
     extra_tests="${extra_tests} test_db_bdb_sql.t test_grey_bdb_sql.t"
+    extra_test_programs="${extra_test_programs} test_db_bdb_sql.t test_grey_bdb_sql.t"
 fi
 
 #
@@ -193,6 +199,7 @@ if test "x${bdb_driver}" = xyes; then
     optional_drivers="${optional_drivers} greyd_bdb.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_bdb.la"
     extra_tests="${extra_tests} test_db.t test_grey.t"
+    extra_test_programs="${extra_test_programs} test_db.t test_grey.t"
 fi
 
 #
@@ -428,6 +435,7 @@ AC_CONFIG_FILES([Makefile
         check/data/config_test1.conf
         check/data/config_test2.conf
         check/data/config_test3.conf
+        check/test-mysql
         packages/rpm/greyd.spec
         check/data/lexer_source_1.conf])
 AC_OUTPUT

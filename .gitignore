@@ -40,6 +40,7 @@ check/data/config_test3.conf
 check/data/lexer_source_1.conf
 check/data/lexer_source_2.conf.gz
 check/test-wrapper
+check/test-mysql
 check/.deps/*
 check/.libs/*
 check/*.la
