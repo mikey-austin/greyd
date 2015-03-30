@@ -27,7 +27,7 @@ port = 8025
 #
 # This will be obtained via "hostname" if not set.
 #
-#hostname = "greyd.org"
+#hostname = "mx1.greyd.org"
 
 #
 # Enable listening on IPv6 socket.
@@ -97,11 +97,18 @@ section firewall {
 # The greylisting database configuration.
 #
 section database {
-    #driver  = "@libdir@/@PACKAGE@/greyd_sqlite.so",
     #driver  = "@libdir@/@PACKAGE@/greyd_bdb_sql.so",
+    #driver  = "@libdir@/@PACKAGE@/greyd_sqlite.so",
     driver  = "@libdir@/@PACKAGE@/greyd_bdb.so",
     path    = "@localstatedir@/@PACKAGE@",
     db_name = "@PACKAGE@.db"
+
+    #driver = "@libdir@/@PACKAGE@/greyd_mysql.so",
+    #host   = "localhost",
+    #port   = 3306,
+    #name   = "greyd",
+    #user   = "greyd",
+    #pass   = "greyd",
 }
 
 #

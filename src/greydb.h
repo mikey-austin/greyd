@@ -96,7 +96,7 @@ struct DB_itr_T {
     DB_handle_T   handle;  /**< Database handle reference. */
     void *dbi;   /**< Driver specific iterator. */
     int current; /**< Current index. */
-    int size;    /**< Number of elements in the iteration. */
+    unsigned long int size;    /**< Number of elements in the iteration. */
 };
 
 /**

@@ -54,7 +54,7 @@ static void tally_database(Config_T c, int *total_entries, int *total_white, int
                            int *total_white_blocked, int *total_grey_passed, int *total_grey_blocked);
 
 int
-main(void)
+main(int argc, char *argv[])
 {
     DB_handle_T db;
     struct DB_key key;
@@ -94,7 +94,13 @@ main(void)
 
     asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER);
     c = Config_create();
-    ls = Lexer_source_create_from_str(conf, strlen(conf));
+    if(argc > 1 && !strcmp(argv[1], "-")) {
+        /* Read from stdin. */
+        ls = Lexer_source_create_from_fd(0);
+    }
+    else {
+        ls = Lexer_source_create_from_str(conf, strlen(conf));
+    }
     l = Config_lexer_create(ls);
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);

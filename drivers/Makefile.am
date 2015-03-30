@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -DPFCTL_PATH='"$(PFCTL)"'
 
-EXTRA_LTLIBRARIES = greyd_bdb.la greyd_sqlite.la greyd_bdb_sql.la greyd_netfilter.la greyd_pf.la greyd_npf.la
+EXTRA_LTLIBRARIES = greyd_bdb.la greyd_sqlite.la greyd_bdb_sql.la greyd_netfilter.la greyd_pf.la greyd_npf.la greyd_mysql.la
 pkglib_LTLIBRARIES = $(optional_drivers)
 noinst_LTLIBRARIES = greyd_fw_dummy.la
 
@@ -18,6 +18,9 @@ greyd_bdb_sql_la_SOURCES = sqlite.c
 greyd_bdb_sql_la_CFLAGS  = -DBUILD_DB_SQL
 greyd_bdb_sql_la_LIBADD  = -ldb_sql
 greyd_bdb_sql_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
+
+greyd_mysql_la_SOURCES = mysql.c
+greyd_mysql_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
 
 greyd_netfilter_la_SOURCES = netfilter.c
 greyd_netfilter_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'
