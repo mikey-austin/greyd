@@ -59,6 +59,7 @@
     <a href="#GENERAL-OPTIONS">GENERAL OPTIONS</a>
     <a href="#FIREWALL-SECTION">FIREWALL SECTION</a>
     <a href="#DATABASE-SECTION">DATABASE SECTION</a>
+    <a href="#MySQL-database-driver">MySQL database driver</a>
     <a href="#GREY-SECTION">GREY SECTION</a>
     <a href="#SYNCHRONISATION-SECTION">SYNCHRONISATION SECTION</a>
     <a href="#SPF-SECTION">SPF SECTION</a>
@@ -203,6 +204,7 @@ include "/etc/greyd/conf.d/*.conf"
       driver = "greyd_bdb.so",
       #driver = "greyd_bdb_sql.so",
       #driver = "greyd_sqlite.so",
+      #driver = "greyd_mysql.so",
 
       # Driver-specific options below.
       ...
@@ -238,6 +240,20 @@ include "/etc/greyd/conf.d/*.conf"
 <dl>
 <dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the directory containing the database files.</p></dd>
 <dt><strong>db_name</strong> = <em>string</em></dt><dd><p>The name of the database file, relative to the specified <strong>path</strong>.</p></dd>
+</dl>
+
+
+<h2 id="MySQL-database-driver">MySQL database driver</h2>
+
+<p>The MySQL driver may be built by specifying the <strong>--with-mysql</strong> configure option. The desired database will need to be setup indenpendently of <em>greyd</em> using the <strong>mysql_schema.sql</strong> DDL distributed with the source distribution.</p>
+
+<dl>
+<dt><strong>host</strong> = <em>string</em></dt><dd><p>The database host. Defaults to <em>localhost</em>.</p></dd>
+<dt><strong>port</strong> = <em>number</em></dt><dd><p>The database port. Defaults to 3306.</p></dd>
+<dt><strong>name</strong> = <em>string</em></dt><dd><p>The database name. Defaults to <em>greyd</em>.</p></dd>
+<dt><strong>user</strong> = <em>string</em></dt><dd><p>The database username.</p></dd>
+<dt><strong>pass</strong> = <em>string</em></dt><dd><p>The database password.</p></dd>
+<dt><strong>socket</strong> = <em>string</em></dt><dd><p>The path to the UNIX domain socket.</p></dd>
 </dl>
 
 

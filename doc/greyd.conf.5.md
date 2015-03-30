@@ -161,6 +161,7 @@ The following options are common to all database drivers:
             driver = "greyd_bdb.so",
             #driver = "greyd_bdb_sql.so",
             #driver = "greyd_sqlite.so",
+            #driver = "greyd_mysql.so",
 
             # Driver-specific options below.
             ...
@@ -195,6 +196,28 @@ The SQLite database driver makes use of libsqlite3. No special initialization is
 
 * **db_name** = *string*:
   The name of the database file, relative to the specified **path**.
+
+## MySQL database driver
+
+The MySQL driver may be built by specifying the **--with-mysql** configure option. The desired database will need to be setup indenpendently of *greyd* using the **mysql_schema.sql** DDL distributed with the source distribution.
+
+* **host** = *string*:
+  The database host. Defaults to *localhost*.
+
+* **port** = *number*:
+  The database port. Defaults to 3306.
+
+* **name** = *string*:
+  The database name. Defaults to *greyd*.
+
+* **user** = *string*:
+  The database username.
+
+* **pass** = *string*:
+  The database password.
+
+* **socket** = *string*:
+  The path to the UNIX domain socket.
 
 ## GREY SECTION
 

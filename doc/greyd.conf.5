@@ -237,6 +237,7 @@ The driver shared object location\. May be either an absolute or relative path\.
       driver = "greyd_bdb\.so",
       #driver = "greyd_bdb_sql\.so",
       #driver = "greyd_sqlite\.so",
+      #driver = "greyd_mysql\.so",
 
       # Driver\-specific options below\.
       \.\.\.
@@ -279,6 +280,33 @@ The filesystem path to the directory containing the database files\.
 .TP
 \fBdb_name\fR = \fIstring\fR
 The name of the database file, relative to the specified \fBpath\fR\.
+.
+.SH "MySQL database driver"
+The MySQL driver may be built by specifying the \fB\-\-with\-mysql\fR configure option\. The desired database will need to be setup indenpendently of \fIgreyd\fR using the \fBmysql_schema\.sql\fR DDL distributed with the source distribution\.
+.
+.TP
+\fBhost\fR = \fIstring\fR
+The database host\. Defaults to \fIlocalhost\fR\.
+.
+.TP
+\fBport\fR = \fInumber\fR
+The database port\. Defaults to 3306\.
+.
+.TP
+\fBname\fR = \fIstring\fR
+The database name\. Defaults to \fIgreyd\fR\.
+.
+.TP
+\fBuser\fR = \fIstring\fR
+The database username\.
+.
+.TP
+\fBpass\fR = \fIstring\fR
+The database password\.
+.
+.TP
+\fBsocket\fR = \fIstring\fR
+The path to the UNIX domain socket\.
 .
 .SH "GREY SECTION"
 .
