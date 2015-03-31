@@ -34,9 +34,9 @@
 #define DB_KEY_IP    1 /**< An ip address. */
 #define DB_KEY_MAIL  2 /**< A valid email address. */
 #define DB_KEY_TUPLE 3 /**< A greylist tuple. */
+#define DB_KEY_DOM   4 /**< A permitted domain. */
 
 #define DB_VAL_GREY         1 /**< Grey counters data. */
-#define DB_VAL_MATCH_SUFFIX 2 /**< Match suffix data. */
 
 #define GREYDB_ERR       -1
 #define GREYDB_FOUND     0
@@ -60,7 +60,6 @@ struct DB_key {
 struct DB_val {
     short type;
     union {
-        char *s;             /**< Allowed domain. */
         struct Grey_data gd; /**< Greylisting counters.h */
     } data;
 };

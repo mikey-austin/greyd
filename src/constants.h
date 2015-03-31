@@ -44,5 +44,6 @@
 #define SPF_ENABLED          1
 #define SPF_WHITELIST_PASS   0
 #define SPF_TRAP_SOFTFAIL    1
+#define DB_PERMITTED_DOM     0 /* Permitted domains stored in db. */
 
 #endif

@@ -73,7 +73,7 @@ static void shutdown_greyd(int);
 static int process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *, int);
-static int trap_check(List_T, DB_handle_T, char *);
+static int trap_check(Greylister_T, char *);
 static void update_firewall(Greylister_T, int);
 #ifdef HAVE_SPF
 static int spf_lookup(Greylister_T, struct Grey_tuple *);
@@ -484,17 +484,18 @@ Grey_load_domains(Greylister_T greylister)
  * @return -1 An error occured.
  */
 static int
-trap_check(List_T domains, DB_handle_T db, char *to)
+trap_check(Greylister_T greylister, char *to)
 {
     struct DB_key key;
     struct DB_val val;
     struct List_entry *entry;
     char *domain;
-    int ret, to_len, from_pos, match = 0;
+    int ret, to_len, from_pos, match = 0, check_domains = 0;
 
-    if(List_size(domains) > 0) {
+    if(List_size(greylister->domains) > 0) {
+        check_domains = 1;
         to_len = strlen(to);
-        LIST_EACH(domains, entry) {
+        LIST_EACH(greylister->domains, entry) {
             domain = List_entry_value(entry);
             from_pos = to_len - strlen(domain);
 
@@ -504,29 +505,36 @@ trap_check(List_T domains, DB_handle_T db, char *to)
                 match = 1;
             }
         }
-
-        if(!match) {
-            /* No domains match, so trap. */
-            return 0;
-        }
     }
 
+    if(!match && Config_get_int(greylister->config, "db_permitted_domains",
+                                "grey", DB_PERMITTED_DOM))
+    {
+        check_domains = 1;
+        match = DB_check_domain(greylister->db_handle, to);
+    }
+
+    if(check_domains && !match) {
+        /* Trap this address. */
+        return 0;
+    }
+
+    /*
+     * Finally check if we have a direct hit on a pre-configured spamtrap
+     * email address.
+     */
     key.type = DB_KEY_MAIL;
     key.data.s = to;
 
-    DB_start_txn(db);
-    ret = DB_get(db, &key, &val);
+    ret = DB_get(greylister->db_handle, &key, &val);
     switch(ret) {
     case GREYDB_FOUND:
-        DB_commit_txn(db);
         return 0;
 
     case GREYDB_NOT_FOUND:
-        DB_commit_txn(db);
         return 1;
 
     default:
-        DB_rollback_txn(db);
         return -1;
     }
 }
@@ -569,7 +577,8 @@ update_firewall(Greylister_T greylister, int af)
 }
 
 static void
-process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst_ip)
+process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
+             char *dst_ip)
 {
     DB_handle_T db = greylister->db_handle;
     struct DB_key key;
@@ -581,7 +590,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync, char *dst
     now = time(NULL);
     DB_open(db, 0);
 
-    switch(trap_check(greylister->domains, db, gt->to)) {
+    switch(trap_check(greylister, gt->to)) {
     case 1:
         /* Do not trap. */
         spamtrap = 0;
