@@ -184,7 +184,7 @@ Mod_db_open(DB_handle_T handle, int flags)
     ret = bh->spamtraps->open(bh->spamtraps, NULL, db_spamtraps, NULL,
                               DB_BTREE, open_flags, 0600);
     if(ret != 0) {
-        i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
+        i_warning("db open (%s) failed: %s", db_spamtraps, db_strerror(ret));
         goto cleanup;
     }
 
@@ -192,7 +192,7 @@ Mod_db_open(DB_handle_T handle, int flags)
     ret = bh->domains->open(bh->domains, NULL, db_domains, NULL,
                               DB_BTREE, open_flags, 0600);
     if(ret != 0) {
-        i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
+        i_warning("db open (%s) failed: %s", db_domains, db_strerror(ret));
         goto cleanup;
     }
 
@@ -666,7 +666,7 @@ pack_key(struct DB_key *key, DBT *dbkey)
                                       + strlen(key->data.gt.from) + 1
                                       + strlen(key->data.gt.to) + 1))
                            : (slen = strlen(key->data.s) + 1));
-    if((buf = calloc(sizeof(char), len)) == NULL) {
+    if((buf = calloc(len, sizeof(char))) == NULL) {
         i_critical("Could not pack key");
     }
     memcpy(buf, &(key->type), sizeof(short));
@@ -707,7 +707,7 @@ pack_val(struct DB_val *val, DBT *dbval)
     int len, slen = 0;
 
     len = sizeof(short) + sizeof(struct Grey_data);
-    if((buf = calloc(sizeof(char), len)) == NULL) {
+    if((buf = calloc(len, sizeof(char))) == NULL) {
         i_critical("Could not pack val");
     }
 

@@ -141,6 +141,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     int ret, i;
 
     memset(&gd, 0, sizeof(gd));
+    memset(&addr, 0, GREY_MAX_MAIL);
     now = time(NULL);
 
     switch(type) {
@@ -158,7 +159,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
     case TYPE_SPAMTRAP:
         key.type = DB_KEY_MAIL;
-        normalize_email_addr(ip, addr, sizeof(addr));
+        normalize_email_addr(ip, addr, GREY_MAX_MAIL);
         ip = addr;
         if(strchr(ip, '@') == NULL) {
             warnx("Not an email address: %s", ip);
@@ -168,7 +169,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
     case TYPE_DOMAIN:
         key.type = DB_KEY_DOM;
-        normalize_email_addr(ip, addr, sizeof(addr));
+        normalize_email_addr(ip, addr, GREY_MAX_MAIL);
         ip = addr;
         break;
     }
