@@ -373,14 +373,14 @@ tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey
     struct DB_key key;
     struct DB_val val;
 
-    *total_entries = *total_white = *total_grey = *total_trapped = *total_spamtrap
-        = *total_white_passed = *total_white_blocked = *total_grey_passed
-        = *total_grey_blocked = 0;
+    *total_entries = *total_white = *total_grey = *total_trapped
+        = *total_spamtrap = *total_white_passed = *total_white_blocked
+        = *total_grey_passed = *total_grey_blocked = 0;
 
     db = DB_init(c);
     DB_open(db, 0);
     DB_start_txn(db);
-    itr = DB_get_itr(db);
+    itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
 
     while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         (*total_entries)++;

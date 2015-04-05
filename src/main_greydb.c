@@ -44,6 +44,7 @@
 #define TYPE_WHITE    0
 #define TYPE_TRAPHIT  1
 #define TYPE_SPAMTRAP 2
+#define TYPE_DOMAIN   3
 
 #define ACTION_LIST 0
 #define ACTION_DEL  1
@@ -60,7 +61,8 @@ static int db_update(DB_handle_T, char *, int, int, Sync_engine_T,
 static void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [-f config] [[-Tt] -a keys] [[-Tt] -d keys] \n",
+    fprintf(stderr, "usage: %s [-f config] [[-DTt] -a keys] "
+            "[[-DTt] -d keys] \n",
             PROG_NAME);
     exit(1);
 }
@@ -75,7 +77,7 @@ db_list(DB_handle_T db)
     struct Grey_data gd;
 
     DB_start_txn(db);
-    itr = DB_get_itr(db);
+    itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
     while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         gd = val.data.gd;
 
@@ -91,8 +93,15 @@ db_list(DB_handle_T db)
                    gd.bcount, gd.pcount);
             break;
 
-        case DB_KEY_IP:
         case DB_KEY_MAIL:
+            printf("SPAMTRAP|%s\n", key.data.s);
+            break;
+
+        case DB_KEY_DOM:
+            printf("DOMAIN|%s\n", key.data.s);
+            break;
+
+        case DB_KEY_IP:
             /*
              * We have a non-greylist entry.
              */
@@ -101,11 +110,6 @@ db_list(DB_handle_T db)
                 /* Spamtrap hit, with expiry time. */
                 printf("TRAPPED|%s|%lld\n", key.data.s,
                        (long long) gd.expire);
-                break;
-
-            case -2:
-                /* Spamtrap address. */
-                printf("SPAMTRAP|%s\n", key.data.s);
                 break;
 
             default:
@@ -139,7 +143,9 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     memset(&gd, 0, sizeof(gd));
     now = time(NULL);
 
-    if(action && (type == TYPE_TRAPHIT || type == TYPE_WHITE)) {
+    switch(type) {
+    case TYPE_TRAPHIT:
+    case TYPE_WHITE:
         /*
          * We are expecting a numeric IP address.
          */
@@ -147,23 +153,24 @@ db_update(DB_handle_T db, char *ip, int action, int type,
             warnx("Invalid IP address %s", ip);
             return 1;
         }
-
         key.type = DB_KEY_IP;
-    }
-    else {
-        /*
-         * This must be an email address, so ensure it is
-         * and normalize.
-         */
-        key.type = DB_KEY_MAIL;
+        break;
 
+    case TYPE_SPAMTRAP:
+        key.type = DB_KEY_MAIL;
+        normalize_email_addr(ip, addr, sizeof(addr));
+        ip = addr;
         if(strchr(ip, '@') == NULL) {
             warnx("Not an email address: %s", ip);
             return 1;
         }
+        break;
 
+    case TYPE_DOMAIN:
+        key.type = DB_KEY_DOM;
         normalize_email_addr(ip, addr, sizeof(addr));
         ip = addr;
+        break;
     }
 
     DB_start_txn(db);
@@ -205,6 +212,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
                 break;
 
             case TYPE_SPAMTRAP:
+            case TYPE_DOMAIN:
                 gd.expire = 0;
                 gd.pcount = -2;
                 break;
@@ -241,6 +249,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
                 break;
 
             case TYPE_SPAMTRAP:
+            case TYPE_DOMAIN:
                 gd.expire = 0;
                 gd.pcount = -2;
                 break;
@@ -301,7 +310,7 @@ main(int argc, char **argv)
     tzset();
     opts = Config_create();
 
-    while((option = getopt(argc, argv, "adtTf:Y:")) != -1) {
+    while((option = getopt(argc, argv, "adtTDf:Y:")) != -1) {
         switch(option) {
         case 'a':
             action = ACTION_ADD;
@@ -317,6 +326,10 @@ main(int argc, char **argv)
 
         case 'T':
             type = TYPE_SPAMTRAP;
+            break;
+
+        case 'D':
+            type = TYPE_DOMAIN;
             break;
 
         case 'f':
@@ -379,8 +392,10 @@ main(int argc, char **argv)
         /* Fallthrough. */
 
     case ACTION_DEL:
-        white_expiry = Config_get_int(config, "white_expiry", "grey", GREY_WHITEEXP);
-        trap_expiry = Config_get_int(config, "trap_expiry", "grey", GREY_TRAPEXP);
+        white_expiry = Config_get_int(config, "white_expiry", "grey",
+                                      GREY_WHITEEXP);
+        trap_expiry = Config_get_int(config, "trap_expiry", "grey",
+                                     GREY_TRAPEXP);
 
         for(i = optind; i < argc; i++) {
             if(argv[i][0] != '\0') {

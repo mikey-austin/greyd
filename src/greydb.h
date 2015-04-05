@@ -31,12 +31,21 @@
 #include <time.h>
 #include <pwd.h>
 
-#define DB_KEY_IP    1 /**< An ip address. */
-#define DB_KEY_MAIL  2 /**< A valid email address. */
-#define DB_KEY_TUPLE 3 /**< A greylist tuple. */
-#define DB_KEY_DOM   4 /**< A permitted domain. */
+#define DB_KEY_IP       1 /**< An ip address. */
+#define DB_KEY_MAIL     2 /**< A valid email address. */
+#define DB_KEY_TUPLE    3 /**< A greylist tuple. */
+#define DB_KEY_DOM      4 /**< A permitted domain. */
+#define DB_KEY_DOM_PART 5 /**< A partial domain to match. */
 
 #define DB_VAL_GREY         1 /**< Grey counters data. */
+
+/*
+ * Mutually exclusive bitmap to determine which results to
+ * include in the iterator.
+ */
+#define DB_ENTRIES   1
+#define DB_SPAMTRAPS 2
+#define DB_DOMAINS   4
 
 #define GREYDB_ERR       -1
 #define GREYDB_FOUND     0
@@ -82,7 +91,7 @@ struct DB_handle_T {
     int (*db_put)(DB_handle_T handle, struct DB_key *key, struct DB_val *val);
     int (*db_get)(DB_handle_T handle, struct DB_key *key, struct DB_val *val);
     int (*db_del)(DB_handle_T handle, struct DB_key *key);
-    void (*db_get_itr)(DB_itr_T itr);
+    void (*db_get_itr)(DB_itr_T itr, int types);
     int (*db_itr_next)(DB_itr_T itr, struct DB_key *key, struct DB_val *val);
     int (*db_itr_replace_curr)(DB_itr_T itr, struct DB_val *val);
     int (*db_itr_del_curr)(DB_itr_T itr);
@@ -145,10 +154,10 @@ extern int DB_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val);
 extern int DB_del(DB_handle_T handle, struct DB_key *key);
 
 /**
- * Return an iterator for all database entries. If there are no entries,
- * NULL is returned.
+ * Return an iterator for all database entries specified by the flag
+ * *types*. If there are no entries, NULL is returned.
  */
-extern DB_itr_T DB_get_itr(DB_handle_T handle);
+extern DB_itr_T DB_get_itr(DB_handle_T handle, int types);
 
 /**
  * Return the next key/value pair from the iterator.

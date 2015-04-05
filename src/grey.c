@@ -507,11 +507,16 @@ trap_check(Greylister_T greylister, char *to)
         }
     }
 
+    key.type = DB_KEY_DOM_PART;
+    key.data.s = to;
+
     if(!match && Config_get_int(greylister->config, "db_permitted_domains",
                                 "grey", DB_PERMITTED_DOM))
     {
         check_domains = 1;
-        match = DB_check_domain(greylister->db_handle, to);
+        ret = DB_get(greylister->db_handle, &key, &val);
+        if(ret == GREYDB_FOUND)
+            match = 1;
     }
 
     if(check_domains && !match) {
@@ -524,8 +529,6 @@ trap_check(Greylister_T greylister, char *to)
      * email address.
      */
     key.type = DB_KEY_MAIL;
-    key.data.s = to;
-
     ret = DB_get(greylister->db_handle, &key, &val);
     switch(ret) {
     case GREYDB_FOUND:

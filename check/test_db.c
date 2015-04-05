@@ -169,7 +169,7 @@ main(int argc, char *argv[])
     DB_commit_txn(db);
 
     /* Iterate over the 3 key/value pairs. */
-    itr = DB_get_itr(db);
+    itr = DB_get_itr(db, DB_ENTRIES);
     TEST_OK((itr != NULL), "Iterator created successfully");
     TEST_OK((itr->current == -1), "Iterator current index OK");
 

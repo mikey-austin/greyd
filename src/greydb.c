@@ -77,7 +77,7 @@ DB_init(Config_T config)
         Mod_get(handle->driver, "Mod_db_get");
     handle->db_del = (int (*)(DB_handle_T, struct DB_key *))
         Mod_get(handle->driver, "Mod_db_del");
-    handle->db_get_itr = (void (*)(DB_itr_T))
+    handle->db_get_itr = (void (*)(DB_itr_T, int))
         Mod_get(handle->driver, "Mod_db_get_itr");
     handle->db_itr_next = (int (*)(DB_itr_T, struct DB_key *, struct DB_val *))
         Mod_get(handle->driver, "Mod_db_itr_next");
@@ -153,7 +153,7 @@ DB_del(DB_handle_T handle, struct DB_key *key)
 }
 
 extern DB_itr_T
-DB_get_itr(DB_handle_T handle)
+DB_get_itr(DB_handle_T handle, int types)
 {
     DB_itr_T itr;
 
@@ -166,7 +166,7 @@ DB_get_itr(DB_handle_T handle)
     itr->current = -1;
     itr->size    = 0;
 
-    handle->db_get_itr(itr);
+    handle->db_get_itr(itr, types);
 
     return itr;
 }

@@ -47,6 +47,7 @@
 
 #define DEFAULT_PATH "/var/db/greyd"
 #define DEFAULT_DB   "greyd.db"
+#define CURSORS      3  /* One for each database plus a sentinel. */
 
 /**
  * The internal bdb driver handle.
@@ -54,7 +55,14 @@
 struct bdb_handle {
     DB_ENV *env;
     DB *db;
+    DB *spamtraps;
+    DB *domains;
     DB_TXN *txn;
+};
+
+struct bdb_cursor {
+    DBC *cursors[CURSORS + 1];
+    DBC **curr;
 };
 
 /*
@@ -95,6 +103,8 @@ Mod_db_init(DB_handle_T handle)
     bh->env = NULL;
     bh->txn = NULL;
     bh->db = NULL;
+    bh->spamtraps = NULL;
+    bh->domains = NULL;
 
     /*
      * We want to create the environment as the database user.
@@ -137,7 +147,7 @@ extern void
 Mod_db_open(DB_handle_T handle, int flags)
 {
     struct bdb_handle *bh = handle->dbh;
-    char *db_name, *err_log_path;
+    char *db_name, *err_log_path, *db_spamtraps, *db_domains;
     FILE *err_log;
     int ret, open_flags;
 
@@ -146,14 +156,23 @@ Mod_db_open(DB_handle_T handle, int flags)
 
     db_name = Config_get_str(handle->config, "db_name", "database",
                              DEFAULT_DB);
+    if(asprintf(&db_spamtraps, "spamtraps-%s", db_name) == -1)
+        goto cleanup;
 
-    ret = db_create(&bh->db, bh->env, 0);
+    if(asprintf(&db_domains, "domains-%s", db_name) == -1)
+        goto cleanup;
+
+    ret = (db_create(&bh->db, bh->env, 0)
+           || db_create(&bh->spamtraps, bh->env, 0)
+           || db_create(&bh->domains, bh->env, 0));
     if(ret != 0) {
-        i_warning("Could not obtain db handle: %s", db_strerror(ret));
+        i_warning("Could not obtain bdb handles: %s", db_strerror(ret));
         goto cleanup;
     }
 
     open_flags = (flags & GREYDB_RO ? DB_RDONLY : DB_CREATE) | DB_AUTO_COMMIT;
+
+    /* Main entries database. */
     ret = bh->db->open(bh->db, NULL, db_name, NULL, DB_HASH,
                        open_flags, 0600);
     if(ret != 0) {
@@ -161,11 +180,24 @@ Mod_db_open(DB_handle_T handle, int flags)
         goto cleanup;
     }
 
-    if((err_log_path = Config_get_str(handle->config, "error_log", "database", NULL))
-       != NULL && (err_log = fopen(err_log_path, "a+")) != NULL)
-    {
-        bh->db->set_errfile(bh->db, err_log);
+    /* Spamtraps database. */
+    ret = bh->spamtraps->open(bh->spamtraps, NULL, db_spamtraps, NULL,
+                              DB_BTREE, open_flags, 0600);
+    if(ret != 0) {
+        i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
+        goto cleanup;
     }
+
+    /* Permitted domains. */
+    ret = bh->domains->open(bh->domains, NULL, db_domains, NULL,
+                              DB_BTREE, open_flags, 0600);
+    if(ret != 0) {
+        i_warning("db open (%s) failed: %s", db_name, db_strerror(ret));
+        goto cleanup;
+    }
+
+    free(db_spamtraps);
+    free(db_domains);
 
     return;
 
@@ -252,6 +284,10 @@ Mod_db_close(DB_handle_T handle)
     if((bh = handle->dbh) != NULL) {
         if(bh->db)
             bh->db->close(bh->db, 0);
+        if(bh->spamtraps)
+            bh->spamtraps->close(bh->spamtraps, 0);
+        if(bh->domains)
+            bh->domains->close(bh->domains, 0);
         bh->env->close(bh->env, 0);
         free(bh);
         handle->dbh = NULL;
@@ -262,9 +298,23 @@ extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     struct bdb_handle *bh = handle->dbh;
-    DB *db = bh->db;
+    DB *db;
     DBT dbkey, dbval;
     int ret;
+
+    switch(key->type) {
+    case DB_KEY_MAIL:
+        db = bh->spamtraps;
+        break;
+
+    case DB_KEY_DOM:
+        db = bh->domains;
+        break;
+
+    default:
+        db = bh->db;
+        break;
+    }
 
     pack_key(key, &dbkey);
     pack_val(val, &dbval);
@@ -290,9 +340,23 @@ extern int
 Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     struct bdb_handle *bh = handle->dbh;
-    DB *db = bh->db;
+    DB *db;
     DBT dbkey, dbval;
     int ret;
+
+    switch(key->type) {
+    case DB_KEY_MAIL:
+        db = bh->spamtraps;
+        break;
+
+    case DB_KEY_DOM:
+        db = bh->domains;
+        break;
+
+    default:
+        db = bh->db;
+        break;
+    }
 
     pack_key(key, &dbkey);
     memset(&dbval, 0, sizeof(DBT));
@@ -323,9 +387,23 @@ extern int
 Mod_db_del(DB_handle_T handle, struct DB_key *key)
 {
     struct bdb_handle *bh = handle->dbh;
-    DB *db = bh->db;
+    DB *db;
     DBT dbkey;
     int ret;
+
+    switch(key->type) {
+    case DB_KEY_MAIL:
+        db = bh->spamtraps;
+        break;
+
+    case DB_KEY_DOM:
+        db = bh->domains;
+        break;
+
+    default:
+        db = bh->db;
+        break;
+    }
 
     pack_key(key, &dbkey);
     ret = db->del(db, bh->txn, &dbkey, 0);
@@ -348,74 +426,102 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 }
 
 extern void
-Mod_db_get_itr(DB_itr_T itr)
+Mod_db_get_itr(DB_itr_T itr, int types)
 {
     struct bdb_handle *bh = itr->handle->dbh;
-    DB *db = bh->db;
-    DBC *cursor;
-    int ret;
+    static struct bdb_cursor bc;
+    DBC **next;
+    int ret, i;
 
-    ret = db->cursor(db, bh->txn, &cursor, 0);
-    if(ret != 0) {
-        i_critical("Could not create cursor (%s)", db_strerror(ret));
+    memset(&bc, 0, sizeof(bc));
+    next = bc.cursors;
+
+    if(types & DB_ENTRIES) {
+        ret = bh->db->cursor(bh->db, bh->txn, next, 0);
+        if(ret != 0) {
+            i_critical("Could not create cursor (%s)", db_strerror(ret));
+        }
+        next++;
     }
-    else {
-        itr->dbi = (void *) cursor;
+
+    if(types & DB_SPAMTRAPS) {
+        ret = bh->spamtraps->cursor(bh->spamtraps, bh->txn, next, 0);
+        if(ret != 0) {
+            i_critical("Could not create cursor (%s)", db_strerror(ret));
+        }
+        next++;
     }
+
+    if(types & DB_DOMAINS) {
+        ret = bh->domains->cursor(bh->domains, bh->txn, next, 0);
+        if(ret != 0) {
+            i_critical("Could not create cursor (%s)", db_strerror(ret));
+        }
+        next++;
+    }
+
+    itr->dbi = &bc;
+    bc.curr = bc.cursors;
 }
 
 extern void
 Mod_db_itr_close(DB_itr_T itr)
 {
-    DBC *cursor = (DBC *) itr->dbi;
+    struct bdb_cursor *bc = itr->dbi;
+    DBC **next;
     int ret;
 
-    ret = cursor->close(cursor);
-    if(ret != 0) {
-        i_warning("Could not close cursor (%s)", db_strerror(ret));
+    for(next = bc->cursors; *next != NULL; next++) {
+        ret = (*next)->close(*next);
+        if(ret != 0)
+            i_warning("Could not close cursor (%s)", db_strerror(ret));
     }
-    else {
-        itr->dbi = NULL;
-    }
+
+    itr->dbi = NULL;
 }
 
 extern int
 Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
 {
-    DBC *cursor = (DBC *) itr->dbi;
+    struct bdb_cursor *bc = itr->dbi;
     DBT dbkey, dbval;
-    int ret;
+    int ret, res = GREYDB_NOT_FOUND;
 
     memset(&dbkey, 0, sizeof(DBT));
     memset(&dbval, 0, sizeof(DBT));
 
-    ret = cursor->get(cursor, &dbkey, &dbval, DB_NEXT);
-    switch(ret) {
-    case 0:
-        itr->current++;
-        unpack_key(key, &dbkey);
-        unpack_val(val, &dbval);
-        return GREYDB_FOUND;
+    while(*bc->curr && res != GREYDB_FOUND) {
+        ret = (*bc->curr)->get(*bc->curr, &dbkey, &dbval, DB_NEXT);
+        switch(ret) {
+        case 0:
+            itr->current++;
+            unpack_key(key, &dbkey);
+            unpack_val(val, &dbval);
+            res = GREYDB_FOUND;
+            break;
 
-    case DB_NOTFOUND:
-        return GREYDB_NOT_FOUND;
+        case DB_NOTFOUND:
+            res = GREYDB_NOT_FOUND;
+            bc->curr++;
+            break;
 
-    default:
-        i_error("Error retrieving next record: %s", db_strerror(ret));
+        default:
+            i_error("Error retrieving next record: %s", db_strerror(ret));
+        }
     }
 
-    return GREYDB_ERR;
+    return res;
 }
 
 extern int
 Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 {
-    DBC *cursor = (DBC *) itr->dbi;
+    struct bdb_cursor *bc = itr->dbi;
     DBT dbval;
     int ret;
 
     pack_val(val, &dbval);
-    ret = cursor->put(cursor, NULL, &dbval, DB_CURRENT);
+    ret = (*bc->curr)->put(*bc->curr, NULL, &dbval, DB_CURRENT);
 
     /* Cleanup packed data. */
     free(dbval.data);
@@ -434,10 +540,10 @@ Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 extern int
 Mod_db_itr_del_curr(DB_itr_T itr)
 {
-    DBC *cursor = (DBC *) itr->dbi;
+    struct bdb_cursor *bc = itr->dbi;
     int ret;
 
-    ret = cursor->del(cursor, 0);
+    ret = (*bc->curr)->del(*bc->curr, 0);
     switch(ret) {
     case 0:
         return GREYDB_OK;
@@ -461,7 +567,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     struct Grey_data gd;
     int ret = GREYDB_OK;
 
-    itr = DB_get_itr(handle);
+    itr = DB_get_itr(handle, DB_ENTRIES);
     while(DB_itr_next(itr, &key, &val) == GREYDB_FOUND) {
         if(val.type != DB_VAL_GREY)
             continue;
@@ -568,6 +674,7 @@ pack_key(struct DB_key *key, DBT *dbkey)
     switch(key->type) {
     case DB_KEY_IP:
     case DB_KEY_MAIL:
+    case DB_KEY_DOM:
         memcpy(buf + sizeof(short), key->data.s, slen);
         break;
 
@@ -599,25 +706,14 @@ pack_val(struct DB_val *val, DBT *dbval)
     char *buf = NULL;
     int len, slen = 0;
 
-    len = sizeof(short) + (val->type == DB_VAL_GREY
-                           ? sizeof(struct Grey_data)
-                           : (slen = strlen(val->data.s) + 1));
+    len = sizeof(short) + sizeof(struct Grey_data);
     if((buf = calloc(sizeof(char), len)) == NULL) {
         i_critical("Could not pack val");
     }
+
     memcpy(buf, &(val->type), sizeof(short));
-
-    switch(val->type) {
-    case DB_VAL_MATCH_SUFFIX:
-        memcpy(buf + sizeof(short), val->data.s, slen);
-        break;
-
-    case DB_VAL_GREY:
-        memcpy(buf + sizeof(short), &(val->data.gd),
-               sizeof(struct Grey_data));
-        break;
-    }
-
+    memcpy(buf + sizeof(short), &(val->data.gd),
+           sizeof(struct Grey_data));
     memset(dbval, 0, sizeof(*dbval));
     dbval->data = buf;
     dbval->size = len;
@@ -635,6 +731,7 @@ unpack_key(struct DB_key *key, DBT *dbkey)
     switch(key->type) {
     case DB_KEY_IP:
     case DB_KEY_MAIL:
+    case DB_KEY_DOM:
         key->data.s = buf;
         break;
 
@@ -661,14 +758,5 @@ unpack_val(struct DB_val *val, DBT *dbval)
     memset(val, 0, sizeof(*val));
     val->type = *((short *) buf);
     buf += sizeof(short);
-
-    switch(val->type) {
-    case DB_VAL_MATCH_SUFFIX:
-        val->data.s = buf;
-        break;
-
-    case DB_VAL_GREY:
-        val->data.gd = *((struct Grey_data *) buf);
-        break;
-    }
+    val->data.gd = *((struct Grey_data *) buf);
 }
