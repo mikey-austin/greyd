@@ -60,6 +60,11 @@ struct bdb_handle {
     DB_TXN *txn;
 };
 
+/*
+ * The greylisting entries, spamtrap addresses and permitted domains
+ * are all stored in separate database files. We need a separate cursor
+ * for each type, with each cursor sharing the environment's txn.
+ */
 struct bdb_cursor {
     DBC *cursors[CURSORS + 1];
     DBC **curr;
@@ -73,6 +78,7 @@ static void pack_key(struct DB_key *key, DBT *dbkey);
 static void pack_val(struct DB_val *val, DBT *dbval);
 static void unpack_key(struct DB_key *key, DBT *dbkey);
 static void unpack_val(struct DB_val *val, DBT *dbval);
+static int check_partial_dom(DB_handle_T handle, const char *part);
 
 extern void
 Mod_db_init(DB_handle_T handle)
@@ -345,6 +351,9 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     int ret;
 
     switch(key->type) {
+    case DB_KEY_DOM_PART:
+        return check_partial_dom(handle, key->data.s);
+
     case DB_KEY_MAIL:
         db = bh->spamtraps;
         break;
@@ -759,4 +768,29 @@ unpack_val(struct DB_val *val, DBT *dbval)
     val->type = *((short *) buf);
     buf += sizeof(short);
     val->data.gd = *((struct Grey_data *) buf);
+}
+
+static int
+check_partial_dom(DB_handle_T handle, const char *part)
+{
+    DB_itr_T itr;
+    struct DB_key key;
+    struct DB_val val;
+    int part_len = strlen(part), match = 0, from_pos;
+    char *domain;
+
+    itr = DB_get_itr(handle, DB_DOMAINS);
+    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
+        domain = key.data.s;
+        from_pos = part_len - strlen(domain);
+
+        if((from_pos >= 0)
+           && (strcasecmp(part + from_pos, domain) == 0))
+        {
+            match = 1;
+        }
+    }
+    DB_close_itr(&itr);
+
+    return (match ? GREYDB_FOUND : GREYDB_NOT_FOUND);
 }

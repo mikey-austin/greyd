@@ -76,6 +76,7 @@ main(int argc, char *argv[])
         "drop_privs = 0\n"
         "low_prio_mx = \"192.179.21.3\"\n"
         "section grey {\n"
+        "  db_permitted_domains = 1,\n"
         "  permitted_domains = \"data/permitted_domains.txt\",\n"
         "  traplist_name    = \"test traplist\",\n"
         "  traplist_message = \"you have been trapped\",\n"

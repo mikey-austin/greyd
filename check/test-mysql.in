@@ -37,6 +37,7 @@ low_prio_mx = "192.179.21.3"
 hostname = "greyd-test.org"
 
 section grey {
+  db_permitted_domains = 1,
   permitted_domains = "data/permitted_domains.txt",
   traplist_name    = "test traplist",
   traplist_message = "you have been trapped",
