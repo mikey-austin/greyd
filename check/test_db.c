@@ -45,8 +45,8 @@ main(int argc, char *argv[])
     Lexer_T l;
     Config_parser_T cp;
     Config_T c;
-    struct DB_key key1;
-    struct DB_val val1, val2;
+    struct DB_key key1, key2;
+    struct DB_val val1, val2, val3;
     struct Grey_tuple gt;
     struct Grey_data gd, gd2;
     int ret, i = 0;
@@ -83,7 +83,7 @@ main(int argc, char *argv[])
         printf("Error unlinking test DB: %s\n", strerror(errno));
     }
 
-    TEST_START(46);
+    TEST_START(56);
 
     db = DB_init(c);
     DB_open(db, GREYDB_RW);
@@ -108,6 +108,19 @@ main(int argc, char *argv[])
     gd.pcount = 5;
     val1.type = DB_VAL_GREY;
     val1.data.gd = gd;
+
+    /* Test inserting a spamtrap address and a permitted domain. */
+    key2.type = DB_KEY_MAIL;
+    key2.data.s = "trap@hotmail.com";
+    memset(&val3, 0, sizeof(val3));
+    val3.type = DB_VAL_GREY;
+    ret = DB_put(db, &key2, &val3);
+    TEST_OK((ret == GREYDB_OK), "spamtrap put ok");
+
+    key2.type = DB_KEY_DOM;
+    key2.data.s = "greyd.org";
+    ret = DB_put(db, &key2, &val3);
+    TEST_OK((ret == GREYDB_OK), "permitted domain put ok");
 
     ret = DB_put(db, &key1, &val1);
     TEST_OK((ret == GREYDB_OK), "Put successful");
@@ -168,7 +181,7 @@ main(int argc, char *argv[])
     DB_put(db, &key1, &val1);
     DB_commit_txn(db);
 
-    /* Iterate over the 3 key/value pairs. */
+    /* Iterate over the 3 key/value grey entries pairs. */
     itr = DB_get_itr(db, DB_ENTRIES);
     TEST_OK((itr != NULL), "Iterator created successfully");
     TEST_OK((itr->current == -1), "Iterator current index OK");
@@ -236,6 +249,56 @@ main(int argc, char *argv[])
 
     DB_close_itr(&itr);
     TEST_OK((itr == NULL), "Iterator close OK");
+
+    /* Iterate over just the permitted domains. */
+    itr = DB_get_itr(db, DB_DOMAINS);
+    memset(&key1, 0, sizeof(key1));
+    memset(&val1, 0, sizeof(val1));
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
+        TEST_OK(key1.type == DB_KEY_DOM, "domain type as expected");
+        TEST_OK(!strcmp(key1.data.s, "greyd.org"), "domain as expected");
+    }
+    TEST_OK((itr->current == 0), "Iterations as expected");
+    DB_close_itr(&itr);
+
+    /* Iterate over just the spamtraps. */
+    itr = DB_get_itr(db, DB_SPAMTRAPS);
+    memset(&key1, 0, sizeof(key1));
+    memset(&val1, 0, sizeof(val1));
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
+        TEST_OK(key1.type == DB_KEY_MAIL, "spamtrap type as expected");
+        TEST_OK(!strcmp(key1.data.s, "trap@hotmail.com"), "trap as expected");
+    }
+    TEST_OK((itr->current == 0), "Iterations as expected");
+    DB_close_itr(&itr);
+
+    /* Test transactions over the multiple database types. */
+    DB_start_txn(db);
+    itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+        DB_itr_del_curr(itr);
+    DB_close_itr(&itr);
+    DB_rollback_txn(db);
+
+    itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+        ;
+    TEST_OK((itr->current == 4), "txn rollback ok");
+    DB_close_itr(&itr);
+
+    /* And again, but committing this time. */
+    DB_start_txn(db);
+    itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+        DB_itr_del_curr(itr);
+    DB_close_itr(&itr);
+    DB_commit_txn(db);
+
+    itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
+    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+        ;
+    TEST_OK((itr->current == -1), "truncated ok");
+    DB_close_itr(&itr);
 
     DB_close(&db);
     Config_destroy(&c);
