@@ -91,7 +91,7 @@ main(int argc, char *argv[])
         "  db_name = \"test_grey_%s.db\"\n"
         "}";
 
-    TEST_START(36);
+    TEST_START(34);
 
     asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER);
     c = Config_create();
@@ -126,27 +126,38 @@ main(int argc, char *argv[])
         "greylister msg set correctly");
     TEST_OK(!strcmp(greylister->low_prio_mx, "192.179.21.3"),
         "greylister low priority mx ip set correctly");
-    TEST_OK(List_size(greylister->domains) == 4, "permitted domains size ok");
+    TEST_OK(List_size(greylister->domains) == 2, "permitted domains size ok");
 
     /* Check the loaded domains. */
     i = 0;
-    char *permitted_domains[4] = {
-        "domain1.com",
-        "domain2.com",
-        "greyd@domain3.com",
-        "domain4.com"
+    char *permitted_domains[2] = {
+        "domain4.com",
+        "domain2.com"
     };
     LIST_EACH(greylister->domains, entry) {
         domain = List_entry_value(entry);
         TEST_OK(!strcmp(permitted_domains[i++], domain), "domain loaded ok");
     }
 
-    pipe(grey);
+    /* Load additional permitted domains into database. */
+    DB_handle_T pdb;
+    pdb = DB_init(c);
+    DB_open(pdb, 0);
+    memset(&key, 0, sizeof(key));
+    memset(&val, 0, sizeof(val));
+    key.type = DB_KEY_DOM;
+    key.data.s = "greyd@domain3.com";
+    DB_put(pdb, &key, &val);
+    key.data.s = "domain1.com";
+    DB_put(pdb, &key, &val);
+    DB_close(&pdb);
 
+    pipe(grey);
     grey_out = fdopen(grey[1], "w");
     grey_in  = fdopen(grey[0], "r");
 
-    greylister->startup  = time(NULL) - 120; /* Simulate a startup time in the past. */
+    /* Simulate a startup time in the past. */
+    greylister->startup  = time(NULL) - 120;
     greylister->grey_in  = grey_in;
     greylister->fw_out = NULL;
 
@@ -243,7 +254,7 @@ main(int argc, char *argv[])
     tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
                    &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
 
-    TEST_OK(total_entries == 15, "Total entries as expected");
+    TEST_OK(total_entries == 17, "Total entries as expected");
     TEST_OK(total_white == 5, "Total white as expected");
     TEST_OK(total_grey == 3, "Total grey as expected");
     TEST_OK(total_trapped == 6, "Total trapped entries as expected");
@@ -337,7 +348,7 @@ main(int argc, char *argv[])
     tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
                    &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
 
-    TEST_OK(total_entries == 12, "Total entries as expected");
+    TEST_OK(total_entries == 14, "Total entries as expected");
     TEST_OK(total_white == 5, "Total white as expected");
     TEST_OK(total_grey == 1, "Total grey as expected");
     TEST_OK(total_trapped == 5, "Total trapped entries as expected");

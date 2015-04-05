@@ -4,7 +4,7 @@
 #
 
 # leading whitespace.
-    domain1.com
+    domain4.com
 
 
 
@@ -13,10 +13,3 @@
 
 # normal domain.
 domain2.com
-
-# email address.
-greyd@domain3.com
-
-# trailing whitespace.
-domain4.com       
-
