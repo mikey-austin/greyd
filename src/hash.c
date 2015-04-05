@@ -231,7 +231,8 @@ Hash_resize(Hash_T hash, int new_size)
      * not very efficient for large hashes, so best to choose an
      * appropriate starting size.
      */
-    hash->entries = (struct Hash_entry*) calloc(sizeof(*(hash->entries)), new_size);
+    hash->entries = (struct Hash_entry*) calloc(
+        new_size, sizeof(*(hash->entries)));
 
     if(!hash->entries) {
         errx(1, "Could not resize hash entries of size %d to %d",
@@ -260,7 +261,8 @@ Hash_create_entries(Hash_T hash)
     int i;
 
     hash->num_entries = 0;
-    hash->entries = (struct Hash_entry*) calloc(sizeof(*(hash->entries)), hash->size);
+    hash->entries = (struct Hash_entry*) calloc(
+        hash->size, sizeof(*(hash->entries)));
     if(!hash->entries) {
         errx(1, "Could not allocate hash entries of size %d", hash->size);
     }
