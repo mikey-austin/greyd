@@ -8,6 +8,15 @@ CREATE TABLE IF NOT EXISTS spamtraps(
 ) engine=innodb, charset=latin1;
 
 --
+-- Table to hold the individual permitted domains, which augments
+-- the filesystem permitted domains list.
+--
+CREATE TABLE IF NOT EXISTS domains(
+  `domain` VARCHAR(255),
+  PRIMARY KEY(`domain`)
+) engine=innodb, charset=latin1;
+
+--
 -- Table to store the white, grey & trap entries.
 --
 CREATE TABLE IF NOT EXISTS entries(

@@ -232,6 +232,17 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         free(add_esc);
         break;
 
+    case DB_KEY_DOM:
+        sql_tmpl = "INSERT IGNORE INTO domains(domain) VALUES ('%s')";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
     case DB_KEY_IP:
         sql_tmpl = "REPLACE INTO entries "
             "(`ip`, `helo`, `from`, `to`, "
@@ -310,6 +321,31 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     char *to_esc = NULL;
 
     switch(key->type) {
+    case DB_KEY_DOM_PART:
+        sql_tmpl = "SELECT 0, 0, 0, 0, -3 "
+            "FROM domains WHERE '%s' LIKE CONCAT('%', domain)";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_DOM:
+        sql_tmpl = "SELECT 0, 0, 0, 0, -3 "
+            "FROM domains WHERE `domain`='%s' "
+            "LIMIT 1";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
     case DB_KEY_MAIL:
         sql_tmpl = "SELECT 0, 0, 0, 0, -2 "
             "FROM spamtraps WHERE `address`='%s' "
@@ -417,6 +453,17 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
         free(add_esc);
         break;
 
+    case DB_KEY_DOM:
+        sql_tmpl = "DELETE FROM domains WHERE `domain`='%s'";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("mysql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
     case DB_KEY_IP:
         sql_tmpl = "DELETE FROM entries WHERE `ip`='%s' "
             "AND `helo`='' AND `from`='' AND `to`=''";
@@ -469,11 +516,11 @@ err:
 }
 
 extern void
-Mod_db_get_itr(DB_itr_T itr)
+Mod_db_get_itr(DB_itr_T itr, int types)
 {
     struct mysql_handle *dbh = itr->handle->dbh;
     struct mysql_itr *dbi = NULL;
-    char *sql;
+    char *sql_tmpl, *sql = NULL;
 
     if((dbi = malloc(sizeof(*dbi))) == NULL) {
         i_warning("malloc: %s", strerror(errno));
@@ -483,16 +530,28 @@ Mod_db_get_itr(DB_itr_T itr)
     dbi->curr = NULL;
     itr->dbi = dbi;
 
-    sql = "SELECT `ip`, `helo`, `from`, `to`, "
+    sql_tmpl = "SELECT `ip`, `helo`, `from`, `to`, "
         "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries "
+        "WHERE %d "
         "UNION "
-        "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps";
+        "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps "
+        "WHERE %d "
+        "UNION "
+        "SELECT `domain`, '', '', '', 0, 0, 0, 0, -3 FROM domains "
+        "WHERE %d";
+    if(asprintf(&sql, sql_tmpl, types & DB_ENTRIES, types & DB_SPAMTRAPS,
+                types & DB_DOMAINS) == -1)
+    {
+        i_warning("asprintf");
+        goto err;
+    }
 
-    if(mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
+    if(sql && mysql_real_query(dbh->db, sql, strlen(sql)) != 0) {
         i_warning("insert mysql error: %s", mysql_error(dbh->db));
         free(sql);
         goto err;
     }
+    free(sql);
 
     dbi->res = mysql_store_result(dbh->db);
     itr->size = mysql_num_rows(dbi->res);
@@ -675,21 +734,23 @@ populate_key(MYSQL_ROW row, struct DB_key *key, int from)
 
     /*
      * Empty helo, from & to columns indicate a non-grey entry.
-     * A pcount of -2 indicates a spamtrap, which has a key type
-     * of DB_KEY_MAIL.
+     * A pcount of -2 indicates a spamtrap, and a -3 indicates
+     * a permitted domain.
      */
     key->type = ((!memcmp(row[1], "", 1)
                   && !memcmp(row[2], "", 1)
                   && !memcmp(row[3], "", 1))
                  ? (atoi(row[8]) == -2
-                    ? DB_KEY_MAIL : DB_KEY_IP)
+                    ? DB_KEY_MAIL
+                    : (atoi(row[8]) == -3
+                       ? DB_KEY_DOM : DB_KEY_IP))
                  : DB_KEY_TUPLE);
 
     if(key->type == DB_KEY_IP) {
         key->data.s = buf_p;
         sstrncpy(buf_p, (const char *) row[from + 0], INET6_ADDRSTRLEN + 1);
     }
-    else if(key->type == DB_KEY_MAIL) {
+    else if(key->type == DB_KEY_MAIL || key->type == DB_KEY_DOM) {
         key->data.s = buf_p;
         sstrncpy(buf_p, (const char *) row[from + 0], GREY_MAX_MAIL + 1);
     }

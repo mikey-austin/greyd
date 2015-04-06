@@ -65,7 +65,6 @@ struct s3_handle {
 struct s3_itr {
     sqlite3_stmt *stmt;
     struct DB_key *curr;
-    int types;
 };
 
 static void populate_key(sqlite3_stmt *, struct DB_key *, int);
@@ -610,7 +609,6 @@ Mod_db_get_itr(DB_itr_T itr, int types)
     }
     dbi->stmt = NULL;
     dbi->curr = NULL;
-    dbi->types = types;
     itr->dbi = dbi;
 
     /* Enable each select based on the specified types. */
