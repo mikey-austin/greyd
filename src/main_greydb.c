@@ -213,9 +213,13 @@ db_update(DB_handle_T db, char *ip, int action, int type,
                 break;
 
             case TYPE_SPAMTRAP:
-            case TYPE_DOMAIN:
                 gd.expire = 0;
                 gd.pcount = -2;
+                break;
+
+            case TYPE_DOMAIN:
+                gd.expire = 0;
+                gd.pcount = -3;
                 break;
 
             default:

@@ -65,6 +65,7 @@ struct s3_handle {
 struct s3_itr {
     sqlite3_stmt *stmt;
     struct DB_key *curr;
+    int types;
 };
 
 static void populate_key(sqlite3_stmt *, struct DB_key *, int);
@@ -130,6 +131,10 @@ Mod_db_open(DB_handle_T handle, int flags)
     sql = "CREATE TABLE IF NOT EXISTS spamtraps(        \
                `address` VARCHAR(1024),                 \
                PRIMARY KEY(`address`)                   \
+           );                                           \
+           CREATE TABLE IF NOT EXISTS domains(          \
+               `domain` VARCHAR(1024),                  \
+               PRIMARY KEY(`domain`)                    \
            );                                           \
            CREATE TABLE IF NOT EXISTS entries(          \
                `ip`     VARCHAR(46),                    \
@@ -281,6 +286,21 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         }
         break;
 
+    case DB_KEY_DOM:
+        sql = "INSERT OR IGNORE INTO domains(domain) VALUES (?)";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+
+        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+        break;
+
     case DB_KEY_IP:
         sql = "INSERT OR REPLACE INTO entries "
             "(`ip`, `helo`, `from`, `to`, "
@@ -362,9 +382,41 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     int ret, res;
 
     switch(key->type) {
+    case DB_KEY_DOM_PART:
+        sql = "SELECT 0, 0, 0, 0, -3 FROM domains WHERE ? LIKE '%' || domain";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+
+        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+        break;
+
     case DB_KEY_MAIL:
         sql = "SELECT 0, 0, 0, 0, -2 "
             "FROM spamtraps WHERE `address`=? "
+            "LIMIT 1";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+
+        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+        break;
+
+    case DB_KEY_DOM:
+        sql = "SELECT 0, 0, 0, 0, -3 "
+            "FROM domains WHERE `domain`=? "
             "LIMIT 1";
         ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
         if(ret != SQLITE_OK) {
@@ -474,6 +526,21 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
         }
         break;
 
+    case DB_KEY_DOM:
+        sql = "DELETE FROM domains WHERE `domain`=?";
+        ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &stmt, NULL);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+
+        ret = sqlite3_bind_text(stmt, 1, key->data.s, -1, SQLITE_STATIC);
+        if(ret != SQLITE_OK) {
+            i_warning("sqlite3_bind_text: %s", sqlite3_errmsg(dbh->db));
+            goto err;
+        }
+        break;
+
     case DB_KEY_IP:
         sql = "DELETE FROM entries WHERE `ip`=? "
             "AND `helo`='' AND `from`='' AND `to`=''";
@@ -530,11 +597,11 @@ err:
 }
 
 extern void
-Mod_db_get_itr(DB_itr_T itr)
+Mod_db_get_itr(DB_itr_T itr, int types)
 {
     struct s3_handle *dbh = itr->handle->dbh;
     struct s3_itr *dbi = NULL;
-    char *sql;
+    char *sql_tmpl, *sql = NULL;
     int ret;
 
     if((dbi = malloc(sizeof(*dbi))) == NULL) {
@@ -543,17 +610,32 @@ Mod_db_get_itr(DB_itr_T itr)
     }
     dbi->stmt = NULL;
     dbi->curr = NULL;
+    dbi->types = types;
     itr->dbi = dbi;
 
-    sql = "SELECT `ip`, `helo`, `from`, `to`, "
+    /* Enable each select based on the specified types. */
+    sql_tmpl = "SELECT `ip`, `helo`, `from`, `to`, "
         "`first`, `pass`, `expire`, `bcount`, `pcount` FROM entries "
+        "WHERE %d "
         "UNION "
-        "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps";
+        "SELECT `address`, '', '', '', 0, 0, 0, 0, -2 FROM spamtraps "
+        "WHERE %d "
+        "UNION "
+        "SELECT `domain`, '', '', '', 0, 0, 0, 0, -3 FROM domains "
+        "WHERE %d";
+    if(asprintf(&sql, sql_tmpl, types & DB_ENTRIES, types & DB_SPAMTRAPS,
+                types & DB_DOMAINS) == -1)
+    {
+        i_warning("asprintf");
+        goto err;
+    }
+
     ret = sqlite3_prepare(dbh->db, sql, strlen(sql) + 1, &dbi->stmt, NULL);
     if(ret != SQLITE_OK) {
         i_warning("sqlite3_prepare: %s", sqlite3_errmsg(dbh->db));
         goto err;
     }
+    free(sql);
     return;
 
 err:
@@ -738,13 +820,15 @@ populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
     /*
      * Empty helo, from & to columns indicate a non-grey entry.
      * A pcount of -2 indicates a spamtrap, which has a key type
-     * of DB_KEY_MAIL.
+     * of DB_KEY_MAIL. A pcount of -3 indicates a permitted domain.
      */
     key->type = ((!memcmp(sqlite3_column_text(stmt, 1), "", 1)
                   && !memcmp(sqlite3_column_text(stmt, 2), "", 1)
                   && !memcmp(sqlite3_column_text(stmt, 3), "", 1))
                  ? (sqlite3_column_int(stmt, 8) == -2
-                    ? DB_KEY_MAIL : DB_KEY_IP)
+                    ? DB_KEY_MAIL
+                    : (sqlite3_column_int(stmt, 8) == -3
+                       ? DB_KEY_DOM : DB_KEY_IP))
                  : DB_KEY_TUPLE);
 
     if(key->type == DB_KEY_IP) {
@@ -752,7 +836,7 @@ populate_key(sqlite3_stmt *stmt, struct DB_key *key, int from)
         sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
                  INET6_ADDRSTRLEN + 1);
     }
-    else if(key->type == DB_KEY_MAIL) {
+    else if(key->type == DB_KEY_MAIL || key->type == DB_KEY_DOM) {
         key->data.s = buf_p;
         sstrncpy(buf_p, (const char *) sqlite3_column_text(stmt, from + 0),
                  GREY_MAX_MAIL + 1);

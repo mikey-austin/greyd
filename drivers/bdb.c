@@ -582,9 +582,9 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             continue;
 
         gd = val.data.gd;
-        if(gd.expire <= *now && gd.pcount != -2) {
+        if(gd.expire <= *now && gd.pcount > -2) {
             /*
-             * This non-spamtrap entry has expired.
+             * This non-spamtrap/non-domain entry has expired.
              */
             if(DB_itr_del_curr(itr) != GREYDB_OK) {
                 ret = GREYDB_ERR;
