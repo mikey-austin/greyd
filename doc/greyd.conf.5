@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "March 2015" "" ""
+.TH "GREYD\.CONF" "5" "April 2015" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -347,6 +347,10 @@ Kill stutter for new grey connections after so many seconds\. Defaults to \fI10\
 .TP
 \fBpermitted_domains\fR = \fIstring\fR
 Filesystem location of the domains allowed to receive mail\. If this file is specified (and exists), any message received with a RCPT TO domain \fInot\fR matching an entry in the below file will be greytrapped (ie blacklisted)\.
+.
+.TP
+\fBdb_permitted_domains\fR = \fIboolean\fR
+Augment \fIpermitted_domains\fR (or replace if \fIpermitted_domains\fR is not set) with DOMAIN entries loaded into the database\. See \fBgreydb\fR(8) for more on managing these database permitted domains\.
 .
 .TP
 \fBpass_time\fR = \fInumber\fR

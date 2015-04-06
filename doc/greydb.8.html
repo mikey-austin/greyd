@@ -75,7 +75,7 @@
 
 <h2 id="SYNOPSIS">SYNOPSIS</h2>
 
-<p><code>greydb</code> [<strong>-f</strong> config] [[<strong>-Tt</strong>] <strong>-a</strong> keys] [[<strong>-Tt</strong>] <strong>-d</strong> keys] [<strong>-Y</strong> synctarget]</p>
+<p><code>greydb</code> [<strong>-f</strong> config] [[<strong>-TDt</strong>] <strong>-a</strong> keys] [[<strong>-TDt</strong>] <strong>-d</strong> keys] [<strong>-Y</strong> synctarget]</p>
 
 <h2 id="DESCRIPTION">DESCRIPTION</h2>
 
@@ -88,6 +88,7 @@
 <dt class="flush"><strong>-a</strong> <em>keys</em></dt><dd><p>Add or update the entries for keys. This can be used to whitelist one or more IP addresses (i.e. circumvent the greylisting process altogether) by adding all IP addresses as keys to the <strong>greyd</strong> database for WHITE entries. If any keys specified match entries already in the <strong>greyd</strong> database, <strong>greydb</strong> updates the entry's time last seen to now.</p></dd>
 <dt class="flush"><strong>-d</strong> <em>keys</em></dt><dd><p>Delete entries for keys.</p></dd>
 <dt class="flush"><strong>-T</strong></dt><dd><p>Add or delete the keys as SPAMTRAP entries. See the GREYTRAPPING section of <strong>greyd</strong>(8) for more information. Must be used in conjunction with the <strong>-a</strong> or <strong>-d</strong> option.</p></dd>
+<dt class="flush"><strong>-D</strong></dt><dd><p>Add or delete the keys as permitted DOMAIN entries. See the GREYTRAPPING section of <strong>greyd</strong>(8) for more information. Must be used in conjunction with the <strong>-a</strong> or <strong>-d</strong> option.</p></dd>
 <dt class="flush"><strong>-t</strong></dt><dd><p>Add or delete the keys as TRAPPED entries. See the GREYTRAPPING section of <strong>greyd</strong>(8) for more information. Must be used in conjunction with the <strong>-a</strong> or <strong>-d</strong> option.</p></dd>
 <dt><strong>-Y</strong> <em>synctarget</em></dt><dd><p>Add a target to receive synchronisation messages; see <a href="#SYNCHRONISATION" title="SYNCHRONISATION" data-bare-link="true">SYNCHRONISATION</a> below. This option can be specified multiple times.</p></dd>
 </dl>
@@ -98,13 +99,20 @@
 <pre><code>spamtrap@mydomain.org
 </code></pre>
 
+<p>If adding or deleting a DOMAIN entries (<strong>-D</strong>), keys should be specified as domains/email addresses:</p>
+
+<pre><code>allowed-domain.org
+@another-allowed-domain.org
+individual@greyd.org
+</code></pre>
+
 <p>Otherwise keys must be numerical IP addresses.</p>
 
 <h2 id="DATABASE-OUTPUT-FORMAT">DATABASE OUTPUT FORMAT</h2>
 
 <p>If invoked without any arguments, <strong>greydb</strong> lists the contents of the database in a text format.</p>
 
-<p>For SPAMTRAP entries the format is:</p>
+<p>For SPAMTRAP and DOMAIN entries the format is:</p>
 
 <pre><code>type|mailaddress
 </code></pre>
@@ -164,7 +172,7 @@
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>December 2014</li>
+    <li class='tc'>April 2015</li>
     <li class='tr'>greydb(8)</li>
   </ol>
 

@@ -167,7 +167,15 @@ section grey {
     # with a RCPT TO domain *not* matching an entry in the below file
     # will be grey-trapped (ie blacklisted).
     #
-    #permitted_domains = "@sysconfdir@/@PACKAGE@/permitted_domains"
+    #permitted_domains = "@sysconfdir@/@PACKAGE@/permitted_domains",
+
+    #
+    # Setting this option to one will tell the greylisting engine
+    # to augment the above permitted_domains with those stored in the
+    # database. Be careful, if this is enabled and there are no permitted
+    # domains loaded, everything will be trapped.
+    #
+    #db_permitted_domains = 0,
 }
 
 #

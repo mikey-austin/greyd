@@ -270,6 +270,7 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>low_prio_mx</strong> = <em>string</em></dt><dd><p>The address of the secondary MX server, to greytrap hosts attempting to deliver spam to the MX servers in the incorrect order.</p></dd>
 <dt><strong>stutter</strong> = <em>number</em></dt><dd><p>Kill stutter for new grey connections after so many seconds. Defaults to <em>10</em>.</p></dd>
 <dt><strong>permitted_domains</strong> = <em>string</em></dt><dd><p>Filesystem location of the domains allowed to receive mail. If this file is specified (and exists), any message received with a RCPT TO domain <em>not</em> matching an entry in the below file will be greytrapped (ie blacklisted).</p></dd>
+<dt><strong>db_permitted_domains</strong> = <em>boolean</em></dt><dd><p>Augment <em>permitted_domains</em> (or replace if <em>permitted_domains</em> is not set) with DOMAIN entries loaded into the database. See <strong>greydb</strong>(8) for more on managing these database permitted domains.</p></dd>
 <dt><strong>pass_time</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to whitelist grey entries. Defaults to <em>25 minutes</em>.</p></dd>
 <dt><strong>grey_expiry</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to remove grey entries. Defaults to <em>4 hours</em>.</p></dd>
 <dt><strong>white_expiry</strong> = <em>number</em></dt><dd><p>The amount of time in seconds after which to remove whitelisted entries. Defaults to <em>31 days</em>.</p></dd>
@@ -363,7 +364,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>March 2015</li>
+    <li class='tc'>April 2015</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 

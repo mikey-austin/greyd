@@ -250,6 +250,9 @@ The MySQL driver may be built by specifying the **--with-mysql** configure optio
 * **permitted_domains** = *string*:
   Filesystem location of the domains allowed to receive mail. If this file is specified (and exists), any message received with a RCPT TO domain *not* matching an entry in the below file will be greytrapped (ie blacklisted).
 
+* **db_permitted_domains** = *boolean*:
+  Augment *permitted_domains* (or replace if *permitted_domains* is not set) with DOMAIN entries loaded into the database. See **greydb**(8) for more on managing these database permitted domains.
+
 * **pass_time** = *number*:
   The amount of time in seconds after which to whitelist grey entries. Defaults to *25 minutes*.
 

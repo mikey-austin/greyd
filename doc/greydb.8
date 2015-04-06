@@ -1,13 +1,13 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYDB" "8" "December 2014" "" ""
+.TH "GREYDB" "8" "April 2015" "" ""
 .
 .SH "NAME"
 \fBgreydb\fR \- greyd database tool
 .
 .SH "SYNOPSIS"
-\fBgreydb\fR [\fB\-f\fR config] [[\fB\-Tt\fR] \fB\-a\fR keys] [[\fB\-Tt\fR] \fB\-d\fR keys] [\fB\-Y\fR synctarget]
+\fBgreydb\fR [\fB\-f\fR config] [[\fB\-TDt\fR] \fB\-a\fR keys] [[\fB\-TDt\fR] \fB\-d\fR keys] [\fB\-Y\fR synctarget]
 .
 .SH "DESCRIPTION"
 \fBgreydb\fR manipulates the \fBgreyd\fR database used for \fBgreyd\fR(8)\.
@@ -32,6 +32,10 @@ Delete entries for keys\.
 Add or delete the keys as SPAMTRAP entries\. See the GREYTRAPPING section of \fBgreyd\fR(8) for more information\. Must be used in conjunction with the \fB\-a\fR or \fB\-d\fR option\.
 .
 .TP
+\fB\-D\fR
+Add or delete the keys as permitted DOMAIN entries\. See the GREYTRAPPING section of \fBgreyd\fR(8) for more information\. Must be used in conjunction with the \fB\-a\fR or \fB\-d\fR option\.
+.
+.TP
 \fB\-t\fR
 Add or delete the keys as TRAPPED entries\. See the GREYTRAPPING section of \fBgreyd\fR(8) for more information\. Must be used in conjunction with the \fB\-a\fR or \fB\-d\fR option\.
 .
@@ -53,13 +57,28 @@ spamtrap@mydomain\.org
 .IP "" 0
 .
 .P
+If adding or deleting a DOMAIN entries (\fB\-D\fR), keys should be specified as domains/email addresses:
+.
+.IP "" 4
+.
+.nf
+
+allowed\-domain\.org
+@another\-allowed\-domain\.org
+individual@greyd\.org
+.
+.fi
+.
+.IP "" 0
+.
+.P
 Otherwise keys must be numerical IP addresses\.
 .
 .SH "DATABASE OUTPUT FORMAT"
 If invoked without any arguments, \fBgreydb\fR lists the contents of the database in a text format\.
 .
 .P
-For SPAMTRAP entries the format is:
+For SPAMTRAP and DOMAIN entries the format is:
 .
 .IP "" 4
 .

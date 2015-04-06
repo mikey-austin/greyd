@@ -3,7 +3,7 @@ greydb(8) -- greyd database tool
 
 ## SYNOPSIS
 
-`greydb` [**-f** config] [[**-Tt**] **-a** keys] [[**-Tt**] **-d** keys] [**-Y** synctarget]
+`greydb` [**-f** config] [[**-TDt**] **-a** keys] [[**-TDt**] **-d** keys] [**-Y** synctarget]
 
 ## DESCRIPTION
 
@@ -23,6 +23,9 @@ Delete entries for keys.
 * **-T**:
 Add or delete the keys as SPAMTRAP entries. See the GREYTRAPPING section of **greyd**(8) for more information. Must be used in conjunction with the **-a** or **-d** option.
 
+* **-D**:
+Add or delete the keys as permitted DOMAIN entries. See the GREYTRAPPING section of **greyd**(8) for more information. Must be used in conjunction with the **-a** or **-d** option.
+
 * **-t**:
 Add or delete the keys as TRAPPED entries. See the GREYTRAPPING section of **greyd**(8) for more information. Must be used in conjunction with the **-a** or **-d** option.
 
@@ -33,13 +36,19 @@ If adding or deleting a SPAMTRAP address (**-T**), keys should be specified as e
 
     spamtrap@mydomain.org
 
+If adding or deleting a DOMAIN entries (**-D**), keys should be specified as domains/email addresses:
+
+    allowed-domain.org
+    @another-allowed-domain.org
+    individual@greyd.org
+
 Otherwise keys must be numerical IP addresses.
 
 ## DATABASE OUTPUT FORMAT
 
 If invoked without any arguments, **greydb** lists the contents of the database in a text format.
 
-For SPAMTRAP entries the format is:
+For SPAMTRAP and DOMAIN entries the format is:
 
     type|mailaddress
 

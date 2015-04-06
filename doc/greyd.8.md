@@ -141,10 +141,11 @@ A file configured with *permitted_domains* in the *grey* section of *greyd.conf*
 
     section grey {
         permitted_domains = "/etc/greyd/permitted_domains",
+        db_permitted_domains = 1,
         ...
     }
 
-For example, if the */etc/greyd/permitted_domains* configured above contains:
+For example, if the */etc/greyd/permitted_domains* configured above or the database (ie DOMAIN entries managed via **greydb**(8)) contains:
 
 * @greyd.org
 
@@ -163,6 +164,12 @@ However the following addresses would cause the sending host to be trapped:
 * peter@bugs.greyd.org
 
 * bigbutts@bofh.ucs.ualberta.ca
+
+If the *db_permitted_domains* is set then the database is also searched for matching permitted domains, in addition (or in place of) the *permitted_domains*. Database permitted domains are added to the database with the following **greydb**(8) command:
+
+    # greydb -D -a '@greyd.org'
+
+See **greydb**(8) for further details.
 
 A low priority MX IP address may be specified with the -M option. When **greyd** has such an address specified, no host may enter new greylist tuples when connecting to this address; only existing entries may be updated. Any host attempting to make new deliveries to the low priority MX for which a tuple has not previously been seen will be trapped.
 
