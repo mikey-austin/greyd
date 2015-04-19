@@ -31,7 +31,7 @@
 int
 main(void)
 {
-    TEST_START(6);
+    TEST_START(7);
 
     unsigned char k1[] = { 0xE0 };
     unsigned char k2[] = { 0xF0 };
@@ -51,8 +51,10 @@ main(void)
     TEST_OK(Trie_contains(t, k4, 1), "key found");
     TEST_OK(Trie_contains(t, k5, 1), "key found");
 
-    unsigned char k6[] = { 0x10 };
+    unsigned char k6[] = { 0xC0 };
     TEST_OK(!Trie_contains(t, k6, 1), "key not found");
+    Trie_insert(t, k6, 1);
+    TEST_OK(Trie_contains(t, k6, 1), "key found");
 
     Trie_destroy(t);
 
