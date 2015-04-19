@@ -95,6 +95,7 @@ extern struct Trie
                 t->kids[BIT(key, t->branch)] = Trie_create(key, klen);
                 return trie;
             }
+            t = kid;
         }
     }
 
