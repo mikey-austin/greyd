@@ -21,13 +21,13 @@
  * @date   2014
  */
 
-#include "utils.h"
-#include "failures.h"
-#include "blacklist.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "utils.h"
+#include "failures.h"
+#include "blacklist.h"
 
 static int cmp_ipv4_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
