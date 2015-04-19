@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-check_PROGRAMS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t $(extra_test_programs)
-TESTS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t $(extra_tests)
+check_PROGRAMS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t test_trie.t $(extra_test_programs)
+TESTS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t test_trie.t $(extra_tests)
 EXTRA_PROGRAMS = test_grey.t test_grey_sqlite.t test_grey_bdb_sql.t test_db.t test_db_sqlite.t test_db_bdb_sql.t test_db_mysql.t test_grey_mysql.t
 
 TEST_EXTENSIONS = .t .sh
@@ -13,7 +13,7 @@ noinst_HEADERS = test.h
 
 # Make a convenience library.
 check_LTLIBRARIES = libgreyd_test.la
-libgreyd_test_la_SOURCES = ../src/blacklist.c ../src/con.c ../src/config_lexer.c ../src/config_parser.c ../src/config_section.c ../src/config_value.c ../src/failures.c ../src/firewall.c ../src/grey.c ../src/greydb.c ../src/greyd.c ../src/greyd_config.c ../src/hash.c ../src/ip.c ../src/lexer.c ../src/lexer_source.c ../src/list.c ../src/log.c ../src/queue.c ../src/sync.c ../src/utils.c ../src/mod.c ../src/spamd_parser.c ../src/spamd_lexer.c
+libgreyd_test_la_SOURCES = ../src/blacklist.c ../src/con.c ../src/config_lexer.c ../src/config_parser.c ../src/config_section.c ../src/config_value.c ../src/failures.c ../src/firewall.c ../src/grey.c ../src/greydb.c ../src/greyd.c ../src/greyd_config.c ../src/hash.c ../src/ip.c ../src/lexer.c ../src/lexer_source.c ../src/list.c ../src/log.c ../src/queue.c ../src/sync.c ../src/utils.c ../src/mod.c ../src/spamd_parser.c ../src/spamd_lexer.c ../src/trie.c
 
 dist_data_DATA = data/lexer_source_2.conf.gz
 data/lexer_source_2.conf.gz: data/lexer_source_1.conf
@@ -109,6 +109,11 @@ test_utils_t_LDFLAGS = $(test_ldflags)
 test_utils_t_LDADD = $(test_ldadd)
 test_utils_t_CFLAGS = $(test_cflags)
 test_utils_t_SOURCES = test_utils.c test.c
+
+test_trie_t_LDFLAGS = $(test_ldflags)
+test_trie_t_LDADD = $(test_ldadd)
+test_trie_t_CFLAGS = $(test_cflags)
+test_trie_t_SOURCES = test_trie.c test.c
 
 test_db_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
 test_db_t_LDFLAGS = $(test_ldflags)
