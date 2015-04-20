@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-check_PROGRAMS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t test_trie.t $(extra_test_programs)
+check_PROGRAMS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t test_trie.t benchmark_blacklist $(extra_test_programs)
 TESTS = test_blacklist.t test_con.t test_config.t test_config_lexer.t test_config_parser.t test_config_section.t test_config_value.t test_greyd_utils.t test_hash.t test_ip.t test_lexer_source.t test_list.t test_queue.t test_spamd_lexer.t test_spamd_parser.t test_test_framework.t test_utils.t test_trie.t $(extra_tests)
 EXTRA_PROGRAMS = test_grey.t test_grey_sqlite.t test_grey_bdb_sql.t test_db.t test_db_sqlite.t test_db_bdb_sql.t test_db_mysql.t test_grey_mysql.t
 
@@ -154,3 +154,8 @@ test_grey_mysql_t_LDFLAGS = $(test_ldflags)
 test_grey_mysql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_mysql.la
 test_grey_mysql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_mysql.so"'
 test_grey_mysql_t_SOURCES = test_grey.c test.c
+
+benchmark_blacklist_LDFLAGS = $(test_ldflags)
+benchmark_blacklist_LDADD = $(test_ldadd)
+benchmark_blacklist_CFLAGS = $(test_cflags)
+benchmark_blacklist_SOURCES = benchmark_blacklist.c
