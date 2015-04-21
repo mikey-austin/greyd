@@ -58,7 +58,7 @@ main(int argc, char *argv[])
 
     /* Load into trie. */
     int i, j, r;
-    struct Trie *t = NULL;
+    struct Trie *t = Trie_create(NULL, 0, NULL);
     struct Blacklist_entry *entry;
     unsigned char *bytes;
     struct IP_addr samples[SAMPLES];

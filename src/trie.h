@@ -31,9 +31,11 @@ struct Trie {
     int klen;
     int branch;
     struct Trie *kids[TRIE_RADIX];
+    int (*cmp)(const void *, int, const void *, int);
 };
 
-extern struct Trie *Trie_create(const unsigned char *key, int klen);
+extern struct Trie *Trie_create(const unsigned char *key, int klen,
+             int (*cmp)(const void *, int, const void *, int));
 
 extern struct Trie *Trie_insert(struct Trie *trie, const unsigned char *key, int klen);
 

@@ -33,13 +33,17 @@
 
 #define IS_LEAF(t) ((t)->kids[0] == NULL && (t)->kids[1] == NULL)
 
+static int bytecmp(const void *, int, const void *, int);
+
 extern struct Trie
-*Trie_create(const unsigned char *key, int klen)
+*Trie_create(const unsigned char *key, int klen,
+             int (*cmp)(const void *, int, const void *, int))
 {
     struct Trie *trie;
 
     if((trie = calloc(1, sizeof(*trie))) == NULL)
         i_critical("calloc: %s", strerror(errno));
+    trie->cmp = cmp ? cmp : bytecmp;
 
     if(key) {
         trie->klen = klen;
@@ -70,36 +74,34 @@ Trie_destroy(struct Trie *trie)
 extern struct Trie
 *Trie_insert(struct Trie *trie, const unsigned char *key, int klen)
 {
-    struct Trie *t, *kid;
+    struct Trie *t = trie, *kid;
     int kbits = klen * 8;
 
     if(trie == NULL) {
-        /*
-         * Create a dummy root node, with one leaf.
-         */
-        trie = Trie_create(NULL, 0);
-        t = Trie_create(key, klen);
-        trie->kids[BIT(key, 0)] = t;
+        return NULL;
+    }
+    else if(IS_LEAF(trie) && trie->key == NULL) {
+        trie->kids[BIT(key, 0)] = Trie_create(key, klen, trie->cmp);
         return trie;
     }
 
-    t = trie;
     while(t && !IS_LEAF(t)) {
         if(t->branch >= kbits) {
+            /* TODO: handle different key sizes. */
             break;
         }
         else {
             kid = t->kids[BIT(key, t->branch)];
             if(kid == NULL) {
                 /* Insert new node here. */
-                t->kids[BIT(key, t->branch)] = Trie_create(key, klen);
+                t->kids[BIT(key, t->branch)] = Trie_create(key, klen, trie->cmp);
                 return trie;
             }
             t = kid;
         }
     }
 
-    if(t && !memcmp(t->key, key, klen)) {
+    if(t && !trie->cmp(t->key, t->klen, key, klen)) {
         /* Already in trie. */
         return trie;
     }
@@ -111,8 +113,8 @@ extern struct Trie
     }
 
     t->branch = bit;
-    t->kids[val] = Trie_create(key, klen);
-    t->kids[!val] = Trie_create(t->key, t->klen);
+    t->kids[val] = Trie_create(key, klen, trie->cmp);
+    t->kids[!val] = Trie_create(t->key, t->klen, trie->cmp);
     free(t->key);
     t->key = NULL;
     t->klen = 0;
@@ -135,5 +137,17 @@ Trie_contains(struct Trie *trie, const unsigned char *key, int klen)
         }
     }
 
-    return t && !memcmp(t->key, key, klen);
+    return t && !trie->cmp(t->key, t->klen, key, klen);
+}
+
+static int
+bytecmp(const void *a, int alen, const void *b, int blen)
+{
+    const unsigned char *a_bytes = a;
+    const unsigned char *b_bytes = b;
+
+    if(alen != blen)
+        return (alen > blen ? 1 : -1);
+
+    return memcmp(a_bytes, b_bytes, alen);
 }
