@@ -137,7 +137,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
                                ((struct sockaddr *) &con->src)->sa_family))
             {
                 /* Make a local copy for the connection (excluding the entries). */
-                con_blacklist = Blacklist_create(bl_name, blacklist->message);
+                con_blacklist = Blacklist_create(bl_name, blacklist->message, BL_STORAGE_TRIE);
                 List_insert_after(con->blacklists, con_blacklist);
             }
         }

@@ -94,10 +94,10 @@ main(void)
     gs.max_cons = 4;
     gs.blacklists = Hash_create(5, NULL);
 
-    bl1 = Blacklist_create("blacklist_1", "You (%A) are on blacklist 1");
-    bl2 = Blacklist_create("blacklist_2", "You (%A) are on blacklist 2");
+    bl1 = Blacklist_create("blacklist_1", "You (%A) are on blacklist 1", BL_STORAGE_TRIE);
+    bl2 = Blacklist_create("blacklist_2", "You (%A) are on blacklist 2", BL_STORAGE_TRIE);
     bl3 = Blacklist_create("blacklist_3_with_an_enormously_big_long_long_epic_epicly_long_large_name",
-                           "Your address %A\\nis on blacklist 3");
+                           "Your address %A\\nis on blacklist 3", BL_STORAGE_TRIE);
 
     Hash_insert(gs.blacklists, bl1->name, bl1);
     Hash_insert(gs.blacklists, bl2->name, bl2);

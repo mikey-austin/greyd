@@ -77,7 +77,7 @@ Greyd_process_config(int fd, struct Greyd_state *state)
         bl_msg = Config_get_str(message, "message", NULL, NULL);
         ips = Config_get_list(message, "ips", NULL);
         if(bl_name && bl_msg && ips) {
-            blacklist = Blacklist_create(bl_name, bl_msg);
+            blacklist = Blacklist_create(bl_name, bl_msg, BL_STORAGE_TRIE);
             LIST_EACH(ips, entry) {
                 value = List_entry_value(entry);
                 if((addr = cv_str(value)) != NULL)

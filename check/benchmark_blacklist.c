@@ -50,7 +50,7 @@ main(int argc, char *argv[])
 
     ls = Lexer_source_create_from_gz(gzf);
     lexer = Spamd_lexer_create(ls);
-    bl = Blacklist_create("Test List", "You have been blacklisted");
+    bl = Blacklist_create("Test List", "You have been blacklisted", 0);
     parser = Spamd_parser_create(lexer);
     ret = Spamd_parser_start(parser, bl, 0);
 

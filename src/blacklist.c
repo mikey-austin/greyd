@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "trie.h"
 #include "utils.h"
 #include "failures.h"
 #include "blacklist.h"
@@ -32,21 +33,18 @@
 static int cmp_ipv4_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
 static void grow_entries(Blacklist_T list);
+static int triecmp(const void *, int, const void *, int);
 
 extern Blacklist_T
-Blacklist_create(const char *name, const char *message)
+Blacklist_create(const char *name, const char *message, int flags)
 {
     int len;
     Blacklist_T blacklist;
 
-    if((blacklist = malloc(sizeof(*blacklist))) == NULL) {
+    if((blacklist = calloc(sizeof(*blacklist), 1)) == NULL) {
         i_critical("Could not create blacklist");
     }
-    blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
-                                sizeof(struct Blacklist_entry));
-    if(blacklist->entries == NULL) {
-        i_critical("Could not create blacklist entries");
-    }
+    blacklist->count = 0;
 
     len = strlen(name) + 1;
     if((blacklist->name = malloc(len)) == NULL) {
@@ -60,8 +58,19 @@ Blacklist_create(const char *name, const char *message)
     }
     sstrncpy(blacklist->message, message, len);
 
-    blacklist->size = BLACKLIST_INIT_SIZE;
-    blacklist->count = 0;
+    if(flags == BL_STORAGE_LIST) {
+        blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
+                                    sizeof(struct Blacklist_entry));
+        if(blacklist->entries == NULL) {
+            i_critical("Could not create blacklist entries");
+        }
+        blacklist->size = BLACKLIST_INIT_SIZE;
+        blacklist->type = BL_STORAGE_LIST;
+    }
+    else if(flags == BL_STORAGE_TRIE) {
+        blacklist->type = BL_STORAGE_TRIE;
+        blacklist->trie = Trie_create(NULL, 0, triecmp);
+    }
 
     return blacklist;
 }
@@ -76,6 +85,11 @@ Blacklist_destroy(Blacklist_T *list)
     if((*list)->entries) {
         free((*list)->entries);
         (*list)->entries = NULL;
+    }
+
+    if((*list)->trie) {
+        Trie_destroy((*list)->trie);
+        (*list)->trie = NULL;
     }
 
     if((*list)->name) {
@@ -97,6 +111,14 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 {
     int i;
     struct IP_addr *a, *m;
+    struct Blacklist_trie_entry entry;
+
+    if(list->type == BL_STORAGE_TRIE) {
+        entry.address = *source;
+        entry.mask_bits = (af == AF_INET ? 32 : 128);
+        return Trie_contains(list->trie, (unsigned char *) &entry,
+                             sizeof(entry));
+    }
 
     for(i = 0; i < list->count; i++) {
         a = &(list->entries[i].address);
@@ -113,15 +135,28 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 extern int
 Blacklist_add(Blacklist_T list, const char *address)
 {
-    struct IP_addr *m, *n;
-    int i;
+    struct IP_addr n, m;
+    struct Blacklist_trie_entry entry;
+    int i, ret;
+    unsigned int maskbits;
 
-    grow_entries(list);
-    i = list->count++;
-    n = &(list->entries[i].address);
-    m = &(list->entries[i].mask);
+    ret = IP_str_to_addr_mask(address, &n, &m, &maskbits);
 
-    return IP_str_to_addr_mask(address, n, m);
+    if(list->type == BL_STORAGE_TRIE) {
+        list->count++;
+        entry.address = n;
+        entry.mask_bits = maskbits;
+        Trie_insert(list->trie, (unsigned char *) &entry,
+                    sizeof(entry));
+    }
+    else {
+        grow_entries(list);
+        i = list->count++;
+        list->entries[i].address = n;
+        list->entries[i].mask = m;
+    }
+
+    return ret;
 }
 
 extern void
@@ -209,6 +244,42 @@ Blacklist_collapse(Blacklist_T blacklist)
     }
 
     return cidrs;
+}
+
+static int
+triecmp(const void *a, int alen, const void *b, int blen)
+{
+    const struct Blacklist_trie_entry *entry1 = a, *entry2 = b;
+    struct IP_addr m;
+    unsigned int bits = entry1->mask_bits;
+    int word, i;
+
+    /* Construct the mask. */
+    if(bits <= 32)
+        word = 0;
+    else if(bits > 32 && bits <= 2 * 32)
+        word = 1;
+    if(bits > 2 * 32 && bits <= 3 * 32)
+        word = 2;
+    else
+        word = 3;
+
+    for(i = 0; i <= word; i++)
+        m.addr32[i] = 0xFFFFFFFF;
+
+    for(i = bits % 32; i > 0; i--)
+        m.addr32[word] << 1;
+
+    /* Mask out both addresses and compare. */
+    for(i = 0; i <= word; i++) {
+        if((entry1->address.addr32[i] & m.addr32[i])
+           != (entry2->address.addr32[i] & m.addr32[i]))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 static void
