@@ -52,8 +52,9 @@ struct Blacklist_entry {
  * a mask.
  */
 struct Blacklist_trie_entry {
+    short af;
     struct IP_addr address;
-    int8_t mask_bits;
+    unsigned short mask_bits;
 };
 
 /**
