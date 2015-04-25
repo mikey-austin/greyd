@@ -392,7 +392,7 @@ main(int argc, char **argv)
             Blacklist_destroy(&blacklist);
 
             message = Config_section_get_str(section, "message", DEFAULT_MSG);
-            blacklist = Blacklist_create(list_name, message);
+            blacklist = Blacklist_create(list_name, message, 0);
             bltype = BL_TYPE_BLACK;
         }
         else if((section = Config_get_whitelist(config, list_name))

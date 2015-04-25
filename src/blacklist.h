@@ -26,10 +26,14 @@
 
 #include "ip.h"
 #include "list.h"
+#include "trie.h"
 #include <stdint.h>
 
 #define BL_TYPE_WHITE 0
 #define BL_TYPE_BLACK 1
+
+#define BL_STORAGE_LIST 0
+#define BL_STORAGE_TRIE 1
 
 #define BLACKLIST_INIT_SIZE (1024 * 1024)
 
@@ -43,22 +47,31 @@ struct Blacklist_entry {
     int8_t         white;
 };
 
+struct Blacklist_trie_entry {
+    sa_family_t af;
+    struct IP_addr address;
+    struct IP_addr mask;
+};
+
 /**
  * The main blacklist structure.
  */
 typedef struct Blacklist_T *Blacklist_T;
 struct Blacklist_T {
-    char     *name;
-    char     *message;
-    size_t   size;
-    size_t   count;
+    char   *name;
+    char   *message;
+    size_t  size;
+    size_t  count;
+    int     type;
+    struct Trie *trie;
     struct Blacklist_entry *entries;
+
 };
 
 /**
  * Create an empty blacklist.
  */
-extern Blacklist_T Blacklist_create(const char *name, const char *message);
+extern Blacklist_T Blacklist_create(const char *name, const char *message, int flags);
 
 /**
  * Destroy a blacklist and cleanup.

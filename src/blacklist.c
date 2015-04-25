@@ -21,32 +21,30 @@
  * @date   2014
  */
 
-#include "utils.h"
-#include "failures.h"
-#include "blacklist.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "trie.h"
+#include "utils.h"
+#include "failures.h"
+#include "blacklist.h"
+
 static int cmp_ipv4_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
 static void grow_entries(Blacklist_T list);
+static int cmp_trie_entry(const void *, int, const void *, int);
 
 extern Blacklist_T
-Blacklist_create(const char *name, const char *message)
+Blacklist_create(const char *name, const char *message, int flags)
 {
     int len;
     Blacklist_T blacklist;
 
-    if((blacklist = malloc(sizeof(*blacklist))) == NULL) {
+    if((blacklist = calloc(sizeof(*blacklist), 1)) == NULL) {
         i_critical("Could not create blacklist");
     }
-    blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
-                                sizeof(struct Blacklist_entry));
-    if(blacklist->entries == NULL) {
-        i_critical("Could not create blacklist entries");
-    }
+    blacklist->count = 0;
 
     len = strlen(name) + 1;
     if((blacklist->name = malloc(len)) == NULL) {
@@ -60,8 +58,19 @@ Blacklist_create(const char *name, const char *message)
     }
     sstrncpy(blacklist->message, message, len);
 
-    blacklist->size = BLACKLIST_INIT_SIZE;
-    blacklist->count = 0;
+    if(flags == BL_STORAGE_LIST) {
+        blacklist->entries = calloc(BLACKLIST_INIT_SIZE,
+                                    sizeof(struct Blacklist_entry));
+        if(blacklist->entries == NULL) {
+            i_critical("Could not create blacklist entries");
+        }
+        blacklist->size = BLACKLIST_INIT_SIZE;
+        blacklist->type = BL_STORAGE_LIST;
+    }
+    else if(flags == BL_STORAGE_TRIE) {
+        blacklist->type = BL_STORAGE_TRIE;
+        blacklist->trie = Trie_create(NULL, 0, cmp_trie_entry);
+    }
 
     return blacklist;
 }
@@ -76,6 +85,11 @@ Blacklist_destroy(Blacklist_T *list)
     if((*list)->entries) {
         free((*list)->entries);
         (*list)->entries = NULL;
+    }
+
+    if((*list)->trie) {
+        Trie_destroy((*list)->trie);
+        (*list)->trie = NULL;
     }
 
     if((*list)->name) {
@@ -97,6 +111,15 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 {
     int i;
     struct IP_addr *a, *m;
+    struct Blacklist_trie_entry entry;
+
+    if(list->type == BL_STORAGE_TRIE) {
+        memset(&entry, 0, sizeof(entry));
+        entry.af = af;
+        entry.address = *source;
+        return Trie_contains(list->trie, (unsigned char *) &entry,
+                             sizeof(entry));
+    }
 
     for(i = 0; i < list->count; i++) {
         a = &(list->entries[i].address);
@@ -113,15 +136,28 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
 extern int
 Blacklist_add(Blacklist_T list, const char *address)
 {
-    struct IP_addr *m, *n;
-    int i;
+    struct IP_addr n, m;
+    struct Blacklist_trie_entry entry;
+    int i, ret;
 
-    grow_entries(list);
-    i = list->count++;
-    n = &(list->entries[i].address);
-    m = &(list->entries[i].mask);
+    memset(&entry, 0, sizeof(entry));
+    ret = IP_str_to_addr_mask(address, &n, &m, &entry.af);
 
-    return IP_str_to_addr_mask(address, n, m);
+    if(list->type == BL_STORAGE_TRIE) {
+        list->count++;
+        entry.address = n;
+        entry.mask = m;
+        Trie_insert(list->trie, (unsigned char *) &entry,
+                    sizeof(entry));
+    }
+    else {
+        grow_entries(list);
+        i = list->count++;
+        list->entries[i].address = n;
+        list->entries[i].mask = m;
+    }
+
+    return ret;
 }
 
 extern void
@@ -211,19 +247,19 @@ Blacklist_collapse(Blacklist_T blacklist)
     return cidrs;
 }
 
-static void
-grow_entries(Blacklist_T list)
+static int
+cmp_trie_entry(const void *a, int alen, const void *b, int blen)
 {
-    if(list->count >= (list->size - 2)) {
-        list->entries = realloc(
-            list->entries, list->size + BLACKLIST_INIT_SIZE);
+    const struct Blacklist_trie_entry *entry1 = a, *entry2 = b;
 
-        if(list->entries == NULL) {
-            i_critical("realloc failed");
-        }
-
-        list->size += BLACKLIST_INIT_SIZE;
+    if(IP_match_addr(&entry1->address, &entry1->mask,
+                     &entry2->address, entry2->af) > 0)
+    {
+        /* Match. */
+        return 0;
     }
+
+    return 1;
 }
 
 static int
@@ -242,6 +278,21 @@ cmp_ipv4_entry(const void *a, const void *b)
     }
 
     return 0;
+}
+
+static void
+grow_entries(Blacklist_T list)
+{
+    if(list->count >= (list->size - 2)) {
+        list->entries = realloc(
+            list->entries, list->size + BLACKLIST_INIT_SIZE);
+
+        if(list->entries == NULL) {
+            i_critical("realloc failed");
+        }
+
+        list->size += BLACKLIST_INIT_SIZE;
+    }
 }
 
 static void

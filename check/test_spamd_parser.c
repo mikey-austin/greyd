@@ -45,7 +45,7 @@ main(void)
 
     ls = Lexer_source_create_from_str(src, strlen(src));
     lexer = Spamd_lexer_create(ls);
-    bl = Blacklist_create("Test List", "You have been blacklisted");
+    bl = Blacklist_create("Test List", "You have been blacklisted", 0);
 
     parser = Spamd_parser_create(lexer);
     TEST_OK((parser != NULL), "Parser created successfully");

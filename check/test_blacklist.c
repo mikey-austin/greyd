@@ -46,7 +46,7 @@ main(void)
 
     TEST_START(27);
 
-    bl = Blacklist_create("Test List", "You have been blacklisted");
+    bl = Blacklist_create("Test List", "You have been blacklisted", 0);
     TEST_OK((bl != NULL), "Blacklist created successfully");
     TEST_OK((strcmp(bl->name, "Test List") == 0), "Name set successfully");
     TEST_OK((strcmp(bl->message, "You have been blacklisted") == 0),
@@ -73,7 +73,7 @@ main(void)
     Blacklist_destroy(&bl);
 
     /* Test collapsing a blacklist with 3 overlapping regions. */
-    bl = Blacklist_create("Test List", "You have been blacklisted");
+    bl = Blacklist_create("Test List", "You have been blacklisted", 0);
     a1 = ntohl(stoi("10.0.0.0"));  /* black */
     b1 = ntohl(stoi("10.0.0.20")) + 1;
 
@@ -111,7 +111,7 @@ main(void)
     Blacklist_destroy(&bl);
 
     /* Test the adding of single addresses & matching of addresses. */
-    bl = Blacklist_create("Test List", "You have been blacklisted");
+    bl = Blacklist_create("Test List", "You have been blacklisted", BL_STORAGE_TRIE);
     TEST_OK((Blacklist_add(bl, "192.168.12.1/24") == 0), "IPv4 added OK");
     TEST_OK((Blacklist_add(bl, "10.20.1.3/16") == 0), "IPv4 added OK");
     TEST_OK((bl->count == 2), "Entries added OK");

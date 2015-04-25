@@ -71,8 +71,8 @@ struct IP_addr {
 /**
  * Convert a string address to a binary address/netmask.
  */
-extern int IP_str_to_addr_mask(const char *address, 
-                               struct IP_addr *n, struct IP_addr *m);
+extern int IP_str_to_addr_mask(const char *address, struct IP_addr *n,
+                               struct IP_addr *m, sa_family_t *af);
 /**
  * Convert the supplied cidr into it's corresponding range.
  */
@@ -99,8 +99,8 @@ extern char *IP_cidr_to_str(const struct IP_cidr *cidr);
  * otherwise return 0. It is assumed that address a has been
  * pre-masked out, we only need to mask b.
  */
-extern int IP_match_addr(struct IP_addr *a, struct IP_addr *m,
-                         struct IP_addr *b, sa_family_t af);
+extern int IP_match_addr(const struct IP_addr *a, const struct IP_addr *m,
+                         const struct IP_addr *b, sa_family_t af);
 
 /**
  * Check if a supplied NULL-terminated string is a valid

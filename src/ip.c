@@ -79,11 +79,11 @@ IP_range_to_cidr_list(List_T cidrs, u_int32_t start, u_int32_t end)
 }
 
 extern int
-IP_str_to_addr_mask(const char *address, struct IP_addr *n, struct IP_addr *m)
+IP_str_to_addr_mask(const char *address, struct IP_addr *n, struct IP_addr *m, sa_family_t *af)
 {
-    int ret, af, i, j;
-    unsigned int maskbits;
+    int ret, i, j;
     char parsed[INET6_ADDRSTRLEN];
+    unsigned int maskbits;
 
     memset(n, 0, sizeof(*n));
     memset(m, 0, sizeof(*m));
@@ -92,11 +92,11 @@ IP_str_to_addr_mask(const char *address, struct IP_addr *n, struct IP_addr *m)
     if(ret != 2 || maskbits == 0 || maskbits > IP_MAX_MASKBITS)
         return -1;
 
-    af = (strchr(parsed, ':') != NULL ? AF_INET6 : AF_INET);
-    if(af == AF_INET && maskbits > IP_MAX_MASKBITS_V4)
+    *af = (strchr(parsed, ':') != NULL ? AF_INET6 : AF_INET);
+    if(*af == AF_INET && maskbits > IP_MAX_MASKBITS_V4)
         return -1;
 
-    if((ret = inet_pton(af, parsed, n)) != 1)
+    if((ret = inet_pton(*af, parsed, n)) != 1)
         return -1;
 
     for(i = 0, j = 0; i < 4; i++)
@@ -137,7 +137,7 @@ extern char
 }
 
 extern int
-IP_match_addr(struct IP_addr *a, struct IP_addr *m, struct IP_addr *b,
+IP_match_addr(const struct IP_addr *a, const struct IP_addr *m, const struct IP_addr *b,
               sa_family_t af)
 {
     int match = 0;
