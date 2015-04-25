@@ -79,22 +79,21 @@ IP_range_to_cidr_list(List_T cidrs, u_int32_t start, u_int32_t end)
 }
 
 extern int
-IP_str_to_addr_mask(const char *address, struct IP_addr *n, struct IP_addr *m,
-                    unsigned int *maskbits, short *af)
+IP_str_to_addr_mask(const char *address, struct IP_addr *n, struct IP_addr *m, sa_family_t *af)
 {
     int ret, i, j;
     char parsed[INET6_ADDRSTRLEN];
-    unsigned int bits;
+    unsigned int maskbits;
 
     memset(n, 0, sizeof(*n));
     memset(m, 0, sizeof(*m));
 
-    ret = sscanf(address, "%39[^/]/%u", parsed, maskbits);
-    if(ret != 2 || *maskbits == 0 || *maskbits > IP_MAX_MASKBITS)
+    ret = sscanf(address, "%39[^/]/%u", parsed, &maskbits);
+    if(ret != 2 || maskbits == 0 || maskbits > IP_MAX_MASKBITS)
         return -1;
 
     *af = (strchr(parsed, ':') != NULL ? AF_INET6 : AF_INET);
-    if(*af == AF_INET && *maskbits > IP_MAX_MASKBITS_V4)
+    if(*af == AF_INET && maskbits > IP_MAX_MASKBITS_V4)
         return -1;
 
     if((ret = inet_pton(*af, parsed, n)) != 1)
@@ -103,16 +102,15 @@ IP_str_to_addr_mask(const char *address, struct IP_addr *n, struct IP_addr *m,
     for(i = 0, j = 0; i < 4; i++)
         m->addr32[i] = 0;
 
-    bits = *maskbits;
-    while(bits >= 32) {
+    while(maskbits >= 32) {
         m->addr32[j++] = 0xffffffff;
-        bits -= 32;
+        maskbits -= 32;
     }
 
-    for(i = 31; i > (31 - bits); --i)
+    for(i = 31; i > (31 - maskbits); --i)
         m->addr32[j] |= (1 << i);
 
-    if(bits)
+    if(maskbits)
         m->addr32[j] = htonl(m->addr32[j]);
 
     /* Mask off address bits that won't ever be used. */
@@ -139,7 +137,7 @@ extern char
 }
 
 extern int
-IP_match_addr(struct IP_addr *a, struct IP_addr *m, struct IP_addr *b,
+IP_match_addr(const struct IP_addr *a, const struct IP_addr *m, const struct IP_addr *b,
               sa_family_t af)
 {
     int match = 0;

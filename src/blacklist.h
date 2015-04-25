@@ -47,14 +47,10 @@ struct Blacklist_entry {
     int8_t         white;
 };
 
-/**
- * A stripped down trie entry, containing only an address and
- * a mask.
- */
 struct Blacklist_trie_entry {
-    short af;
+    sa_family_t af;
     struct IP_addr address;
-    unsigned short mask_bits;
+    struct IP_addr mask;
 };
 
 /**

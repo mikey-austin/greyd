@@ -114,9 +114,9 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
     struct Blacklist_trie_entry entry;
 
     if(list->type == BL_STORAGE_TRIE) {
-        entry.address = *source;
-        entry.mask_bits = (af == AF_INET ? 32 : 128);
+        memset(&entry, 0, sizeof(entry));
         entry.af = af;
+        entry.address = *source;
         return Trie_contains(list->trie, (unsigned char *) &entry,
                              sizeof(entry));
     }
@@ -139,17 +139,14 @@ Blacklist_add(Blacklist_T list, const char *address)
     struct IP_addr n, m;
     struct Blacklist_trie_entry entry;
     int i, ret;
-    unsigned int maskbits = 0;
-    short af = 0;
 
     memset(&entry, 0, sizeof(entry));
-    ret = IP_str_to_addr_mask(address, &n, &m, &maskbits, &af);
+    ret = IP_str_to_addr_mask(address, &n, &m, &entry.af);
 
     if(list->type == BL_STORAGE_TRIE) {
         list->count++;
         entry.address = n;
-        entry.mask_bits = maskbits;
-        entry.af = af;
+        entry.mask = m;
         Trie_insert(list->trie, (unsigned char *) &entry,
                     sizeof(entry));
     }
@@ -254,40 +251,15 @@ static int
 triecmp(const void *a, int alen, const void *b, int blen)
 {
     const struct Blacklist_trie_entry *entry1 = a, *entry2 = b;
-    struct IP_addr m;
-    unsigned int bits = entry1->mask_bits;
-    int word, i;
 
-    if(entry1->af != entry2->af)
-        return 1;
-
-    /* Construct the mask. */
-    if(bits <= 32)
-        word = 0;
-    else if(bits > 32 && bits <= 2 * 32)
-        word = 1;
-    else if(bits > 2 * 32 && bits <= 3 * 32)
-        word = 2;
-    else
-        word = 3;
-
-    for(i = 0; i <= word; i++)
-        m.addr32[i] = 0xFFFFFFFF;
-
-    for(i = (32 - (bits % 32)); i > 0; i--)
-        m.addr32[word] = m.addr32[word] << 1;
-
-    /* Mask out both addresses and compare. */
-    for(i = 0; i <= word; i++) {
-        if(entry1->address.addr32[i]
-           != (entry2->address.addr32[i] & m.addr32[i]))
-        {
-            return 1;
-        }
+    if(IP_match_addr(&entry1->address, &entry1->mask,
+                     &entry2->address, entry2->af) > 0)
+    {
+        /* Match. */
+        return 0;
     }
 
-    /* We have a match. */
-    return 0;
+    return 1;
 }
 
 static void
