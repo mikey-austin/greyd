@@ -1,3 +1,10 @@
+2015-04-25  Mikey Austin  <mikey@greyd.org>
+
+	* Blacklist PATRICIA trie storage for fast lookups
+	* New BDB SQL, SQLite & MySQL storage drivers
+	* Updated documentation for new drivers
+	* Fixed some minor bugs
+
 2015-03-12  Mikey Austin  <mikey@greyd.org>
 
 	* Hash performance tuning.

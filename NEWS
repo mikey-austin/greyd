@@ -1,3 +1,9 @@
+2015-04-15
+        A host of new database drivers are now available to support different
+        use cases & workloads. The blacklist storage is now implemented by
+        way of a PATRICIA trie, which makes lookups 1000x faster than previous
+        linear search.
+
 2015-02-01
         Added new SPF validation functionality.
 
