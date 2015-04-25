@@ -105,9 +105,15 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
 
         LIST_EACH(ips, entry) {
             ip = List_entry_value(entry);
-            af = IP_check_addr(ip);
-            fprintf(out, "%s\"%s/%d\"", (first ? "" : ","),
-                    ip, (af == AF_INET ? 32 : 128));
+            if(strrchr(ip, '/') != NULL) {
+                /* This contains a CIDR range already. */
+                fprintf(out, "%s\"%s\"", (first ? "" : ","), ip);
+            }
+            else {
+                af = IP_check_addr(ip);
+                fprintf(out, "%s\"%s/%d\"", (first ? "" : ","),
+                        ip, (af == AF_INET ? 32 : 128));
+            }
             first = 0;
         }
         fprintf(out, "]\n%%\n");
