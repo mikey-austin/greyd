@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <trie.h>
 #include <blacklist.h>
 #include <spamd_parser.h>
 
@@ -34,7 +33,7 @@ main(int argc, char *argv[])
     Lexer_source_T ls;
     Lexer_T lexer;
     Spamd_parser_T parser;
-    Blacklist_T bl;
+    Blacklist_T bl, bl_trie;
     int ret;
     unsigned int seed = SEED;
     gzFile gzf;
@@ -51,6 +50,7 @@ main(int argc, char *argv[])
     ls = Lexer_source_create_from_gz(gzf);
     lexer = Spamd_lexer_create(ls);
     bl = Blacklist_create("Test List", "You have been blacklisted", 0);
+    bl_trie = Blacklist_create("Test List 2", "You have been blacklisted", BL_STORAGE_TRIE);
     parser = Spamd_parser_create(lexer);
     ret = Spamd_parser_start(parser, bl, 0);
 
@@ -58,19 +58,20 @@ main(int argc, char *argv[])
 
     /* Load into trie. */
     int i, j, r;
-    struct Trie *t = Trie_create(NULL, 0, NULL);
     struct Blacklist_entry *entry;
+    struct Blacklist_trie_entry tentry;
     unsigned char *bytes;
     struct IP_addr samples[SAMPLES];
 
     for(i = 0, j = 0; i < bl->count; i++) {
         entry = &bl->entries[i];
         entry->mask.addr32[0] = 0xFFFFFFFF;
-        /* Mask out entries before storing in trie. */
-        bytes = (unsigned char *) entry->address.addr8;
-        if(bytes != NULL) {
-            t = Trie_insert(t, bytes, 4);
-        }
+
+        tentry.af = AF_INET;
+        tentry.address = entry->address;
+        tentry.mask = entry->mask;
+        Trie_insert(bl_trie->trie, (unsigned char *) &tentry, sizeof(tentry));
+        bl_trie->count++;
 
         if((i % 4) == (rand() % 4) && j < SAMPLES) {
             samples[j++].addr32[0] = entry->address.addr32[0];
@@ -97,8 +98,7 @@ main(int argc, char *argv[])
     /* Time lookup across trie. */
     begin = clock();
     for(i = 0, errors = 0; i < j; i++) {
-        bytes = (unsigned char *) samples[i].addr8;
-        if(!Trie_contains(t, bytes, 4))
+        if(!Blacklist_match(bl_trie, &samples[i], AF_INET))
             errors++;
     }
     end = clock();
@@ -126,8 +126,7 @@ main(int argc, char *argv[])
     /* Time lookup across trie. */
     begin = clock();
     for(i = 0, errors = 0; i < j; i++) {
-        bytes = (unsigned char *) samples[i].addr8;
-        if(!Trie_contains(t, bytes, 4))
+        if(!Blacklist_match(bl_trie, &samples[i], AF_INET))
             errors++;
     }
     end = clock();
@@ -137,7 +136,7 @@ main(int argc, char *argv[])
     /* Cleanup. */
     Spamd_parser_destroy(&parser);
     Blacklist_destroy(&bl);
-    Trie_destroy(t);
+    Blacklist_destroy(&bl_trie);
 
     return 0;
 }

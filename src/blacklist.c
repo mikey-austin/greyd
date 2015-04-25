@@ -33,7 +33,7 @@
 static int cmp_ipv4_entry(const void *a, const void *b);
 static void cidr_destroy(void *cidr);
 static void grow_entries(Blacklist_T list);
-static int triecmp(const void *, int, const void *, int);
+static int cmp_trie_entry(const void *, int, const void *, int);
 
 extern Blacklist_T
 Blacklist_create(const char *name, const char *message, int flags)
@@ -69,7 +69,7 @@ Blacklist_create(const char *name, const char *message, int flags)
     }
     else if(flags == BL_STORAGE_TRIE) {
         blacklist->type = BL_STORAGE_TRIE;
-        blacklist->trie = Trie_create(NULL, 0, triecmp);
+        blacklist->trie = Trie_create(NULL, 0, cmp_trie_entry);
     }
 
     return blacklist;
@@ -248,7 +248,7 @@ Blacklist_collapse(Blacklist_T blacklist)
 }
 
 static int
-triecmp(const void *a, int alen, const void *b, int blen)
+cmp_trie_entry(const void *a, int alen, const void *b, int blen)
 {
     const struct Blacklist_trie_entry *entry1 = a, *entry2 = b;
 
@@ -260,21 +260,6 @@ triecmp(const void *a, int alen, const void *b, int blen)
     }
 
     return 1;
-}
-
-static void
-grow_entries(Blacklist_T list)
-{
-    if(list->count >= (list->size - 2)) {
-        list->entries = realloc(
-            list->entries, list->size + BLACKLIST_INIT_SIZE);
-
-        if(list->entries == NULL) {
-            i_critical("realloc failed");
-        }
-
-        list->size += BLACKLIST_INIT_SIZE;
-    }
 }
 
 static int
@@ -293,6 +278,21 @@ cmp_ipv4_entry(const void *a, const void *b)
     }
 
     return 0;
+}
+
+static void
+grow_entries(Blacklist_T list)
+{
+    if(list->count >= (list->size - 2)) {
+        list->entries = realloc(
+            list->entries, list->size + BLACKLIST_INIT_SIZE);
+
+        if(list->entries == NULL) {
+            i_critical("realloc failed");
+        }
+
+        list->size += BLACKLIST_INIT_SIZE;
+    }
 }
 
 static void
