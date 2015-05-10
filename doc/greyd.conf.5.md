@@ -184,7 +184,7 @@ The Berkeley database driver runs on all systems providing libdb version > 4 and
 
 ### Berkeley DB SQL database driver
 
-The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions > 5.x. This driver is built by specifying the **--with-bdb-sql** configure option.
+The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions >= 5.x. This driver is built by specifying the **--with-bdb-sql** configure option.
 
 * **path** = *string*:
   The filesystem path to the directory containing the database files.
@@ -204,7 +204,7 @@ The SQLite database driver makes use of libsqlite3. No special initialization is
 
 ### MySQL database driver
 
-The MySQL driver may be built by specifying the **--with-mysql** configure option. The desired database will need to be setup indenpendently of *greyd* using the **mysql_schema.sql** DDL distributed with the source distribution.
+The MySQL driver may be built by specifying the **--with-mysql** configure option. The desired database will need to be setup independently of *greyd* using the **mysql_schema.sql** DDL distributed with the source distribution.
 
 * **host** = *string*:
   The database host. Defaults to *localhost*.

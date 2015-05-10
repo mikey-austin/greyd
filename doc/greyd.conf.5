@@ -266,7 +266,7 @@ The filesystem path to the Berkeley DB environment\.
 The name of the database file, relative to the specified environment \fBpath\fR\.
 .
 .SS "Berkeley DB SQL database driver"
-The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions > 5\.x\. This driver is built by specifying the \fB\-\-with\-bdb\-sql\fR configure option\.
+The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions >= 5\.x\. This driver is built by specifying the \fB\-\-with\-bdb\-sql\fR configure option\.
 .
 .TP
 \fBpath\fR = \fIstring\fR
@@ -288,7 +288,7 @@ The filesystem path to the directory containing the database files\.
 The name of the database file, relative to the specified \fBpath\fR\.
 .
 .SS "MySQL database driver"
-The MySQL driver may be built by specifying the \fB\-\-with\-mysql\fR configure option\. The desired database will need to be setup indenpendently of \fIgreyd\fR using the \fBmysql_schema\.sql\fR DDL distributed with the source distribution\.
+The MySQL driver may be built by specifying the \fB\-\-with\-mysql\fR configure option\. The desired database will need to be setup independently of \fIgreyd\fR using the \fBmysql_schema\.sql\fR DDL distributed with the source distribution\.
 .
 .TP
 \fBhost\fR = \fIstring\fR

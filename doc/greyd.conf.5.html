@@ -227,7 +227,7 @@ include "/etc/greyd/conf.d/*.conf"
 
 <h3 id="Berkeley-DB-SQL-database-driver">Berkeley DB SQL database driver</h3>
 
-<p>The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions > 5.x. This driver is built by specifying the <strong>--with-bdb-sql</strong> configure option.</p>
+<p>The Berkeley DB SQL driver makes use of libdb_sql, which is available in Berkeley DB versions >= 5.x. This driver is built by specifying the <strong>--with-bdb-sql</strong> configure option.</p>
 
 <dl>
 <dt><strong>path</strong> = <em>string</em></dt><dd><p>The filesystem path to the directory containing the database files.</p></dd>
@@ -247,7 +247,7 @@ include "/etc/greyd/conf.d/*.conf"
 
 <h3 id="MySQL-database-driver">MySQL database driver</h3>
 
-<p>The MySQL driver may be built by specifying the <strong>--with-mysql</strong> configure option. The desired database will need to be setup indenpendently of <em>greyd</em> using the <strong>mysql_schema.sql</strong> DDL distributed with the source distribution.</p>
+<p>The MySQL driver may be built by specifying the <strong>--with-mysql</strong> configure option. The desired database will need to be setup independently of <em>greyd</em> using the <strong>mysql_schema.sql</strong> DDL distributed with the source distribution.</p>
 
 <dl>
 <dt><strong>host</strong> = <em>string</em></dt><dd><p>The database host. Defaults to <em>localhost</em>.</p></dd>
