@@ -296,7 +296,7 @@ The MySQL driver may be built by specifying the **--with-mysql** configure optio
 
 ## SPF SECTION
 
-This section controls the operation of the SPF validation functionality.
+This section controls the operation of the SPF validation functionality. Use the **--with-spf** configure flag to compile in SPF support.
 
 * **enable** = *boolean*:
   Enable the SPF checking functionality.
