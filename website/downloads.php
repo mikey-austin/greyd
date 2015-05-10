@@ -16,13 +16,13 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="downloads/greyd-0.8.0.tar.gz">greyd-0.8.0.tar.gz</a> - 2015-05-10
+                </li>
+                <li>
                     <a href="downloads/greyd-0.7.1.tar.gz">greyd-0.7.1.tar.gz</a> - 2015-03-12
                 </li>
                 <li>
                     <a href="downloads/greyd-0.7.0.tar.gz">greyd-0.7.0.tar.gz</a> - 2015-03-08
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.6.1.tar.gz">greyd-0.6.1.tar.gz</a> - 2015-02-06
                 </li>
             </ul>
             <p>
@@ -32,9 +32,8 @@
                 <li>libltdl (Libtool's libdl abstraction)</li>
                 <li>zlib</li>
                 <li>OpenSSL (libcrypto)</li>
-                <li>Berkeley DB (tested with 4.x & 5.x)</li>
+                <li>Berkeley DB (either 4.x or & 5.x), SQLite 3, Berkeley DB SQL or MySQL</li>
             </ul>
-
             <p>
                 To build the netfilter driver, you will need the following packages:
             </p>
@@ -51,12 +50,12 @@
             <h3>Installation</h3>
 
             <p>
-                To build on GNU/Linux with the <em>Berkeley DB driver</em> and the <em>Netfilter driver</em>, the following configure flags will do the trick (see ./configure --help for more):
+                To build on GNU/Linux with the <em>SQLite DB driver</em> and the <em>Netfilter driver</em>, the following configure flags will do the trick (see ./configure --help for more):
             </p>
 
             <div class="highlight">
-<code>$ tar xzf greyd-0.1.0.tar.gz && cd greyd-0.1.0
-$ ./configure --with-bdb --with-netfilter
+<code>$ tar xzf greyd-0.8.0.tar.gz && cd greyd-0.8.0
+$ ./configure --with-sqlite --with-netfilter
 $ make
 $ sudo make install</code>
             </div>
