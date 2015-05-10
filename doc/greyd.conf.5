@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "April 2015" "" ""
+.TH "GREYD\.CONF" "5" "May 2015" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -121,6 +121,10 @@ The IPv4 address to listen on\. Defaults to listen on all addresses\.
 .TP
 \fBport\fR = \fInumber\fR
 The port to listen on\. Defaults to \fI8025\fR\.
+.
+.TP
+\fBconfig_port\fR = \fInumber\fR
+The port on which to listen for blacklist configuration data (see \fBgreyd\-setup\fR(8))\. Defaults to \fI8026\fR\.
 .
 .TP
 \fBgreyd_pidfile\fR = \fIstring\fR
@@ -383,12 +387,12 @@ Specify a list of \fIsync targets\fR\. See the \fB\-Y\fR option in \fBgreyd\fR(8
 See \fB\-y\fR option in \fBgreyd\fR(8)\.
 .
 .TP
-\fBttl\fR = \fInumber\fR
-Specify a multicast TTL value\. Defaults to \fI1\fR\.
-.
-.TP
 \fBport\fR = \fInumber\fR
 The port on which to listen for incoming UDP sync messages\.
+.
+.TP
+\fBttl\fR = \fInumber\fR
+Specify a multicast TTL value\. Defaults to \fI1\fR\.
 .
 .TP
 \fBverify\fR = \fIboolean\fR

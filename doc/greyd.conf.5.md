@@ -75,6 +75,9 @@ The following options may be specified outside of a section. A *boolean* value i
 * **port** = *number*:
   The port to listen on. Defaults to *8025*.
 
+* **config_port** = *number*:
+  The port on which to listen for blacklist configuration data (see **greyd-setup**(8)). Defaults to *8026*.
+
 * **greyd_pidfile** = *string*:
   The greyd pidfile path.
 
@@ -276,11 +279,11 @@ The MySQL driver may be built by specifying the **--with-mysql** configure optio
 * **bind_address** = *string*:
   See **-y** option in **greyd**(8).
 
-* **ttl** = *number*:
-  Specify a multicast TTL value. Defaults to *1*.
-
 * **port** = *number*:
   The port on which to listen for incoming UDP sync messages.
+
+* **ttl** = *number*:
+  Specify a multicast TTL value. Defaults to *1*.
 
 * **verify** = *boolean*:
   Load the specified *key* for verifying sync messages.
