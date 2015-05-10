@@ -30,10 +30,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
 
 #include "utils.h"
+
+#define PIDLEN 16
 
 extern size_t
 sstrncat(char *dst, const char *src, size_t dsize)
@@ -111,23 +114,42 @@ drop_privs(struct passwd *user)
 extern int
 write_pidfile(struct passwd *user, const char *path)
 {
-    FILE *pidfile;
-    int ret;
+    char buf[PIDLEN + 1];
+    int ret, fd;
+    struct flock lock;
 
-    if((ret = access(path, F_OK)) == 0) {
-        return -2;
-    }
-    else if(ret == -1 && errno != ENOENT) {
+    fd = open(path, (O_RDWR|O_CREAT), (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH));
+    if(fd < 0) {
         return -1;
     }
 
-    if((pidfile = fopen(path, "w")) == NULL)
-       return -1;
-    fprintf(pidfile, "%u\n", getpid());
-    fclose(pidfile);
+    lock.l_type = F_WRLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len = 0;
 
-    if(chown(path, user->pw_uid, user->pw_gid) == -1)
+    if(fcntl(fd, F_SETLK, &lock) < 0) {
+        if(errno == EACCES || errno == EAGAIN) {
+            /* Another process has already locked the pidfile. */
+            close(fd);
+            ret = -2;
+        }
+        else {
+            ret = -1;
+        }
+        close(fd);
+        return ret;
+    }
+
+    ftruncate(fd, 0);
+    snprintf(buf, PIDLEN, "%ld", (long) getpid());
+    write(fd, buf, strlen(buf) + 1);
+
+    if(fchown(fd, user->pw_uid, user->pw_gid) == -1) {
+        close(fd);
         return -1;
+    }
 
+    /* Do not close fd on success, so that the lock remains. */
     return 0;
 }

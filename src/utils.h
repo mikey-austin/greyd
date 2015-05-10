@@ -60,6 +60,10 @@ extern int drop_privs(struct passwd *user);
 
 /**
  * Write the pidfile to the specified location and chown it.
+ *
+ * @return  0 on success
+ * @return -1 if the PID could not be written
+ * @return -2 if there is another instance of greyd already running
  */
 extern int write_pidfile(struct passwd *user, const char *pidfile);
 
