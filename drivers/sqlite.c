@@ -53,6 +53,8 @@
 
 #define DEFAULT_PATH "/var/db/greyd"
 #define DEFAULT_DB   "greyd.sqlite"
+#define MAX_RETRY    20
+#define RETRY_SECS   5
 
 /**
  * The internal driver handle.
@@ -166,27 +168,42 @@ Mod_db_start_txn(DB_handle_T handle)
 {
     struct s3_handle *dbh = handle->dbh;
     char *err;
-    int ret;
+    int ret, retries = 0;
 
     if(dbh->txn != 0) {
         /* Already in a transaction. */
         return -1;
     }
 
-    ret = sqlite3_exec(dbh->db, "BEGIN TRANSACTION", NULL, NULL, &err);
-    if(ret != SQLITE_OK) {
-        i_warning("db txn start failed: %s", err);
+    /*
+     * We use "begin immediate" here so that we may take advantage
+     * of SQLite's gaurantee to not return subsequent SQLITE_BUSY
+     * errors until the next COMMIT.
+     */
+retry:
+    ret = sqlite3_exec(dbh->db, "BEGIN IMMEDIATE", NULL, NULL, &err);
+    switch(ret) {
+    case SQLITE_OK:
+        dbh->txn = 1;
+        break;
+
+    case SQLITE_BUSY:
         sqlite3_free(err);
-        goto cleanup;
+        if(retries++ < MAX_RETRY) {
+            i_warning("db busy, retrying start txn in %d seconds (%d try of %d)",
+                      RETRY_SECS, retries, MAX_RETRY);
+            sleep(RETRY_SECS);
+            goto retry;
+        }
+        /* Fallthrough. */
+
+    default:
+        i_warning("db txn start failed: %s", err);
+        ret = -1;
+        break;
     }
-    dbh->txn = 1;
 
     return ret;
-
-cleanup:
-    if(dbh->db)
-        sqlite3_close(dbh->db);
-    exit(1);
 }
 
 extern int
@@ -194,27 +211,38 @@ Mod_db_commit_txn(DB_handle_T handle)
 {
     struct s3_handle *dbh = handle->dbh;
     char *err;
-    int ret;
+    int ret, retries = 0;
 
     if(dbh->txn != 1) {
         i_warning("cannot commit, not in transaction");
         return -1;
     }
 
+retry:
     ret = sqlite3_exec(dbh->db, "COMMIT", NULL, NULL, &err);
-    if(ret != SQLITE_OK) {
+    switch(ret) {
+    case SQLITE_OK:
+        dbh->txn = 0;
+        break;
+
+    case SQLITE_BUSY:
+        sqlite3_free(err);
+        if(retries++ < MAX_RETRY) {
+            i_warning("db busy, attempting to commit in %d seconds (%d try of %d)",
+                      RETRY_SECS, retries, MAX_RETRY);
+            sleep(RETRY_SECS);
+            goto retry;
+        }
+        /* Fallthrough. */
+
+    default:
         i_warning("db txn commit failed: %s", err);
         sqlite3_free(err);
-        goto cleanup;
+        ret = -1;
+        break;
     }
-    dbh->txn = 0;
 
     return ret;
-
-cleanup:
-    if(dbh->db)
-        sqlite3_close(dbh->db);
-    exit(1);
 }
 
 extern int
