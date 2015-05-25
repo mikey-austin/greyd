@@ -27,6 +27,7 @@
  * lookups and libnetfilter_log for the capturing of firewall packets.
  */
 
+#include <linux/types.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
 
