@@ -76,7 +76,6 @@ db_list(DB_handle_T db)
     struct Grey_tuple gt;
     struct Grey_data gd;
 
-    DB_start_txn(db);
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
     while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         gd = val.data.gd;
@@ -122,9 +121,7 @@ db_list(DB_handle_T db)
             break;
         }
     }
-
     DB_close_itr(&itr);
-    DB_commit_txn(db);
 
     return 0;
 }
