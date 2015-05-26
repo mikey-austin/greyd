@@ -311,6 +311,7 @@ include "/etc/greyd/conf.d/*.conf"
 <dl>
 <dt><strong>lists</strong> = <em>list</em></dt><dd><p>The list of blacklists/whitelists to load. The order is important, see <a href="#BLACKLIST-CONFIGURATION" title="BLACKLIST CONFIGURATION" data-bare-link="true">BLACKLIST CONFIGURATION</a>. Consecutive blacklists will be merged, with overlapping regions removed. If a blacklist (or series of blacklists) is followed by a whitelist, any address appearing on both will be removed.</p></dd>
 <dt><strong>curl_path</strong> = <em>string</em></dt><dd><p>The path to the <em>curl</em> program, which is used to fetch the lists via <em>HTTP</em> and <em>FTP</em>.</p></dd>
+<dt><strong>curl_proxy</strong> = <em>string</em></dt><dd><p>Specify a <em>proxyhost[:port]</em> through which to fetch the lists.</p></dd>
 </dl>
 
 

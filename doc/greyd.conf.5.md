@@ -317,6 +317,9 @@ This section controls the operation of the **greyd-setup**(8) program.
 * **curl_path** = *string*:
   The path to the *curl* program, which is used to fetch the lists via *HTTP* and *FTP*.
 
+* **curl_proxy** = *string*:
+  Specify a *proxyhost[:port]* through which to fetch the lists.
+
 ## BLACKLIST CONFIGURATION
 
 A blacklist must contain the following fields:
