@@ -110,10 +110,11 @@ file_get(char *url, char *curl_path, char *proxy)
 
     if(debug) {
        fprintf(stderr,
-               "Getting %s%s%s\n",
+               "Getting %s%s%s%s\n",
                url,
-               proxy ? " via " : "",
-               proxy ? proxy : "");
+               proxy ? " (via proxy " : "",
+               proxy ? proxy : "",
+               proxy ? ")" : "");
     }
 
     return open_child(curl_path, argv);
