@@ -74,7 +74,7 @@ extern int optind, opterr, optopt;
 static void usage(void);
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
 static int open_child(char *file, char **argv);
-static int file_get(char *url, char *curl_path);
+static int file_get(char *url, char *curl_path, char *curl_proxy);
 static void free_cidr(void *);
 static void send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
                            Config_T config, int final_list, List_T all_cidrs);
@@ -97,15 +97,24 @@ free_cidr(void *value)
 }
 
 static int
-file_get(char *url, char *curl_path)
+file_get(char *url, char *curl_path, char *proxy)
 {
-    char *argv[4] = { curl_path, "-s", url, NULL };
+    char *argv[6] = { curl_path, "-s",
+                      proxy ? "--proxy" : url,
+                      proxy ? proxy : NULL,
+                      proxy ? url : NULL,
+                      NULL };
 
     if(curl_path == NULL)
         return -1;
 
-    if(debug)
-       fprintf(stderr, "Getting %s\n", url);
+    if(debug) {
+       fprintf(stderr,
+               "Getting %s%s%s\n",
+               url,
+               proxy ? " via " : "",
+               proxy ? proxy : "");
+    }
 
     return open_child(curl_path, argv);
 }
@@ -162,7 +171,7 @@ get_parser(Config_section_T section, Config_T config)
     Spamd_parser_T parser = NULL;
     Lexer_T lexer;
     Lexer_source_T source;
-    char *method, *file, **ap, **argv, *curl_path, *url;
+    char *method, *file, **ap, **argv, *curl_path, *curl_proxy, *url;
     int fd, len;
     gzFile gzf;
 
@@ -189,6 +198,7 @@ get_parser(Config_section_T section, Config_T config)
          * The file is to be fetched via curl.
          */
         curl_path = Config_get_str(config, "curl_path", "setup", DEFAULT_CURL);
+        curl_proxy = Config_get_str(config, "curl_proxy", "setup", NULL);
 
         asprintf(&url, "%s://%s", method, file);
         if(url == NULL) {
@@ -196,7 +206,7 @@ get_parser(Config_section_T section, Config_T config)
             return NULL;
         }
 
-        fd = file_get(url, curl_path);
+        fd = file_get(url, curl_path, curl_proxy);
         free(url);
         url = NULL;
     }
