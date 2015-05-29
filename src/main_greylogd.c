@@ -175,7 +175,7 @@ main(int argc, char **argv)
                    strerror(errno));
 
     case -2:
-        i_critical("pidfile %s exists", pidfile);
+        i_critical("it appears greylogd is already running...", pidfile);
     }
 
     i_info("Listening, %s",
