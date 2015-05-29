@@ -72,6 +72,7 @@
 #define NFLOG_WHOLE_PACKET 0xffff
 #define NFLOG_DIR_IN       1
 #define NFLOG_DIR_OUT      0
+#define LOG_CAP_TIMEOUT    10000 /* In milliseconds. */
 
 struct cb_filter {
     struct sockaddr *src;
@@ -368,7 +369,7 @@ Mod_fw_capture_log(FW_handle_T handle)
     fd.events = POLLIN;
 
     /* Use poll to effect a timeout. */
-    if(poll(&fd, 1, POLL_TIMEOUT) == -1) {
+    if(poll(&fd, 1, LOG_CAP_TIMEOUT) == -1) {
         if(errno != EINTR)
             i_critical("poll: %s", strerror(errno));
         return NULL;

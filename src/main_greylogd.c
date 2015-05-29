@@ -188,7 +188,6 @@ main(int argc, char **argv)
 
     memset(&act, 0, sizeof(act));
     act.sa_handler = sighandler_shutdown;
-    act.sa_flags = SA_RESTART;
     sigaction(SIGINT, &act, NULL);
     sigaction(SIGQUIT, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
