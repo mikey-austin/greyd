@@ -769,7 +769,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     }
     sqlite3_finalize(stmt);
 
-    sql = "UPDATE entries "
+    sql = "UPDATE OR REPLACE entries "
         "SET `helo` = '', `from` = '', `to` = '', `expire` = ? "
         "WHERE `from` <> '' AND `to` <> '' AND `pcount` >= 0 AND `pass` <= ? "
         "AND `ip` NOT IN ( "

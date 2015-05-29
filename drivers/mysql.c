@@ -645,7 +645,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     free(sql);
     sql = NULL;
 
-    sql_tmpl = "UPDATE entries e LEFT JOIN entries g "
+    sql_tmpl = "UPDATE IGNORE entries e LEFT JOIN entries g "
         "ON g.`ip`=e.`ip` AND g.`to`='' AND g.`from`='' "
         "SET e.`helo` = '', e.`from` = '', e.`to` = '', e.`expire` = %lld "
         "WHERE e.`from` <> '' AND e.`to` <> '' AND e.`pcount` >= 0 "
