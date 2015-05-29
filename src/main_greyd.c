@@ -516,7 +516,7 @@ main(int argc, char **argv)
                   strerror(errno));
 
     case -2:
-        i_critical("pidfile %s exists", pidfile);
+        i_critical("it appears greyd is already running...", pidfile);
     }
 
     if(Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
