@@ -87,9 +87,7 @@ main(int argc, char **argv)
     Sync_engine_T syncer = NULL;
     struct sigaction act;
 
-    tzset();
     opts = Config_create();
-
     while((option = getopt(argc, argv, "DIW:Y:f:P:")) != -1) {
         switch (option) {
         case 'f':

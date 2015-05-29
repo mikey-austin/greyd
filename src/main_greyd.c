@@ -222,7 +222,6 @@ main(int argc, char **argv)
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
-    tzset();
 
     opts = Config_create();
     if(gethostname(hostname, sizeof(hostname)) == -1) {
