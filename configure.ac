@@ -1,5 +1,5 @@
 AC_PREREQ([2.68])
-AC_INIT([greyd], [0.8.3], [mikey@greyd.org])
+AC_INIT([greyd], [0.8.4], [mikey@greyd.org])
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
