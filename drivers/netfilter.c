@@ -328,7 +328,7 @@ Mod_fw_start_log_capture(FW_handle_T handle)
         nflog_callback_register(lh->group_out, log_callback, lh);
     }
     else {
-        lh->group_in = NULL;
+        lh->group_out = NULL;
     }
 
     lh->entries = List_create(destroy_log_entry);

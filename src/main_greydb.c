@@ -309,9 +309,7 @@ main(int argc, char **argv)
     int sync_send = 0;
     int white_expiry, trap_expiry;
 
-    tzset();
     opts = Config_create();
-
     while((option = getopt(argc, argv, "adtTDf:Y:")) != -1) {
         switch(option) {
         case 'a':
