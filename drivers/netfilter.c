@@ -341,9 +341,10 @@ Mod_fw_end_log_capture(FW_handle_T handle)
     struct log_handle *lh = fwh->log;
 
     if(lh) {
-        nflog_unbind_group(lh->group_out);
         if(lh->group_in != NULL)
             nflog_unbind_group(lh->group_in);
+        if(lh->group_out != NULL)
+            nflog_unbind_group(lh->group_out);
         nflog_close(lh->handle);
         List_destroy(&lh->entries);
         free(lh);
