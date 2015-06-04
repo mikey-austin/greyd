@@ -547,7 +547,7 @@ ipset_create(struct ipset_session *session, const char *set_name,
     ipset_session_data_set(session, IPSET_OPT_EXIST, NULL);
     ipset_session_data_set(session, IPSET_OPT_TIMEOUT, &timeout);
 
-    if(ipset_cmd(session, IPSET_CMD_CREATE, 0) == -1) {
+    if(ipset_cmd(session, IPSET_CMD_CREATE, 0) < 0) {
         i_warning("ipset create %s: %s", set_name,
               ipset_session_error(session));
         return -1;
@@ -561,19 +561,7 @@ ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
           short af)
 {
     u_int8_t family;
-    unsigned int maskbits = 0;
-    char parsed[INET6_ADDRSTRLEN];
     const struct ipset_type *type;
-    struct sockaddr_storage addr;
-
-    if(sscanf(cidr, "%39[^/]/%u", parsed, &maskbits) < 1
-       || maskbits > IP_MAX_MASKBITS)
-    {
-        return -1;
-    }
-
-    if(maskbits == 0)
-        maskbits = (af == AF_INET6 ? 128 : 32);
 
     if(ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0)
         return -1;
@@ -583,24 +571,15 @@ ipset_add(struct ipset_session *session, const char *set_name, char *cidr,
 
     family = (af == AF_INET6 ? NFPROTO_IPV6 : NFPROTO_IPV4);
     ipset_session_data_set(session, IPSET_OPT_FAMILY, &family);
-    ipset_session_data_set(session, IPSET_OPT_CIDR, &maskbits);
     ipset_session_data_set(session, IPSET_OPT_EXIST, NULL);
 
-    memset(&addr, 0, sizeof(addr));
-    if(af == AF_INET6) {
-        if(inet_pton(af, parsed, &((struct sockaddr_in6 *) &addr)->sin6_addr) == -1)
-            return -1;
-        ipset_session_data_set(session, IPSET_OPT_IP,
-                               &((struct sockaddr_in6 *) &addr)->sin6_addr);
-    }
-    else {
-        if(inet_pton(af, parsed, &((struct sockaddr_in *) &addr)->sin_addr) == -1)
-            return -1;
-        ipset_session_data_set(session, IPSET_OPT_IP,
-                               &((struct sockaddr_in *) &addr)->sin_addr);
+    if(ipset_parse_elem(session, type->last_elem_optional, cidr) < 0) {
+        i_warning("ipset parse elem %s: %s", cidr,
+              ipset_session_error(session));
+        return -1;
     }
 
-    if(ipset_cmd(session, IPSET_CMD_ADD, 0) == -1) {
+    if(ipset_cmd(session, IPSET_CMD_ADD, 0) < 0) {
         i_warning("ipset add %s: %s", set_name,
               ipset_session_error(session));
         return -1;
@@ -632,7 +611,7 @@ ipset_swap_and_destroy(struct ipset_session *session, const char *set_name,
     if(ipset_session_data_set(session, IPSET_SETNAME, stage_set_name) != 0)
         return -1;
 
-    if(ipset_cmd(session, IPSET_CMD_DESTROY, 0) == -1) {
+    if(ipset_cmd(session, IPSET_CMD_DESTROY, 0) < 0) {
         i_warning("ipset destroy %s: %s", stage_set_name,
               ipset_session_error(session));
         return -1;
