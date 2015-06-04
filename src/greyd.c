@@ -214,9 +214,9 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
         name = Config_get_str(message, "name", NULL, "");
         af = Config_get_int(message, "af", NULL, AF_INET);
         ips = Config_get_list(message, "ips", NULL);
-        whitelist = List_create(NULL);
 
         if(ips && List_size(ips) > 0) {
+            whitelist = List_create(NULL);
             LIST_EACH(ips, entry) {
                 value = List_entry_value(entry);
                 if((addr = cv_str(value)) != NULL
@@ -225,10 +225,11 @@ Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out)
                     List_insert_after(whitelist, addr);
                 }
             }
-        }
 
-        if(List_size(whitelist) > 0)
-            FW_replace(fw_handle, name, whitelist, af);
-        List_destroy(&whitelist);
+            if(List_size(whitelist) > 0)
+                FW_replace(fw_handle, name, whitelist, af);
+
+            List_destroy(&whitelist);
+        }
     }
 }

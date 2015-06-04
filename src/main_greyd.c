@@ -177,7 +177,8 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
             break;
 
         case CONFIG_PARSER_ERR:
-            goto cleanup;
+            i_warning("firewall process: parse error");
+            break;
         }
 
         Config_destroy(&message);
