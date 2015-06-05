@@ -190,7 +190,7 @@ retry:
     case SQLITE_BUSY:
         sqlite3_free(err);
         if(retries++ < MAX_RETRY) {
-            i_warning("db busy, retrying start txn in %d seconds (%d try of %d)",
+            i_warning("db busy, retrying start txn in %d seconds (try %d of %d)",
                       RETRY_SECS, retries, MAX_RETRY);
             sleep(RETRY_SECS);
             goto retry;
@@ -228,7 +228,7 @@ retry:
     case SQLITE_BUSY:
         sqlite3_free(err);
         if(retries++ < MAX_RETRY) {
-            i_warning("db busy, attempting to commit in %d seconds (%d try of %d)",
+            i_warning("db busy, attempting to commit in %d seconds (try %d of %d)",
                       RETRY_SECS, retries, MAX_RETRY);
             sleep(RETRY_SECS);
             goto retry;
