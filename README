@@ -53,7 +53,7 @@ Development Status
 ------------------
 
 **greyd** is fully functional and is under active development. All of the features from **spamd**
-have been implemented, including synchronization support. Additional features not found in **spamd** have also been implemented, such as **SPF** trapping & optional whitelisting.
+have been implemented, including synchronization support. Additional features not found in **spamd** have also been implemented, such as **SPF** trapping & optional whitelisting, as well as sync support via greydb manual updates.
 
 The following database drivers have been implemented:
   * **Berkeley DB** (4.x onwards), which makes full use of transactions.
