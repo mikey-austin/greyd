@@ -161,6 +161,8 @@ individual@greyd.org
 
 <p><strong>greydb</strong> supports realtime synchronisation of added entries by sending the information it updates to a number of <strong>greyd</strong>(8) daemons running on multiple machines. To enable synchronisation, use the command line option -Y to specify the machines to which <strong>greydb</strong> will send messages. The synchronisation may also be configured entirely via <strong>greyd.conf</strong>(5). For more information, see <strong>greyd</strong>(8) and <strong>greyd.conf</strong>(5).</p>
 
+<p><strong>greydb</strong> only sends sync messages for additions/deletions of WHITE &amp; TRAPPED entries only.</p>
+
 <h2 id="SEE-ALSO">SEE ALSO</h2>
 
 <p>  <strong>greyd.conf</strong>(5), <strong>greyd-setup</strong>(8), <strong>greyd</strong>(8), <strong>greylogd</strong>(8)</p>
@@ -172,7 +174,7 @@ individual@greyd.org
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>April 2015</li>
+    <li class='tc'>June 2015</li>
     <li class='tr'>greydb(8)</li>
   </ol>
 

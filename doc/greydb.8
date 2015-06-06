@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYDB" "8" "April 2015" "" ""
+.TH "GREYDB" "8" "June 2015" "" ""
 .
 .SH "NAME"
 \fBgreydb\fR \- greyd database tool
@@ -193,6 +193,9 @@ $ date \-\-date \'@<value>\'
 .
 .SH "SYNCHRONISATION"
 \fBgreydb\fR supports realtime synchronisation of added entries by sending the information it updates to a number of \fBgreyd\fR(8) daemons running on multiple machines\. To enable synchronisation, use the command line option \-Y to specify the machines to which \fBgreydb\fR will send messages\. The synchronisation may also be configured entirely via \fBgreyd\.conf\fR(5)\. For more information, see \fBgreyd\fR(8) and \fBgreyd\.conf\fR(5)\.
+.
+.P
+\fBgreydb\fR only sends sync messages for additions/deletions of WHITE & TRAPPED entries only\.
 .
 .SH "SEE ALSO"
 \fBgreyd\.conf\fR(5), \fBgreyd\-setup\fR(8), \fBgreyd\fR(8), \fBgreylogd\fR(8)

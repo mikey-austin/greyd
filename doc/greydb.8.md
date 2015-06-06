@@ -108,6 +108,8 @@ Note that times are in seconds since the Epoch, in the manner returned by time(3
 
 **greydb** supports realtime synchronisation of added entries by sending the information it updates to a number of **greyd**(8) daemons running on multiple machines. To enable synchronisation, use the command line option -Y to specify the machines to which **greydb** will send messages. The synchronisation may also be configured entirely via **greyd.conf**(5). For more information, see **greyd**(8) and **greyd.conf**(5).
 
+**greydb** only sends sync messages for additions/deletions of WHITE & TRAPPED entries only.
+
 ## SEE ALSO
 
   **greyd.conf**(5), **greyd-setup**(8), **greyd**(8), **greylogd**(8)
