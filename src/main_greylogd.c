@@ -236,7 +236,7 @@ main(int argc, char **argv)
                     else {
                         i_info("whitelisting %s", key.data.s);
                         if(sync_send)
-                            Sync_white(syncer, key.data.s, now, now + white_expiry);
+                            Sync_white(syncer, key.data.s, now, now + white_expiry, SYNC_OP_UPDATE);
                     }
                     break;
 

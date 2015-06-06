@@ -277,14 +277,16 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
     DB_commit_txn(db);
 
-    if(syncer && action != ACTION_DEL) {
+    if(syncer) {
         switch(type) {
         case TYPE_WHITE:
-            Sync_white(syncer, ip, now, gd.expire);
+            Sync_white(syncer, ip, now, gd.expire,
+                       action == ACTION_DEL ? SYNC_OP_DEL : SYNC_OP_ADD);
             break;
 
         case TYPE_TRAPHIT:
-            Sync_trapped(syncer, ip, now, gd.expire);
+            Sync_trapped(syncer, ip, now, gd.expire,
+                         action == ACTION_DEL ? SYNC_OP_DEL : SYNC_OP_ADD);
             break;
         }
     }
@@ -370,6 +372,7 @@ main(int argc, char **argv)
         break;
 
     case ACTION_ADD:
+    case ACTION_DEL:
         /* Ensure that the sync bind address is not set. */
         Config_delete(config, "bind_address", "sync");
 
@@ -389,9 +392,7 @@ main(int argc, char **argv)
             Sync_stop(&syncer);
             sync_send = 0;
         }
-        /* Fallthrough. */
 
-    case ACTION_DEL:
         white_expiry = Config_get_int(config, "white_expiry", "grey",
                                       GREY_WHITEEXP);
         trap_expiry = Config_get_int(config, "trap_expiry", "grey",

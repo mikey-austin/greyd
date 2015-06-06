@@ -30,7 +30,7 @@
 
 #include "greyd_config.h"
 
-#define SYNC_VERSION    1
+#define SYNC_VERSION    2
 #define SYNC_VERIFY_MSG 1
 #define SYNC_MCASTADDR  "224.0.1.241"
 #define SYNC_MCASTTTL   1
@@ -42,6 +42,10 @@
 #define SYNC_GREY    0x0001
 #define SYNC_WHITE   0x0002
 #define SYNC_TRAPPED 0x0003
+
+#define SYNC_OP_ADD    1
+#define SYNC_OP_UPDATE 2
+#define SYNC_OP_DEL    3
 
 #define SYNC_ALIGNBYTES (15)
 #define SYNC_ALIGN(p)   (((u_int)(p) + SYNC_ALIGNBYTES) &~ SYNC_ALIGNBYTES)
@@ -89,6 +93,7 @@ struct Sync_tlv_grey {
 struct Sync_tlv_addr {
     u_int16_t sd_type;
     u_int16_t sd_length;
+    u_int8_t  sd_op;
     u_int32_t sd_timestamp;
     u_int32_t sd_expire;
     u_int32_t sd_ip;
@@ -135,13 +140,13 @@ extern void Sync_update(Sync_engine_T engine, struct Grey_tuple *gt,
  * entry.
  */
 extern void Sync_white(Sync_engine_T engine, char *ip, time_t now,
-                       time_t expire);
+                       time_t expire, u_int8_t op);
 
 /**
  * Send out a sync message to notify others of a change to a
  * grey-trapped entry.
  */
 extern void Sync_trapped(Sync_engine_T engine, char *ip, time_t now,
-                         time_t expire);
+                         time_t expire, u_int8_t op);
 
 #endif

@@ -72,7 +72,7 @@ static void drop_grey_privs(Greylister_T, struct passwd *);
 static void shutdown_greyd(int);
 static int process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
-static void process_non_grey(Greylister_T, int, char *, char *, char *, int);
+static void process_non_grey(Greylister_T, int, char *, char *, char *, int, int);
 static int trap_check(Greylister_T, char *);
 static void update_firewall(Greylister_T, int);
 #ifdef HAVE_SPF
@@ -740,7 +740,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
      */
     if(greylister->syncer && sync) {
         if(spamtrap) {
-            Sync_trapped(greylister->syncer, gt->ip, now, now + expire);
+            Sync_trapped(greylister->syncer, gt->ip, now, now + expire, SYNC_OP_UPDATE);
         }
         else {
             Sync_update(greylister->syncer, gt, now);
@@ -756,7 +756,7 @@ rollback:
 
 static void
 process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
-                 char *expires, int sync)
+                 char *expires, int sync, int op)
 {
     DB_handle_T db = greylister->db_handle;
     struct DB_key key;
@@ -771,8 +771,9 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
 	/* Expiry times have to be in the future. */
     errno = 0;
     expire = strtol(expires, &end, 10);
-    if(expire == 0 || expires[0] == '\0' || *end != '\0'
-       || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN)))
+    if(op != SYNC_OP_DEL
+       && (expire == 0 || expires[0] == '\0' || *end != '\0'
+           || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN))))
     {
         i_warning("could not parse expires %s", expires);
         return;
@@ -789,6 +790,9 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
         /*
          * This is a new entry.
          */
+        if(op == SYNC_OP_DEL)
+            break;
+
         memset(&gd, 0, sizeof(gd));
         gd.first = now;
         gd.pcount = (spamtrap ? -1 : 0);
@@ -808,16 +812,23 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
         /*
          * This is an existing entry.
          */
-        if(spamtrap) {
-            val.data.gd.pcount = -1;
-            val.data.gd.bcount++;
+        if(op == SYNC_OP_DEL) {
+            if(DB_del(db, &key) == GREYDB_OK && sync) {
+                i_debug("deleted %s", ip);
+            }
         }
         else {
-            val.data.gd.pcount++;
-        }
+            if(spamtrap) {
+                val.data.gd.pcount = -1;
+                val.data.gd.bcount++;
+            }
+            else {
+                val.data.gd.pcount++;
+            }
 
-        if(DB_put(db, &key, &val) == GREYDB_OK && sync) {
-            i_debug("updated %s", ip);
+            if(DB_put(db, &key, &val) == GREYDB_OK && sync) {
+                i_debug("updated %s", ip);
+            }
         }
         break;
 
@@ -836,7 +847,7 @@ rollback:
 static int
 process_message(Greylister_T greylister, Config_T message)
 {
-    int type, sync;
+    int type, sync, op;
     struct Grey_tuple gt;
     char *dst_ip, *ip, *source, *expires;
 
@@ -865,9 +876,10 @@ process_message(Greylister_T greylister, Config_T message)
         ip      = Config_get_str(message, "ip", NULL, NULL);
         source  = Config_get_str(message, "source", NULL, NULL);
         expires = Config_get_str(message, "expires", NULL, NULL);
+        op      = Config_get_int(message, "op", NULL, SYNC_OP_ADD);
         if(ip && source && expires)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
-                             ip, source, expires, sync);
+                             ip, source, expires, sync, op);
         break;
 
     default:
