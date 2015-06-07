@@ -740,7 +740,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
      */
     if(greylister->syncer && sync) {
         if(spamtrap) {
-            Sync_trapped(greylister->syncer, gt->ip, now, now + expire, SYNC_OP_UPDATE);
+            Sync_trapped(greylister->syncer, gt->ip, now, now + expire, 0);
         }
         else {
             Sync_update(greylister->syncer, gt, now);
@@ -756,7 +756,7 @@ rollback:
 
 static void
 process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
-                 char *expires, int sync, int op)
+                 char *expires, int sync, int delete)
 {
     DB_handle_T db = greylister->db_handle;
     struct DB_key key;
@@ -771,8 +771,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
 	/* Expiry times have to be in the future. */
     errno = 0;
     expire = strtol(expires, &end, 10);
-    if(op != SYNC_OP_DEL
-       && (expire == 0 || expires[0] == '\0' || *end != '\0'
+    if(!delete && (expire == 0 || expires[0] == '\0' || *end != '\0'
            || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN))))
     {
         i_warning("could not parse expires %s", expires);
@@ -790,7 +789,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
         /*
          * This is a new entry.
          */
-        if(op == SYNC_OP_DEL)
+        if(delete)
             break;
 
         memset(&gd, 0, sizeof(gd));
@@ -812,7 +811,7 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
         /*
          * This is an existing entry.
          */
-        if(op == SYNC_OP_DEL) {
+        if(delete) {
             if(DB_del(db, &key) == GREYDB_OK && sync) {
                 i_debug("deleted %s", ip);
             }
@@ -847,7 +846,7 @@ rollback:
 static int
 process_message(Greylister_T greylister, Config_T message)
 {
-    int type, sync, op;
+    int type, sync, delete;
     struct Grey_tuple gt;
     char *dst_ip, *ip, *source, *expires;
 
@@ -876,10 +875,10 @@ process_message(Greylister_T greylister, Config_T message)
         ip      = Config_get_str(message, "ip", NULL, NULL);
         source  = Config_get_str(message, "source", NULL, NULL);
         expires = Config_get_str(message, "expires", NULL, NULL);
-        op      = Config_get_int(message, "op", NULL, SYNC_OP_ADD);
+        delete  = Config_get_int(message, "delete", NULL, 0);
         if(ip && source && expires)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
-                             ip, source, expires, sync, op);
+                             ip, source, expires, sync, delete);
         break;
 
     default:

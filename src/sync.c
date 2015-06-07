@@ -65,7 +65,7 @@ struct Sync_host {
 };
 
 static void send_sync_message(Sync_engine_T, struct iovec *, int);
-static void send_address(Sync_engine_T, char *, time_t, time_t, u_int16_t, u_int8_t);
+static void send_address(Sync_engine_T, char *, time_t, time_t, u_int16_t);
 static void destroy_sync_host(void *);
 
 extern Sync_engine_T
@@ -348,6 +348,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
     u_int8_t *p;
     socklen_t addr_len;
     ssize_t len;
+    short delete = 0;
     u_int hmac_len;
     u_int32_t expire;
 
@@ -439,6 +440,10 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
             }
             break;
 
+        case SYNC_DEL_WHITE:
+            delete = 1;
+            /* Fallthrough. */
+
         case SYNC_WHITE:
             sd = (struct Sync_tlv_addr *) tlv;
             if(sizeof(*sd) != ntohs(tlv->st_length))
@@ -448,7 +453,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
             expire = ntohl(sd->sd_expire);
             i_debug("%s (sync): received white entry ip %s (%s) ",
                     src_ip, inet_ntoa(ip),
-                    sd->sd_op == SYNC_OP_DEL ? "deletion" : "addition");
+                    delete ? "deletion" : "addition");
 
             if(Config_get_int(engine->config, "enable", "grey",
                    GREYLISTING_ENABLED))
@@ -460,12 +465,16 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
                         "ip = \"%s\"\n"
                         "source = \"%s\"\n"
                         "expires = \"%u\"\n"
-                        "op = %u\n"
+                        "delete = %u\n"
                         "%%\n", GREY_MSG_WHITE, inet_ntoa(ip),
-                        src_ip, expire, sd->sd_op);
+                        src_ip, expire, delete);
                 fflush(grey_out);
             }
             break;
+
+        case SYNC_DEL_TRAPPED:
+            delete = 1;
+            /* Fallthrough. */
 
         case SYNC_TRAPPED:
             sd = (struct Sync_tlv_addr *) tlv;
@@ -476,7 +485,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
             expire = ntohl(sd->sd_expire);
             i_debug("%s (sync): received trapped entry ip %s (%s) ",
                     src_ip, inet_ntoa(ip),
-                    sd->sd_op == SYNC_OP_DEL ? "deletion" : "addition");
+                    delete ? "deletion" : "addition");
 
             if(Config_get_int(engine->config, "enable", "grey",
                    GREYLISTING_ENABLED))
@@ -488,9 +497,9 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
                         "ip = \"%s\"\n"
                         "source = \"%s\"\n"
                         "expires = \"%u\"\n"
-                        "op = %u\n"
+                        "delete = %u\n"
                         "%%\n", GREY_MSG_TRAP, inet_ntoa(ip),
-                        src_ip, expire, sd->sd_op);
+                        src_ip, expire, delete);
                 fflush(grey_out);
             }
             break;
@@ -499,7 +508,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
             goto done;
 
         default:
-            i_warning("invalid type: %d", ntohs(tlv->st_type));
+            i_warning("unknown type: %d", ntohs(tlv->st_type));
             goto trunc;
         }
 
@@ -511,8 +520,7 @@ Sync_recv(Sync_engine_T engine, FILE *grey_out)
     return;
 
  trunc:
-    i_debug("%s (sync): truncated or invalid packet",
-            src_ip);
+    i_debug("%s (sync): truncated or invalid packet", src_ip);
 }
 
 extern void
@@ -605,19 +613,19 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
 }
 
 extern void
-Sync_white(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int8_t op)
+Sync_white(Sync_engine_T engine, char *ip, time_t now, time_t expire, short delete)
 {
-    send_address(engine, ip, now, expire, SYNC_WHITE, op);
+    send_address(engine, ip, now, expire, (delete ? SYNC_DEL_WHITE : SYNC_WHITE));
 }
 
 extern void
-Sync_trapped(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int8_t op)
+Sync_trapped(Sync_engine_T engine, char *ip, time_t now, time_t expire, short delete)
 {
-    send_address(engine, ip, now, expire, SYNC_TRAPPED, op);
+    send_address(engine, ip, now, expire, (delete ? SYNC_DEL_TRAPPED : SYNC_TRAPPED));
 }
 
 static void
-send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_t type, u_int8_t op)
+send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_t type)
 {
     struct iovec iov[3];
     struct Sync_hdr hdr;
@@ -626,9 +634,26 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     int i = 0;
     HMAC_CTX ctx;
     u_int hmac_len;
+    char *type_name = "";
 
-    i_debug("sync %s%s %s", op == SYNC_OP_DEL ? "deletion of " : "",
-            type == SYNC_WHITE ? "white" : "trapped", ip);
+    switch(type) {
+    case SYNC_WHITE:
+        type_name = "white";
+        break;
+
+    case SYNC_DEL_WHITE:
+        type_name = "deletion of white";
+        break;
+
+    case SYNC_TRAPPED:
+        type_name = "trapped";
+        break;
+
+    case SYNC_DEL_TRAPPED:
+        type_name = "deletion of trapped";
+        break;
+    }
+    i_debug("sync %s %s", type_name, ip);
 
     memset(&hdr, 0, sizeof(hdr));
     memset(&sd, 0, sizeof(sd));
@@ -649,7 +674,6 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     /* Add single SPAM sync address entry */
     sd.sd_type = htons(type);
     sd.sd_length = htons(sizeof(sd));
-    sd.sd_op = op;
     sd.sd_timestamp = htonl(now);
     sd.sd_expire = htonl(expire);
     sd.sd_ip = inet_addr(ip);

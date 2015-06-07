@@ -280,13 +280,11 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     if(syncer) {
         switch(type) {
         case TYPE_WHITE:
-            Sync_white(syncer, ip, now, gd.expire,
-                       action == ACTION_DEL ? SYNC_OP_DEL : SYNC_OP_ADD);
+            Sync_white(syncer, ip, now, gd.expire, (action == ACTION_DEL ? 1 : 0));
             break;
 
         case TYPE_TRAPHIT:
-            Sync_trapped(syncer, ip, now, gd.expire,
-                         action == ACTION_DEL ? SYNC_OP_DEL : SYNC_OP_ADD);
+            Sync_trapped(syncer, ip, now, gd.expire, (action == ACTION_DEL ? 1 : 0));
             break;
         }
     }
