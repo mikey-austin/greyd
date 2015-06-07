@@ -1,4 +1,4 @@
-<?php include('header.php') ?>
+ <?php include('header.php') ?>
 
 <section class="banner home">
     <div class="content">
@@ -43,7 +43,7 @@
 
             <h3>Heritage</h3>
             <p>
-                <em>greyd</em> closely follows the design of the excellent <em>spamd</em> from the <a target="_blank" href="http://openbsd.org">OpenBSD project</a>, and thus, implements all features of <em>spamd</em>.
+                <em>greyd</em> closely follows the design of the excellent <em>spamd</em> from the <a target="_blank" href="http://openbsd.org">OpenBSD project</a>, and thus, implements all features of <em>spamd</em>. <em>greyd</em> is also able to seemlessly sync with <em>spamd</em>.
             </p>
         </div>
 

@@ -34,6 +34,8 @@ to **spamd**, **greyd** aims to:
 
   - Be able to import the same blacklists & whitelists that **spamd** can import.
 
+  - Be able to sync seemlessly with native **spamd**.
+
 Platforms
 ---------
 
@@ -54,6 +56,8 @@ Development Status
 
 **greyd** is fully functional and is under active development. All of the features from **spamd**
 have been implemented, including synchronization support. Additional features not found in **spamd** have also been implemented, such as **SPF** trapping & optional whitelisting, as well as sync support via greydb manual updates.
+
+**greyd** is now fully sync compatible with **spamd**, which would allow, for example, an administrator to add a **greyd** instance into a cluster of existing **spamd** instances.
 
 The following database drivers have been implemented:
   * **Berkeley DB** (4.x onwards), which makes full use of transactions.
