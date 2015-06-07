@@ -56,6 +56,7 @@
 #include "grey.h"
 #include "sync.h"
 #include "list.h"
+#include "sha1.h"
 
 #define KEY_BUF_SIZE 512
 
@@ -72,12 +73,14 @@ extern Sync_engine_T
 Sync_init(Config_T config)
 {
     Sync_engine_T engine;
-    char *key_path, buf[KEY_BUF_SIZE];
+    char *key_path, buf[KEY_BUF_SIZE], *p;
     Config_value_T val;
     List_T sync_hosts;
     struct List_entry *entry;
-    int fd, nread = 0;
-    SHA_CTX ctx;
+    int fd, nread = 0, i;
+    SHA1_CTX ctx;
+    unsigned char digest[SYNC_HMAC_LEN];
+    static const char hex[] = "0123456789abcdef";
 
     if(!Config_get_int(config, "enable", "sync", 0))
         return NULL;
@@ -109,7 +112,7 @@ Sync_init(Config_T config)
     *engine->sync_key = '\0';
     if(Config_get_int(config, "verify", "sync", SYNC_VERIFY_MSG)) {
         key_path = Config_get_str(config, "key", "sync", SYNC_KEY);
-        if((fd = open(key_path, 0, O_RDONLY)) == -1) {
+        if((fd = open(key_path, O_RDONLY)) < 0) {
             if(errno != ENOENT) {
                 i_warning("failed to open sync key: %s",
                           strerror(errno));
@@ -118,17 +121,24 @@ Sync_init(Config_T config)
         }
         else {
             memset(&ctx, 0, sizeof(ctx));
-            SHA1_Init(&ctx);
+            SHA1Init(&ctx);
             while((nread = read(fd, buf, KEY_BUF_SIZE)) != 0) {
                 if(nread == -1) {
                     i_warning("failed to read in sync key: %s",
                               strerror(errno));
                     return NULL;
                 }
-                SHA1_Update(&ctx, buf, nread);
+                SHA1Update(&ctx, buf, nread);
             }
             close(fd);
-            SHA1_Final(engine->sync_key, &ctx);
+            SHA1Final(digest, &ctx);
+
+            p = engine->sync_key;
+            for(i = 0; i < 20; i++) {
+                p[i + i] = hex[((u_int32_t) digest[i]) >> 4];
+                p[i + i + 1] = hex[digest[i] & 0x0f];
+            }
+            p[i + i] = '\0';
         }
     }
 

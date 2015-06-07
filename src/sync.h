@@ -57,7 +57,7 @@ struct Sync_engine_T {
     int send_mcast;
     struct sockaddr_in sync_in;
     struct sockaddr_in sync_out;
-    unsigned char sync_key[SHA_DIGEST_LENGTH + 1];
+    unsigned char sync_key[(SHA_DIGEST_LENGTH * 2) + 1];
     int sync_counter;
     List_T sync_hosts;
     char *iface;
