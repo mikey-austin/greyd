@@ -56,7 +56,6 @@
 #include "grey.h"
 #include "sync.h"
 #include "list.h"
-#include "sha1.h"
 
 #define KEY_BUF_SIZE 512
 
@@ -78,7 +77,7 @@ Sync_init(Config_T config)
     List_T sync_hosts;
     struct List_entry *entry;
     int fd, nread = 0, i;
-    SHA1_CTX ctx;
+    SHA_CTX ctx;
     unsigned char digest[SYNC_HMAC_LEN];
     static const char hex[] = "0123456789abcdef";
 
@@ -121,18 +120,30 @@ Sync_init(Config_T config)
         }
         else {
             memset(&ctx, 0, sizeof(ctx));
-            SHA1Init(&ctx);
+            SHA1_Init(&ctx);
             while((nread = read(fd, buf, KEY_BUF_SIZE)) != 0) {
                 if(nread == -1) {
                     i_warning("failed to read in sync key: %s",
                               strerror(errno));
                     return NULL;
                 }
-                SHA1Update(&ctx, buf, nread);
+                SHA1_Update(&ctx, buf, nread);
             }
             close(fd);
-            SHA1Final(digest, &ctx);
+            SHA1_Final(digest, &ctx);
 
+            /*
+             * The following manipulation of the digest was pulled from sha1hl.c, to make
+             * the above OpenSSL generated HMAC be compatible with the OpenBSD SHA1File
+             * helper function. License from original file kept intact below (possibly overkill).
+             *
+             * ----------------------------------------------------------------------------
+             * "THE BEER-WARE LICENSE" (Revision 42):
+             * <phk@login.dkuug.dk> wrote this file.  As long as you retain this notice you
+             * can do whatever you want with this stuff. If we meet some day, and you think
+             * this stuff is worth it, you can buy me a beer in return.   Poul-Henning Kamp
+             * ----------------------------------------------------------------------------
+             */
             p = engine->sync_key;
             for(i = 0; i < 20; i++) {
                 p[i + i] = hex[((u_int32_t) digest[i]) >> 4];
