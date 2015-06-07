@@ -30,7 +30,7 @@
 
 #include "greyd_config.h"
 
-#define SYNC_VERSION    1
+#define SYNC_VERSION    2
 #define SYNC_VERIFY_MSG 1
 #define SYNC_MCASTADDR  "224.0.1.241"
 #define SYNC_MCASTTTL   1
@@ -70,12 +70,12 @@ struct Sync_hdr {
     u_int32_t sh_counter;
     u_int8_t  sh_hmac[SYNC_HMAC_LEN];
     u_int8_t  sh_pad[4];
-};
+} __attribute__((__packed__));
 
 struct Sync_tlv_hdr {
     u_int16_t st_type;
     u_int16_t st_length;
-};
+} __attribute__((__packed__));
 
 struct Sync_tlv_grey {
     u_int16_t sg_type;
@@ -86,7 +86,7 @@ struct Sync_tlv_grey {
     u_int16_t sg_to_length;
     u_int16_t sg_helo_length;
     /* Strings go here, then packet code re-aligns packet. */
-};
+} __attribute__((__packed__));
 
 struct Sync_tlv_addr {
     u_int16_t sd_type;
@@ -94,7 +94,7 @@ struct Sync_tlv_addr {
     u_int32_t sd_timestamp;
     u_int32_t sd_expire;
     u_int32_t sd_ip;
-};
+} __attribute__((__packed__));
 
 /**
  * Create a new engine object and initialize the engine's
