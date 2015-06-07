@@ -38,10 +38,13 @@
 #define SYNC_MAXSIZE    1408
 #define SYNC_KEY        "/etc/greyd/greyd.key"
 
+/* Types compatible with spamd. */
 #define SYNC_END         0x0000
 #define SYNC_GREY        0x0001
 #define SYNC_WHITE       0x0002
 #define SYNC_TRAPPED     0x0003
+
+/* Extensions to the spamd protocol. */
 #define SYNC_DEL_WHITE   0x0004
 #define SYNC_DEL_TRAPPED 0x0005
 
