@@ -1,3 +1,6 @@
+2015-06-08
+        greyd now sports sync compatibility with spamd.
+
 2015-04-15
         A host of new database drivers are now available to support different
         use cases & workloads. The blacklist storage is now implemented by

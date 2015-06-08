@@ -16,13 +16,10 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="downloads/greyd-0.9.0.tar.gz">greyd-0.9.0.tar.gz</a> - 2015-06-08
+                </li>
+                <li>
                     <a href="downloads/greyd-0.8.0.tar.gz">greyd-0.8.0.tar.gz</a> - 2015-05-10
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.7.1.tar.gz">greyd-0.7.1.tar.gz</a> - 2015-03-12
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.7.0.tar.gz">greyd-0.7.0.tar.gz</a> - 2015-03-08
                 </li>
             </ul>
             <p>
@@ -54,7 +51,7 @@
             </p>
 
             <div class="highlight">
-<code>$ tar xzf greyd-0.8.0.tar.gz && cd greyd-0.8.0
+<code>$ tar xzf greyd-0.9.0.tar.gz && cd greyd-0.9.0
 $ ./configure --with-sqlite --with-netfilter
 $ make
 $ sudo make install</code>

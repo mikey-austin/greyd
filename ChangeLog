@@ -1,3 +1,12 @@
+2015-06-08  Mikey Austin  <mikey@greyd.org>
+
+	* Added proxy support to greyd-setup
+	* Added spamd sync compatability
+	* Extended sync to sync white/trap deletions via greydb
+	* Fixed bugs in netfilter & sqlite drivers
+	* Bumped sync protocol version to 2 (incompatible with previous releases)
+	* Modified sqlite driver to auto retry commits & begins when db is busy
+
 2015-05-10  Mikey Austin  <mikey@greyd.org>
 
 	* New blacklist PATRICIA trie storage for fast lookups
