@@ -143,6 +143,7 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
 
 #ifndef WITH_PF
     if(Config_get_int(config, "chroot", NULL, GREYD_CHROOT)) {
+        tzset();
         chroot_dir = Config_get_str(config, "chroot_dir", NULL,
                                     GREYD_CHROOT_DIR);
         if(chroot(chroot_dir) == -1)
@@ -624,6 +625,7 @@ jail:
     sigaction(SIGINT, &sa, NULL);
 
     if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
+        tzset();
         chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
                                     GREYD_CHROOT_DIR);
         if(chroot(chroot_dir) == -1)
