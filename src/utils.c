@@ -34,9 +34,12 @@
 #include <pwd.h>
 #include <grp.h>
 
+#include "failures.h"
 #include "utils.h"
 
 #define PIDLEN 16
+
+static int Pidfile_fd = -1;
 
 extern size_t
 sstrncat(char *dst, const char *src, size_t dsize)
@@ -115,11 +118,11 @@ extern int
 write_pidfile(struct passwd *user, const char *path)
 {
     char buf[PIDLEN + 1];
-    int ret, fd;
+    int ret;
     struct flock lock;
 
-    fd = open(path, (O_RDWR|O_CREAT), (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH));
-    if(fd < 0) {
+    Pidfile_fd = open(path, (O_RDWR|O_CREAT), (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH));
+    if(Pidfile_fd < 0) {
         return -1;
     }
 
@@ -128,28 +131,56 @@ write_pidfile(struct passwd *user, const char *path)
     lock.l_whence = SEEK_SET;
     lock.l_len = 0;
 
-    if(fcntl(fd, F_SETLK, &lock) < 0) {
+    if(fcntl(Pidfile_fd, F_SETLK, &lock) < 0) {
         if(errno == EACCES || errno == EAGAIN) {
             /* Another process has already locked the pidfile. */
-            close(fd);
+            close(Pidfile_fd);
             ret = -2;
         }
         else {
             ret = -1;
         }
-        close(fd);
+        close(Pidfile_fd);
         return ret;
     }
 
-    ftruncate(fd, 0);
+    ftruncate(Pidfile_fd, 0);
     snprintf(buf, PIDLEN, "%ld", (long) getpid());
-    write(fd, buf, strlen(buf) + 1);
+    write(Pidfile_fd, buf, strlen(buf) + 1);
 
-    if(fchown(fd, user->pw_uid, user->pw_gid) == -1) {
-        close(fd);
+    if(fchown(Pidfile_fd, user->pw_uid, user->pw_gid) == -1) {
+        close(Pidfile_fd);
         return -1;
     }
 
-    /* Do not close fd on success, so that the lock remains. */
+    /* We leave the pidfile fd open so that the lock remains. */
     return 0;
+}
+
+extern void
+close_pidfile(const char *path, const char *chroot_dir)
+{
+    const char *chroot_pidfile;
+
+    if(chroot_dir != NULL
+       && (strlen(path) > strlen(chroot_dir)))
+    {
+        /* Try to remove the chroot path from the pidfile path. */
+        chroot_pidfile = strstr(path, chroot_dir);
+        if(chroot_pidfile == NULL)
+            chroot_pidfile = path;
+        else
+            chroot_pidfile += strlen(chroot_dir);
+    }
+    else {
+        chroot_pidfile = path;
+    }
+
+    if(Pidfile_fd > 0)
+        close(Pidfile_fd);
+
+    if(unlink(chroot_pidfile) != 0) {
+        i_warning("could not unlink %s: %s",
+                  chroot_pidfile, strerror(errno));
+    }
 }

@@ -205,7 +205,7 @@ extern char
         return NULL;
 
     if((lists = malloc(CON_BL_SUMMARY_SIZE + 1)) == NULL)
-        err(1, "malloc");
+        i_critical("malloc: %s", strerror(errno));
     *lists = '\0';
 
     out_size = CON_BL_SUMMARY_SIZE - strlen(CON_BL_SUMMARY_ETC);

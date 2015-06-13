@@ -21,14 +21,14 @@
  * @date   2014
  */
 
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "list.h"
 #include "utils.h"
 #include "hash.h"
 #include "failures.h"
-
-#include <err.h>
-#include <stdlib.h>
-#include <string.h>
 
 /**
  * Lookup a key in the hash table and return an entry pointer. This function
@@ -60,10 +60,8 @@ Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
     int i;
     Hash_T new;
 
-    new = malloc(sizeof(*new));
-    if(!new) {
-        errx(1, "Could not allocate hash");
-    }
+    if((new = malloc(sizeof(*new))) == NULL)
+        i_critical("malloc: %s", strerror(errno));
 
     new->size    = size;
     new->destroy = destroy;
@@ -234,10 +232,9 @@ Hash_resize(Hash_T hash, int new_size)
     hash->entries = (struct Hash_entry*) calloc(
         new_size, sizeof(*(hash->entries)));
 
-    if(!hash->entries) {
-        errx(1, "Could not resize hash entries of size %d to %d",
-             hash->size, new_size);
-    }
+    if(!hash->entries)
+        i_critical("Could not resize hash entries of size %d to %d",
+                   hash->size, new_size);
 
     /* Re-initialize the hash entries. */
     hash->size = new_size;
@@ -263,9 +260,8 @@ Hash_create_entries(Hash_T hash)
     hash->num_entries = 0;
     hash->entries = (struct Hash_entry*) calloc(
         hash->size, sizeof(*(hash->entries)));
-    if(!hash->entries) {
-        errx(1, "Could not allocate hash entries of size %d", hash->size);
-    }
+    if(!hash->entries)
+        i_critical("Could not allocate hash entries of size %d", hash->size);
 }
 
 /*
