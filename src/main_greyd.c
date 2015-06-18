@@ -408,10 +408,14 @@ main(int argc, char **argv)
 
     Log_setup(state.config, PROG_NAME);
 
-    if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED))
+    if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
         state.max_black = state.max_cons;
-    else if(state.max_black > state.max_cons)
+    }
+    else if(state.max_black > state.max_cons) {
+        warnx("Max black cons (%u) must not exceed total max cons (%u)",
+              state.max_black, state.max_cons);
         usage();
+    }
 
     if(!Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
         limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
