@@ -115,6 +115,18 @@ The location to chroot to\.
 Use setrlimit to self\-impose resource limits such as the maximum number of file descriptors (ie connections)\.
 .
 .TP
+\fBmax_cons\fR = \fInumber\fR
+The maximum number of concurrent connections to handle\. This number can not exceed the operating system maximum file descriptor limit\. Defaults to \fI800\fR\.
+.
+.TP
+\fBmax_cons_black\fR = \fInumber\fR
+The maximum number of concurrent blacklisted connections to tarpit\. This number can not exceed the maximum configured number of connections\. Defaults to \fI800\fR\.
+.
+.TP
+\fBport\fR = \fInumber\fR
+The port to listen on\. Defaults to \fI8025\fR\.
+.
+.TP
 \fBuser\fR = \fIstring\fR
 The username for the main \fBgreyd\fR daemon the run as\.
 .

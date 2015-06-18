@@ -69,6 +69,15 @@ The following options may be specified outside of a section. A *boolean* value i
 * **setrlimit** = *boolean*:
   Use setrlimit to self-impose resource limits such as the maximum number of file descriptors (ie connections).
 
+* **max_cons** = *number*:
+  The maximum number of concurrent connections to handle. This number can not exceed the operating system maximum file descriptor limit. Defaults to *800*.
+
+* **max_cons_black** = *number*:
+  The maximum number of concurrent blacklisted connections to tarpit. This number can not exceed the maximum configured number of connections. Defaults to *800*.
+
+* **port** = *number*:
+  The port to listen on. Defaults to *8025*.
+
 * **user** = *string*:
   The username for the main **greyd** daemon the run as.
 

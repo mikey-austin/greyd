@@ -60,7 +60,7 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
 {
     time_t now;
     short greylist, grey_stutter;
-    int ret, max_black;
+    int ret;
     char *human_time, *bl_name;
     struct List_entry *entry;
     Blacklist_T blacklist = NULL, con_blacklist;
@@ -149,8 +149,8 @@ Con_init(struct Con *con, int fd, struct sockaddr_storage *src,
         state->black_clients++;
         con->lists = Con_summarize_lists(con);
 
-        max_black = Config_get_int(state->config, "max_black", NULL, CON_DEFAULT_MAX);
-        if(greylist && (state->black_clients > max_black))
+        /* Abandon stuttering if there are to many blacklisted connections. */
+        if(greylist && (state->black_clients > state->max_black))
             con->stutter = 0;
     }
     else {

@@ -79,6 +79,16 @@ greylogd_pidfile = "@GREYLOGD_PIDFILE@"
 setrlimit = 1
 
 #
+# Specify the maximum number of connections.
+#
+# max_cons = 800
+
+#
+# Specify the maximum number of blacklisted connections to tarpit.
+#
+# max_cons_black = 800
+
+#
 # The firewall configuration.
 #
 section firewall {

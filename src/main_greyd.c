@@ -240,10 +240,6 @@ main(int argc, char **argv)
 
     state.shutdown = 0;
     state.max_files = max_files();
-    state.max_cons = (CON_DEFAULT_MAX > state.max_files
-                      ? state.max_files : CON_DEFAULT_MAX);
-    state.max_black = (CON_DEFAULT_MAX > state.max_files
-                      ? state.max_files : CON_DEFAULT_MAX);
 
     /* Global reference only to be used for signal handlers. */
     Greyd_state = &state;
@@ -283,7 +279,7 @@ main(int argc, char **argv)
                       i, state.max_files);
                 usage();
             }
-            state.max_black = i;
+            Config_set_int(opts, "max_cons_black", NULL, i);
             break;
 
         case 'c':
@@ -293,7 +289,7 @@ main(int argc, char **argv)
                       i, state.max_files);
                 usage();
             }
-            state.max_cons = i;
+            Config_set_int(opts, "max_cons", NULL, i);
             break;
 
         case 'p':
@@ -392,6 +388,11 @@ main(int argc, char **argv)
     Config_merge(config, opts);
     Config_destroy(&opts);
     state.config = config;
+
+    i = Config_get_int(config, "max_cons", NULL, CON_DEFAULT_MAX);
+    state.max_cons = (i > state.max_files ? state.max_files : i);
+    i = Config_get_int(config, "max_cons_black", NULL, CON_DEFAULT_MAX);
+    state.max_black = (i > state.max_files ? state.max_files : i);
 
     if(sync_send == 0
        && (hosts = Config_get_list(state.config, "hosts", "sync")))
