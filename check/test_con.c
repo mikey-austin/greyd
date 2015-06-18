@@ -92,6 +92,7 @@ main(void)
     memset(&gs, 0, sizeof(gs));
     gs.config = c;
     gs.max_cons = 4;
+    gs.max_black = 4;
     gs.blacklists = Hash_create(5, NULL);
 
     bl1 = Blacklist_create("blacklist_1", "You (%A) are on blacklist 1", BL_STORAGE_TRIE);
@@ -220,6 +221,7 @@ main(void)
      */
     Con_build_reply(&con, "451");
     gs.max_cons = 100;
+    gs.max_black = 100;
     con.w = now;
     while(con.out_remaining > 0) {
         Con_handle_write(&con, &now, &gs);

@@ -23,6 +23,7 @@ etc/greyd.conf
 etc/greyd.redhat-init
 etc/greyd.debian-init
 etc/greylogd.redhat-init
+etc/greylogd.debian-init
 src/Makefile
 configure
 install-sh
