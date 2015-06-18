@@ -21,6 +21,7 @@ config.status
 config.sub
 etc/greyd.conf
 etc/greyd.redhat-init
+etc/greyd.debian-init
 etc/greylogd.redhat-init
 src/Makefile
 configure

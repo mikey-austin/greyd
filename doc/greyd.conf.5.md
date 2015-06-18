@@ -66,6 +66,9 @@ The following options may be specified outside of a section. A *boolean* value i
 * **chroot_dir** = *string*:
   The location to chroot to.
 
+* **setrlimit** = *boolean*:
+  Use setrlimit to self-impose resource limits such as the maximum number of file descriptors (ie connections).
+
 * **user** = *string*:
   The username for the main **greyd** daemon the run as.
 

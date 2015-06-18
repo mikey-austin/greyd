@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "May 2015" "" ""
+.TH "GREYD\.CONF" "5" "June 2015" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -109,6 +109,10 @@ Chroot the main \fBgreyd\fR process that accepts connections\. Defaults to \fI1\
 .TP
 \fBchroot_dir\fR = \fIstring\fR
 The location to chroot to\.
+.
+.TP
+\fBsetrlimit\fR = \fIboolean\fR
+Use setrlimit to self\-impose resource limits such as the maximum number of file descriptors (ie connections)\.
 .
 .TP
 \fBuser\fR = \fIstring\fR

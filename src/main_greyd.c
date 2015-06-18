@@ -408,8 +408,7 @@ main(int argc, char **argv)
     else if(state.max_black > state.max_cons)
         usage();
 
-
-    if(!Config_get_int(state.config, "debug", NULL, 0)) {
+    if(!Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
         limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
         if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
             err(1, "setrlimit");

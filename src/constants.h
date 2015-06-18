@@ -37,6 +37,7 @@
 #define GREYD_BACKLOG       10
 #define MAX_FILES_THRESHOLD 200
 #define MAX_TIME            400
+#define SETRLIMIT           1
 #define POLL_TIMEOUT        1000 /* In milliseconds. */
 #define GREYD_BANNER        "greyd IP-based SPAM blocker"
 #define NUM_BLACKLISTS      10

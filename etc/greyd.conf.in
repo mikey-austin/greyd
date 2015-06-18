@@ -73,6 +73,12 @@ greyd_pidfile = "@GREYD_PIDFILE@"
 greylogd_pidfile = "@GREYLOGD_PIDFILE@"
 
 #
+# Use setrlimit to set various self-imposed limits
+# (eg limiting max connections).
+#
+setrlimit = 1
+
+#
 # The firewall configuration.
 #
 section firewall {

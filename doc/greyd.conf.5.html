@@ -136,6 +136,7 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>drop_privs</strong> = <em>boolean</em></dt><dd><p>Drop priviliges and run as the specified <strong>user</strong>. Defaults to <em>1</em>.</p></dd>
 <dt><strong>chroot</strong> = <em>boolean</em></dt><dd><p>Chroot the main <strong>greyd</strong> process that accepts connections. Defaults to <em>1</em>.</p></dd>
 <dt><strong>chroot_dir</strong> = <em>string</em></dt><dd><p>The location to chroot to.</p></dd>
+<dt><strong>setrlimit</strong> = <em>boolean</em></dt><dd><p>Use setrlimit to self-impose resource limits such as the maximum number of file descriptors (ie connections).</p></dd>
 <dt><strong>user</strong> = <em>string</em></dt><dd><p>The username for the main <strong>greyd</strong> daemon the run as.</p></dd>
 <dt><strong>bind_address</strong> = <em>string</em></dt><dd><p>The IPv4 address to listen on. Defaults to listen on all addresses.</p></dd>
 <dt><strong>port</strong> = <em>number</em></dt><dd><p>The port to listen on. Defaults to <em>8025</em>.</p></dd>
@@ -366,7 +367,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>May 2015</li>
+    <li class='tc'>June 2015</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 
