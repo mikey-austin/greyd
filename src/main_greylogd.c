@@ -260,11 +260,7 @@ shutdown:
     if(sync_send)
         Sync_stop(&syncer);
 
-    if(unlink(pidfile) != 0) {
-        i_warning("could not unlink %s: %s",
-                  pidfile, strerror(errno));
-    }
-
+    close_pidfile(pidfile, NULL);
     Config_destroy(&config);
 
     return 0;

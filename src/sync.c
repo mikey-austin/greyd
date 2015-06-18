@@ -72,7 +72,8 @@ extern Sync_engine_T
 Sync_init(Config_T config)
 {
     Sync_engine_T engine;
-    char *key_path, buf[KEY_BUF_SIZE], *p;
+    char *key_path, buf[KEY_BUF_SIZE];
+    unsigned char *p;
     Config_value_T val;
     List_T sync_hosts;
     struct List_entry *entry;

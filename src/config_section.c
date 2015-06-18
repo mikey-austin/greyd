@@ -21,12 +21,13 @@
  * @date   2014
  */
 
-#include "utils.h"
-#include "config_section.h"
-
-#include <err.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "failures.h"
+#include "utils.h"
+#include "config_section.h"
 
 #define CONFIG_SEC_INIT_ENTRIES 25 /**< The number of initial hash entries. */
 
@@ -41,16 +42,12 @@ Config_section_create(const char *name)
     Config_section_T section;
     int nlen = strlen(name) + 1;
 
-    section = malloc(sizeof(*section));
-    if(section == NULL) {
-        errx(1, "Could not create configuration section");
-    }
+    if((section = malloc(sizeof(*section))) == NULL)
+        i_critical("malloc: %s", strerror(errno));
 
     /* Set the config section name. */
-    section->name = malloc(nlen);
-    if(section->name == NULL) {
-        errx(1, "Could not set configuration section name");
-    }
+    if((section->name = malloc(nlen)) == NULL)
+        i_critical("malloc: %s", strerror(errno));
     sstrncpy(section->name, name, nlen);
 
     /* Initialize the hash table to store the values. */

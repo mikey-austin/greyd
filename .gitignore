@@ -66,3 +66,4 @@ drivers/*.la
 packages/rpm/*.rpm
 packages/rpm/*.spec
 check/benchmark_blacklist
+infer-out*

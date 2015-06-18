@@ -94,8 +94,12 @@ max_files(void)
 
 #ifdef __linux
     FILE *file_max = fopen("/proc/sys/fs/file-max", "r");
-    if(file_max == NULL || fscanf(file_max, "%d", &max_files) == EOF)
+    if(file_max == NULL || fscanf(file_max, "%d", &max_files) == EOF) {
+        if(file_max)
+            fclose(file_max);
         return max_files;
+    }
+    fclose(file_max);
 #endif
 
     if((max_files - MAX_FILES_THRESHOLD) < 10)
@@ -203,7 +207,7 @@ main(int argc, char **argv)
     Greylister_T greylister;
     Config_T config, opts;
     char *config_file = DEFAULT_CONFIG, hostname[MAX_HOST_NAME];
-    char *bind_addr, *bind_addr6, *pidfile, *chroot_pidfile;
+    char *bind_addr, *bind_addr6, *pidfile;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
     int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
     int fw_pipe[2], nat_pipe[2];
@@ -915,25 +919,7 @@ shutdown:
     if(state.fw_pid != -1)
         kill(state.fw_pid, SIGTERM);
 
-    if(chroot_dir != NULL
-       && (strlen(pidfile) > strlen(chroot_dir)))
-    {
-        /* Try to remove the chroot path from the pidfile path. */
-        chroot_pidfile = strstr(pidfile, chroot_dir);
-        if(chroot_pidfile == NULL)
-            chroot_pidfile = pidfile;
-        else
-            chroot_pidfile += strlen(chroot_dir);
-    }
-    else {
-        chroot_pidfile = pidfile;
-    }
-
-    if(unlink(chroot_pidfile) != 0) {
-        i_warning("could not unlink %s: %s",
-                  chroot_pidfile, strerror(errno));
-    }
-
+    close_pidfile(pidfile, chroot_dir);
     free(fds);
     free(state.cons);
     fclose(state.grey_out);

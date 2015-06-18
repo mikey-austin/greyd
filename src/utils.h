@@ -67,4 +67,9 @@ extern int drop_privs(struct passwd *user);
  */
 extern int write_pidfile(struct passwd *user, const char *pidfile);
 
+/**
+ * Close pidfile fd and unlink pidfile, accounting for any chroot.
+ */
+extern void close_pidfile(const char *path, const char *chroot_dir);
+
 #endif

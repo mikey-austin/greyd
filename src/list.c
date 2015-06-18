@@ -24,7 +24,8 @@
 #include "failures.h"
 #include "list.h"
 
-#include <err.h>
+#include <errno.h>
+#include <string.h>
 #include <stdlib.h>
 
 static struct List_entry *List_create_element(List_T list, void *value);
@@ -36,7 +37,7 @@ List_create(void (*destroy)(void *value))
     List_T list;
 
     if((list = malloc(sizeof(*list))) == NULL)
-        errx(1, "Could not create an empty list");
+        i_critical("Could not create an empty list: %s", strerror(errno));
 
     /* Initialize list pointers. */
     list->destroy = destroy;
@@ -155,7 +156,8 @@ static struct List_entry
     struct List_entry *element;
 
     if((element = malloc(sizeof(*element))) == NULL)
-        errx(1, "Could not initialize list element");
+        i_critical("Could not initialize list element: %s",
+                   strerror(errno));
 
     element->next = NULL;
     element->v    = value;
