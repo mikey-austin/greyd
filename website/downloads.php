@@ -16,10 +16,7 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
-                    <a href="downloads/greyd-0.9.0.tar.gz">greyd-0.9.0.tar.gz</a> - 2015-06-08
-                </li>
-                <li>
-                    <a href="downloads/greyd-0.8.0.tar.gz">greyd-0.8.0.tar.gz</a> - 2015-05-10
+                    <a href="https://github.com/mikey-austin/greyd/archive/v0.9.2.tar.gz">greyd (v0.9.2)</a> - 2015-06-08
                 </li>
             </ul>
             <p>
