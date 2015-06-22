@@ -1,3 +1,8 @@
+2015-06-22  Mikey Austin  <mikey@greyd.org>
+
+	* Added configuration options/docs for max_cons & max_cons_black
+	* Decoupled setrlimit from debug config option
+
 2015-06-08  Mikey Austin  <mikey@greyd.org>
 
 	* Added proxy support to greyd-setup
