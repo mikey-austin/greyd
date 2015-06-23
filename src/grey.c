@@ -882,7 +882,6 @@ process_message(Greylister_T greylister, Config_T message)
         break;
 
     default:
-        i_debug("unexpected grey message via grey_in");
         return -1;
     }
 

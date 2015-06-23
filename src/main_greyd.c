@@ -127,8 +127,9 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     Config_T message;
     struct passwd *main_pw;
     char *main_user, *chroot_dir = NULL;
-    int ret;
+    int ret, parse_err = 0;
     struct sigaction sa;
+    struct pollfd fd;
 
     memset(&sa, 0, sizeof(sa));
     sigfillset(&sa.sa_mask);
@@ -164,6 +165,10 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     if((out = fdopen(out_fd, "w")) == NULL)
         i_critical("fdopen: %s", strerror(errno));
 
+    memset(&fd, 0, sizeof(fd));
+    fd.fd = in_fd;
+    fd.events = POLLIN;
+
     source = Lexer_source_create_from_fd(in_fd);
     lexer = Config_lexer_create(source);
     parser = Config_parser_create(lexer);
@@ -174,19 +179,26 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
             goto cleanup;
         }
 
-        message = Config_create();
-        ret = Config_parser_start(parser, message);
-        switch(ret) {
-        case CONFIG_PARSER_OK:
-            Greyd_process_fw_message(message, fw_handle, out);
-            break;
+        if((poll(&fd, 1, POLL_TIMEOUT) == -1) && errno != EINTR)
+            i_warning("firewall process, poll error: %s", strerror(errno));
 
-        case CONFIG_PARSER_ERR:
-            i_warning("firewall process: parse error");
-            break;
+        if(fd.revents & POLLIN) {
+            message = Config_create();
+            ret = Config_parser_start(parser, message);
+            switch(ret) {
+            case CONFIG_PARSER_OK:
+                Greyd_process_fw_message(message, fw_handle, out);
+                break;
+
+            case CONFIG_PARSER_ERR:
+                i_warning("firewall process: %s",
+                          Lexer_source_error(source) != 0
+                          ? "stream error" : "parse error");
+                break;
+            }
+
+            Config_destroy(&message);
         }
-
-        Config_destroy(&message);
     }
 
 cleanup:
