@@ -41,6 +41,7 @@ struct Lexer_source_T {
     void (*_ungetc)(void *data, int c);
     void (*_destroy)(void *data);
     int (*_error)(void *data);
+    void (*_clear_error)(void *data);
 };
 
 /**
@@ -85,5 +86,10 @@ extern void Lexer_source_ungetc(Lexer_source_T source, int c);
  * Return 1 if an error occurred, 0 otherwise.
  */
 extern int Lexer_source_error(Lexer_source_T source);
+
+/**
+ * Clear any error in stream.
+ */
+extern void Lexer_source_clear_error(Lexer_source_T source);
 
 #endif

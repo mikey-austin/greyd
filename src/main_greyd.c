@@ -179,10 +179,10 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
             goto cleanup;
         }
 
-        if((poll(&fd, 1, POLL_TIMEOUT) == -1) && errno != EINTR)
+        if((poll(&fd, 1, POLL_TIMEOUT) == -1) && errno != EINTR) {
             i_warning("firewall process, poll error: %s", strerror(errno));
-
-        if(fd.revents & POLLIN) {
+        }
+        else if(fd.revents & POLLIN) {
             message = Config_create();
             ret = Config_parser_start(parser, message);
             switch(ret) {
@@ -194,6 +194,8 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
                 i_warning("firewall process: %s",
                           Lexer_source_error(source) != 0
                           ? "stream error" : "parse error");
+                if(Lexer_source_error(source) != 0)
+                    Lexer_source_clear_error(source);
                 break;
             }
 

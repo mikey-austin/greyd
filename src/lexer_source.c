@@ -50,6 +50,7 @@ static void  source_data_file_destroy(void *data);
 static int   source_data_file_getc(void *data);
 static void  source_data_file_ungetc(void *data, int c);
 static int   source_data_file_error(void *data);
+static void  source_data_file_clear_error(void *data);
 
 static void  source_data_str_destroy(void *data);
 static int   source_data_str_getc(void *data);
@@ -86,12 +87,13 @@ Lexer_source_create_from_file(const char *filename)
             errx(1, "error opening file source: %s", strerror(errno));
         }
 
-        source->type     = LEXER_SOURCE_FILE;
-        source->data     = data;
-        source->_getc    = source_data_file_getc;
-        source->_ungetc  = source_data_file_ungetc;
-        source->_destroy = source_data_file_destroy;
-        source->_error   = source_data_file_error;
+        source->type         = LEXER_SOURCE_FILE;
+        source->data         = data;
+        source->_getc        = source_data_file_getc;
+        source->_ungetc      = source_data_file_ungetc;
+        source->_destroy     = source_data_file_destroy;
+        source->_error       = source_data_file_error;
+        source->_clear_error = source_data_file_clear_error;
     }
 
     return source;
@@ -145,12 +147,13 @@ Lexer_source_create_from_str(const char *buf, int len)
         data->index  = 0;    /* Index is for traversing buffer. */
         data->length = len;
 
-        source->type     = LEXER_SOURCE_STR;
-        source->data     = data;
-        source->_getc    = source_data_str_getc;
-        source->_ungetc  = source_data_str_ungetc;
-        source->_destroy = source_data_str_destroy;
-        source->_error   = source_data_str_error;
+        source->type         = LEXER_SOURCE_STR;
+        source->data         = data;
+        source->_getc        = source_data_str_getc;
+        source->_ungetc      = source_data_str_ungetc;
+        source->_destroy     = source_data_str_destroy;
+        source->_error       = source_data_str_error;
+        source->_clear_error = NULL;
     }
 
     return source;
@@ -170,12 +173,13 @@ Lexer_source_create_from_gz(gzFile gzf)
         /* Store the reference to the gz file handle. */
         data->gzf = gzf;
 
-        source->type     = LEXER_SOURCE_GZ;
-        source->data     = data;
-        source->_getc    = source_data_gz_getc;
-        source->_ungetc  = source_data_gz_ungetc;
-        source->_destroy = source_data_gz_destroy;
-        source->_error   = source_data_gz_error;
+        source->type         = LEXER_SOURCE_GZ;
+        source->data         = data;
+        source->_getc        = source_data_gz_getc;
+        source->_ungetc      = source_data_gz_ungetc;
+        source->_destroy     = source_data_gz_destroy;
+        source->_error       = source_data_gz_error;
+        source->_clear_error = NULL;
     }
 
     return source;
@@ -208,6 +212,13 @@ extern int
 Lexer_source_error(Lexer_source_T source)
 {
     return source->_error(source->data);
+}
+
+extern void
+Lexer_source_clear_error(Lexer_source_T source)
+{
+    if(source->_clear_error)
+        source->_clear_error(source->data);
 }
 
 static Lexer_source_T
@@ -269,6 +280,13 @@ source_data_file_error(void *data)
 {
     struct source_data_file *data_file = (struct source_data_file *) data;
     return ferror(data_file->handle);
+}
+
+static void
+source_data_file_clear_error(void *data)
+{
+    struct source_data_file *data_file = (struct source_data_file *) data;
+    clearerr(data_file->handle);
 }
 
 static void
