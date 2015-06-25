@@ -62,7 +62,7 @@ static void usage(void);
 static int max_files(void);
 static void destroy_blacklist(struct Hash_entry *entry);
 static void shutdown_greyd(int sig);
-static int start_fw_child(Config_T, int, int);
+static int start_fw_child(Config_T, int, int, int);
 
 struct Greyd_state *Greyd_state = NULL;
 
@@ -117,19 +117,18 @@ destroy_blacklist(struct Hash_entry *entry)
 }
 
 static int
-start_fw_child(Config_T config, int in_fd, int out_fd)
+start_fw_child(Config_T config, int in_fd, int nat_in_fd, int out_fd)
 {
     FW_handle_T fw_handle;
     FILE *out;
-    Lexer_source_T source;
-    Lexer_T lexer;
+    Lexer_source_T source, nat_source;
+    Lexer_T lexer, nat_lexer;
     Config_parser_T parser;
     Config_T message;
     struct passwd *main_pw;
     char *main_user, *chroot_dir = NULL;
-    int ret, parse_err = 0;
+    int ret, i;
     struct sigaction sa;
-    struct pollfd fd;
 
     memset(&sa, 0, sizeof(sa));
     sigfillset(&sa.sa_mask);
@@ -165,9 +164,15 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
     if((out = fdopen(out_fd, "w")) == NULL)
         i_critical("fdopen: %s", strerror(errno));
 
-    memset(&fd, 0, sizeof(fd));
-    fd.fd = in_fd;
-    fd.events = POLLIN;
+    struct pollfd fds[2];
+    memset(&fds, 0, 2 * sizeof(*fds));
+    fds[0].fd = in_fd;
+    fds[0].events = POLLIN;
+    fds[1].fd = nat_in_fd;
+    fds[1].events = POLLIN;
+
+    nat_source = Lexer_source_create_from_fd(nat_in_fd);
+    nat_lexer = Config_lexer_create(nat_source);
 
     source = Lexer_source_create_from_fd(in_fd);
     lexer = Config_lexer_create(source);
@@ -179,33 +184,38 @@ start_fw_child(Config_T config, int in_fd, int out_fd)
             goto cleanup;
         }
 
-        if((poll(&fd, 1, POLL_TIMEOUT) == -1) && errno != EINTR) {
+        if((poll(fds, 2, POLL_TIMEOUT) == -1) && errno != EINTR) {
             i_warning("firewall process, poll error: %s", strerror(errno));
         }
-        else if(fd.revents & POLLIN) {
-            message = Config_create();
-            ret = Config_parser_start(parser, message);
-            switch(ret) {
-            case CONFIG_PARSER_OK:
-                Greyd_process_fw_message(message, fw_handle, out);
-                break;
+        else {
+            for(i = 0; i < 2; i++) {
+                if(fds[i].revents & POLLIN) {
+                    Config_parser_set_lexer(
+                        parser, (i == 0 ? lexer : nat_lexer));
+                    message = Config_create();
+                    ret = Config_parser_start(parser, message);
+                    switch(ret) {
+                    case CONFIG_PARSER_OK:
+                        Greyd_process_fw_message(message, fw_handle, out);
+                        break;
 
-            case CONFIG_PARSER_ERR:
-                i_warning("firewall process: %s",
-                          Lexer_source_error(source) != 0
-                          ? "stream error" : "parse error");
-                if(Lexer_source_error(source) != 0)
-                    Lexer_source_clear_error(source);
-                break;
+                    case CONFIG_PARSER_ERR:
+                        i_warning("firewall process: parse error");
+                        break;
+                    }
+
+                    Config_destroy(&message);
+                }
             }
-
-            Config_destroy(&message);
         }
     }
 
 cleanup:
     if(message != NULL)
         Config_destroy(&message);
+    Lexer_destroy(&lexer);
+    Lexer_destroy(&nat_lexer);
+    Config_parser_set_lexer(parser, NULL);
     Config_parser_destroy(&parser);
     FW_close(&fw_handle);
     Config_destroy(&config);
@@ -224,7 +234,7 @@ main(int argc, char **argv)
     char *bind_addr, *bind_addr6, *pidfile;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
     int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
-    int fw_pipe[2], nat_pipe[2];
+    int fw_pipe[2], nat_pipe[2], grey_fw_pipe[2];
     u_short port, cfg_port;
     unsigned long long grey_time, white_time, pass_time;
     struct rlimit limit;
@@ -234,7 +244,7 @@ main(int argc, char **argv)
     List_T hosts;
     char *main_user;
     pid_t grey_pid;
-    FILE *grey_in, *trap_out;
+    FILE *grey_in, *trap_out, *grey_fw;
     char *chroot_dir = NULL;
     time_t now;
     int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
@@ -549,6 +559,9 @@ main(int argc, char **argv)
         if(pipe(nat_pipe) == -1)
             i_critical("firewall nat pipe: %s", strerror(errno));
 
+        if(pipe(grey_fw_pipe) == -1)
+            i_critical("grey firewall pipe: %s", strerror(errno));
+
         /* Fork the firewall process. */
         state.fw_pid = fork();
         switch(state.fw_pid) {
@@ -559,7 +572,7 @@ main(int argc, char **argv)
             /* In child. */
             close(nat_pipe[0]);
             close(fw_pipe[1]);
-            return start_fw_child(state.config, fw_pipe[0], nat_pipe[1]);
+            return start_fw_child(state.config, grey_fw_pipe[0], fw_pipe[0], nat_pipe[1]);
         }
 
         /* In parent. */
@@ -600,6 +613,7 @@ main(int argc, char **argv)
 
             trap_fd = trap_pipe[0];
             close(trap_pipe[1]);
+            close(grey_fw_pipe[1]);
 
             goto jail;
         }
@@ -614,7 +628,11 @@ main(int argc, char **argv)
             i_critical("fdopen: %s", strerror(errno));
         close(trap_pipe[0]);
 
-        Grey_start(greylister, grey_pid, grey_in, trap_out, state.fw_out);
+        if((grey_fw = fdopen(grey_fw_pipe[1], "w")) == NULL)
+            i_critical("fdopen: %s", strerror(errno));
+        close(grey_fw_pipe[0]);
+
+        Grey_start(greylister, grey_pid, grey_in, trap_out, grey_fw);
 
         /* Not reached. */
     }

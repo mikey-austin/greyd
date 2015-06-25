@@ -70,6 +70,15 @@ Config_parser_create(Lexer_T lexer)
 }
 
 extern void
+Config_parser_set_lexer(Config_parser_T parser, Lexer_T lexer)
+{
+    parser->lexer   = lexer;
+    parser->config  = NULL;  /* Reg set when the parser is started. */
+    parser->section = NULL;  /* Section reference. */
+    parser->value   = NULL;  /* Value reference. */
+}
+
+extern void
 Config_parser_destroy(Config_parser_T *parser)
 {
     if(parser == NULL || *parser == NULL)
