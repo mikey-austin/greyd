@@ -176,7 +176,7 @@ main(int argc, char **argv)
         i_critical("it appears greylogd is already running...", pidfile);
     }
 
-    i_info("Listening, %s",
+    i_info("listening, %s",
            Config_get_int(config, "track_outbound", "firewall", TRACK_OUTBOUND)
            ? "in both directions" : "inbound direction only");
 
