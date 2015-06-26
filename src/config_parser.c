@@ -84,9 +84,8 @@ Config_parser_destroy(Config_parser_T *parser)
     if(parser == NULL || *parser == NULL)
         return;
 
-    if((*parser)->lexer != NULL) {
+    if((*parser)->lexer != NULL)
         Lexer_destroy(&((*parser)->lexer));
-    }
 
     free(*parser);
     *parser = NULL;
