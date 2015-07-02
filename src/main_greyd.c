@@ -38,6 +38,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <poll.h>
+#include <libev/ev.h>
 
 #include "failures.h"
 #include "greyd_config.h"
@@ -62,7 +63,6 @@ static void usage(void);
 static int max_files(void);
 static void destroy_blacklist(struct Hash_entry *entry);
 static void shutdown_greyd(int sig);
-static int start_fw_child(Config_T, int, int, int);
 
 struct Greyd_state *Greyd_state = NULL;
 
@@ -116,113 +116,6 @@ destroy_blacklist(struct Hash_entry *entry)
     }
 }
 
-static int
-start_fw_child(Config_T config, int in_fd, int nat_in_fd, int out_fd)
-{
-    FW_handle_T fw_handle;
-    FILE *out;
-    Lexer_source_T source, nat_source;
-    Lexer_T lexer, nat_lexer;
-    Config_parser_T parser;
-    Config_T message;
-    struct passwd *main_pw;
-    char *main_user, *chroot_dir = NULL;
-    int ret, i;
-    struct sigaction sa;
-
-    memset(&sa, 0, sizeof(sa));
-    sigfillset(&sa.sa_mask);
-    sa.sa_handler = shutdown_greyd;
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-
-    /* Setup the firewall handle before dropping privileges. */
-    if((fw_handle = FW_open(config)) == NULL)
-        i_critical("could not obtain firewall handle");
-
-    main_user = Config_get_str(config, "user", NULL, GREYD_MAIN_USER);
-    if((main_pw = getpwnam(main_user)) == NULL)
-        errx(1, "no such user %s", main_user);
-
-#ifndef WITH_PF
-    if(Config_get_int(config, "chroot", NULL, GREYD_CHROOT)) {
-        tzset();
-        chroot_dir = Config_get_str(config, "chroot_dir", NULL,
-                                    GREYD_CHROOT_DIR);
-        if(chroot(chroot_dir) == -1)
-            i_critical("cannot chroot to %s", chroot_dir);
-    }
-#endif
-
-    if(main_pw && Config_get_int(config, "drop_privs", NULL, 1)
-       && drop_privs(main_pw) == -1)
-    {
-        i_critical("failed to drop privileges: %s", strerror(errno));
-    }
-
-    if((out = fdopen(out_fd, "w")) == NULL)
-        i_critical("fdopen: %s", strerror(errno));
-
-    struct pollfd fds[2];
-    memset(&fds, 0, 2 * sizeof(*fds));
-    fds[0].fd = in_fd;
-    fds[0].events = POLLIN;
-    fds[1].fd = nat_in_fd;
-    fds[1].events = POLLIN;
-
-    nat_source = Lexer_source_create_from_fd(nat_in_fd);
-    nat_lexer = Config_lexer_create(nat_source);
-
-    source = Lexer_source_create_from_fd(in_fd);
-    lexer = Config_lexer_create(source);
-    parser = Config_parser_create(lexer);
-
-    for(;;) {
-        if(Greyd_state->shutdown) {
-            i_info("stopping firewall process");
-            goto cleanup;
-        }
-
-        if((poll(fds, 2, POLL_TIMEOUT) == -1) && errno != EINTR) {
-            i_warning("firewall process, poll error: %s", strerror(errno));
-        }
-        else {
-            for(i = 0; i < 2; i++) {
-                if(fds[i].revents & POLLIN) {
-                    Config_parser_set_lexer(
-                        parser, (i == 0 ? lexer : nat_lexer));
-                    message = Config_create();
-                    ret = Config_parser_start(parser, message);
-                    switch(ret) {
-                    case CONFIG_PARSER_OK:
-                        Greyd_process_fw_message(message, fw_handle, out);
-                        break;
-
-                    case CONFIG_PARSER_ERR:
-                        i_warning("firewall process: parse error");
-                        break;
-                    }
-
-                    Config_destroy(&message);
-                }
-            }
-        }
-    }
-
-cleanup:
-    if(message != NULL)
-        Config_destroy(&message);
-    Lexer_destroy(&lexer);
-    Lexer_destroy(&nat_lexer);
-    Config_parser_set_lexer(parser, NULL);
-    Config_parser_destroy(&parser);
-    FW_close(&fw_handle);
-    Config_destroy(&config);
-
-    return 0;
-}
-
 int
 main(int argc, char **argv)
 {
@@ -250,8 +143,6 @@ main(int argc, char **argv)
     int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
     struct pollfd *fds = NULL;
     struct sigaction sa;
-
-    memset(&sa, 0, sizeof(sa));
 
     opts = Config_create();
     if(gethostname(hostname, sizeof(hostname)) == -1) {
@@ -570,9 +461,17 @@ main(int argc, char **argv)
 
         case 0:
             /* In child. */
+            memset(&sa, 0, sizeof(sa));
+            sigfillset(&sa.sa_mask);
+            sa.sa_handler = shutdown_greyd;
+            sigaction(SIGTERM, &sa, NULL);
+            sigaction(SIGHUP, &sa, NULL);
+            sigaction(SIGINT, &sa, NULL);
+
             close(nat_pipe[0]);
             close(fw_pipe[1]);
-            return start_fw_child(state.config, grey_fw_pipe[0], fw_pipe[0], nat_pipe[1]);
+            return Greyd_start_fw_child(
+                &state, grey_fw_pipe[0], fw_pipe[0], nat_pipe[1]);
         }
 
         /* In parent. */
@@ -658,6 +557,7 @@ jail:
         sync_recv = 0;
     }
 
+    memset(&sa, 0, sizeof(sa));
     sigfillset(&sa.sa_mask);
     sa.sa_handler = shutdown_greyd;
     sigaction(SIGTERM, &sa, NULL);

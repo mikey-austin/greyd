@@ -71,4 +71,9 @@ extern void Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips
  */
 extern void Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out);
 
+/**
+ * Start the firewall management process.
+ */
+extern int Greyd_start_fw_child(struct Greyd_state *state, int in_fd, int nat_in_fd, int out_fd);
+
 #endif
