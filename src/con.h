@@ -181,11 +181,4 @@ extern int Con_append_error_string(struct Con *con, size_t off, char *fmt,
  */
 extern char *Con_grow_out_buf(struct Con *con, int off);
 
-/**
- * Accept and initialize new connection in on fd. This funcion should be
- * run following a relevant call to accept().
- */
-extern void Con_accept(int fd, struct sockaddr_storage *addr,
-                       struct Greyd_state *state);
-
 #endif

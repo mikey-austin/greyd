@@ -857,49 +857,6 @@ Con_get_orig_dst(struct Con *con, struct Greyd_state *state)
     }
 }
 
-extern void
-Con_accept(int fd, struct sockaddr_storage *addr, struct Greyd_state *state)
-{
-    int i;
-    struct Con *con;
-
-    if(fd == -1) {
-        switch(errno) {
-        case EINTR:
-        case ECONNABORTED:
-            break;
-
-        case EMFILE:
-        case ENFILE:
-            state->slow_until = time(NULL) + 1;
-            break;
-
-        default:
-            i_critical("accept failure");
-        }
-    }
-    else {
-        /* Ensure we don't hit the configured fd limit. */
-        for(i = 0; i < state->max_cons; i++) {
-            if(state->cons[i].fd == -1)
-                break;
-        }
-
-        if(i == state->max_cons) {
-            close(fd);
-            state->slow_until = 0;
-        }
-        else {
-            con = &state->cons[i];
-            Con_init(con, fd, addr, state);
-            i_info("%s: connected (%d/%d)%s%s",
-                   con->src_addr, state->clients, state->black_clients,
-                   (con->lists == NULL ? "" : ", lists: "),
-                   (con->lists == NULL ? "" : con->lists));
-        }
-    }
-}
-
 static int
 match(const char *a, const char *b)
 {

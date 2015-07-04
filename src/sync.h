@@ -28,6 +28,7 @@
 #include <netinet/in.h>
 #include <openssl/sha.h>
 
+#include "grey.h"
 #include "greyd_config.h"
 
 #define SYNC_VERSION    2

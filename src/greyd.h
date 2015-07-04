@@ -26,7 +26,9 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <libev/ev.h>
 
+#include "sync.h"
 #include "firewall.h"
 #include "hash.h"
 
@@ -40,7 +42,9 @@ struct Greyd_state {
 
     volatile sig_atomic_t shutdown;
 
-    struct Con *cons;
+    struct ev_loop *loop;
+    ev_io *cfg_watcher;
+
     int max_files;
     int max_cons;
     int max_black;
@@ -53,6 +57,7 @@ struct Greyd_state {
     FILE *fw_in;
 
     Hash_T blacklists;
+    Sync_engine_T syncer;
 };
 
 /**
