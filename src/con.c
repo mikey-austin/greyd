@@ -165,7 +165,7 @@ Con_close(struct Con *con, struct Greyd_state *state)
 
     close(con->fd);
     con->fd = -1;
-    state->slow_until = 0;
+    state->slow_for = 0;
 
     time(&now);
     i_info("%s: disconnected after %lld seconds.%s%s",

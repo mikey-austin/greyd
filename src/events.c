@@ -56,7 +56,7 @@ Events_accept_cb(EV_P_ ev_io *w, int revents)
 
             case EMFILE:
             case ENFILE:
-                state->slow_until = time(NULL) + 1;
+                state->slow_for = 1;
                 ev_break(loop, EVBREAK_ALL);
                 break;
 
@@ -68,7 +68,7 @@ Events_accept_cb(EV_P_ ev_io *w, int revents)
             /* Ensure we don't hit the configured fd limit. */
             if((state->clients + 1) >= state->max_cons) {
                 close(accept_fd);
-                state->slow_until = 0;
+                state->slow_for = 0;
             }
             else {
                 cw = calloc(1, sizeof(*cw));
@@ -186,7 +186,7 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
 
             case EMFILE:
             case ENFILE:
-                state->slow_until = time(NULL) + 1;
+                state->slow_for = 1;
                 ev_break(loop, EVBREAK_ALL);
                 break;
 
@@ -198,7 +198,7 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
             /* Only accept config connections from privileged ports. */
             close(accept_fd);
             accept_fd = -1;
-            state->slow_until = 0;
+            state->slow_for = 0;
         }
         else {
             /* Stop any further config connections. */

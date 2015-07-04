@@ -38,7 +38,7 @@
  */
 struct Greyd_state {
     Config_T config;
-    int slow_until;
+    int slow_for;
 
     volatile sig_atomic_t shutdown;
 

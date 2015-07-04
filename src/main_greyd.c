@@ -620,7 +620,7 @@ jail:
         ev_io_start(state.loop, &trap_watcher);
     }
 
-    state.slow_until = 0;
+    state.slow_for = 0;
     state.clients = state.black_clients = 0;
     state.blacklists = Hash_create(NUM_BLACKLISTS, destroy_blacklist);
 
@@ -630,9 +630,9 @@ jail:
             break;
         }
 
-        if(state.slow_until > 0) {
-            ev_sleep(state.slow_until);
-            state.slow_until = 0;
+        if(state.slow_for > 0) {
+            ev_sleep(state.slow_for);
+            state.slow_for = 0;
         }
 
         if(state.shutdown)
