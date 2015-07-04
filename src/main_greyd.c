@@ -592,6 +592,7 @@ jail:
     ev_io_init(&ipv4_watcher, Events_accept_cb, main_sock, EV_READ);
     ev_io_start(state.loop, &ipv4_watcher);
 
+    state.cfg_watcher = NULL;
     if(listen(cfg_sock, GREYD_BACKLOG) == -1)
         i_critical("listen: %s", strerror(errno));
     ev_io cfg_sock_watcher;
@@ -625,8 +626,13 @@ jail:
 
     for(;;) {
         if(!ev_run(state.loop, 0)) {
-            i_debug("unexpected ev_run return");
+            i_debug("unexpected ev_run break");
             break;
+        }
+
+        if(state.slow_until > 0) {
+            ev_sleep(state.slow_until);
+            state.slow_until = 0;
         }
 
         if(state.shutdown)
@@ -635,8 +641,6 @@ jail:
 
 shutdown:
     i_debug("stopping main process");
-
-    // TODO: close all open connections.
 
     if(state.syncer)
         Sync_stop(&state.syncer);

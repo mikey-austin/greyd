@@ -57,6 +57,7 @@ Events_accept_cb(EV_P_ ev_io *w, int revents)
             case EMFILE:
             case ENFILE:
                 state->slow_until = time(NULL) + 1;
+                ev_break(loop, EVBREAK_ALL);
                 break;
 
             default:
@@ -186,6 +187,7 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
             case EMFILE:
             case ENFILE:
                 state->slow_until = time(NULL) + 1;
+                ev_break(loop, EVBREAK_ALL);
                 break;
 
             default:
@@ -201,6 +203,7 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
         else {
             /* Stop any further config connections. */
             ev_io_stop(state->loop, w);
+            state->cfg_watcher = w;
 
             /* Setup the config watcher. */
             ev_io *cw = malloc(sizeof(*cw));

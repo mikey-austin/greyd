@@ -282,9 +282,12 @@ Grey_finish(Greylister_T *greylister)
         fclose((*greylister)->fw_out);
 
 #ifdef HAVE_SPF
-        if((*greylister)->spf_server != NULL)
-            SPF_server_free((*greylister)->spf_server);
+    if((*greylister)->spf_server != NULL)
+        SPF_server_free((*greylister)->spf_server);
 #endif
+
+    if((*greylister)->syncer)
+        Sync_stop(&(*greylister)->syncer);
 
     free(*greylister);
     *greylister = NULL;
