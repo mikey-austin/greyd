@@ -1,3 +1,7 @@
+2015-07-15
+        greyd now makes use of libev for the main event loop & connection
+        handling.
+
 2015-06-08
         greyd now sports sync compatibility with spamd.
 

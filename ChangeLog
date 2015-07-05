@@ -1,3 +1,7 @@
+2015-07-05  Mikey Austin  <mikey@greyd.org>
+
+	* Rewrite main event loop to use libev instead of poll
+
 2015-06-26  Mikey Austin  <mikey@greyd.org>
 
 	* Fixed race between grey & main processes with the fw pipe
