@@ -155,6 +155,7 @@ main(int argc, char **argv)
         Config_set_str(opts, "hostname", NULL, hostname);
     }
 
+    memset(&state, 0, sizeof(state));
     state.shutdown = 0;
     state.max_files = max_files();
 
