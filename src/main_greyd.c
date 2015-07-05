@@ -429,8 +429,8 @@ main(int argc, char **argv)
     }
 
     /*
-     * Create a new process group so the parent can signal children,
-     * even after the children setuid, etc.
+     * Create a new process group so that all of the children may be
+     * signalled at the same time.
      */
     setpgid(0, 0);
 

@@ -24,7 +24,7 @@ start() {
 
 stop() {
     echo -n $"Stopping greyd: "
-    killproc -p $PIDFILE $GREYD -TERM
+    kill -- -`cat $PIDFILE` # Signal the process group.
     RETVAL=$?
     echo
     return $RETVAL
