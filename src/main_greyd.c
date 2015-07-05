@@ -428,6 +428,12 @@ main(int argc, char **argv)
             err(1, "daemon");
     }
 
+    /*
+     * Create a new process group so the parent can signal children,
+     * even after the children setuid, etc.
+     */
+    setpgid(0, 0);
+
     state.fw_out = NULL;
     state.fw_in = NULL;
     state.fw_pid = -1;
@@ -465,6 +471,8 @@ main(int argc, char **argv)
 
         case 0:
             /* In child. */
+            setpgid(0, getppid());
+
             memset(&sa, 0, sizeof(sa));
             sigfillset(&sa.sa_mask);
             sa.sa_handler = shutdown_greyd;
@@ -511,6 +519,7 @@ main(int argc, char **argv)
         case 0:
             /* In child. */
             signal(SIGPIPE, SIG_IGN);
+            setpgid(0, getppid());
 
             if((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
                 i_critical("fdopen: %s", strerror(errno));

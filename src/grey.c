@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -191,6 +192,8 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
         if((greylister->db_handle = DB_init(greylister->config)) == NULL)
             i_critical("Could not create db handle");
 
+        setpgid(0, getppid());
+
         /*
          * Setup the sync engine for sending only.
          */
@@ -355,6 +358,8 @@ cleanup:
 extern void
 Grey_start_scanner(Greylister_T greylister)
 {
+    int status;
+
     for(;;) {
         if(greylister->shutdown)
             break;
@@ -376,6 +381,9 @@ Grey_start_scanner(Greylister_T greylister)
 
     if(Grey_greylister->fw_pid != -1)
         kill(Grey_greylister->fw_pid, SIGTERM);
+
+    while(waitpid(-1, &status, 0) > 0)
+        ;
 
     Grey_finish(&greylister);
 
