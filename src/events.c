@@ -176,6 +176,13 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
     socklen_t src_len = sizeof(src);
 
     if(revents & EV_READ) {
+        /*
+         * Stop any further config connections. We only process one
+         * config connection at a time.
+         */
+        ev_io_stop(state->loop, w);
+        state->cfg_watcher = w;
+
         memset(&src, 0, sizeof(src));
         accept_fd = accept(w->fd, (struct sockaddr *) &src, &src_len);
         if(accept_fd == -1) {
@@ -201,10 +208,6 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
             state->slow_for = 0;
         }
         else {
-            /* Stop any further config connections. */
-            ev_io_stop(state->loop, w);
-            state->cfg_watcher = w;
-
             /* Setup the config watcher. */
             ev_io *cw = malloc(sizeof(*cw));
             if(cw == NULL)
@@ -212,11 +215,14 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
             cw->data = state;
             ev_io_init(cw, Events_config_cb, accept_fd, EV_READ);
             ev_io_start(state->loop, cw);
+            return;
         }
     }
     else {
         i_warning("config socket read error");
     }
+
+    ev_io_start(state->loop, w);
 }
 
 extern void
