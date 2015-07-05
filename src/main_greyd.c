@@ -468,6 +468,8 @@ main(int argc, char **argv)
 
             close(nat_pipe[0]);
             close(fw_pipe[1]);
+            close(grey_fw_pipe[1]);
+
             return Greyd_start_fw_child(
                 &state, grey_fw_pipe[0], fw_pipe[0], nat_pipe[1]);
         }

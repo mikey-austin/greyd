@@ -279,7 +279,7 @@ Greyd_start_fw_child(struct Greyd_state *state, int in_fd, int nat_in_fd, int ou
         i_critical("fdopen: %s", strerror(errno));
 
     struct pollfd fds[2];
-    memset(&fds, 0, 2 * sizeof(*fds));
+    memset(fds, 0, 2 * sizeof(*fds));
     fds[0].fd = in_fd;
     fds[0].events = POLLIN;
     fds[1].fd = nat_in_fd;
