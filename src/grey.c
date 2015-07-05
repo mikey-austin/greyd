@@ -365,12 +365,17 @@ Grey_start_scanner(Greylister_T greylister)
         sleep(GREY_DB_SCAN_INTERVAL);
     }
 
-    i_info("exiting");
+    i_info("greyd exiting");
+
+    /* We are in the parent process, so stop all children. */
     if(Grey_greylister->grey_pid != -1)
         kill(Grey_greylister->grey_pid, SIGTERM);
 
     if(Grey_greylister->reader_pid != -1)
         kill(Grey_greylister->reader_pid, SIGTERM);
+
+    if(Grey_greylister->fw_pid != -1)
+        kill(Grey_greylister->fw_pid, SIGTERM);
 
     Grey_finish(&greylister);
 

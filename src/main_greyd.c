@@ -523,6 +523,7 @@ main(int argc, char **argv)
         }
 
         greylister = Grey_setup(state.config);
+        greylister->fw_pid = state.fw_pid;
 
         if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
@@ -648,9 +649,6 @@ shutdown:
 
     if(state.syncer)
         Sync_stop(&state.syncer);
-
-    if(state.fw_pid != -1)
-        kill(state.fw_pid, SIGTERM);
 
     close_pidfile(pidfile, chroot_dir);
     fclose(state.grey_out);

@@ -107,6 +107,7 @@ struct Greylister_T {
     FILE     *fw_out;
     pid_t     grey_pid;
     pid_t     reader_pid;
+    pid_t     fw_pid;
     time_t    startup;
     time_t    grey_exp;
     time_t    trap_exp;

@@ -29,6 +29,12 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <poll.h>
+#ifdef HAVE_LIBEV_EV_H
+#  include <libev/ev.h>
+#endif
+#ifdef HAVE_EV_H
+#  include <ev.h>
+#endif
 
 #include "failures.h"
 #include "greyd_config.h"
