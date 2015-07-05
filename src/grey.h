@@ -105,9 +105,7 @@ struct Greylister_T {
     FILE     *trap_out;
     FILE     *grey_in;
     FILE     *fw_out;
-    pid_t     grey_pid;
     pid_t     reader_pid;
-    pid_t     fw_pid;
     time_t    startup;
     time_t    grey_exp;
     time_t    trap_exp;
@@ -131,8 +129,8 @@ extern Greylister_T Grey_setup(Config_T config);
 /**
  * Start the greylisting engine.
  */
-extern void Grey_start(Greylister_T greylister, pid_t grey_pid,
-                       FILE *grey_in, FILE *trap_out, FILE *fw_out);
+extern void Grey_start(Greylister_T greylister, FILE *grey_in,
+                       FILE *trap_out, FILE *fw_out);
 
 /**
  * Stop the greylisting engine and cleanup afterwards.

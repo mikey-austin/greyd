@@ -312,9 +312,6 @@ Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
             nwritten = write(con->fd, "\r", 1);
             switch(nwritten) {
             case -1:
-                i_warning("connection write error");
-                /* Fallthrough. */
-
             case 0:
                 Con_close(con, state);
                 goto handled;

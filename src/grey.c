@@ -24,7 +24,6 @@
 #include <config.h>
 
 #include <sys/types.h>
-#include <sys/wait.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -94,7 +93,6 @@ Grey_setup(Config_T config)
     greylister->config     = config;
     greylister->trap_out   = NULL;
     greylister->grey_in    = NULL;
-    greylister->grey_pid   = -1;
     greylister->reader_pid = -1;
     greylister->startup    = -1;
     greylister->syncer     = NULL;
@@ -145,7 +143,7 @@ Grey_setup(Config_T config)
 }
 
 extern void
-Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
+Grey_start(Greylister_T greylister, FILE *grey_in,
            FILE *trap_out, FILE *fw_out)
 {
     char *pidfile, *db_user;
@@ -154,7 +152,6 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
     List_T hosts;
 
     memset(&sa, 0, sizeof(sa));
-    greylister->grey_pid = grey_pid;
     greylister->startup  = time(NULL);
     greylister->grey_in  = grey_in;
     greylister->trap_out = trap_out;
@@ -372,18 +369,9 @@ Grey_start_scanner(Greylister_T greylister)
 
     i_info("greyd exiting");
 
-    /* We are in the parent process, so stop all children. */
-    if(Grey_greylister->grey_pid != -1)
-        kill(Grey_greylister->grey_pid, SIGTERM);
-
+    /* Stop the reader. */
     if(Grey_greylister->reader_pid != -1)
         kill(Grey_greylister->reader_pid, SIGTERM);
-
-    if(Grey_greylister->fw_pid != -1)
-        kill(Grey_greylister->fw_pid, SIGTERM);
-
-    while(waitpid(-1, &status, 0) > 0)
-        ;
 
     Grey_finish(&greylister);
 

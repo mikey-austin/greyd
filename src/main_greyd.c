@@ -130,7 +130,7 @@ main(int argc, char **argv)
     char *config_file = DEFAULT_CONFIG, hostname[MAX_HOST_NAME];
     char *bind_addr, *bind_addr6, *pidfile;
     int option, i, main_sock, main_sock6 = -1, cfg_sock, sock_val = 1;
-    int grey_pipe[2], trap_pipe[2], trap_fd = -1, cfg_fd = -1;
+    int grey_pipe[2], trap_pipe[2], trap_fd = -1;
     int fw_pipe[2], nat_pipe[2], grey_fw_pipe[2];
     u_short port, cfg_port;
     unsigned long long grey_time, white_time, pass_time;
@@ -426,13 +426,13 @@ main(int argc, char **argv)
     if(Config_get_int(state.config, "daemonize", NULL, 1)) {
         if(daemon(1, 0) == -1)
             err(1, "daemon");
-    }
 
-    /*
-     * Create a new process group so that all of the children may be
-     * signalled at the same time.
-     */
-    setpgid(0, 0);
+        /*
+         * Create a new process group so that all of the children may be
+         * signalled at the same time.
+         */
+        setpgid(0, 0);
+    }
 
     state.fw_out = NULL;
     state.fw_in = NULL;
@@ -533,8 +533,6 @@ main(int argc, char **argv)
         }
 
         greylister = Grey_setup(state.config);
-        greylister->fw_pid = state.fw_pid;
-
         if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
         close(grey_pipe[1]);
@@ -547,7 +545,7 @@ main(int argc, char **argv)
             i_critical("fdopen: %s", strerror(errno));
         close(grey_fw_pipe[0]);
 
-        Grey_start(greylister, grey_pid, grey_in, trap_out, grey_fw);
+        Grey_start(greylister, grey_in, trap_out, grey_fw);
 
         /* Not reached. */
     }
@@ -615,6 +613,7 @@ jail:
         i_critical("listen: %s", strerror(errno));
     ev_io cfg_sock_watcher;
     cfg_sock_watcher.data = &state;
+    state.cfg_watcher = &cfg_sock_watcher;
     ev_io_init(&cfg_sock_watcher, Events_config_accept_cb, cfg_sock, EV_READ);
     ev_io_start(state.loop, &cfg_sock_watcher);
 
@@ -659,6 +658,9 @@ shutdown:
 
     if(state.syncer)
         Sync_stop(&state.syncer);
+
+    if(state.fw_pid)
+        kill(state.fw_pid, SIGTERM);
 
     close_pidfile(pidfile, chroot_dir);
     fclose(state.grey_out);
