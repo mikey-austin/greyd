@@ -21,7 +21,12 @@
  * @date   2014
  */
 
-#include <libev/ev.h>
+#ifdef HAVE_LIBEV_EV_H
+#  include <libev/ev.h>
+#endif
+#ifdef HAVE_EV_H
+#  include <ev.h>
+#endif
 
 #include "con.h"
 #include "greyd.h"

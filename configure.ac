@@ -20,7 +20,7 @@ AM_PROG_CC_C_O
 # Checks for common libraries.
 AC_CHECK_LIB([ltdl], [lt_dlopen], [have_ltdl="yes"])
 if test "x${have_ltdl}" = xyes; then
-    AC_CHECK_HEADERS([ltdl.h], [], [have_ltdl="yes"], [have_ltdl="no"])
+    AC_CHECK_HEADERS([ltdl.h], [have_ltdl="yes";break], [have_ltdl="no"])
 fi
 
 if test "x${have_ltdl}" = xyes; then
@@ -33,7 +33,7 @@ fi
 
 AC_CHECK_LIB([z], [gzdopen], [have_gz="yes"])
 if test "x${have_gz}" = xyes; then
-    AC_CHECK_HEADERS([zlib.h], [], [have_gz="yes"], [have_gz="no"])
+    AC_CHECK_HEADERS([zlib.h], [have_gz="yes";break], [have_gz="no"])
 fi
 
 if test "x${have_gz}" = xyes; then
@@ -44,9 +44,9 @@ fi
 
 AC_CHECK_LIB([ev], [ev_io_start], [have_ev="yes"])
 if test "x${have_ev}" = xyes; then
-    AC_CHECK_HEADERS([libev/ev.h], [], [have_ev="yes"], [have_ev="no"])
+    AC_CHECK_HEADERS([libev/ev.h ev.h], [have_ev="yes";break], [have_ev="no"])
 fi
- 
+
 if test "x${have_ev}" = xyes; then
     LIBS="${LIBS} -lev"
 else
@@ -55,7 +55,7 @@ fi
 
 AC_CHECK_LIB([crypto], [HMAC_Init], [have_crypto="yes"])
 if test "x${have_crypto}" = xyes; then
-    AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [], [have_crypto="yes"], [have_crypto="no"])
+    AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [have_crypto="yes";break], [have_crypto="no"])
 fi
 
 if test "x${have_crypto}" = xyes; then

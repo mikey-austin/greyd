@@ -37,7 +37,12 @@
 #include <signal.h>
 #include <pwd.h>
 #include <grp.h>
-#include <libev/ev.h>
+#ifdef HAVE_LIBEV_EV_H
+#  include <libev/ev.h>
+#endif
+#ifdef HAVE_EV_H
+#  include <ev.h>
+#endif
 
 #include "failures.h"
 #include "greyd_config.h"
