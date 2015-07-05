@@ -632,10 +632,7 @@ jail:
     state.blacklists = Hash_create(NUM_BLACKLISTS, destroy_blacklist);
 
     for(;;) {
-        if(!ev_run(state.loop, 0)) {
-            i_debug("unexpected ev_run break");
-            break;
-        }
+        ev_run(state.loop, 0);
 
         if(state.slow_for > 0) {
             ev_sleep(state.slow_for);
