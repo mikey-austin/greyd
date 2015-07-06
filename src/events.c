@@ -126,7 +126,7 @@ Events_con_cb(EV_P_ ev_io *w, int revents)
             Con_close(&cw->con, cw->state);
             goto cleanup;
         }
-        ev_io_init((ev_io *) cw, Events_con_cb, w->fd, EV_READ);
+        ev_io_set((ev_io *) cw, cw->io.fd, EV_READ);
         ev_io_start(cw->state->loop, (ev_io *) cw);
     }
 
@@ -137,7 +137,7 @@ Events_con_cb(EV_P_ ev_io *w, int revents)
         }
 
         if(cw->con.w <= now) {
-            ev_io_init((ev_io *) cw, Events_con_cb, w->fd, EV_WRITE);
+            ev_io_set((ev_io *) cw, cw->io.fd, EV_WRITE);
             ev_io_start(cw->state->loop, (ev_io *) cw);
         }
         else {
@@ -168,7 +168,7 @@ Events_con_timer_cb(EV_P_ ev_timer *w, int revents)
     free(w);
 
     /* Start the connection IO watcher as we should be able to write now. */
-    ev_io_init((ev_io *) cw, Events_con_cb, cw->io.fd, EV_WRITE);
+    ev_io_set((ev_io *) cw, cw->io.fd, EV_WRITE);
     ev_io_start(cw->state->loop, (ev_io *) cw);
 }
 
