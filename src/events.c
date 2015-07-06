@@ -184,7 +184,7 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
         memset(&src, 0, sizeof(src));
         accept_fd = accept(w->fd, (struct sockaddr *) &src, &src_len);
         if(accept_fd == -1) {
-            switch (errno) {
+            switch(errno) {
             case EINTR:
             case ECONNABORTED:
                 break;
@@ -210,7 +210,7 @@ Events_config_accept_cb(EV_P_ ev_io *w, int revents)
              * Stop any further config connections. We only process one
              * config connection at a time.
              */
-            ev_io_stop(state->loop, w);
+            ev_io_stop(state->loop, state->cfg_watcher);
 
             /* Setup the config watcher. */
             ev_io *cw = malloc(sizeof(*cw));
@@ -232,14 +232,17 @@ Events_config_cb(EV_P_ ev_io *w, int revents)
 {
     struct Greyd_state *state = w->data;
 
+    ev_io_stop(state->loop, w);
     if(revents & EV_READ) {
         Greyd_process_config(w->fd, state);
-        ev_io_stop(state->loop, w);
-        free(w);
     }
     else {
         i_warning("config read error");
     }
+
+    /* Cleanup this connection. */
+    close(w->fd);
+    free(w);
 
     /* Start listening for more config connections. */
     ev_io_start(state->loop, state->cfg_watcher);
