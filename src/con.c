@@ -255,9 +255,6 @@ Con_handle_read(struct Con *con, time_t *now, struct Greyd_state *state)
         nread = read(con->fd, con->in_p, con->in_remaining);
         switch(nread) {
         case -1:
-            i_warning("connection read error");
-            /* Fallthrough. */
-
         case 0:
             Con_close(con, state);
             break;
@@ -331,9 +328,6 @@ Con_handle_write(struct Con *con, time_t *now, struct Greyd_state *state)
         nwritten = write(con->fd, con->out_p, to_be_written);
         switch(nwritten) {
         case -1:
-            i_warning("connection write error");
-            /* Fallthrough. */
-
         case 0:
             Con_close(con, state);
             break;

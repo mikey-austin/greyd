@@ -113,6 +113,9 @@ Blacklist_match(Blacklist_T list, struct IP_addr *source, sa_family_t af)
     struct IP_addr *a, *m;
     struct Blacklist_trie_entry entry;
 
+    if(list->count <= 0)
+        return 0;
+
     if(list->type == BL_STORAGE_TRIE) {
         memset(&entry, 0, sizeof(entry));
         entry.af = af;

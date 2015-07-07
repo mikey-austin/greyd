@@ -85,12 +85,14 @@ Greyd_process_config(int fd, struct Greyd_state *state)
         bl_name = Config_get_str(message, "name", NULL, NULL);
         bl_msg = Config_get_str(message, "message", NULL, NULL);
         ips = Config_get_list(message, "ips", NULL);
-        if(bl_name && bl_msg && ips) {
+        if(bl_name && bl_msg) {
             blacklist = Blacklist_create(bl_name, bl_msg, BL_STORAGE_TRIE);
-            LIST_EACH(ips, entry) {
-                value = List_entry_value(entry);
-                if((addr = cv_str(value)) != NULL)
-                    Blacklist_add(blacklist, addr);
+            if(ips && List_size(ips) > 0) {
+                LIST_EACH(ips, entry) {
+                    value = List_entry_value(entry);
+                    if((addr = cv_str(value)) != NULL)
+                        Blacklist_add(blacklist, addr);
+                }
             }
             Hash_insert(state->blacklists, bl_name, blacklist);
         }
@@ -108,10 +110,9 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
     int first = 1;
     short af;
 
+    fprintf(out, "name=\"%s\"\nmessage=\"%s\"\n", bl_name, bl_msg);
     if(List_size(ips) > 0) {
-        fprintf(out, "name=\"%s\"\nmessage=\"%s\"\nips=[",
-                bl_name, bl_msg);
-
+        fprintf(out, "ips=[");
         LIST_EACH(ips, entry) {
             ip = List_entry_value(entry);
             if(strrchr(ip, '/') != NULL) {
@@ -125,11 +126,12 @@ Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips)
             }
             first = 0;
         }
-        fprintf(out, "]\n%%\n");
-
-        if(fflush(out) == EOF)
-            i_debug("configure_greyd: fflush failed");
+        fprintf(out, "]\n");
     }
+    fprintf(out, "%%\n");
+
+    if(fflush(out) == EOF)
+        i_debug("configure_greyd: fflush failed");
 }
 
 extern void
