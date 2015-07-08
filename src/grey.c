@@ -126,7 +126,7 @@ Grey_setup(Config_T config)
         config, "pass_time", "grey", GREY_PASSTIME);
 
     greylister->low_prio_mx = Config_get_str(
-        config, "low_prio_mx", NULL, "grey");
+        config, "low_prio_mx", "grey", NULL);
 
     greylister->traplist = List_create(destroy_address);
     greylister->whitelist = List_create(destroy_address);
