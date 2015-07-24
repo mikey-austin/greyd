@@ -42,17 +42,6 @@ else
     AC_MSG_FAILURE([zlib is required along with its headers])
 fi
 
-AC_CHECK_LIB([ev], [ev_io_start], [have_ev="yes"])
-if test "x${have_ev}" = xyes; then
-    AC_CHECK_HEADERS([libev/ev.h], [], [have_ev="yes"], [have_ev="no"])
-fi
- 
-if test "x${have_ev}" = xyes; then
-    LIBS="${LIBS} -lev"
-else
-    AC_MSG_FAILURE([libev is required along with its headers])
-fi
-
 AC_CHECK_LIB([crypto], [HMAC_Init], [have_crypto="yes"])
 if test "x${have_crypto}" = xyes; then
     AC_CHECK_HEADERS([openssl/hmac.h openssl/sha1.h], [], [have_crypto="yes"], [have_crypto="no"])

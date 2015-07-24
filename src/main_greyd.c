@@ -38,8 +38,6 @@
 #include <pwd.h>
 #include <grp.h>
 #include <poll.h>
-#include <libev/ev.h>
-
 #include "failures.h"
 #include "greyd_config.h"
 #include "constants.h"
