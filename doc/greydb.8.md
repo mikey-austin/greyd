@@ -110,6 +110,10 @@ Note that times are in seconds since the Epoch, in the manner returned by time(3
 
 **greydb** only sends sync messages for additions/deletions of WHITE & TRAPPED entries only.
 
+## COPYRIGHT
+
+**greydb** is Copyright (C) 2015 Mikey Austin (greyd.org)
+
 ## SEE ALSO
 
   **greyd.conf**(5), **greyd-setup**(8), **greyd**(8), **greylogd**(8)

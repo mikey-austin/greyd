@@ -375,6 +375,10 @@ The format of the list of addresses is expected to consist of one network block 
 
 Note, currently only IPv4 addresses are supported.
 
+## COPYRIGHT
+
+**greyd** is Copyright (C) 2015 Mikey Austin (greyd.org)
+
 ## SEE ALSO
 
   **greyd**(8), **greyd-setup**(8), **greydb**(8), **greylogd**(8)

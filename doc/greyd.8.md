@@ -235,6 +235,10 @@ The file itself can contain any data. For example, to create a secure random key
 
 The file needs to be copied to all hosts sending or receiving synchronisation messages.
 
+## COPYRIGHT
+
+**greyd** is Copyright (C) 2015 Mikey Austin (greyd.org)
+
 ## SEE ALSO
 
   greyd.conf(5), greyd-setup(8), greydb(8), greylogd(8)

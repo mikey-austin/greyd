@@ -68,6 +68,10 @@ See **greyd.conf**(5) for more details.
 
 **greylogd** supports realtime synchronisation of whitelist states by sending the information it updates to a number of **greyd**(8) daemons running on multiple machines. To enable synchronisation, use the command line option -Y to specify the machines to which **greylogd** will send messages when it updates the state information. The synchronisation may also be configured entirely via **greyd.conf**(5). For more information, see **greyd**(8) and **greyd.conf**(5).
 
+## COPYRIGHT
+
+**greylogd** is Copyright (C) 2015 Mikey Austin (greyd.org)
+
 ## SEE ALSO
 
   **greyd.conf**(5), **greyd-setup**(8), **greydb**(8), **greyd**(8)

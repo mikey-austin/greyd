@@ -56,6 +56,10 @@ Output is concatenated and sent to a running **greyd**(8). Addresses are sent al
 
 **greyd-setup** reads all configuration information from the spamd.conf(5) file.
 
+## COPYRIGHT
+
+**greyd-setup** is Copyright (C) 2015 Mikey Austin (greyd.org)
+
 ## SEE ALSO
 
   **greyd.conf**(5), **greyd**(8), **greydb**(8), **greylogd**(8)
