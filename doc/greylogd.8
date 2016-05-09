@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYLOGD" "8" "January 2016" "" ""
+.TH "GREYLOGD" "8" "May 2016" "" ""
 .
 .SH "NAME"
 \fBgreylogd\fR \- greyd whitelist updating daemon
@@ -81,10 +81,10 @@ For the \fInetfilter\fR driver, the above default configuration may be overridde
 .nf
 
 section firewall {
-    driver = "netfilter\.so", # Find via dynamic linker
-    track_outbound = 1,
-    inbound_group = 155,
-    outbound_group = 255,
+    driver = "netfilter\.so" # Find via dynamic linker
+    track_outbound = 1
+    inbound_group = 155
+    outbound_group = 255
     \.\.\.
 }
 .

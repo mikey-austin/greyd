@@ -31,7 +31,7 @@ The options are as follows:
 Lists are specified in the configuration file **greyd.conf**(5) and are processed in the order specified in the *lists* tag in the *setup* section, for example:
 
     section setup {
-        lists = [ "nixspam", "uatraps" ],
+        lists = [ "nixspam", "uatraps" ]
         curl_path = "/usr/bin/curl"
     }
 

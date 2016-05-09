@@ -92,20 +92,20 @@ setrlimit = 1
 # The firewall configuration.
 #
 section firewall {
-    driver = "@libdir@/@PACKAGE@/greyd_netfilter.so",
+    driver = "@libdir@/@PACKAGE@/greyd_netfilter.so"
 
     # Max. number of IPSET set elements.
-    max_elements = 1000000,
+    max_elements = 1000000
 
     # Max. IPSET hash size.
-    hash_size = 1048576,
+    hash_size = 1048576
 
     #
     # Greylogd tracking via the iptables NFLOG target and
     # corresponding --nflog-group.
     #
-    track_outbound  = 1,
-    inbound_group  = 155,
+    track_outbound  = 1
+    inbound_group  = 155
     outbound_group = 255
 }
 
@@ -113,31 +113,31 @@ section firewall {
 # The greylisting database configuration.
 #
 section database {
-    #driver  = "@libdir@/@PACKAGE@/greyd_bdb_sql.so",
-    #driver  = "@libdir@/@PACKAGE@/greyd_sqlite.so",
-    driver  = "@libdir@/@PACKAGE@/greyd_bdb.so",
-    path    = "@localstatedir@/@PACKAGE@",
+    #driver  = "@libdir@/@PACKAGE@/greyd_bdb_sql.so"
+    #driver  = "@libdir@/@PACKAGE@/greyd_sqlite.so"
+    driver  = "@libdir@/@PACKAGE@/greyd_bdb.so"
+    path    = "@localstatedir@/@PACKAGE@"
     db_name = "@PACKAGE@.db"
 
-    #driver = "@libdir@/@PACKAGE@/greyd_mysql.so",
-    #host   = "localhost",
-    #port   = 3306,
-    #name   = "greyd",
-    #user   = "greyd",
-    #pass   = "greyd",
+    #driver = "@libdir@/@PACKAGE@/greyd_mysql.so"
+    #host   = "localhost"
+    #port   = 3306
+    #name   = "greyd"
+    #user   = "greyd"
+    #pass   = "greyd"
 }
 
 #
 # Sync configuration.
 #
 section sync {
-    enable        = 0,
-    #hosts         = [ "eth0:2", "jackiemclean.net" ],
-    #ttl           = 2,
-    #port          = 8025,
-    #verify        = 1,
-    #key           = "@sysconfdir@/@PACKAGE@/greyd.key",
-    #bind_address  = "eth0:2",
+    enable         = 0
+    #hosts         = [ "eth0:2" "jackiemclean.net" ]
+    #ttl           = 2
+    #port          = 8025
+    #verify        = 1
+    #key           = "@sysconfdir@/@PACKAGE@/greyd.key"
+    #bind_address  = "eth0:2"
     #mcast_address = "224.0.1.241"
 }
 
@@ -145,10 +145,10 @@ section sync {
 # SPF validation
 #
 section spf {
-    enable = 1,
+    enable = 1
 
     # Whitelist hosts that pass SPF validation.
-    whitelist_on_pass = 0,
+    whitelist_on_pass = 0
 
     # Trap hosts on softfail, in addition to
     # hardfail.
@@ -159,24 +159,24 @@ section spf {
 # Greylist engine configuration.
 #
 section grey {
-    enable              = 1,
-    user                = "greydb",
-    traplist_name       = "greyd-greytrap",
-    traplist_message    = "Your address %A has mailed to spamtraps here",
-    whitelist_name      = "greyd-whitelist",
-    whitelist_name_ipv6 = "greyd-whitelist-ipv6",
+    enable              = 1
+    user                = "greydb"
+    traplist_name       = "greyd-greytrap"
+    traplist_message    = "Your address %A has mailed to spamtraps here"
+    whitelist_name      = "greyd-whitelist"
+    whitelist_name_ipv6 = "greyd-whitelist-ipv6"
 
     # Specify the secondary MX server for auto-greytrapping.
-    #low_prio_mx = "10.10.20.30",
+    #low_prio_mx = "10.10.20.30"
 
     # Kill stutter for new connections after so many seconds.
-    stutter = 10,
+    stutter = 10
 
     # Various greylisting times (in seconds)
-    pass_time    = 600,     # 10 minutes.
-    grey_expiry  = 14400,   # 4 hours.
-    white_expiry = 2678400, # 31 days.
-    trap_expiry  = 86400,   # 1 day.
+    pass_time    = 600     # 10 minutes.
+    grey_expiry  = 14400   # 4 hours.
+    white_expiry = 2678400 # 31 days.
+    trap_expiry  = 86400   # 1 day.
 
     #
     # If this file is specified (and exists), any message received
@@ -191,7 +191,7 @@ section grey {
     # database. Be careful, if this is enabled and there are no permitted
     # domains loaded, everything will be trapped.
     #
-    #db_permitted_domains = 0,
+    #db_permitted_domains = 0
 }
 
 #
@@ -203,30 +203,30 @@ section setup {
     # in order. Whitelists are subtracted from the blacklists that
     # come before them.
     #
-    lists     = [ "nixspam", "uatraps" ],
+    lists     = [ "nixspam", "uatraps" ]
     curl_path = "@CURL@"
 }
 
 blacklist uatraps {
     message = "Your address %A has sent mail to a ualberta.ca spamtrap\\\\n
-               within the last 24 hours",
-    method  = "http",
+               within the last 24 hours"
+    method  = "http"
     file    = "www.openbsd.org/spamd/traplist.gz"
 }
 
 blacklist nixspam {
-    message = "Your address %A is in the nixspam list",
-    method  = "http",
+    message = "Your address %A is in the nixspam list"
+    method  = "http"
     file    = "www.openbsd.org/spamd/nixspam.gz"
 }
 
 whitelist test_exec_method {
-    method = "exec",
+    method = "exec"
     file   = "cat /tmp/nixspam-traplist.gz"
 }
 
 blacklist test_file_method {
-    method = "file",
+    method = "file"
     file   = "/tmp/nixspam-traplist.gz"
 }
 

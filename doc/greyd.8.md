@@ -140,8 +140,8 @@ See **greydb**(8) for further details.
 A file configured with *permitted_domains* in the *grey* section of *greyd.conf* can be used to specify a list of domain name suffixes, one per line, one of which must match each destination email address in the greylist. Any destination address which does not match one of the suffixes listed in *permitted_domains* will be trapped, exactly as if it were sent to a spamtrap address. Comment lines beginning with '#' and empty lines are ignored. A sample *greyd.conf* configuration may be (see **greyd.conf**(5) for further details):
 
     section grey {
-        permitted_domains = "/etc/greyd/permitted_domains",
-        db_permitted_domains = 1,
+        permitted_domains = "/etc/greyd/permitted_domains"
+        db_permitted_domains = 1
         ...
     }
 
@@ -224,8 +224,8 @@ The second example will increase the multicast TTL to a value of 2, add the unic
 If a *key* file is specified in the *sync* **greyd.conf**(5) configuration section and exists, **greyd** will calculate the message-digest fingerprint (checksum) for the file and use it as a shared key to authenticate the synchronisation messages. Below is an example sync configuration (see **greyd.conf**(5) for more details):
 
     section sync {
-        verify = 1,
-        key = "/etc/greyd/greyd.key",
+        verify = 1
+        key = "/etc/greyd/greyd.key"
         ...
     }
 

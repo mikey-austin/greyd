@@ -21,12 +21,12 @@ The syntax consists of sequences of assignments, each terminated by a newline:
 
 Comments, whitespace and blank lines are ignored.
 
-*Sections* may contain many assignments, separated by a comma and a newline.
+*Sections* may contain many assignments, separated by a newline.
 
     section sectionname {
-        var1 = "val1",
-        var2 = 10,
-        var3 = [ 1, 2, 3 ],
+        var1 = "val1"
+        var2 = 10
+        var3 = [ 1, 2, 3 ]
     }
 
 *Blacklists* and *whitelists* use the same syntax as the *section* above (see [BLACKLIST CONFIGURATION][]):
@@ -125,8 +125,8 @@ The following options are common to all firewall drivers:
   The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:
 
         section firewall {
-            #driver = "greyd_pf.so",
-            driver = "greyd_netfilter.so",
+            #driver = "greyd_pf.so"
+            driver = "greyd_netfilter.so"
 
             # Driver-specific options below.
             ...
@@ -175,10 +175,10 @@ The following options are common to all database drivers:
   The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:
 
         section database {
-            driver = "greyd_bdb.so",
-            #driver = "greyd_bdb_sql.so",
-            #driver = "greyd_sqlite.so",
-            #driver = "greyd_mysql.so",
+            driver = "greyd_bdb.so"
+            #driver = "greyd_bdb_sql.so"
+            #driver = "greyd_sqlite.so"
+            #driver = "greyd_mysql.so"
 
             # Driver-specific options below.
             ...
@@ -348,8 +348,8 @@ A blacklist must contain the following fields:
 An example blacklist definition is as follows:
 
     blacklist nixspam {
-        message = "Your address %A is in the nixspam list",
-        method  = "http",
+        message = "Your address %A is in the nixspam list"
+        method  = "http"
         file = "www.openbsd.org/spamd/nixspam.gz"
     }
 
@@ -358,7 +358,7 @@ An example blacklist definition is as follows:
 Whitelist definitions take the same fields as a blacklist definition, with the exception of the *message* (which is not applicable). For example:
 
     whitelist work_clients {
-        method = "exec",
+        method = "exec"
         file = "cat /tmp/work-clients-traplist.gz"
     }
 

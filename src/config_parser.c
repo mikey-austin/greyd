@@ -409,8 +409,10 @@ grammar_section_statements(Config_parser_T parser)
 static int
 grammar_section_assignments(Config_parser_T parser)
 {
-    if(accept(parser, CONFIG_LEXER_TOK_COMMA)
-       && accept(parser, CONFIG_LEXER_TOK_EOL)
+    /* Optional comma following section assignments. */
+    accept(parser, CONFIG_LEXER_TOK_COMMA);
+
+    if(accept(parser, CONFIG_LEXER_TOK_EOL)
        && grammar_assignment(parser)
        && grammar_section_assignments(parser))
     {

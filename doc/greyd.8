@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD" "8" "January 2016" "" ""
+.TH "GREYD" "8" "May 2016" "" ""
 .
 .SH "NAME"
 \fBgreyd\fR \- spam deferral daemon
@@ -240,8 +240,8 @@ A file configured with \fIpermitted_domains\fR in the \fIgrey\fR section of \fIg
 .nf
 
 section grey {
-    permitted_domains = "/etc/greyd/permitted_domains",
-    db_permitted_domains = 1,
+    permitted_domains = "/etc/greyd/permitted_domains"
+    db_permitted_domains = 1
     \.\.\.
 }
 .
@@ -404,8 +404,8 @@ If a \fIkey\fR file is specified in the \fIsync\fR \fBgreyd\.conf\fR(5) configur
 .nf
 
 section sync {
-    verify = 1,
-    key = "/etc/greyd/greyd\.key",
+    verify = 1
+    key = "/etc/greyd/greyd\.key"
     \.\.\.
 }
 .

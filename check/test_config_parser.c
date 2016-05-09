@@ -55,7 +55,7 @@ main(void)
         "    \"another string\" ]\n"
         "}\n"
         "whitelist custom {\n"
-        "    test_var_6 = [ 1, 2, 3 ],\n"
+        "    test_var_6 = [ 1, 2, 3 ] # No trailing comma \n"
         "    test_var_7 = 55\n"
         "}\n"
         "include \"data/config_test1.conf\"";

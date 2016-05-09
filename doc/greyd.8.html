@@ -184,8 +184,8 @@
 <p>A file configured with <em>permitted_domains</em> in the <em>grey</em> section of <em>greyd.conf</em> can be used to specify a list of domain name suffixes, one per line, one of which must match each destination email address in the greylist. Any destination address which does not match one of the suffixes listed in <em>permitted_domains</em> will be trapped, exactly as if it were sent to a spamtrap address. Comment lines beginning with '#' and empty lines are ignored. A sample <em>greyd.conf</em> configuration may be (see <strong>greyd.conf</strong>(5) for further details):</p>
 
 <pre><code>section grey {
-    permitted_domains = "/etc/greyd/permitted_domains",
-    db_permitted_domains = 1,
+    permitted_domains = "/etc/greyd/permitted_domains"
+    db_permitted_domains = 1
     ...
 }
 </code></pre>
@@ -280,8 +280,8 @@ ips = [ "1.3.4.2/31", "2.3.4.5/30", "1.2.3.4/32" ]
 <p>If a <em>key</em> file is specified in the <em>sync</em> <strong>greyd.conf</strong>(5) configuration section and exists, <strong>greyd</strong> will calculate the message-digest fingerprint (checksum) for the file and use it as a shared key to authenticate the synchronisation messages. Below is an example sync configuration (see <strong>greyd.conf</strong>(5) for more details):</p>
 
 <pre><code>section sync {
-    verify = 1,
-    key = "/etc/greyd/greyd.key",
+    verify = 1
+    key = "/etc/greyd/greyd.key"
     ...
 }
 </code></pre>
@@ -319,7 +319,7 @@ ips = [ "1.3.4.2/31", "2.3.4.5/30", "1.2.3.4/32" ]
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>January 2016</li>
+    <li class='tc'>May 2016</li>
     <li class='tr'>greyd(8)</li>
   </ol>
 

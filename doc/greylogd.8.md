@@ -48,10 +48,10 @@ and similarly for tracking outbound connections (255 is the default outbound *--
 For the *netfilter* driver, the above default configuration may be overridden in **greyd.conf**(5), for example:
 
     section firewall {
-        driver = "netfilter.so", # Find via dynamic linker
-        track_outbound = 1,
-        inbound_group = 155,
-        outbound_group = 255,
+        driver = "netfilter.so" # Find via dynamic linker
+        track_outbound = 1
+        inbound_group = 155
+        outbound_group = 255
         ...
     }
 

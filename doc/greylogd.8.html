@@ -115,10 +115,10 @@
 <p>For the <em>netfilter</em> driver, the above default configuration may be overridden in <strong>greyd.conf</strong>(5), for example:</p>
 
 <pre><code>section firewall {
-    driver = "netfilter.so", # Find via dynamic linker
-    track_outbound = 1,
-    inbound_group = 155,
-    outbound_group = 255,
+    driver = "netfilter.so" # Find via dynamic linker
+    track_outbound = 1
+    inbound_group = 155
+    outbound_group = 255
     ...
 }
 </code></pre>
@@ -152,7 +152,7 @@ pass out log on egress proto tcp to any port smtp
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>January 2016</li>
+    <li class='tc'>May 2016</li>
     <li class='tr'>greylogd(8)</li>
   </ol>
 

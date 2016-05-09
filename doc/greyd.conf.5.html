@@ -100,12 +100,12 @@ variable = [ 10, "value", ]
 
 <p>Comments, whitespace and blank lines are ignored.</p>
 
-<p><em>Sections</em> may contain many assignments, separated by a comma and a newline.</p>
+<p><em>Sections</em> may contain many assignments, separated by a newline.</p>
 
 <pre><code>section sectionname {
-    var1 = "val1",
-    var2 = 10,
-    var3 = [ 1, 2, 3 ],
+    var1 = "val1"
+    var2 = 10
+    var3 = [ 1, 2, 3 ]
 }
 </code></pre>
 
@@ -165,8 +165,8 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
 
 <pre><code>  section firewall {
-      #driver = "greyd_pf.so",
-      driver = "greyd_netfilter.so",
+      #driver = "greyd_pf.so"
+      driver = "greyd_netfilter.so"
 
       # Driver-specific options below.
       ...
@@ -208,10 +208,10 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>driver</strong> = <em>string</em></dt><dd><p>The driver shared object location. May be either an absolute or relative path. If no '/' is present, then the system's dynamic linker will search the relevant paths. For example:</p>
 
 <pre><code>  section database {
-      driver = "greyd_bdb.so",
-      #driver = "greyd_bdb_sql.so",
-      #driver = "greyd_sqlite.so",
-      #driver = "greyd_mysql.so",
+      driver = "greyd_bdb.so"
+      #driver = "greyd_bdb_sql.so"
+      #driver = "greyd_sqlite.so"
+      #driver = "greyd_mysql.so"
 
       # Driver-specific options below.
       ...
@@ -334,8 +334,8 @@ include "/etc/greyd/conf.d/*.conf"
 <p>An example blacklist definition is as follows:</p>
 
 <pre><code>blacklist nixspam {
-    message = "Your address %A is in the nixspam list",
-    method  = "http",
+    message = "Your address %A is in the nixspam list"
+    method  = "http"
     file = "www.openbsd.org/spamd/nixspam.gz"
 }
 </code></pre>
@@ -345,7 +345,7 @@ include "/etc/greyd/conf.d/*.conf"
 <p>Whitelist definitions take the same fields as a blacklist definition, with the exception of the <em>message</em> (which is not applicable). For example:</p>
 
 <pre><code>whitelist work_clients {
-    method = "exec",
+    method = "exec"
     file = "cat /tmp/work-clients-traplist.gz"
 }
 </code></pre>
@@ -375,7 +375,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>January 2016</li>
+    <li class='tc'>May 2016</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 

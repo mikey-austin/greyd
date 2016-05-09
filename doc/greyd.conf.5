@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "January 2016" "" ""
+.TH "GREYD\.CONF" "5" "May 2016" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -34,16 +34,16 @@ variable = [ 10, "value", ]
 Comments, whitespace and blank lines are ignored\.
 .
 .P
-\fISections\fR may contain many assignments, separated by a comma and a newline\.
+\fISections\fR may contain many assignments, separated by a newline\.
 .
 .IP "" 4
 .
 .nf
 
 section sectionname {
-    var1 = "val1",
-    var2 = 10,
-    var3 = [ 1, 2, 3 ],
+    var1 = "val1"
+    var2 = 10
+    var3 = [ 1, 2, 3 ]
 }
 .
 .fi
@@ -190,8 +190,8 @@ The driver shared object location\. May be either an absolute or relative path\.
 .nf
 
   section firewall {
-      #driver = "greyd_pf\.so",
-      driver = "greyd_netfilter\.so",
+      #driver = "greyd_pf\.so"
+      driver = "greyd_netfilter\.so"
 
       # Driver\-specific options below\.
       \.\.\.
@@ -256,10 +256,10 @@ The driver shared object location\. May be either an absolute or relative path\.
 .nf
 
   section database {
-      driver = "greyd_bdb\.so",
-      #driver = "greyd_bdb_sql\.so",
-      #driver = "greyd_sqlite\.so",
-      #driver = "greyd_mysql\.so",
+      driver = "greyd_bdb\.so"
+      #driver = "greyd_bdb_sql\.so"
+      #driver = "greyd_sqlite\.so"
+      #driver = "greyd_mysql\.so"
 
       # Driver\-specific options below\.
       \.\.\.
@@ -475,8 +475,8 @@ An example blacklist definition is as follows:
 .nf
 
 blacklist nixspam {
-    message = "Your address %A is in the nixspam list",
-    method  = "http",
+    message = "Your address %A is in the nixspam list"
+    method  = "http"
     file = "www\.openbsd\.org/spamd/nixspam\.gz"
 }
 .
@@ -492,7 +492,7 @@ Whitelist definitions take the same fields as a blacklist definition, with the e
 .nf
 
 whitelist work_clients {
-    method = "exec",
+    method = "exec"
     file = "cat /tmp/work\-clients\-traplist\.gz"
 }
 .
