@@ -51,7 +51,7 @@ extern void Plugin_register_callback(
 /**
  * Register a spamtrap function to be called.
  */
-extern int Plugin_register_spamtrap(int (*)(struct Grey_tuple *, void *), void *arg);
+extern void Plugin_register_spamtrap(int (*)(struct Grey_tuple *, void *), void *arg);
 
 /**
  * Run all callbacks registered with the supplied hook to run.

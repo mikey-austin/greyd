@@ -30,6 +30,7 @@
 
 static List_T Plugin_hooks[PLUGIN_NUM_HOOKS];
 static List_T Plugin_spamtraps;
+static int Plugin_enabled;
 
 static void destroy_callback(void *);
 static void destroy_trap(void *);
@@ -49,9 +50,7 @@ Plugin_sys_init(Config_T config)
 {
     int i;
 
-    if(!Config_get_int(config, "enable", "plugins", 0))
-        return;
-
+    Plugin_enabled = Config_get_int(config, "enable", "plugins", 0);
     Plugin_spamtraps = NULL;
     for(i = 0; i < PLUGIN_NUM_HOOKS; i++)
         Plugin_hooks[i] = NULL;
@@ -62,6 +61,10 @@ Plugin_register_callback(
     enum Plugin_hook hook, void (*cb)(void *), void *arg)
 {
     struct Plugin_callback *pcb = NULL;
+
+    if(!Plugin_enabled)
+        return;
+
     if((pcb = malloc(sizeof(*pcb))) == NULL)
         i_critical("Could not create callback: %s", strerror(errno));
 
@@ -73,11 +76,15 @@ Plugin_register_callback(
     List_insert_after(Plugin_hooks[hook], (void *) pcb);
 }
 
-extern int
+extern void
 Plugin_register_spamtrap(
     int (*trap)(struct Grey_tuple *, void *), void *arg)
 {
     struct Plugin_trap *spamtrap = NULL;
+
+    if(!Plugin_enabled)
+        return;
+
     if((spamtrap = malloc(sizeof(*spamtrap))) == NULL)
         i_critical("Could not create spamtrap: %s", strerror(errno));
 
