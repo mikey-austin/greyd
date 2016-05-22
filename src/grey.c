@@ -73,7 +73,7 @@ static void shutdown_greyd(int);
 static int process_message(Greylister_T, Config_T);
 static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
 static void process_non_grey(Greylister_T, int, char *, char *, char *, int, int);
-static int trap_check(Greylister_T, char *);
+static int trap_check(Greylister_T, struct Grey_tuple *);
 static void update_firewall(Greylister_T, int);
 #ifdef HAVE_SPF
 static int spf_lookup(Greylister_T, struct Grey_tuple *);
@@ -484,12 +484,12 @@ Grey_load_domains(Greylister_T greylister)
  * @return -1 An error occured.
  */
 static int
-trap_check(Greylister_T greylister, char *to)
+trap_check(Greylister_T greylister, struct Grey_tuple *gt)
 {
     struct DB_key key;
     struct DB_val val;
     struct List_entry *entry;
-    char *domain;
+    char *domain, *to = gt->to;
     int ret, to_len, from_pos, match = 0, check_domains = 0;
 
     if(List_size(greylister->domains) > 0) {
@@ -593,7 +593,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
     now = time(NULL);
     DB_open(db, 0);
 
-    switch(trap_check(greylister, gt->to)) {
+    switch(trap_check(greylister, gt)) {
     case 1:
         /* Do not trap. */
         spamtrap = 0;
