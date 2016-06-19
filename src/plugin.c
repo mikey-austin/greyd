@@ -38,11 +38,13 @@ static void destroy_trap(void *);
 struct Plugin_callback {
     void (*cb)(void *);
     void *arg;
+    char *name;
 };
 
 struct Plugin_trap {
     int (*trap)(struct Grey_tuple *, void *);
     void *arg;
+    char *name;
 };
 
 extern void
@@ -58,7 +60,8 @@ Plugin_sys_init(Config_T config)
 
 extern void
 Plugin_register_callback(
-    enum Plugin_hook hook, void (*cb)(void *), void *arg)
+    enum Plugin_hook hook, const char *name, void (*cb)(void *),
+    void *arg)
 {
     struct Plugin_callback *pcb = NULL;
 
@@ -68,17 +71,21 @@ Plugin_register_callback(
     if((pcb = malloc(sizeof(*pcb))) == NULL)
         i_critical("Could not create callback: %s", strerror(errno));
 
+    pcb->name = strdup(name);
     pcb->cb = cb;
     pcb->arg = arg;
 
     if(Plugin_hooks[hook] == NULL)
         Plugin_hooks[hook] = List_create(destroy_callback);
     List_insert_after(Plugin_hooks[hook], (void *) pcb);
+
+    i_debug("Registered callback via plugin: %s", name);
 }
 
 extern void
 Plugin_register_spamtrap(
-    int (*trap)(struct Grey_tuple *, void *), void *arg)
+    const char *name, int (*trap)(struct Grey_tuple *, void *),
+    void *arg)
 {
     struct Plugin_trap *spamtrap = NULL;
 
@@ -88,12 +95,15 @@ Plugin_register_spamtrap(
     if((spamtrap = malloc(sizeof(*spamtrap))) == NULL)
         i_critical("Could not create spamtrap: %s", strerror(errno));
 
+    spamtrap->name = strdup(name);
     spamtrap->trap = trap;
     spamtrap->arg = arg;
 
     if(Plugin_spamtraps == NULL)
         Plugin_spamtraps = List_create(destroy_trap);
     List_insert_after(Plugin_spamtraps, (void *) spamtrap);
+
+    i_debug("Registered spamtrap via plugin: %s", name);
 }
 
 extern void
@@ -118,16 +128,18 @@ Plugin_run_spamtraps(struct Grey_tuple *gt)
     struct List_entry *entry;
     struct Plugin_trap *trap;
 
-    if(!Plugin_spamtraps || !List_size(Plugin_spamtraps))
-        return 0;
-
-    LIST_EACH(Plugin_spamtraps, entry) {
-        trap = List_entry_value(entry);
-        if(trap->trap(gt, trap->arg))
-            return 1;
+    if(Plugin_spamtraps && List_size(Plugin_spamtraps) > 0) {
+        LIST_EACH(Plugin_spamtraps, entry) {
+            trap = List_entry_value(entry);
+            if(trap->trap(gt, trap->arg)) {
+                i_debug("Spamtrap plugin (%s) triggered",
+                        trap->name);
+                return 0;
+            }
+        }
     }
 
-    return 0;
+    return 1;
 }
 
 static void
@@ -135,8 +147,11 @@ destroy_callback(void *callback)
 {
     struct Plugin_callback *p = (struct Plugin_callback *) callback;
 
-    if(p != NULL)
+    if(p != NULL) {
+        if(p->name)
+            free(p->name);
         free(p);
+    }
 }
 
 static void
@@ -144,6 +159,9 @@ destroy_trap(void *trap)
 {
     struct Plugin_trap *p = (struct Plugin_trap *) trap;
 
-    if(p != NULL)
+    if(p != NULL) {
+        if(p->name)
+            free(p->name);
         free(p);
+    }
 }

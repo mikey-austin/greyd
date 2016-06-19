@@ -46,12 +46,13 @@ extern void Plugin_sys_init(Config_T config);
  * hook location.
  */
 extern void Plugin_register_callback(
-    enum Plugin_hook hook, void (*)(void *), void *arg);
+    enum Plugin_hook hook, const char *, void (*)(void *), void *arg);
 
 /**
  * Register a spamtrap function to be called.
  */
-extern void Plugin_register_spamtrap(int (*)(struct Grey_tuple *, void *), void *arg);
+extern void Plugin_register_spamtrap(
+    const char *, int (*)(struct Grey_tuple *, void *), void *arg);
 
 /**
  * Run all callbacks registered with the supplied hook to run.

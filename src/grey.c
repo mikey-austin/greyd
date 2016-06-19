@@ -61,6 +61,7 @@
 #include "config_parser.h"
 #include "list.h"
 #include "ip.h"
+#include "plugin.h"
 
 #define GREY_TRAP_NAME       "greyd-greytrap"
 #define GREY_TRAP_MSG        "Your address %A has mailed to spamtraps here"
@@ -491,6 +492,10 @@ trap_check(Greylister_T greylister, struct Grey_tuple *gt)
     struct List_entry *entry;
     char *domain, *to = gt->to;
     int ret, to_len, from_pos, match = 0, check_domains = 0;
+
+    /* If any plugin traps match, return straight away. */
+    if(!Plugin_run_spamtraps(gt))
+        return 0;
 
     if(List_size(greylister->domains) > 0) {
         check_domains = 1;
