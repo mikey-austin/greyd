@@ -64,6 +64,9 @@ ltmain.sh
 drivers/.deps/*
 drivers/.libs/*
 drivers/*.la
+plugins/.deps/*
+plugins/.libs/*
+plugins/*.la
 packages/rpm/*.rpm
 packages/rpm/*.spec
 check/benchmark_blacklist

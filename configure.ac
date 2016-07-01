@@ -58,8 +58,10 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h str
 
 # Optional drivers to build.
 optional_drivers=
+optional_plugins=
 optional_ldadd=
 AC_SUBST([optional_drivers])
+AC_SUBST([optional_plugins])
 AC_SUBST([optional_ldadd])
 
 extra_tests=
@@ -223,6 +225,8 @@ if test "x${spf_module}" = xyes; then
 
     if test "x${have_spf}" = xyes; then
         AC_DEFINE([HAVE_SPF], [1], [spf functionality])
+        optional_plugins="${optional_plugins} greyd_spf.la"
+        optional_ldadd="${optional_ldadd} -dlopen ../plugins/greyd_spf.la"
     else
         AC_MSG_FAILURE([libspf2 is required for spf support])
     fi
@@ -426,6 +430,7 @@ AC_CHECK_FUNCS([dup2 getcwd gethostname inet_ntoa memset mkdir socket strchr str
 AC_CONFIG_FILES([Makefile
         src/Makefile
         drivers/Makefile
+        plugins/Makefile
         doc/Makefile
         etc/Makefile
         check/Makefile
