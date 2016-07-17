@@ -332,13 +332,11 @@ grammar_section(Config_parser_T parser)
         len = strlen(parser->lexer->current_value.s) + 1;
         sstrncpy(secname, parser->lexer->current_value.s, len);
         advance(parser);
+        accept(parser, CONFIG_LEXER_TOK_EOL);
 
-        if((accept(parser, CONFIG_LEXER_TOK_EOL)
-            && accept(parser, CONFIG_LEXER_TOK_BRACKET_L)
-           && accept(parser, CONFIG_LEXER_TOK_EOL))
-           || (accept(parser, CONFIG_LEXER_TOK_BRACKET_L)
-               && accept(parser, CONFIG_LEXER_TOK_EOL)))
-        {
+        if(accept(parser, CONFIG_LEXER_TOK_BRACKET_L)) {
+            accept(parser, CONFIG_LEXER_TOK_EOL);
+
             /*
              * Create a new section and overwrite any existing sections
              * of the same name in the configuration.

@@ -158,6 +158,7 @@ Config_lexer_next_token(Lexer_T lexer)
 
             return (lexer->current_token = CONFIG_LEXER_TOK_STR);
 
+        case ';':
         case '\n':
             return (lexer->current_token = CONFIG_LEXER_TOK_EOL);
 
