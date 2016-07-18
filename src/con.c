@@ -491,6 +491,10 @@ Con_next_state(struct Con *con, time_t *now, struct Greyd_state *state)
                     fflush(state->grey_out);
                 }
             }
+            else {
+                i_debug("incomplete sender and/or recipient; "
+                        "not sending to greylister");
+            }
             break;
         }
         goto spam;
@@ -937,8 +941,10 @@ set_log(char *p, size_t len, char *f)
     char *s;
 
     s = strsep(&f, ":");
-    if(!f)
+    if(!f) {
+        *p = '\0';
         return;
+    }
 
     while(*f == ' ' || *f == '\t')
         f++;
