@@ -13,7 +13,7 @@ noinst_HEADERS = test.h
 
 # Make a convenience library.
 check_LTLIBRARIES = libgreyd_test.la
-libgreyd_test_la_SOURCES = ../src/blacklist.c ../src/con.c ../src/config_lexer.c ../src/config_parser.c ../src/config_section.c ../src/config_value.c ../src/failures.c ../src/firewall.c ../src/grey.c ../src/greydb.c ../src/greyd.c ../src/greyd_config.c ../src/hash.c ../src/ip.c ../src/lexer.c ../src/lexer_source.c ../src/list.c ../src/log.c ../src/queue.c ../src/sync.c ../src/utils.c ../src/mod.c ../src/spamd_parser.c ../src/spamd_lexer.c ../src/trie.c
+libgreyd_test_la_SOURCES = ../src/blacklist.c ../src/con.c ../src/config_lexer.c ../src/config_parser.c ../src/config_section.c ../src/config_value.c ../src/failures.c ../src/firewall.c ../src/grey.c ../src/greydb.c ../src/greyd.c ../src/greyd_config.c ../src/hash.c ../src/ip.c ../src/lexer.c ../src/lexer_source.c ../src/list.c ../src/log.c ../src/queue.c ../src/sync.c ../src/utils.c ../src/mod.c ../src/spamd_parser.c ../src/spamd_lexer.c ../src/trie.c ../src/plugin.c
 
 dist_data_DATA = data/lexer_source_2.conf.gz
 data/lexer_source_2.conf.gz: data/lexer_source_1.conf

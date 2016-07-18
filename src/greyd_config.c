@@ -61,12 +61,15 @@ Config_create()
         errx(1, "Could not create configuration");
     }
 
-    /* Initialize the hash of sections. */
+    /* Configs always have sections. */
     config->sections = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
-    config->blacklists = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
-    config->whitelists = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
-    config->processed_includes = Hash_create(CONFIG_INIT_INCLUDES, Config_include_destroy_hash);
-    config->includes = Queue_create(Config_include_destroy);
+
+    /* Optional structures initialized when first used. */
+    config->blacklists         = NULL;
+    config->whitelists         = NULL;
+    config->plugins            = NULL;
+    config->processed_includes = NULL;
+    config->includes           = NULL;
 
     return config;
 }
@@ -78,11 +81,16 @@ Config_destroy(Config_T *config)
         return;
     }
 
-    Hash_destroy(&((*config)->sections));
-    Hash_destroy(&((*config)->blacklists));
-    Hash_destroy(&((*config)->whitelists));
-    Hash_destroy(&((*config)->processed_includes));
-    Queue_destroy(&((*config)->includes));
+    if((*config)->sections)
+        Hash_destroy(&((*config)->sections));
+    if((*config)->blacklists)
+        Hash_destroy(&((*config)->blacklists));
+    if((*config)->whitelists)
+        Hash_destroy(&((*config)->whitelists));
+    if((*config)->processed_includes)
+        Hash_destroy(&((*config)->processed_includes));
+    if((*config)->includes)
+        Queue_destroy(&((*config)->includes));
 
     free(*config);
     *config = NULL;
@@ -97,31 +105,53 @@ Config_add_section(Config_T config, Config_section_T section)
 extern void
 Config_add_blacklist(Config_T config, Config_section_T section)
 {
+    if(!config->blacklists)
+        config->blacklists = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
     Hash_insert(config->blacklists, section->name, section);
 }
 
 extern void
 Config_add_whitelist(Config_T config, Config_section_T section)
 {
+    if(!config->whitelists)
+        config->whitelists = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
     Hash_insert(config->whitelists, section->name, section);
+}
+
+extern void
+Config_add_plugin(Config_T config, Config_section_T section)
+{
+    if(!config->plugins)
+        config->plugins = Hash_create(CONFIG_INIT_SECTIONS, Config_section_value_destroy);
+    Hash_insert(config->plugins, section->name, section);
 }
 
 extern Config_section_T
 Config_get_section(Config_T config, const char *section_name)
 {
-    return Hash_get(config->sections, section_name);
+    return config->sections
+        ? Hash_get(config->sections, section_name) : NULL;
 }
 
 extern Config_section_T
 Config_get_blacklist(Config_T config, const char *section_name)
 {
-    return Hash_get(config->blacklists, section_name);
+    return config->blacklists
+        ? Hash_get(config->blacklists, section_name) : NULL;
 }
 
 extern Config_section_T
 Config_get_whitelist(Config_T config, const char *section_name)
 {
-    return Hash_get(config->whitelists, section_name);
+    return config->whitelists
+        ? Hash_get(config->whitelists, section_name) : NULL;
+}
+
+extern Config_section_T
+Config_get_plugin(Config_T config, const char *section_name)
+{
+    return config->plugins
+        ? Hash_get(config->plugins, section_name) : NULL;
 }
 
 extern void
@@ -132,6 +162,14 @@ Config_load_file(Config_T config, char *file)
     Config_parser_T parser;
     char *include;
     int *count;
+
+    if(!config->processed_includes) {
+        config->processed_includes = Hash_create(
+            CONFIG_INIT_INCLUDES, Config_include_destroy_hash);
+    }
+
+    if(!config->includes)
+        config->includes = Queue_create(Config_include_destroy);
 
     if(file) {
         source = Lexer_source_create_from_file(file);
@@ -209,6 +247,14 @@ Config_add_include(Config_T config, const char *file)
     char *match, *include;
     int len, i;
     glob_t paths;
+
+    if(!config->processed_includes) {
+        config->processed_includes = Hash_create(
+            CONFIG_INIT_INCLUDES, Config_include_destroy_hash);
+    }
+
+    if(!config->includes)
+        config->includes = Queue_create(Config_include_destroy);
 
     /*
      * Treat the supplied file path as a potential glob expansion.

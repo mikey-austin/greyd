@@ -66,6 +66,7 @@
  * section_type : SECTION
  *              | BLACKLIST
  *              | WHITELIST
+ *              | PLUGIN
  *              ;
  *
  * section_statements : assignment section_assignments

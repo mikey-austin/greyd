@@ -43,6 +43,7 @@
 #define CONFIG_LEXER_TOK_SQBRACK_R 112
 #define CONFIG_LEXER_TOK_BLACKLIST 113
 #define CONFIG_LEXER_TOK_WHITELIST 114
+#define CONFIG_LEXER_TOK_PLUGIN    115
 
 /**
  * Create a fresh lexer object.

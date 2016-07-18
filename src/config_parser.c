@@ -345,6 +345,10 @@ grammar_section(Config_parser_T parser)
              */
             parser->section = Config_section_create(secname);
             switch(parser->sectype) {
+            case CONFIG_LEXER_TOK_PLUGIN:
+
+                /* Fallthrough */
+
             case CONFIG_LEXER_TOK_SECTION:
                 Config_add_section(parser->config, parser->section);
                 break;
@@ -382,7 +386,8 @@ grammar_section_type(Config_parser_T parser)
 {
     if(accept_no_advance(parser, CONFIG_LEXER_TOK_SECTION)
        || accept_no_advance(parser, CONFIG_LEXER_TOK_BLACKLIST)
-       || accept_no_advance(parser, CONFIG_LEXER_TOK_WHITELIST))
+       || accept_no_advance(parser, CONFIG_LEXER_TOK_WHITELIST)
+       || accept_no_advance(parser, CONFIG_LEXER_TOK_PLUGIN))
     {
         /* Store the type of section. */
         parser->sectype = parser->curr;

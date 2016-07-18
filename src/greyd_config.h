@@ -38,6 +38,7 @@ struct Config_T {
     Hash_T  sections;           /**< This config's sections */
     Hash_T  blacklists;         /**< Configured blacklists */
     Hash_T  whitelists;         /**< Configured whitelists */
+    Hash_T  plugins;            /**< Configured plugins */
     Hash_T  processed_includes; /**< For tracking processed included files */
     Queue_T includes;           /**< A queue of included files to be parsed */
 };
@@ -67,6 +68,11 @@ extern void Config_add_blacklist(Config_T config, Config_section_T section);
  */
 extern void Config_add_whitelist(Config_T config, Config_section_T section);
 
+/*
+ * Add a plugin to the configuration.
+ */
+extern void Config_add_plugin(Config_T config, Config_section_T section);
+
 /**
  * Get a configuration section by name if one exists.
  */
@@ -81,6 +87,11 @@ extern Config_section_T Config_get_blacklist(Config_T config, const char *sectio
  * Get a whitelist by name if one exists.
  */
 extern Config_section_T Config_get_whitelist(Config_T config, const char *section_name);
+
+/**
+ * Get a plugin by name if one exists.
+ */
+extern Config_section_T Config_get_plugin(Config_T config, const char *section_name);
 
 /**
  * Parse the specified file and load the configuration data. Any included

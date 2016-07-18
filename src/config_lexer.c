@@ -97,6 +97,9 @@ Config_lexer_next_token(Lexer_T lexer)
             else if(L_MATCH(lexer->current_value.s, len, "whitelist")) {
                 return (lexer->current_token = CONFIG_LEXER_TOK_WHITELIST);
             }
+            else if(L_MATCH(lexer->current_value.s, len, "plugin")) {
+                return (lexer->current_token = CONFIG_LEXER_TOK_PLUGIN);
+            }
             else {
                 /*
                  * The scanned token is not a reserved word and is not a
