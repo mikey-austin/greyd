@@ -386,7 +386,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     ret = sqlite3_step(stmt);
     if(ret != SQLITE_DONE) {
-        i_warning("unexpected sqlite3_step result: %d", ret);
+        i_warning("Mod_db_put: unexpected sqlite3_step result: %d", ret);
         sqlite3_finalize(stmt);
         return GREYDB_ERR;
     }
@@ -518,7 +518,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     default:
-        i_warning("unexpected sqlite3_step result: %d", ret);
+        i_warning("Mod_db_get: unexpected sqlite3_step result: %d", ret);
         res = GREYDB_ERR;
         break;
     }
@@ -610,7 +610,7 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
 
     ret = sqlite3_step(stmt);
     if(ret != SQLITE_DONE) {
-        i_warning("unexpected sqlite3_step result: %d", ret);
+        i_warning("Mod_db_del: unexpected sqlite3_step result: %d", ret);
         sqlite3_finalize(stmt);
         return GREYDB_ERR;
     }
@@ -708,7 +708,7 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
         break;
 
     default:
-        i_warning("unexpected sqlite3_step result: %d", ret);
+        i_warning("Mod_db_itr_next: unexpected sqlite3_step result: %d", ret);
         res = GREYDB_ERR;
         break;
     }
@@ -780,13 +780,13 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
          && !sqlite3_bind_int64(stmt, 1, *now + *white_exp)
          && !sqlite3_bind_int64(stmt, 2, *now)))
     {
-        i_warning("update db entries: %s", sqlite3_errmsg(dbh->db));
+        i_warning("Mod_scan_db: update db entries: %s", sqlite3_errmsg(dbh->db));
         ret = GREYDB_ERR;
         goto cleanup;
     }
 
     if(sqlite3_step(stmt) != SQLITE_DONE) {
-        i_warning("sqlite3_step: %s", sqlite3_errmsg(dbh->db));
+        i_warning("Mod_scan_db: unexpected sqlite3_step result: %s", sqlite3_errmsg(dbh->db));
         ret = GREYDB_ERR;
         goto cleanup;
     }
