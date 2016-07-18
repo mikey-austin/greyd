@@ -24,6 +24,8 @@
 #include <sys/socket.h>
 
 #include <errno.h>
+#include <err.h>
+#include <time.h>
 #include <string.h>
 #include <string.h>
 #include <netdb.h>
