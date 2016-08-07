@@ -57,7 +57,7 @@ DB_init(Config_T config)
     }
 
     /* Open the configured driver and extract all required symbols. */
-    handle->driver = Mod_open(section, "db");
+    handle->driver = Mod_open(section);
 
     handle->db_init = (void (*)(DB_handle_T))
         Mod_get(handle->driver, "Mod_db_init");

@@ -48,7 +48,7 @@ FW_open(Config_T config)
     handle->section = section;
     handle->fwh     = NULL;
 
-    handle->driver = Mod_open(section, "firewall");
+    handle->driver = Mod_open(section);
 
     handle->fw_open = (int (*)(FW_handle_T))
         Mod_get(handle->driver, "Mod_fw_open");

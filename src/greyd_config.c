@@ -87,6 +87,8 @@ Config_destroy(Config_T *config)
         Hash_destroy(&((*config)->blacklists));
     if((*config)->whitelists)
         Hash_destroy(&((*config)->whitelists));
+    if((*config)->plugins)
+        Hash_destroy(&((*config)->plugins));
     if((*config)->processed_includes)
         Hash_destroy(&((*config)->processed_includes));
     if((*config)->includes)
@@ -152,6 +154,27 @@ Config_get_plugin(Config_T config, const char *section_name)
 {
     return config->plugins
         ? Hash_get(config->plugins, section_name) : NULL;
+}
+
+extern List_T
+Config_get_all_plugins(Config_T config)
+{
+    List_T keys = NULL, sections = NULL;
+    struct List_entry *entry;
+    Config_section_T section;
+    char *section_name = NULL;
+
+    if((keys = Hash_keys(config->plugins)) != NULL) {
+        sections = List_create(NULL);
+        LIST_EACH(keys, entry) {
+            section_name = List_entry_value(entry);
+            if(section = Config_get_plugin(config, section_name)) {
+                List_insert_after(sections, section);
+            }
+        }
+    }
+
+    return sections;
 }
 
 extern void

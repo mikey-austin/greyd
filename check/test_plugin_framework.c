@@ -23,15 +23,39 @@
 
 #include "test.h"
 #include <plugin.h>
+#include <greyd_config.h>
+#include <config_parser.h>
 
 #include <string.h>
 
 int
 main(void)
 {
+    Config_T c;
+    Lexer_source_T ls;
+    Lexer_T l;
+    Config_parser_T cp;
+    char *conf =
+        "section plugins {\n"
+        "  enable = 1\n"
+        "}\n"
+        "plugin dummy {\n"
+        "  driver = \"greyd_plugin_dummy.so\"\n"
+        "}";
+
+    c = Config_create();
+    ls = Lexer_source_create_from_str(conf, strlen(conf));
+    l = Config_lexer_create(ls);
+    cp = Config_parser_create(l);
+    Config_parser_start(cp, c);
+
     TEST_START(1);
 
+    Plugin_sys_init(c);
     TEST_OK(1 == 1, "Plugin framework works");
+
+    Config_destroy(&c);
+    Config_parser_destroy(&cp);
 
     TEST_COMPLETE;
 }

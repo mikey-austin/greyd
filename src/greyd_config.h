@@ -94,6 +94,11 @@ extern Config_section_T Config_get_whitelist(Config_T config, const char *sectio
 extern Config_section_T Config_get_plugin(Config_T config, const char *section_name);
 
 /**
+ * Return a list of all plugins in the configuration.
+ */
+extern List_T Config_get_all_plugins(Config_T config);
+
+/**
  * Parse the specified file and load the configuration data. Any included
  * sub-configuration files will also be parsed.
  */

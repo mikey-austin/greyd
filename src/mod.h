@@ -31,7 +31,7 @@
  * Load the driver module from the specified configuration section, and
  * return an open handle.
  */
-extern void *Mod_open(Config_section_T section, const char *name);
+extern void *Mod_open(Config_section_T section);
 
 /**
  * Close a previously opened module handle.

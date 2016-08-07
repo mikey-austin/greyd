@@ -28,6 +28,9 @@
 
 #define PLUGIN_NUM_HOOKS 1
 
+#define PLUGIN_OK  0
+#define PLUGIN_ERR 1
+
 /**
  * Pre-defined callback hook locations.
  */

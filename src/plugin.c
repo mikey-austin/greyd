@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mod.h"
 #include "plugin.h"
 #include "list.h"
 #include "failures.h"
@@ -50,12 +51,43 @@ struct Plugin_trap {
 extern void
 Plugin_sys_init(Config_T config)
 {
+    List_T plugins = NULL;
+    Config_section_T plugin_section = NULL;
+    struct List_entry *entry;
+    void *driver = NULL;
+    int (*load)(Config_section_T) = NULL;
     int i;
 
+    /* Setup the plugin environment. */
     Plugin_enabled = Config_get_int(config, "enable", "plugins", 0);
     Plugin_spamtraps = NULL;
     for(i = 0; i < PLUGIN_NUM_HOOKS; i++)
         Plugin_hooks[i] = NULL;
+
+    /* Load the actual plugins. */
+    // TODO: store successfully loaded plugins.
+    if(Plugin_enabled
+       && (plugins = Config_get_all_plugins(config)))
+    {
+        LIST_EACH(plugins, entry) {
+            plugin_section = List_entry_value(entry);
+            if((driver = Mod_open(plugin_section)) != NULL) {
+                load = (int (*)(Config_section_T)) Mod_get(driver, "load");
+                if(load && load(plugin_section) == PLUGIN_OK) {
+                    i_info("loaded %s plugin", plugin_section->name);
+                }
+                else {
+                    i_warning("could not initialize %s plugin",
+                              plugin_section->name);
+                }
+            }
+            else {
+                i_warning("could not load %s plugin: %s",
+                          plugin_section->name,
+                          Mod_error());
+            }
+        }
+    }
 }
 
 extern void

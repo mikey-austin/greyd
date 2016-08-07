@@ -344,8 +344,8 @@ grammar_section(Config_parser_T parser)
             parser->section = Config_section_create(secname);
             switch(parser->sectype) {
             case CONFIG_LEXER_TOK_PLUGIN:
-
-                /* Fallthrough */
+                Config_add_plugin(parser->config, parser->section);
+                break;
 
             case CONFIG_LEXER_TOK_SECTION:
                 Config_add_section(parser->config, parser->section);

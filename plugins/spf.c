@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 Mikey Austin <mikey@greyd.org>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #ifdef HAVE_SPF
 #  include <sys/types.h>
 #  include <sys/socket.h>
@@ -15,15 +31,15 @@
 #include "plugin.h"
 #include "failures.h"
 #include "grey.h"
-#include "greyd_config.h"
+#include "config_section.h"
 
 /* One spf server per lifetime of plugin. */
 static SPF_server_t *spf_server = NULL;
-static Config_T Plugin_config;
+static Config_section_T Plugin_section;
 
 static int spf_check(struct Grey_tuple *, void *);
-static void load(Config_T);
-static void unload();
+extern void load(Config_section_T);
+extern void unload();
 
 static int
 spf_check(struct Grey_tuple *gt, void *arg)
@@ -60,8 +76,8 @@ spf_check(struct Grey_tuple *gt, void *arg)
         break;
 
     case SPF_RESULT_SOFTFAIL:
-        if(!Config_get_int(Plugin_config, "trap_on_softfail",
-                          "spf", SPF_TRAP_SOFTFAIL))
+        if(!Config_section_get_int(
+            Plugin_section, "trap_on_softfail", SPF_TRAP_SOFTFAIL))
         {
             result = 1;
             break;
@@ -90,20 +106,26 @@ error:
     return result;
 }
 
-static void
-load(Config_T config)
+extern int
+load(Config_section_T section)
 {
-    Plugin_config = config;
+    Plugin_section = section;
+    int status = PLUGIN_OK;
 
-    if(Config_get_int(config, "enable", "spf", SPF_ENABLED))
-    {
+    if(Config_section_get_int(section, "enable", SPF_ENABLED)) {
         spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
-        if(spf_server == NULL)
+        if(spf_server == NULL) {
             i_critical("could not create SPF server");
+            status = PLUGIN_ERR;
+            goto cleanup;
+        }
     }
+
+cleanup:
+    return status;
 }
 
-static void
+extern void
 unload()
 {
     if(spf_server) {

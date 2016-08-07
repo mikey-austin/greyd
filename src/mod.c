@@ -36,7 +36,7 @@
 #include "mod.h"
 
 extern void
-*Mod_open(Config_section_T section, const char *name)
+*Mod_open(Config_section_T section)
 {
     void *handle = NULL;
     char *mod_path = NULL;
@@ -45,10 +45,10 @@ extern void
 
     if(lt_dlinit() == 0) {
         if(section == NULL)
-            i_critical("No %s configuration set", name);
+            i_critical("No %s configuration set", section->name);
 
         if((mod_path = Config_section_get_str(section, "driver", NULL)) == NULL)
-            i_critical("No %s module configured", name);
+            i_critical("No %s module configured", section->name);
 
         if((handle = lt_dlopen(mod_path)) == NULL)
             i_critical("Could not open %s: %s", mod_path, lt_dlerror());
