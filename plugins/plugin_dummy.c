@@ -21,15 +21,20 @@
 extern int load(Config_section_T);
 extern void unload();
 
+/* Global counters for testing. */
+extern int Test_loaded;
+
 extern int
 load(Config_section_T section)
 {
     i_info("in dummy load");
+    Test_loaded = 1;
     return PLUGIN_OK;
 }
 
 extern void
 unload()
 {
+    Test_loaded = 0;
     i_info("in dummy unload");
 }

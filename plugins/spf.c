@@ -119,6 +119,8 @@ load(Config_section_T section)
             status = PLUGIN_ERR;
             goto cleanup;
         }
+
+        /* TODO: register spamtrap. */
     }
 
 cleanup:
