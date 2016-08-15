@@ -28,6 +28,9 @@
 
 #include <string.h>
 
+/* Global used for testing loading/unloading. */
+int Test_loaded = 0;
+
 int
 main(void)
 {
@@ -49,14 +52,18 @@ main(void)
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
 
-    TEST_START(1);
+    TEST_START(3);
 
+    TEST_OK(Test_loaded == 0, "Initial state ok");
     Plugin_sys_init(c);
-    TEST_OK(1 == 1, "Plugin framework works");
+    TEST_OK(Test_loaded == 1, "Dummy plugin loaded");
+
+    /* TODO: test hook & spamtrap registration. */
 
     Config_destroy(&c);
     Config_parser_destroy(&cp);
     Plugin_sys_stop();
+    TEST_OK(Test_loaded == 0, "Dummy plugin unloaded");
 
     TEST_COMPLETE;
 }
