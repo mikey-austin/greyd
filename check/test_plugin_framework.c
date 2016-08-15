@@ -56,6 +56,7 @@ main(void)
 
     Config_destroy(&c);
     Config_parser_destroy(&cp);
+    Plugin_sys_stop();
 
     TEST_COMPLETE;
 }

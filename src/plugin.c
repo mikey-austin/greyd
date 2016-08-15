@@ -27,14 +27,19 @@
 #include "mod.h"
 #include "plugin.h"
 #include "list.h"
+#include "hash.h"
 #include "failures.h"
+
+#define PLUGIN_INIT_NUM 5
 
 static List_T Plugin_hooks[PLUGIN_NUM_HOOKS];
 static List_T Plugin_spamtraps;
+static Hash_T Plugin_loaded;
 static int Plugin_enabled;
 
 static void destroy_callback(void *);
 static void destroy_trap(void *);
+static void destroy_plugin(struct Hash_entry *);
 
 struct Plugin_callback {
     void (*cb)(void *);
@@ -48,17 +53,25 @@ struct Plugin_trap {
     char *name;
 };
 
+struct Plugin {
+    void *driver;
+    void (*unload)(void);
+};
+
 extern void
 Plugin_sys_init(Config_T config)
 {
     List_T plugins = NULL;
     Config_section_T plugin_section = NULL;
     struct List_entry *entry;
+    struct Plugin *plugin = NULL;
     void *driver = NULL;
     int (*load)(Config_section_T) = NULL;
+    void (*unload)(void) = NULL;
     int i;
 
     /* Setup the plugin environment. */
+    Plugin_loaded = Hash_create(PLUGIN_INIT_NUM, destroy_plugin);
     Plugin_enabled = Config_get_int(config, "enable", "plugins", 0);
     Plugin_spamtraps = NULL;
     for(i = 0; i < PLUGIN_NUM_HOOKS; i++)
@@ -73,7 +86,15 @@ Plugin_sys_init(Config_T config)
             plugin_section = List_entry_value(entry);
             if((driver = Mod_open(plugin_section)) != NULL) {
                 load = (int (*)(Config_section_T)) Mod_get(driver, "load");
+                unload = (void (*)(void)) Mod_get(driver, "unload");
                 if(load && load(plugin_section) == PLUGIN_OK) {
+                    /* Store the plugin so we can unload it. */
+                    if((plugin = malloc(sizeof(*plugin))) == NULL)
+                        i_critical("Could not store plugin: %s", strerror(errno));
+                    plugin->driver = driver;
+                    plugin->unload = unload; /* The unload is optional. */
+                    Hash_insert(Plugin_loaded, plugin_section->name, plugin);
+
                     i_info("loaded %s plugin", plugin_section->name);
                 }
                 else {
@@ -87,7 +108,24 @@ Plugin_sys_init(Config_T config)
                           Mod_error());
             }
         }
+
+        List_destroy(&plugins);
     }
+}
+
+extern void
+Plugin_sys_stop(void)
+{
+    int i;
+
+    /* The hash value destructor will take care of unloading. */
+    Hash_destroy(&Plugin_loaded);
+
+    if(Plugin_spamtraps != NULL)
+        List_destroy(&Plugin_spamtraps);
+    for(i = 0; i < PLUGIN_NUM_HOOKS; i++)
+        if(Plugin_hooks[i] != NULL)
+            List_destroy(&Plugin_hooks[i]);
 }
 
 extern void
@@ -195,5 +233,21 @@ destroy_trap(void *trap)
         if(p->name)
             free(p->name);
         free(p);
+    }
+}
+
+static void
+destroy_plugin(struct Hash_entry *entry)
+{
+    struct Plugin *plugin = NULL;
+
+    if(entry && (plugin = (struct Plugin *) entry->v)) {
+        /* Call unload callback if one exists. */
+        if(plugin->unload)
+            plugin->unload();
+        if(plugin->driver)
+            Mod_close(plugin->driver);
+        free(plugin);
+        entry->v = NULL;
     }
 }

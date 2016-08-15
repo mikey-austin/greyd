@@ -45,6 +45,11 @@ enum Plugin_hook {
 extern void Plugin_sys_init(Config_T config);
 
 /**
+ * Cleanup plugin system.
+ */
+extern void Plugin_sys_stop(void);
+
+/**
  * Register a callback function to be called at the specified
  * hook location.
  */

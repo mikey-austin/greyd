@@ -172,6 +172,7 @@ Config_get_all_plugins(Config_T config)
                 List_insert_after(sections, section);
             }
         }
+        List_destroy(&keys);
     }
 
     return sections;
