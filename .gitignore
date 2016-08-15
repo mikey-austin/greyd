@@ -49,6 +49,7 @@ check/.libs/*
 check/*.la
 check/test_*
 !check/test_*.c
+!check/test_*_mysql.sh
 m4/*.m4
 test-driver
 src/.deps/*
