@@ -78,7 +78,6 @@ Plugin_sys_init(Config_T config)
         Plugin_hooks[i] = NULL;
 
     /* Load the actual plugins. */
-    // TODO: store successfully loaded plugins.
     if(Plugin_enabled
        && (plugins = Config_get_all_plugins(config)))
     {
@@ -149,7 +148,7 @@ Plugin_register_callback(
         Plugin_hooks[hook] = List_create(destroy_callback);
     List_insert_after(Plugin_hooks[hook], (void *) pcb);
 
-    i_debug("Registered callback via plugin: %s", name);
+    i_debug("Registered callback %s", name);
 }
 
 extern void
@@ -173,7 +172,7 @@ Plugin_register_spamtrap(
         Plugin_spamtraps = List_create(destroy_trap);
     List_insert_after(Plugin_spamtraps, (void *) spamtrap);
 
-    i_debug("Registered spamtrap via plugin: %s", name);
+    i_debug("Registered spamtrap %s", name);
 }
 
 extern void
@@ -188,6 +187,7 @@ Plugin_run_callbacks(enum Plugin_hook hook)
     /* Run each callback in turn. */
     LIST_EACH(Plugin_hooks[hook], entry) {
         callback = List_entry_value(entry);
+        i_debug("Running hook %s", callback->name);
         callback->cb(callback->arg);
     }
 }
@@ -202,8 +202,7 @@ Plugin_run_spamtraps(struct Grey_tuple *gt)
         LIST_EACH(Plugin_spamtraps, entry) {
             trap = List_entry_value(entry);
             if(trap->trap(gt, trap->arg)) {
-                i_debug("Spamtrap plugin (%s) triggered",
-                        trap->name);
+                i_debug("Spamtrap %s triggered", trap->name);
                 return 0;
             }
         }

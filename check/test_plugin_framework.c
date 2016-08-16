@@ -25,20 +25,25 @@
 #include <plugin.h>
 #include <greyd_config.h>
 #include <config_parser.h>
+#include <log.h>
 
 #include <string.h>
 
 /* Global used for testing loading/unloading. */
 int Test_loaded = 0;
+int Test_spamtrap = 0;
+int Test_hook = 0;
 
 int
-main(void)
+main(int argc, char *argv[])
 {
     Config_T c;
     Lexer_source_T ls;
     Lexer_T l;
+    int result;
     Config_parser_T cp;
     char *conf =
+        "debug=1\n"
         "section plugins {\n"
         "  enable = 1\n"
         "}\n"
@@ -51,14 +56,24 @@ main(void)
     l = Config_lexer_create(ls);
     cp = Config_parser_create(l);
     Config_parser_start(cp, c);
+    Log_setup(c, argv[0]);
 
-    TEST_START(3);
+    TEST_START(8);
 
     TEST_OK(Test_loaded == 0, "Initial state ok");
+    TEST_OK(Test_hook == 0, "Initial hook state ok");
+    TEST_OK(Test_spamtrap == 0, "Initial spamtrap state ok");
     Plugin_sys_init(c);
     TEST_OK(Test_loaded == 1, "Dummy plugin loaded");
 
-    /* TODO: test hook & spamtrap registration. */
+    /* Test running of hook callbacks. */
+    Plugin_run_callbacks(HOOK_NEW_ENTRY);
+    TEST_OK(Test_hook == 1, "Hook callback ok");
+
+    /* Test spamtraps. */
+    result = Plugin_run_spamtraps(NULL);
+    TEST_OK(Test_spamtrap == 1, "Spamtrap ok");
+    TEST_OK(result == 0, "Spamtrap return ok");
 
     Config_destroy(&c);
     Config_parser_destroy(&cp);

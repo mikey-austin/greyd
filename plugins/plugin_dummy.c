@@ -16,19 +16,31 @@
 
 #include "failures.h"
 #include "plugin.h"
+#include "grey.h"
 #include "config_section.h"
 
 extern int load(Config_section_T);
 extern void unload();
 
-/* Global counters for testing. */
 extern int Test_loaded;
+extern int Test_spamtrap;
+extern int Test_hook;
+
+static void test_hook(void *);
+static int test_spamtrap(struct Grey_tuple *, void *);
 
 extern int
 load(Config_section_T section)
 {
     i_info("in dummy load");
+
+    /* Register hook & spamtrap. */
+    Plugin_register_callback(
+        HOOK_NEW_ENTRY, "dummy_hook", test_hook, &Test_hook);
+    Plugin_register_spamtrap(
+        "dummy_spamtrap", test_spamtrap, &Test_spamtrap);
     Test_loaded = 1;
+
     return PLUGIN_OK;
 }
 
@@ -37,4 +49,19 @@ unload()
 {
     Test_loaded = 0;
     i_info("in dummy unload");
+}
+
+static void
+test_hook(void *arg)
+{
+    int *hook = (int *) arg;
+    (*hook)++;
+}
+
+static int
+test_spamtrap(struct Grey_tuple *gt, void *arg)
+{
+    int *spamtrap = (int *) arg;
+    (*spamtrap)++;
+    return 1;
 }
