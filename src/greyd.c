@@ -15,7 +15,7 @@
  */
 
 /**
- * @file   greyd.h
+ * @file   greyd.c
  * @brief  Implements greyd support constants and definitions.
  * @author Mikey Austin
  * @date   2014
@@ -333,6 +333,5 @@ cleanup:
     Config_parser_destroy(&parser);
     FW_close(&fw_handle);
     Config_destroy(&config);
-
-    return 0;
+    _exit(0);
 }

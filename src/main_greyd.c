@@ -48,6 +48,7 @@
 #include "con.h"
 #include "greyd.h"
 #include "hash.h"
+#include "plugin.h"
 #include "log.h"
 #include "config_parser.h"
 #include "lexer_source.h"
@@ -320,6 +321,7 @@ main(int argc, char **argv)
     }
 
     Log_setup(state.config, PROG_NAME);
+    Plugin_sys_init(state.config);
 
     if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
         state.max_black = state.max_cons;
@@ -330,7 +332,7 @@ main(int argc, char **argv)
         usage();
     }
 
-    if(!Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
+    if(Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
         limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
         if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
             err(1, "setrlimit");
@@ -468,7 +470,7 @@ main(int argc, char **argv)
 
             close(nat_pipe[0]);
             close(fw_pipe[1]);
-            return Greyd_start_fw_child(
+            Greyd_start_fw_child(
                 &state, grey_fw_pipe[0], fw_pipe[0], nat_pipe[1]);
         }
 
@@ -858,6 +860,7 @@ shutdown:
     free(fds);
     free(state.cons);
     fclose(state.grey_out);
+    Plugin_sys_stop();
     Hash_destroy(&state.blacklists);
     Config_destroy(&state.config);
 

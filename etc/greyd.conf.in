@@ -89,6 +89,11 @@ setrlimit = 1
 # max_cons_black = 800
 
 #
+# Enable the loading of plugins.
+#
+# enable_plugins = 0
+
+#
 # The firewall configuration.
 #
 section firewall {

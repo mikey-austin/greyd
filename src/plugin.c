@@ -35,11 +35,16 @@
 static List_T Plugin_hooks[PLUGIN_NUM_HOOKS];
 static List_T Plugin_spamtraps;
 static Hash_T Plugin_loaded;
-static int Plugin_enabled;
+static int    Plugin_enabled;
 
+static void destroy_plugin(struct Hash_entry *);
 static void destroy_callback(void *);
 static void destroy_trap(void *);
-static void destroy_plugin(struct Hash_entry *);
+
+struct Plugin {
+    void *driver;
+    void (*unload)(void);
+};
 
 struct Plugin_callback {
     void (*cb)(void *);
@@ -51,11 +56,6 @@ struct Plugin_trap {
     int (*trap)(struct Grey_tuple *, void *);
     void *arg;
     char *name;
-};
-
-struct Plugin {
-    void *driver;
-    void (*unload)(void);
 };
 
 extern void
@@ -71,8 +71,10 @@ Plugin_sys_init(Config_T config)
     int i;
 
     /* Setup the plugin environment. */
+    if(!(Plugin_enabled = Config_get_int(config, "enable_plugins", NULL, 0)))
+        return;
+
     Plugin_loaded = Hash_create(PLUGIN_INIT_NUM, destroy_plugin);
-    Plugin_enabled = Config_get_int(config, "enable", "plugins", 0);
     Plugin_spamtraps = NULL;
     for(i = 0; i < PLUGIN_NUM_HOOKS; i++)
         Plugin_hooks[i] = NULL;
@@ -117,11 +119,15 @@ Plugin_sys_stop(void)
 {
     int i;
 
+    if(!Plugin_enabled)
+        return;
+
     /* The hash value destructor will take care of unloading. */
     Hash_destroy(&Plugin_loaded);
 
     if(Plugin_spamtraps != NULL)
         List_destroy(&Plugin_spamtraps);
+
     for(i = 0; i < PLUGIN_NUM_HOOKS; i++)
         if(Plugin_hooks[i] != NULL)
             List_destroy(&Plugin_hooks[i]);
@@ -148,7 +154,7 @@ Plugin_register_callback(
         Plugin_hooks[hook] = List_create(destroy_callback);
     List_insert_after(Plugin_hooks[hook], (void *) pcb);
 
-    i_debug("Registered callback %s", name);
+    i_debug("registered callback %s", name);
 }
 
 extern void
@@ -172,7 +178,7 @@ Plugin_register_spamtrap(
         Plugin_spamtraps = List_create(destroy_trap);
     List_insert_after(Plugin_spamtraps, (void *) spamtrap);
 
-    i_debug("Registered spamtrap %s", name);
+    i_debug("registered spamtrap %s", name);
 }
 
 extern void
@@ -187,7 +193,7 @@ Plugin_run_callbacks(enum Plugin_hook hook)
     /* Run each callback in turn. */
     LIST_EACH(Plugin_hooks[hook], entry) {
         callback = List_entry_value(entry);
-        i_debug("Running hook %s", callback->name);
+        i_debug("running hook %s", callback->name);
         callback->cb(callback->arg);
     }
 }
@@ -202,7 +208,7 @@ Plugin_run_spamtraps(struct Grey_tuple *gt)
         LIST_EACH(Plugin_spamtraps, entry) {
             trap = List_entry_value(entry);
             if(trap->trap(gt, trap->arg)) {
-                i_debug("Spamtrap %s triggered", trap->name);
+                i_debug("spamtrap %s triggered", trap->name);
                 return 0;
             }
         }

@@ -251,6 +251,9 @@ Grey_finish(Greylister_T *greylister)
     if((*greylister)->fw_out != NULL)
         fclose((*greylister)->fw_out);
 
+    if((*greylister)->syncer)
+        Sync_stop(&((*greylister)->syncer));
+
     free(*greylister);
     *greylister = NULL;
     Grey_greylister = NULL;

@@ -17,4 +17,4 @@ greydb_SOURCES = main_greydb.c blacklist.c config_lexer.c config_parser.c config
 
 greyd_setup_LDFLAGS = -Wl,-E
 greyd_setup_LDADD = $(optional_ldadd)
-greyd_setup_SOURCES = main_greyd_setup.c blacklist.c con.c config_lexer.c config_parser.c config_section.c config_value.c failures.c firewall.c greydb.c greyd.c greyd_config.c hash.c ip.c lexer.c lexer_source.c list.c log.c queue.c utils.c spamd_lexer.c spamd_parser.c mod.c trie.c
+greyd_setup_SOURCES = main_greyd_setup.c blacklist.c con.c config_lexer.c config_parser.c config_section.c config_value.c failures.c firewall.c greydb.c greyd.c greyd_config.c hash.c ip.c lexer.c lexer_source.c list.c log.c queue.c utils.c spamd_lexer.c spamd_parser.c mod.c trie.c plugin.c

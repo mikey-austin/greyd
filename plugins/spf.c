@@ -38,8 +38,38 @@ static SPF_server_t *spf_server = NULL;
 static Config_section_T Plugin_section;
 
 static int spf_check(struct Grey_tuple *, void *);
-extern void load(Config_section_T);
+extern int load(Config_section_T);
 extern void unload();
+
+extern int
+load(Config_section_T section)
+{
+    Plugin_section = section;
+    int status = PLUGIN_OK;
+
+    if(Config_section_get_int(section, "enable", SPF_ENABLED)) {
+        spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
+        if(spf_server == NULL) {
+            i_critical("could not create SPF server");
+            status = PLUGIN_ERR;
+            goto cleanup;
+        }
+
+        Plugin_register_spamtrap("spf_check", spf_check, NULL);
+    }
+
+cleanup:
+    return status;
+}
+
+extern void
+unload()
+{
+    if(spf_server) {
+        SPF_server_free(spf_server);
+        spf_server = NULL;
+    }
+}
 
 static int
 spf_check(struct Grey_tuple *gt, void *arg)
@@ -65,14 +95,14 @@ spf_check(struct Grey_tuple *gt, void *arg)
     switch(SPF_response_result(res))
     {
     case SPF_RESULT_PASS:
-        result = 1;
+        result = 0;
         i_info("SPF passed for %s %s helo %s",
                gt->ip, gt->from, gt->helo);
         break;
 
     case SPF_RESULT_NEUTRAL:
     case SPF_RESULT_NONE:
-        result = 1;
+        result = 0;
         break;
 
     case SPF_RESULT_SOFTFAIL:
@@ -104,34 +134,4 @@ error:
     SPF_request_free(req);
 
     return result;
-}
-
-extern int
-load(Config_section_T section)
-{
-    Plugin_section = section;
-    int status = PLUGIN_OK;
-
-    if(Config_section_get_int(section, "enable", SPF_ENABLED)) {
-        spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
-        if(spf_server == NULL) {
-            i_critical("could not create SPF server");
-            status = PLUGIN_ERR;
-            goto cleanup;
-        }
-
-        /* TODO: register spamtrap. */
-    }
-
-cleanup:
-    return status;
-}
-
-extern void
-unload()
-{
-    if(spf_server) {
-        SPF_server_free(spf_server);
-        spf_server = NULL;
-    }
 }
