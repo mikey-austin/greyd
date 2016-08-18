@@ -233,6 +233,27 @@ if test "x${spf_module}" = xyes; then
 fi
 
 #
+# Guile support for writing plugins.
+#
+AC_ARG_WITH([guile], [AS_HELP_STRING([--with-guile], [include guile support])],
+    [guile_plugin=yes], [guile_plugin=no])
+
+AS_IF([test "x${guile_plugin}" = xyes], [
+    have_guile=no
+    PKG_CHECK_MODULES([GUILE], [guile-2.0], [have_guile=yes])
+
+    if test "x${have_guile}" = xyes; then
+        AC_DEFINE([HAVE_GUILE], [1], [guile functionality])
+        optional_plugins="${optional_plugins} greyd_guile.la"
+        optional_ldadd="${optional_ldadd} -dlopen ../plugins/greyd_guile.la"
+        CFLAGS="${CFLAGS} ${GUILE_CFLAGS}"
+        LIBS="${LIBS} ${GUILE_LIBS}"
+    else
+        AC_MSG_FAILURE([guile-2.0 required for guile support])
+    fi
+])
+
+#
 # Netfilter driver library & header checks.
 #
 AC_ARG_WITH([netfilter], [AS_HELP_STRING([--with-netfilter], [build the Netfilter firewall driver])],
