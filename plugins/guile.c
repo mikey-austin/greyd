@@ -23,30 +23,27 @@
 extern int load(Config_section_T);
 extern void unload();
 
-static void *register_functions(void *);
-static int run_traps(struct Grey_tuple *, void *);
+static int guile_spamtrap(struct Grey_tuple *, void *);
 
+/* C to guile api functions. */
+static void *register_api(void *);
+static SCM api_register_spamtrap(SCM, SCM);
 static SCM api_debug(SCM);
-static SCM api_register_spamtrap(SCM);
-
-static SCM Callback;
+static SCM api_warn(SCM);
+static SCM api_info(SCM);
 
 extern int
 load(Config_section_T section)
 {
     if(Config_section_get_int(section, "enable", 0)) {
-        scm_with_guile(&register_functions, NULL);
+        scm_with_guile(&register_api, NULL);
 
         /* Load the actual plugin scheme code. */
         char *plugin = Config_section_get_str(
             section, "plugin_file", NULL);
         if(plugin)
             scm_c_primitive_load(plugin);
-
-        /* Guile spamtrap runner. */
-        Plugin_register_spamtrap("guile_traps", run_traps, NULL);
     }
-
 
     return PLUGIN_OK;
 }
@@ -54,30 +51,41 @@ load(Config_section_T section)
 extern void
 unload()
 {
+    // TODO: cleanup here.
 }
 
 /*
- * Run the registered guile trap plugins with the grey tuple
- * as an argument.
+ * Run the registered guile trap closure with the grey tuple. This
+ * is esentially the C wrapper around guile traps.
  */
 static int
-run_traps(struct Grey_tuple *gt, void *arg)
+guile_spamtrap(struct Grey_tuple *gt, void *arg)
 {
-    scm_apply_3(
-        Callback,
+    SCM trap = (SCM) arg;
+    SCM result = scm_apply_3(
+        trap,
         scm_from_locale_string(gt->ip),
         scm_from_locale_string(gt->helo),
         scm_from_locale_string(gt->from),
-        //scm_from_locale_string(gt->to),
-        SCM_EOL);
-    return 0;
+        scm_cons(scm_from_locale_string(gt->to), SCM_EOL));
+
+    return scm_to_int(result);
 }
 
+/*
+ * Export functions to guile so we can register traps from scheme.
+ */
 static void
-*register_functions(void *args)
+*register_api(void *args)
 {
-    scm_c_define_gsubr("register-spamtrap", 1, 0, 0, &api_register_spamtrap);
-    scm_c_define_gsubr("debug", 1, 0, 0, &api_debug);
+    scm_c_define_gsubr(
+        "register-spamtrap", 2, 0, 0, &api_register_spamtrap);
+    scm_c_define_gsubr(
+        "debug", 1, 0, 0, &api_debug);
+    scm_c_define_gsubr(
+        "warn", 1, 0, 0, &api_warn);
+    scm_c_define_gsubr(
+        "info", 1, 0, 0, &api_info);
 
     return NULL;
 }
@@ -92,8 +100,30 @@ api_debug(SCM str)
 }
 
 static SCM
-api_register_spamtrap(SCM callback)
+api_warn(SCM str)
 {
-    Callback = callback;
+    char *msg = scm_to_locale_string(str);
+    i_warning(msg);
+    free(msg);
+    return SCM_UNSPECIFIED;
+}
+
+static SCM
+api_info(SCM str)
+{
+    char *msg = scm_to_locale_string(str);
+    i_info(msg);
+    free(msg);
+    return SCM_UNSPECIFIED;
+}
+
+static SCM
+api_register_spamtrap(SCM name, SCM callback)
+{
+    char *plugin_name = scm_to_locale_string(name);
+    Plugin_register_spamtrap(
+        plugin_name, guile_spamtrap, (void *) callback);
+    free(plugin_name);
+
     return SCM_UNSPECIFIED;
 }

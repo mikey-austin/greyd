@@ -55,7 +55,7 @@ load(Config_section_T section)
             goto cleanup;
         }
 
-        Plugin_register_spamtrap("spf_check", spf_check, NULL);
+        Plugin_register_spamtrap("spf-check", spf_check, NULL);
     }
 
 cleanup:
