@@ -125,8 +125,8 @@ if test "x${postgresql_driver}" = xyes; then
     AS_IF([test "x${POSTGRESQL_CONFIG}" = x], [AC_MSG_ERROR([Please install pg_config])])
 
     have_postgresql=no
-    LIBS="${LIBS} "`${POSTGRESQL_CONFIG} --libs`
-    CPPFLAGS="${CPPFLAGS} "`${POSTGRESQL_CONFIG} --cppflags`
+    LIBS="${LIBS} -L"`${POSTGRESQL_CONFIG} --libdir`" -lpq "`${POSTGRESQL_CONFIG} --libs`
+    CPPFLAGS="${CPPFLAGS} -I"`${POSTGRESQL_CONFIG} --includedir`
     AC_CHECK_HEADERS([libpq-fe.h], [have_postgresql=yes;break], [have_postgresql=no])
 
     if test "x${have_postgresql}" = xyes; then
