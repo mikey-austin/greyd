@@ -15,9 +15,11 @@
  */
 
 #include <libguile.h>
+#include <glob.h>
 
 #include "failures.h"
 #include "plugin.h"
+#include "list.h"
 #include "config_section.h"
 
 extern int load(Config_section_T);
@@ -35,14 +37,32 @@ static SCM api_info(SCM);
 extern int
 load(Config_section_T section)
 {
-    if(Config_section_get_int(section, "enable", 0)) {
-        scm_with_guile(&register_api, NULL);
+    List_T scripts;
+    struct List_entry *entry = NULL;
+    char *path = NULL;
+    glob_t files;
+    Config_value_T val;
+    int i;
 
-        /* Load the actual plugin scheme code. */
-        char *plugin = Config_section_get_str(
-            section, "plugin_file", NULL);
-        if(plugin)
-            scm_c_primitive_load(plugin);
+    if(Config_section_get_int(section, "enable", 0)) {
+        scripts = Config_section_get_list(section, "scripts");
+        if(scripts && List_size(scripts) > 0) {
+            /* Only load guile if there are scripts. */
+            scm_with_guile(&register_api, NULL);
+
+            /* Treat each entry as a glob pattern. */
+            LIST_EACH(scripts, entry) {
+                val = List_entry_value(entry);
+                if((path = cv_str(val)) != NULL) {
+                    if(glob(path, GLOB_TILDE, NULL, &files) != 0) {
+                        globfree(&files);
+                    } else {
+                        for(i = 0; i < files.gl_pathc; i++)
+                            scm_c_primitive_load(files.gl_pathv[i]);
+                    }
+                }
+            }
+        }
     }
 
     return PLUGIN_OK;
