@@ -54,12 +54,11 @@ load(Config_section_T section)
             LIST_EACH(scripts, entry) {
                 val = List_entry_value(entry);
                 if((path = cv_str(val)) != NULL) {
-                    if(glob(path, GLOB_TILDE, NULL, &files) != 0) {
-                        globfree(&files);
-                    } else {
+                    if(glob(path, GLOB_TILDE, NULL, &files) == 0) {
                         for(i = 0; i < files.gl_pathc; i++)
                             scm_c_primitive_load(files.gl_pathv[i]);
                     }
+                    globfree(&files);
                 }
             }
         }
