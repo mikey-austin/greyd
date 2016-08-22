@@ -22,10 +22,17 @@
 #include "list.h"
 #include "config_section.h"
 
+struct trap_data {
+    struct Grey_tuple *gt;
+    SCM trap;
+};
+
 extern int load(Config_section_T);
 extern void unload();
 
 static int guile_spamtrap(struct Grey_tuple *, void *);
+static SCM spamtrap_try(void *);
+static SCM spamtrap_catch(void *, SCM, SCM);
 
 /* C to guile api functions. */
 static void *register_api(void *);
@@ -75,12 +82,27 @@ unload()
 
 /*
  * Run the registered guile trap closure with the grey tuple. This
- * is esentially the C wrapper around guile traps.
+ * is esentially the C wrapper around guile traps. This is wrapped
+ * in a try/catch to catch any runtime exceptions and emit a warning.
  */
 static int
 guile_spamtrap(struct Grey_tuple *gt, void *arg)
 {
-    SCM trap = (SCM) arg;
+    struct trap_data tdata;
+    tdata.gt = gt;
+    tdata.trap = (SCM) arg;
+    SCM result = scm_internal_catch(
+        scm_from_bool(1), spamtrap_try, &tdata, spamtrap_catch, NULL);
+
+    return scm_to_int(result);
+}
+
+static SCM
+spamtrap_try(void *data)
+{
+    struct trap_data *tdata = data;
+    struct Grey_tuple *gt = tdata->gt;
+    SCM trap = tdata->trap;
     SCM result = scm_apply_3(
         trap,
         scm_from_locale_string(gt->ip),
@@ -88,7 +110,18 @@ guile_spamtrap(struct Grey_tuple *gt, void *arg)
         scm_from_locale_string(gt->from),
         scm_cons(scm_from_locale_string(gt->to), SCM_EOL));
 
-    return scm_to_int(result);
+    return result;
+}
+
+static SCM
+spamtrap_catch(void *data, SCM key, SCM args)
+{
+    char *ckey = scm_to_locale_string(
+        scm_symbol_to_string(key));
+    i_warning("caught guile exception; %s", ckey);
+    free(ckey);
+
+    return scm_from_int(0);
 }
 
 /*

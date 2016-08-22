@@ -21,13 +21,12 @@
   (host-exists? (make-rbl-lookup-host ip rbl)))
 
 (define (host-exists? host)
-  (catch #t
+  (catch 'host-not-found
     (lambda ()
-      (debug (format #f "looking up ~a" host))
       (gethost host)
       1)
     (lambda (key . params)
-      (debug (format #f "lookup of ~a failed with ~a" host key))
+      (debug (format #f "DNS RBL clear for ~a" host))
       0)))
 
 (define (make-rbl-lookup-host ip rbl)
