@@ -173,6 +173,7 @@ static SCM
 api_register_spamtrap(SCM name, SCM callback)
 {
     char *plugin_name = scm_to_locale_string(name);
+    scm_gc_protect_object(callback);
     Plugin_register_spamtrap(
         plugin_name, guile_spamtrap, (void *) callback);
     free(plugin_name);
