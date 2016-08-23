@@ -27,6 +27,8 @@ struct trap_data {
     SCM trap;
 };
 
+static Config_section_T Plugin_section;
+
 extern int load(Config_section_T);
 extern void unload();
 
@@ -40,6 +42,7 @@ static SCM api_register_spamtrap(SCM, SCM);
 static SCM api_debug(SCM);
 static SCM api_warn(SCM);
 static SCM api_info(SCM);
+static SCM api_config_get_list(SCM);
 
 extern int
 load(Config_section_T section)
@@ -50,6 +53,9 @@ load(Config_section_T section)
     glob_t files;
     Config_value_T val;
     int i;
+
+    /* Store a static reference to this plugin's configuration. */
+    Plugin_section = section;
 
     if(Config_section_get_int(section, "enable", 0)) {
         scripts = Config_section_get_list(section, "scripts");
@@ -138,6 +144,8 @@ static void
         "warn", 1, 0, 0, &api_warn);
     scm_c_define_gsubr(
         "info", 1, 0, 0, &api_info);
+    scm_c_define_gsubr(
+        "config-get-list", 1, 0, 0, &api_config_get_list);
 
     return NULL;
 }
@@ -179,4 +187,36 @@ api_register_spamtrap(SCM name, SCM callback)
     free(plugin_name);
 
     return SCM_UNSPECIFIED;
+}
+
+static SCM
+api_config_get_list(SCM s_key)
+{
+    SCM list = SCM_EOL, curr = NULL;
+    List_T s_list;
+    struct List_entry *entry = NULL;
+    Config_value_T val;
+    int i;
+
+    char *key = scm_to_locale_string(s_key);
+    s_list = Config_section_get_list(Plugin_section, key);
+    if(s_list && List_size(s_list) > 0) {
+        LIST_EACH(s_list, entry) {
+            val = List_entry_value(entry);
+            switch(cv_type(val)) {
+            case CONFIG_VAL_TYPE_INT:
+                curr = scm_from_int(cv_int(val));
+                break;
+
+            case CONFIG_VAL_TYPE_STR:
+                curr = scm_from_locale_string(cv_str(val));
+                break;
+            }
+
+            list = scm_cons(curr, list);
+        }
+    }
+    free(key);
+
+    return scm_reverse(list);
 }

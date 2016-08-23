@@ -3,12 +3,12 @@
 ;; trap the address if it is present.
 ;;
 
-;; TODO: load list of rbls from config
-(let ((rbls '(sbl.spamhaus.org)))
-  (register-spamtrap
-   "dnsrbl-trap"
-   (lambda (ip helo from to)
-     (check-all-rbls ip rbls))))
+(let ((rbls (config-get-list "rbl_sites")))
+  (unless (null? rbls)
+    (register-spamtrap
+     "dnsrbl-trap"
+     (lambda (ip helo from to)
+       (check-all-rbls ip rbls)))))
 
 (define (check-all-rbls ip rbls)
   (if (null? rbls)
@@ -18,6 +18,7 @@
           1)))
 
 (define (check-rbl ip rbl)
+  (debug (format #f "checking ~a" rbl))
   (host-exists? (make-rbl-lookup-host ip rbl)))
 
 (define (host-exists? host)
