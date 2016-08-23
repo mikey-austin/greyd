@@ -11,11 +11,11 @@
      (check-all-rbls ip rbls))))
 
 (define (check-all-rbls ip rbls)
-  (if (> (length rbls) 0)
+  (if (null? rbls)
+      0
       (if (= (check-rbl ip (car rbls)) 0)
           (check-all-rbls ip (cdr rbls))
-          1)
-      0))
+          1)))
 
 (define (check-rbl ip rbl)
   (host-exists? (make-rbl-lookup-host ip rbl)))
