@@ -40,7 +40,7 @@
 #include "../src/utils.h"
 
 #define DEFAULT_HOST "localhost"
-#define DEFAULT_PORT 3306
+#define DEFAULT_PORT "5432"
 #define DEFAULT_DB   "greyd"
 
 /**
@@ -67,14 +67,16 @@ Mod_db_init(DB_handle_T handle)
 {
     struct postgresql_handle *dbh;
     char *path, *hostname;
-    int ret, flags, uid_changed = 0, len;
+    int ret, flags, uid_changed = 0, len, expand_dbname = 0;
     int *error;
+    const char *db_keywords[0];
+    const char *db_values[0];
 
     if((dbh = malloc(sizeof(*dbh))) == NULL)
         i_critical("malloc: %s", strerror(errno));
 
     handle->dbh = dbh;
-    dbh->db = PQconnectdb(""); // TODO cleaner?
+    dbh->db = PQconnectdbParams(db_keywords, db_values, expand_dbname);
     dbh->txn = 0;
     dbh->connected = 0;
 
@@ -92,30 +94,27 @@ extern void
 Mod_db_open(DB_handle_T handle, int flags)
 {
     struct postgresql_handle *dbh = handle->dbh;
-    char *dbname, *host, *user, *password, *socket, *sql;
-    char port[4];
+    char *dbname, *host, *port, *user, *password, *socket, *sql;
     int expand_dbname = 0;
 
     if(dbh->connected)
         return;
 
     host = Config_get_str(handle->config, "host", "database", DEFAULT_HOST);
+    port = Config_get_str(handle->config, "port", "database", DEFAULT_PORT);
     dbname = Config_get_str(handle->config, "name", "database", DEFAULT_DB);
     socket = Config_get_str(handle->config, "socket", "database", NULL);
     user = Config_get_str(handle->config, "user", "database", NULL);
     password = Config_get_str(handle->config, "pass", "database", NULL);
 
-    snprintf(port, 4, "%d", Config_get_int(handle->config, "port", "database",
-                                           DEFAULT_PORT));
-
-    // TODO cleaner? host - socket.
+    // TODO cleaner?
     const char *db_keywords[] = {"host", "port", "dbname", "socket", "user",
                                  "password", NULL};
     const char *db_values[] = {host, port, dbname, socket, user, password,
                                NULL};
 
     dbh->db = PQconnectdbParams(db_keywords, db_values, expand_dbname);
-    if(dbh->db == NULL)
+    if(PQstatus(dbh->db) != CONNECTION_OK)
     {
         i_warning("could not connect to postgresql %s:%d: %s", host, port,
                   PQerrorMessage(dbh->db));
@@ -230,7 +229,8 @@ Mod_db_close(DB_handle_T handle)
 extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    struct postgreql_handle *dbh = handle->dbh;
+    struct postgresql_handle *dbh = handle->dbh;
+    PGresult *res;
     char *sql = NULL, *sql_tmpl = NULL;
     struct Grey_tuple *gt;
     struct Grey_data *gd;
@@ -243,7 +243,8 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql_tmpl = "INSERT IGNORE INTO spamtraps(address) VALUES ('%s')";
+        sql_tmpl = "INSERT INTO spamtraps(address) VALUES ('%s') "
+                   "ON CONFLICT (address) DO NOTHING";
         add_esc = escape(dbh->db, key->data.s);
 
         if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
@@ -254,7 +255,8 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     case DB_KEY_DOM:
-        sql_tmpl = "INSERT IGNORE INTO domains(domain) VALUES ('%s')";
+        sql_tmpl = "INSERT INTO domains(domain) VALUES ('%s') "
+                   "ON CONFLICT (domain) DO NOTHING";
         add_esc = escape(dbh->db, key->data.s);
 
         if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
@@ -265,11 +267,19 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     case DB_KEY_IP:
-        sql_tmpl = "REPLACE INTO entries "
-            "(`ip`, `helo`, `from`, `to`, "
-            " `first`, `pass`, `expire`, `bcount`, `pcount`, `greyd_host`) "
+        sql_tmpl = "INSERT INTO entries("
+            "ip, helo, \"from\", "
+            "\"to\", \"first\", pass, expire, bcount, pcount, greyd_host) "
             "VALUES "
-            "('%s', '', '', '', %lld, %lld, %lld, %d, %d, '%s')";
+            "('%s', '', '', '', %lld, %lld, %lld, %d, %d, '%s') "
+            "ON CONFLICT ON CONSTRAINT entries_pk "
+            "DO UPDATE SET "
+            "\"first\" = EXCLUDED.\"first\", "
+            "pass = EXCLUDED.pass, "
+            "expire = EXCLUDED.expire, "
+            "bcount = EXCLUDED.bcount, "
+            "pcount = EXCLUDED.pcount, "
+            "greyd_host = EXCLUDED.greyd_host";
         add_esc = escape(dbh->db, key->data.s);
 
         gd = &val->data.gd;
@@ -284,11 +294,19 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     case DB_KEY_TUPLE:
-        sql_tmpl = "REPLACE INTO entries "
-            "(`ip`, `helo`, `from`, `to`, "
-            " `first`, `pass`, `expire`, `bcount`, `pcount`, `greyd_host`) "
+        sql_tmpl = "INSERT INTO entries("
+            "ip, helo, \"from\", "
+            "\"to\", \"first\", pass, expire, bcount, pcount, greyd_host) "
             "VALUES "
-            "('%s', '%s', '%s', '%s', %lld, %lld, %lld, %d, %d, '%s')";
+            "('%s', '%s', '%s', '%s', %lld, %lld, %lld, %d, %d, '%s') "
+            "ON CONFLICT ON CONSTRAINT entries_pk "
+            "DO UPDATE SET "
+            "\"first\" = EXCLUDED.\"first\", "
+            "pass = EXCLUDED.pass, "
+            "expire = EXCLUDED.expire, "
+            "bcount = EXCLUDED.bcount, "
+            "pcount = EXCLUDED.pcount, "
+            "greyd_host = EXCLUDED.greyd_host";
         gt = &key->data.gt;
         ip_esc   = escape(dbh->db, gt->ip);
         helo_esc = escape(dbh->db, gt->helo);

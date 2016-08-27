@@ -19,7 +19,8 @@ dropdb --host $host --port $port --username $user $name
 createdb --host $host --port $port --username $user $name
 $POSTGRESQL --host $host --port $port \
             --username $user --quiet \
-            --file "../drivers/postgresql_schema.sql"
+            --file "../drivers/postgresql_schema.sql" \
+            $name
 
 # Run tests through valgrind if it exists.
 VALGRIND="@VALGRIND@"
