@@ -120,7 +120,7 @@ AC_ARG_WITH([postgresql], [AS_HELP_STRING([--with-postgresql], [build the Postgr
     [postgresql_driver=yes], [postgresql_driver=no])
 
 if test "x${postgresql_driver}" = xyes; then
-    AC_PATH_PROG([POSTGRESQL], [postgres])
+    AC_PATH_PROG([POSTGRESQL], [psql])
     AC_PATH_PROG([POSTGRESQL_CONFIG], [pg_config])
     AS_IF([test "x${POSTGRESQL_CONFIG}" = x], [AC_MSG_ERROR([Please install pg_config])])
 
@@ -469,6 +469,7 @@ AC_CONFIG_FILES([Makefile
         check/data/config_test2.conf
         check/data/config_test3.conf
         check/test-mysql
+        check/test-postgresql
         packages/rpm/greyd.spec
         check/data/lexer_source_1.conf])
 AC_OUTPUT

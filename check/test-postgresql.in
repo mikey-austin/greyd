@@ -1,0 +1,62 @@
+#!/bin/sh
+#
+# Run test programs using a postgresql database. To be invoked by:
+#   $ sh ./test-postgresql test_db_postgresql
+#   AND
+#   $ sh ./test-postgresql test_grey_postgresql
+#
+
+POSTGRESQL="@POSTGRESQL@"
+host="localhost"
+port="3306"
+user="greyd"
+name="$1"
+
+export PGPASSWORD="greyd"
+
+# Load the schema.
+$POSTGRESQL --host $host --port $port \
+            --username $user --quiet \
+            --command "DROP DATABASE IF EXISTS $name; CREATE DATABASE $name;"
+$POSTGRESQL --host $host --port $port \
+            --username $user --quiet \
+            --file "../drivers/postgresql_schema.sql"
+
+# Run tests through valgrind if it exists.
+VALGRIND="@VALGRIND@"
+if [ -x $VALGRIND ]; then
+    CMD="$VALGRIND -q --trace-children=yes \
+        --track-origins=yes \
+        --leak-check=full \
+        --error-exitcode=1 \
+        --tool=memcheck ./$1.t"
+else
+    CMD="./$1.t"
+fi
+
+$CMD - <<CONFIG
+drop_privs = 0
+low_prio_mx = "192.179.21.3"
+hostname = "greyd-test.org"
+
+section grey {
+  db_permitted_domains = 1,
+  permitted_domains = "data/permitted_domains.txt",
+  traplist_name    = "test traplist",
+  traplist_message = "you have been trapped",
+  grey_expiry      = 3600,
+}
+
+section firewall {
+  driver = "greyd_fw_dummy.so"
+}
+
+section database {
+    driver = "greyd_postgresql.so",
+    host = "$host",
+    port = "$port",
+    name = "$name",
+    user = "$user",
+    pass = "$pass",
+}
+CONFIG
