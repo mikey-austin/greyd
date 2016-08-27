@@ -8,16 +8,15 @@
 
 POSTGRESQL="@POSTGRESQL@"
 host="localhost"
-port="3306"
+port="5432"
 user="greyd"
 name="$1"
 
 export PGPASSWORD="greyd"
 
 # Load the schema.
-$POSTGRESQL --host $host --port $port \
-            --username $user --quiet \
-            --command "DROP DATABASE IF EXISTS $name; CREATE DATABASE $name;"
+dropdb --host $host --port $port --username $user $name
+createdb --host $host --port $port --username $user $name
 $POSTGRESQL --host $host --port $port \
             --username $user --quiet \
             --file "../drivers/postgresql_schema.sql"
