@@ -243,8 +243,8 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     switch(key->type) {
     case DB_KEY_MAIL:
-        sql_tmpl = "INSERT INTO spamtraps(address) VALUES ('%s') "
-                   "ON CONFLICT (address) DO NOTHING";
+        sql_tmpl = "INSERT INTO spamtraps(\"address\") VALUES ('%s') "
+                   "ON CONFLICT (\"address\") DO NOTHING";
         add_esc = escape(dbh->db, key->data.s);
 
         if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
@@ -255,8 +255,8 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         break;
 
     case DB_KEY_DOM:
-        sql_tmpl = "INSERT INTO domains(domain) VALUES ('%s') "
-                   "ON CONFLICT (domain) DO NOTHING";
+        sql_tmpl = "INSERT INTO domains(\"domain\") VALUES ('%s') "
+                   "ON CONFLICT (\"domain\") DO NOTHING";
         add_esc = escape(dbh->db, key->data.s);
 
         if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
@@ -268,18 +268,18 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     case DB_KEY_IP:
         sql_tmpl = "INSERT INTO entries("
-            "ip, helo, \"from\", "
-            "\"to\", \"first\", pass, expire, bcount, pcount, greyd_host) "
+            "\"ip\", \"helo\", \"from\", \"to\", \"first\", "
+            "\"pass\", \"expire\", \"bcount\", \"pcount\", \"greyd_host\") "
             "VALUES "
             "('%s', '', '', '', %lld, %lld, %lld, %d, %d, '%s') "
-            "ON CONFLICT ON CONSTRAINT entries_pk "
+            "ON CONFLICT (\"ip\", \"helo\", \"from\", \"to\") "
             "DO UPDATE SET "
             "\"first\" = EXCLUDED.\"first\", "
-            "pass = EXCLUDED.pass, "
-            "expire = EXCLUDED.expire, "
-            "bcount = EXCLUDED.bcount, "
-            "pcount = EXCLUDED.pcount, "
-            "greyd_host = EXCLUDED.greyd_host";
+            "\"pass\" = EXCLUDED.\"pass\", "
+            "\"expire\" = EXCLUDED.\"expire\", "
+            "\"bcount\" = EXCLUDED.\"bcount\", "
+            "\"pcount\" = EXCLUDED.\"pcount\", "
+            "\"greyd_host\" = EXCLUDED.\"greyd_host\"";
         add_esc = escape(dbh->db, key->data.s);
 
         gd = &val->data.gd;
@@ -295,18 +295,18 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 
     case DB_KEY_TUPLE:
         sql_tmpl = "INSERT INTO entries("
-            "ip, helo, \"from\", "
-            "\"to\", \"first\", pass, expire, bcount, pcount, greyd_host) "
+            "\"ip\", \"helo\", \"from\", \"to\", \"first\", "
+            "\"pass\", \"expire\", \"bcount\", \"pcount\", \"greyd_host\") "
             "VALUES "
             "('%s', '%s', '%s', '%s', %lld, %lld, %lld, %d, %d, '%s') "
-            "ON CONFLICT ON CONSTRAINT entries_pk "
+            "ON CONFLICT (\"ip\", \"helo\", \"from\", \"to\") "
             "DO UPDATE SET "
             "\"first\" = EXCLUDED.\"first\", "
-            "pass = EXCLUDED.pass, "
-            "expire = EXCLUDED.expire, "
-            "bcount = EXCLUDED.bcount, "
-            "pcount = EXCLUDED.pcount, "
-            "greyd_host = EXCLUDED.greyd_host";
+            "\"pass\" = EXCLUDED.\"pass\", "
+            "\"expire\" = EXCLUDED.\"expire\", "
+            "\"bcount\" = EXCLUDED.\"bcount\", "
+            "\"pcount\" = EXCLUDED.\"pcount\", "
+            "\"greyd_host\" = EXCLUDED.\"greyd_host\"";
         gt = &key->data.gt;
         ip_esc   = escape(dbh->db, gt->ip);
         helo_esc = escape(dbh->db, gt->helo);
