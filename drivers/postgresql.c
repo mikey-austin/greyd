@@ -117,7 +117,6 @@ Mod_db_open(DB_handle_T handle, int flags)
         goto cleanup;
     }
     dbh->connected = 1;
-
     return;
 
 cleanup:
@@ -135,13 +134,12 @@ Mod_db_start_txn(DB_handle_T handle)
     }
 
     PGresult *result = PQexec(dbh->db, "BEGIN");
-
     if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("start txn failed: %s", PQerrorMessage(dbh->db));
         goto cleanup;
     }
     dbh->txn = 1;
-
+    PQclear(result);
     return 1;
 
 cleanup:
@@ -163,14 +161,12 @@ Mod_db_commit_txn(DB_handle_T handle)
     }
 
     PGresult *result = PQexec(dbh->db, "END");
-
     if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("db txn commit failed: %s", PQerrorMessage(dbh->db));
         goto cleanup;
     }
     dbh->txn = 0;
     PQclear(result);
-
     return 0;
 
 cleanup:
@@ -192,12 +188,12 @@ Mod_db_rollback_txn(DB_handle_T handle)
     }
 
     PGresult *result = PQexec(dbh->db, "ROLLBACK");
-
     if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("db txn rollback failed: %s", PQerrorMessage(dbh->db));
         goto cleanup;
     }
     dbh->txn = 0;
+    PQclear(result);
     return 0;
 
 cleanup:
@@ -328,13 +324,13 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     }
 
     PGresult *result = PQexec(dbh->db, sql);
-
     if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("put postgesql error: %s", PQerrorMessage(dbh->db));
         free(sql);
         goto err;
     }
     free(sql);
+    PQclear(result);
     return GREYDB_OK;
 
 err:
@@ -467,6 +463,90 @@ err:
 extern int
 Mod_db_del(DB_handle_T handle, struct DB_key *key)
 {
+    struct postgresql_handle *dbh = handle->dbh;
+    char *sql = NULL, *sql_tmpl = NULL;
+    struct Grey_tuple *gt;
+    unsigned long len;
+    char *add_esc = NULL;
+    char *ip_esc = NULL;
+    char *helo_esc = NULL;
+    char *from_esc = NULL;
+    char *to_esc = NULL;
+
+    switch(key->type) {
+    case DB_KEY_MAIL:
+        sql_tmpl = "DELETE FROM spamtraps WHERE \"address\"='%s'";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_DOM:
+        sql_tmpl = "DELETE FROM domains WHERE \"domain\"='%s'";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_IP:
+        sql_tmpl = "DELETE FROM entries WHERE \"ip\"='%s' "
+            "AND \"helo\"='' AND \"from\"='' AND \"to\"=''";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_TUPLE:
+        sql_tmpl = "DELETE FROM entries WHERE \"ip\"='%s' "
+            "AND \"helo\"='%s' AND \"from\"='%s' AND \"to\"='%s' ";
+        gt = &key->data.gt;
+        ip_esc   = escape(dbh->db, gt->ip);
+        helo_esc = escape(dbh->db, gt->helo);
+        from_esc = escape(dbh->db, gt->from);
+        to_esc   = escape(dbh->db, gt->to);
+
+        if(ip_esc && helo_esc && from_esc && to_esc
+           && asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
+                       to_esc) == -1)
+        {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(ip_esc);
+        free(helo_esc);
+        free(from_esc);
+        free(to_esc);
+        break;
+
+    default:
+        return GREYDB_ERR;
+    }
+
+    PGresult *result = PQexec(dbh->db, sql);
+
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
+        i_warning("del mysql error: %s", PQerrorMessage(dbh->db));
+        free(sql);
+        goto err;
+    }
+    free(sql);
+    PQclear(result);
+    return GREYDB_OK;
+
+err:
+    DB_rollback_txn(handle);
     return GREYDB_ERR;
 }
 
