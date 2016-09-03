@@ -53,8 +53,8 @@ struct postgresql_handle {
     int connected;
 };
 
-struct mysql_itr {
-    PGresult *res;
+struct postgresql_itr {
+    PGresult *result;
     struct DB_key *curr;
 };
 
@@ -67,16 +67,13 @@ Mod_db_init(DB_handle_T handle)
 {
     struct postgresql_handle *dbh;
     char *path, *hostname;
-    int ret, flags, uid_changed = 0, len, expand_dbname = 0;
-    int *error;
-    const char *db_keywords[0];
-    const char *db_values[0];
+    int ret, flags, uid_changed = 0, len;
 
     if((dbh = malloc(sizeof(*dbh))) == NULL)
         i_critical("malloc: %s", strerror(errno));
 
     handle->dbh = dbh;
-    dbh->db = PQconnectdbParams(db_keywords, db_values, expand_dbname);
+    dbh->db = NULL;
     dbh->txn = 0;
     dbh->connected = 0;
 
@@ -87,7 +84,7 @@ Mod_db_init(DB_handle_T handle)
     {
         i_critical("malloc: %s", strerror(errno));
     }
-    PQescapeStringConn(dbh->db, dbh->greyd_host, hostname, len, error);
+    PQescapeString(dbh->greyd_host, hostname, len);
 }
 
 extern void
@@ -107,10 +104,9 @@ Mod_db_open(DB_handle_T handle, int flags)
     user = Config_get_str(handle->config, "user", "database", NULL);
     password = Config_get_str(handle->config, "pass", "database", NULL);
 
-    // TODO cleaner?
-    const char *db_keywords[] = {"host", "port", "dbname", "socket", "user",
+    const char *db_keywords[7] = {"host", "port", "dbname", "socket", "user",
                                  "password", NULL};
-    const char *db_values[] = {host, port, dbname, socket, user, password,
+    const char *db_values[7] = {host, port, dbname, socket, user, password,
                                NULL};
 
     dbh->db = PQconnectdbParams(db_keywords, db_values, expand_dbname);
@@ -132,15 +128,15 @@ extern int
 Mod_db_start_txn(DB_handle_T handle)
 {
     struct postgresql_handle *dbh = handle->dbh;
-    PGresult *res;
 
     if(dbh->txn != 0) {
         /* Already in a transaction. */
         return -1;
     }
 
-    res = PQexec(dbh->db, "BEGIN");
-    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
+    PGresult *result = PQexec(dbh->db, "BEGIN");
+
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("start txn failed: %s", PQerrorMessage(dbh->db));
         goto cleanup;
     }
@@ -150,7 +146,7 @@ Mod_db_start_txn(DB_handle_T handle)
 
 cleanup:
     if(dbh->db) {
-      PQclear(res);
+      PQclear(result);
       PQfinish(dbh->db);
     }
     exit(1);
@@ -160,26 +156,26 @@ extern int
 Mod_db_commit_txn(DB_handle_T handle)
 {
     struct postgresql_handle *dbh = handle->dbh;
-    PGresult *res;
 
     if(dbh->txn != 1) {
         i_warning("cannot commit, not in transaction");
         return -1;
     }
 
-    res = PQexec(dbh->db, "END");
-    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
+    PGresult *result = PQexec(dbh->db, "END");
+
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("db txn commit failed: %s", PQerrorMessage(dbh->db));
         goto cleanup;
     }
     dbh->txn = 0;
-    PQclear(res);
+    PQclear(result);
 
     return 0;
 
 cleanup:
     if(dbh->db) {
-      PQclear(res);
+      PQclear(result);
       PQfinish(dbh->db);
     }
     exit(1);
@@ -189,15 +185,15 @@ extern int
 Mod_db_rollback_txn(DB_handle_T handle)
 {
     struct postgresql_handle *dbh = handle->dbh;
-    PGresult *res;
 
     if(dbh->txn != 1) {
         i_warning("cannot rollback, not in transaction");
         return -1;
     }
 
-    res = PQexec(dbh->db, "ROLLBACK");
-    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
+    PGresult *result = PQexec(dbh->db, "ROLLBACK");
+
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("db txn rollback failed: %s", PQerrorMessage(dbh->db));
         goto cleanup;
     }
@@ -206,7 +202,7 @@ Mod_db_rollback_txn(DB_handle_T handle)
 
 cleanup:
     if(dbh->db) {
-      PQclear(res);
+      PQclear(result);
       PQfinish(dbh->db);
     }
     exit(1);
@@ -230,7 +226,6 @@ extern int
 Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
     struct postgresql_handle *dbh = handle->dbh;
-    PGresult *res;
     char *sql = NULL, *sql_tmpl = NULL;
     struct Grey_tuple *gt;
     struct Grey_data *gd;
@@ -332,8 +327,9 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
         return GREYDB_ERR;
     }
 
-    res = PQexec(dbh->db, sql);
-    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
+    PGresult *result = PQexec(dbh->db, sql);
+
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("put postgesql error: %s", PQerrorMessage(dbh->db));
         free(sql);
         goto err;
@@ -349,7 +345,123 @@ err:
 extern int
 Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
 {
-    return GREYDB_ERR;
+    struct postgresql_handle *dbh = handle->dbh;
+    char *sql = NULL, *sql_tmpl = NULL;
+    struct Grey_tuple *gt;
+    unsigned long len;
+    int res = GREYDB_NOT_FOUND;
+    char *add_esc = NULL;
+    char *ip_esc = NULL;
+    char *helo_esc = NULL;
+    char *from_esc = NULL;
+    char *to_esc = NULL;
+
+    switch(key->type) {
+    case DB_KEY_DOM_PART:
+        sql_tmpl = "SELECT 0, 0, 0, 0, -3 "
+            "FROM domains WHERE '%s' LIKE ('%' || domain)";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_DOM:
+        sql_tmpl = "SELECT 0, 0, 0, 0, -3 "
+            "FROM domains WHERE \"domain\"='%s' "
+            "LIMIT 1";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_MAIL:
+        sql_tmpl = "SELECT 0, 0, 0, 0, -2 "
+            "FROM spamtraps WHERE \"address\"='%s' "
+            "LIMIT 1";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_IP:
+        sql_tmpl = "SELECT \"first\", \"pass\", \"expire\", \"bcount\", "
+            "\"pcount\" "
+            "FROM entries "
+            "WHERE \"ip\"='%s' AND \"helo\"='' AND \"from\"='' AND \"to\"='' "
+            "LIMIT 1";
+        add_esc = escape(dbh->db, key->data.s);
+
+        if(add_esc && asprintf(&sql, sql_tmpl, add_esc) == -1) {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(add_esc);
+        break;
+
+    case DB_KEY_TUPLE:
+        sql_tmpl = "SELECT \"first\", \"pass\", \"expire\", \"bcount\", "
+            "\"pcount\" "
+            "FROM entries "
+            "WHERE \"ip\"='%s' AND \"helo\"='%s' AND \"from\"='%s' "
+            "AND \"to\"='%s' "
+            "LIMIT 1";
+        gt = &key->data.gt;
+        ip_esc   = escape(dbh->db, gt->ip);
+        helo_esc = escape(dbh->db, gt->helo);
+        from_esc = escape(dbh->db, gt->from);
+        to_esc   = escape(dbh->db, gt->to);
+
+        if(ip_esc && helo_esc && from_esc && to_esc
+           && asprintf(&sql, sql_tmpl, ip_esc, helo_esc, from_esc,
+                       to_esc) == -1)
+        {
+            i_warning("postgresql asprintf error");
+            goto err;
+        }
+        free(ip_esc);
+        free(helo_esc);
+        free(from_esc);
+        free(to_esc);
+        break;
+
+    default:
+        return GREYDB_ERR;
+    }
+
+    PGresult *result = NULL;
+    unsigned int expected_fields = 5;
+
+    result = PQexec(dbh->db, sql);
+    if(PQresultStatus(result) != PGRES_TUPLES_OK) {
+        i_warning("get postgresql error: %s", PQerrorMessage(dbh->db));
+        goto err;
+    }
+
+    if(PQnfields(result) == expected_fields
+       && PQntuples(result) == 1)
+    {
+        res = GREYDB_FOUND;
+        populate_val(result, val, 0);
+    }
+
+err:
+    if(sql != NULL)
+        free(sql);
+    if(result != NULL)
+        PQclear(result);
+    return res;
 }
 
 extern int
@@ -410,11 +522,74 @@ static char
 }
 
 static void
-populate_key(PGresult *res, struct DB_key *key, int from)
+populate_key(PGresult *result, struct DB_key *key, int from)
 {
+    struct Grey_tuple *gt;
+    static char buf[(INET6_ADDRSTRLEN + 1) + 3 * (GREY_MAX_MAIL + 1)];
+    char *buf_p = buf;
+
+    memset(key, 0, sizeof(*key));
+    memset(buf, 0, sizeof(buf));
+
+    /*
+     * Empty helo, from & to columns indicate a non-grey entry.
+     * A pcount of -2 indicates a spamtrap, and a -3 indicates
+     * a permitted domain.
+     */
+    key->type = ((!memcmp(PQgetvalue(result, 0, 1), "", 1)
+                  && !memcmp(PQgetvalue(result, 0, 2), "", 1)
+                  && !memcmp(PQgetvalue(result, 0, 3), "", 1))
+                 ? (atoi(PQgetvalue(result, 0, 8)) == -2
+                    ? DB_KEY_MAIL
+                    : (atoi(PQgetvalue(result, 0, 8)) == -3
+                       ? DB_KEY_DOM : DB_KEY_IP))
+                 : DB_KEY_TUPLE);
+
+    if(key->type == DB_KEY_IP) {
+        key->data.s = buf_p;
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 0),
+                 INET6_ADDRSTRLEN + 1);
+    }
+    else if(key->type == DB_KEY_MAIL || key->type == DB_KEY_DOM) {
+        key->data.s = buf_p;
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 0),
+                 GREY_MAX_MAIL + 1);
+    }
+    else {
+        gt = &key->data.gt;
+        gt->ip = buf_p;
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 0),
+                 INET6_ADDRSTRLEN + 1);
+        buf_p += INET6_ADDRSTRLEN + 1;
+
+        gt->helo = buf_p;
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 1),
+                 GREY_MAX_MAIL + 1);
+        buf_p += GREY_MAX_MAIL + 1;
+
+        gt->from = buf_p;
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 2),
+                 GREY_MAX_MAIL + 1);
+        buf_p += GREY_MAX_MAIL + 1;
+
+        gt->to = buf_p;
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 3),
+                 GREY_MAX_MAIL + 1);
+        buf_p += GREY_MAX_MAIL + 1;
+    }
 }
 
 static void
-populate_val(PGresult *res, struct DB_val *val, int from)
+populate_val(PGresult *result, struct DB_val *val, int from)
 {
+    struct Grey_data *gd;
+
+    memset(val, 0, sizeof(*val));
+    val->type = DB_VAL_GREY;
+    gd = &val->data.gd;
+    gd->first  = atoi(PQgetvalue(result, 0, from + 0));
+    gd->pass   = atoi(PQgetvalue(result, 0, from + 1));
+    gd->expire = atoi(PQgetvalue(result, 0, from + 2));
+    gd->bcount = atoi(PQgetvalue(result, 0, from + 3));
+    gd->pcount = atoi(PQgetvalue(result, 0, from + 4));
 }
