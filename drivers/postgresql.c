@@ -54,13 +54,13 @@ struct postgresql_handle {
 };
 
 struct postgresql_itr {
-    PGresult *result;
+    PGresult *res;
     struct DB_key *curr;
 };
 
 static char *escape(PGconn *, const char *);
-static void populate_key(PGresult *, struct DB_key *, int);
-static void populate_val(PGresult *, struct DB_val *, int);
+static void populate_key(PGresult *, struct DB_key *, int, int);
+static void populate_val(PGresult *, struct DB_val *, int, int);
 
 extern void
 Mod_db_init(DB_handle_T handle)
@@ -143,8 +143,8 @@ Mod_db_start_txn(DB_handle_T handle)
     return 1;
 
 cleanup:
+    PQclear(result);
     if(dbh->db) {
-      PQclear(result);
       PQfinish(dbh->db);
     }
     exit(1);
@@ -170,8 +170,8 @@ Mod_db_commit_txn(DB_handle_T handle)
     return 0;
 
 cleanup:
+    PQclear(result);
     if(dbh->db) {
-      PQclear(result);
       PQfinish(dbh->db);
     }
     exit(1);
@@ -197,8 +197,8 @@ Mod_db_rollback_txn(DB_handle_T handle)
     return 0;
 
 cleanup:
+    PQclear(result);
     if(dbh->db) {
-      PQclear(result);
       PQfinish(dbh->db);
     }
     exit(1);
@@ -327,6 +327,7 @@ Mod_db_put(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
     if(PQresultStatus(result) != PGRES_COMMAND_OK) {
         i_warning("put postgesql error: %s", PQerrorMessage(dbh->db));
         free(sql);
+        PQclear(result);
         goto err;
     }
     free(sql);
@@ -449,7 +450,7 @@ Mod_db_get(DB_handle_T handle, struct DB_key *key, struct DB_val *val)
        && PQntuples(result) == 1)
     {
         res = GREYDB_FOUND;
-        populate_val(result, val, 0);
+        populate_val(result, val, 0, 0);
     }
 
 err:
@@ -537,8 +538,9 @@ Mod_db_del(DB_handle_T handle, struct DB_key *key)
     PGresult *result = PQexec(dbh->db, sql);
 
     if(PQresultStatus(result) != PGRES_COMMAND_OK) {
-        i_warning("del mysql error: %s", PQerrorMessage(dbh->db));
+        i_warning("del postgresql error: %s", PQerrorMessage(dbh->db));
         free(sql);
+        PQclear(result);
         goto err;
     }
     free(sql);
@@ -553,29 +555,108 @@ err:
 extern void
 Mod_db_get_itr(DB_itr_T itr, int types)
 {
+    struct postgresql_handle *dbh = itr->handle->dbh;
+    struct postgresql_itr *dbi = NULL;
+    char *sql_tmpl, *sql = NULL;
+    char *entries, *spamtraps, *domains;
+
+    if((dbi = malloc(sizeof(*dbi))) == NULL) {
+        i_warning("malloc: %s", strerror(errno));
+        goto err;
+    }
+    dbi->res = NULL;
+    dbi->curr = NULL;
+    itr->dbi = dbi;
+
+    entries = (types & DB_ENTRIES) != 0 ? "TRUE" : "FALSE";
+    spamtraps = (types & DB_SPAMTRAPS) != 0 ? "TRUE" : "FALSE";
+    domains = (types & DB_DOMAINS) != 0 ? "TRUE" : "FALSE";
+
+    sql_tmpl = "SELECT \"ip\", \"helo\", \"from\", \"to\", "
+        "\"first\", \"pass\", \"expire\", \"bcount\", \"pcount\" FROM entries "
+        "WHERE '%s' "
+        "UNION "
+        "SELECT \"address\", '', '', '', 0, 0, 0, 0, -2 FROM spamtraps "
+        "WHERE '%s' "
+        "UNION "
+        "SELECT \"domain\", '', '', '', 0, 0, 0, 0, -3 FROM domains "
+        "WHERE '%s'";
+    if(asprintf(&sql, sql_tmpl, entries, spamtraps, domains) == -1)
+    {
+        i_warning("asprintf");
+        goto err;
+    }
+
+    PGresult *result = PQexec(dbh->db, sql);
+    if(sql && PQresultStatus(result) != PGRES_TUPLES_OK) {
+        i_warning("get postgresql error: %s", PQerrorMessage(dbh->db));
+        free(sql);
+        PQclear(result);
+        goto err;
+    }
+    free(sql);
+
+    dbi->res = result;
+    itr->size = PQntuples(result);
+
+    return;
+
+err:
+    DB_rollback_txn(itr->handle);
+    exit(1);
 }
 
 extern void
 Mod_db_itr_close(DB_itr_T itr)
 {
+    struct postgresql_handle *dbh = itr->handle->dbh;
+    struct postgresql_itr *dbi = itr->dbi;
+
+    if(dbi) {
+        dbi->curr = NULL;
+        if(dbi->res != NULL)
+            PQclear(dbi->res);
+        free(dbi);
+        itr->dbi = NULL;
+    }
 }
 
 extern int
 Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
 {
-  return GREYDB_ERR;
+    struct postgresql_itr *dbi = itr->dbi;
+    PGresult *result = dbi->res;
+
+    if(dbi->res) {
+        itr->current++;
+        populate_key(result, key, 0, itr->current);
+        populate_val(result, val, 4, itr->current);
+        dbi->curr = key;
+        return GREYDB_FOUND;
+    }
+
+    return GREYDB_NOT_FOUND;
 }
 
 extern int
 Mod_db_itr_replace_curr(DB_itr_T itr, struct DB_val *val)
 {
-  return GREYDB_ERR;
+    struct postgresql_handle *dbh = itr->handle->dbh;
+    struct postgresql_itr *dbi = itr->dbi;
+    struct DB_key *key = dbi->curr;
+
+    return DB_put(itr->handle, key, val);
 }
 
 extern int
 Mod_db_itr_del_curr(DB_itr_T itr)
 {
-  return GREYDB_ERR;
+    struct postgresql_itr *dbi = itr->dbi;
+
+    if(dbi && dbi->res && dbi->curr)
+        return DB_del(itr->handle, dbi->curr);
+
+    return GREYDB_ERR;
 }
 
 extern int
@@ -602,7 +683,7 @@ static char
 }
 
 static void
-populate_key(PGresult *result, struct DB_key *key, int from)
+populate_key(PGresult *result, struct DB_key *key, int from, int tuple)
 {
     struct Grey_tuple *gt;
     static char buf[(INET6_ADDRSTRLEN + 1) + 3 * (GREY_MAX_MAIL + 1)];
@@ -616,60 +697,60 @@ populate_key(PGresult *result, struct DB_key *key, int from)
      * A pcount of -2 indicates a spamtrap, and a -3 indicates
      * a permitted domain.
      */
-    key->type = ((!memcmp(PQgetvalue(result, 0, 1), "", 1)
-                  && !memcmp(PQgetvalue(result, 0, 2), "", 1)
-                  && !memcmp(PQgetvalue(result, 0, 3), "", 1))
-                 ? (atoi(PQgetvalue(result, 0, 8)) == -2
+    key->type = ((!memcmp(PQgetvalue(result, tuple, 1), "", 1)
+                  && !memcmp(PQgetvalue(result, tuple, 2), "", 1)
+                  && !memcmp(PQgetvalue(result, tuple, 3), "", 1))
+                 ? (atoi(PQgetvalue(result, tuple, 8)) == -2
                     ? DB_KEY_MAIL
-                    : (atoi(PQgetvalue(result, 0, 8)) == -3
+                    : (atoi(PQgetvalue(result, tuple, 8)) == -3
                        ? DB_KEY_DOM : DB_KEY_IP))
                  : DB_KEY_TUPLE);
 
     if(key->type == DB_KEY_IP) {
         key->data.s = buf_p;
-        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 0),
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, tuple, from + 0),
                  INET6_ADDRSTRLEN + 1);
     }
     else if(key->type == DB_KEY_MAIL || key->type == DB_KEY_DOM) {
         key->data.s = buf_p;
-        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 0),
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, tuple, from + 0),
                  GREY_MAX_MAIL + 1);
     }
     else {
         gt = &key->data.gt;
         gt->ip = buf_p;
-        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 0),
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, tuple, from + 0),
                  INET6_ADDRSTRLEN + 1);
         buf_p += INET6_ADDRSTRLEN + 1;
 
         gt->helo = buf_p;
-        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 1),
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, tuple, from + 1),
                  GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->from = buf_p;
-        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 2),
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, tuple, from + 2),
                  GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
 
         gt->to = buf_p;
-        sstrncpy(buf_p, (const char *) PQgetvalue(result, 0, from + 3),
+        sstrncpy(buf_p, (const char *) PQgetvalue(result, tuple, from + 3),
                  GREY_MAX_MAIL + 1);
         buf_p += GREY_MAX_MAIL + 1;
     }
 }
 
 static void
-populate_val(PGresult *result, struct DB_val *val, int from)
+populate_val(PGresult *result, struct DB_val *val, int from, int tuple)
 {
     struct Grey_data *gd;
 
     memset(val, 0, sizeof(*val));
     val->type = DB_VAL_GREY;
     gd = &val->data.gd;
-    gd->first  = atoi(PQgetvalue(result, 0, from + 0));
-    gd->pass   = atoi(PQgetvalue(result, 0, from + 1));
-    gd->expire = atoi(PQgetvalue(result, 0, from + 2));
-    gd->bcount = atoi(PQgetvalue(result, 0, from + 3));
-    gd->pcount = atoi(PQgetvalue(result, 0, from + 4));
+    gd->first  = atoi(PQgetvalue(result, tuple, from + 0));
+    gd->pass   = atoi(PQgetvalue(result, tuple, from + 1));
+    gd->expire = atoi(PQgetvalue(result, tuple, from + 2));
+    gd->bcount = atoi(PQgetvalue(result, tuple, from + 3));
+    gd->pcount = atoi(PQgetvalue(result, tuple, from + 4));
 }
