@@ -571,16 +571,15 @@ Mod_db_get_itr(DB_itr_T itr, int types)
     entries = (types & DB_ENTRIES) != 0 ? "TRUE" : "FALSE";
     spamtraps = (types & DB_SPAMTRAPS) != 0 ? "TRUE" : "FALSE";
     domains = (types & DB_DOMAINS) != 0 ? "TRUE" : "FALSE";
-
     sql_tmpl = "SELECT \"ip\", \"helo\", \"from\", \"to\", "
         "\"first\", \"pass\", \"expire\", \"bcount\", \"pcount\" FROM entries "
-        "WHERE '%s' "
+        "WHERE %s "
         "UNION "
         "SELECT \"address\", '', '', '', 0, 0, 0, 0, -2 FROM spamtraps "
-        "WHERE '%s' "
+        "WHERE %s "
         "UNION "
         "SELECT \"domain\", '', '', '', 0, 0, 0, 0, -3 FROM domains "
-        "WHERE '%s'";
+        "WHERE %s";
     if(asprintf(&sql, sql_tmpl, entries, spamtraps, domains) == -1)
     {
         i_warning("asprintf");
@@ -627,13 +626,14 @@ Mod_db_itr_next(DB_itr_T itr, struct DB_key *key, struct DB_val *val)
     struct postgresql_itr *dbi = itr->dbi;
     PGresult *result = dbi->res;
 
-    if(dbi->res) {
-        itr->current++;
+    itr->current++;
+    if(dbi->res && (itr->current < itr->size)) {
         populate_key(result, key, 0, itr->current);
         populate_val(result, val, 4, itr->current);
         dbi->curr = key;
         return GREYDB_FOUND;
     }
+    itr->current--;
 
     return GREYDB_NOT_FOUND;
 }
