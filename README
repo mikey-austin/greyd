@@ -1,13 +1,6 @@
 greyd - greylisting & blacklisting daemon
 ================================================
 
-Postgres Todo
--------------
- - Put checks for dbcreate, dbdelete in configure.ac
- - Fix the construction of the db handler param arrays
- - Why does the entries pk need to be explicitly named/what's wrong with the constraint inference 
- - Use a .pkconfig instead of having the password in the env
-
 [![Build Status](https://travis-ci.org/mikey-austin/greyd.svg?branch=master)](https://travis-ci.org/mikey-austin/greyd)
 
 Project Website
