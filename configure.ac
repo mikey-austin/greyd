@@ -140,10 +140,8 @@ if test "x${postgresql_driver}" = xyes; then
     AC_DEFINE([WITH_POSTGRESQL], [1], [with the PostgreSQL driver])
     optional_drivers="${optional_drivers} greyd_postgresql.la"
     optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_postgresql.la"
-    extra_tests="${extra_tests} test_db_postgresql.sh"
-    extra_test_programs="${extra_test_programs} test_db_postgresql.t"
-    #extra_tests="${extra_tests} test_db_postgresql.sh test_grey_postgresql.sh"
-    #extra_test_programs="${extra_test_programs} test_db_postgresql.t test_grey_postgresql.t"
+    extra_tests="${extra_tests} test_db_postgresql.sh test_grey_postgresql.sh"
+    extra_test_programs="${extra_test_programs} test_db_postgresql.t test_grey_postgresql.t"
 fi
 
 #

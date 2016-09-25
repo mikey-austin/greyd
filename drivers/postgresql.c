@@ -663,7 +663,105 @@ extern int
 Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             List_T whitelist_ipv6, List_T traplist, time_t *white_exp)
 {
-  return GREYDB_ERR;
+    struct postgresql_handle *dbh = handle->dbh;
+    PGresult *result = NULL;
+    char *sql, *sql_tmpl;
+    int ret = GREYDB_OK;
+    unsigned int size;
+
+    /*
+     * Delete expired entries and whitelist appropriate grey entries,
+     * by un-setting the tuple fields (to, from, helo), but only if there
+     * is not already a conflicting entry with the same IP address
+     * (ie an existing trap entry).
+     */
+    sql_tmpl = "DELETE FROM entries "
+        "WHERE \"expire\" <= EXTRACT(EPOCH FROM now()) "
+        "AND \"greyd_host\"='%s'";
+
+    if(asprintf(&sql, sql_tmpl, dbh->greyd_host) == -1) {
+        i_warning("postgresql asprintf error");
+        goto err;
+    }
+
+    result = PQexec(dbh->db, sql);
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
+        i_warning("delete postgresql expired entries: %s",
+                  PQerrorMessage(dbh->db));
+        goto err;
+    }
+    PQclear(result);
+    result = NULL;
+    free(sql);
+    sql = NULL;
+
+    sql_tmpl = "UPDATE entries e "
+        "SET \"helo\" = '', \"from\" = '', \"to\" = '', \"expire\" = %lld "
+        "FROM entries g "
+        "WHERE g.\"ip\"=e.\"ip\" AND g.\"to\"='' AND g.\"from\"='' "
+        "AND e.\"from\" <> '' AND e.\"to\" <> '' AND e.\"pcount\" >= 0 "
+        "AND g.\"ip\" IS NULL AND e.\"pass\" <= EXTRACT(EPOCH FROM now()) "
+        "AND e.\"greyd_host\"='%s'";
+
+    if(asprintf(&sql, sql_tmpl, *now + *white_exp, dbh->greyd_host) == -1) {
+        i_warning("postgresql asprintf error");
+        goto err;
+    }
+
+    result = PQexec(dbh->db, sql);
+    if(PQresultStatus(result) != PGRES_COMMAND_OK) {
+        i_warning("update postgresql entries: %s", PQerrorMessage(dbh->db));
+        goto err;
+    }
+    PQclear(result);
+    result = NULL;
+    free(sql);
+    sql = NULL;
+
+    /* Add greytrap & whitelist entries. */
+    sql = "SELECT \"ip\", NULL, NULL FROM entries "
+        "WHERE \"to\"='' AND \"from\"='' AND \"ip\" NOT LIKE '%:%' "
+            "AND \"pcount\" >= 0 "
+        "UNION "
+        "SELECT NULL, \"ip\", NULL FROM entries "
+        "WHERE \"to\"='' AND \"from\"='' AND \"ip\" LIKE '%:%' "
+            "AND \"pcount\" >= 0 "
+        "UNION "
+        "SELECT NULL, NULL, \"ip\" FROM entries "
+        "WHERE \"to\"='' AND \"from\"='' AND \"pcount\" < 0";
+
+    result = PQexec(dbh->db, sql);
+    if(PQresultStatus(result) != PGRES_TUPLES_OK) {
+        i_warning("postgresql fetch grey/white entries: %s",
+                  PQerrorMessage(dbh->db));
+        goto err;
+    }
+
+    size = PQntuples(result);
+    if(size > 0) {
+        for(int tuple = 0; tuple < size; tuple++) {
+            if(!PQgetisnull(result, tuple, 0)) {
+              List_insert_after(
+                  whitelist, strdup((const char *)
+                                    PQgetvalue(result, tuple, 0)));
+            }
+            else if(!PQgetisnull(result, tuple, 1)) {
+              List_insert_after(
+                  whitelist, strdup((const char *)
+                                    PQgetvalue(result, tuple, 1)));
+            }
+            else if(!PQgetisnull(result, tuple, 2)) {
+              List_insert_after(
+                  whitelist, strdup((const char *)
+                                    PQgetvalue(result, tuple, 2)));
+            }
+        }
+    }
+
+err:
+    if(result)
+        PQclear(result);
+    return ret;
 }
 
 static char
