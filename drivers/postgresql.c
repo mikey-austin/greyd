@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2014, 2015 Mikey Austin <mikey@greyd.org>
+ * Copyright (c) 2014, 2015 Mikey Austin <mikey@greyd.org>, Franz Luther
+ * Neulist Carroll <franzneulistcarroll@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,7 +18,7 @@
 /**
  * @file   postgresql.c
  * @brief  PostgreSQL DB driver.
- * @author Mikey Austin
+ * @author Franz Luther Neulist Carroll
  * @date   2016
  */
 
