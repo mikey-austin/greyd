@@ -729,8 +729,7 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             "AND \"pcount\" >= 0 "
         "UNION "
         "SELECT NULL, NULL, \"ip\" FROM entries "
-        "WHERE \"to\"='' AND \"from\"='' AND \"pcount\" < 0 "
-        "ORDER BY \"ip\"";
+        "WHERE \"to\"='' AND \"from\"='' AND \"pcount\" < 0 ";
 
     result = PQexec(dbh->db, sql);
     if(PQresultStatus(result) != PGRES_TUPLES_OK) {
