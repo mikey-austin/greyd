@@ -692,17 +692,18 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
         goto err;
     }
     PQclear(result);
-    result = NULL;
     free(sql);
     sql = NULL;
 
-    sql_tmpl = "UPDATE entries e "
+    sql_tmpl = "UPDATE entries "
         "SET \"helo\" = '', \"from\" = '', \"to\" = '', \"expire\" = %lld "
-        "FROM entries g "
-        "WHERE g.\"ip\"=e.\"ip\" AND g.\"to\"='' AND g.\"from\"='' "
+        "FROM entries e LEFT JOIN entries g "
+        "ON g.\"ip\" = e.\"ip\" AND g.\"to\" = '' AND g.\"from\" = '' "
+        "WHERE e.\"ip\" = entries.\"ip\" AND e.\"helo\" = entries.\"helo\" "
+        "AND e.\"from\" = entries.\"from\" AND e.\"to\" = entries.\"to\" "
         "AND e.\"from\" <> '' AND e.\"to\" <> '' AND e.\"pcount\" >= 0 "
-        "AND g.\"ip\" IS NULL AND e.\"pass\" <= EXTRACT(EPOCH FROM now()) "
-        "AND e.\"greyd_host\"='%s'";
+        "AND e.\"pass\" <= EXTRACT(EPOCH FROM now()) AND e.\"greyd_host\"='%s' "
+        "AND g.\"ip\" IS NULL";
 
     if(asprintf(&sql, sql_tmpl, *now + *white_exp, dbh->greyd_host) == -1) {
         i_warning("postgresql asprintf error");
@@ -715,7 +716,6 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
         goto err;
     }
     PQclear(result);
-    result = NULL;
     free(sql);
     sql = NULL;
 
@@ -729,7 +729,8 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
             "AND \"pcount\" >= 0 "
         "UNION "
         "SELECT NULL, NULL, \"ip\" FROM entries "
-        "WHERE \"to\"='' AND \"from\"='' AND \"pcount\" < 0";
+        "WHERE \"to\"='' AND \"from\"='' AND \"pcount\" < 0 "
+        "ORDER BY \"ip\"";
 
     result = PQexec(dbh->db, sql);
     if(PQresultStatus(result) != PGRES_TUPLES_OK) {
@@ -742,19 +743,19 @@ Mod_scan_db(DB_handle_T handle, time_t *now, List_T whitelist,
     if(size > 0) {
         for(int tuple = 0; tuple < size; tuple++) {
             if(!PQgetisnull(result, tuple, 0)) {
-              List_insert_after(
-                  whitelist, strdup((const char *)
-                                    PQgetvalue(result, tuple, 0)));
+                List_insert_after(whitelist,
+                                  strdup((const char *)
+                                         PQgetvalue(result, tuple, 0)));
             }
             else if(!PQgetisnull(result, tuple, 1)) {
-              List_insert_after(
-                  whitelist, strdup((const char *)
-                                    PQgetvalue(result, tuple, 1)));
+                List_insert_after(whitelist_ipv6,
+                                  strdup((const char *)
+                                         PQgetvalue(result, tuple, 1)));
             }
             else if(!PQgetisnull(result, tuple, 2)) {
-              List_insert_after(
-                  whitelist, strdup((const char *)
-                                    PQgetvalue(result, tuple, 2)));
+                List_insert_after(traplist,
+                                  strdup((const char *)
+                                         PQgetvalue(result, tuple, 2)));
             }
         }
     }
