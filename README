@@ -64,6 +64,7 @@ The following database drivers have been implemented:
   * **Berkeley DB SQL** (5.x onwards).
   * **SQLite 3**
   * **MySQL**
+  * **PostgreSQL**
 
 For GNU/Linux, a firewall driver has been implemented for the netfilter ecosystem. This driver makes use of:
   * **libipset** for IP set management
