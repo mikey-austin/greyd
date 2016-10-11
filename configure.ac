@@ -114,6 +114,37 @@ if test "x${mysql_driver}" = xyes; then
 fi
 
 #
+# PostgreSQL db driver library & header checks.
+#
+AC_ARG_WITH([postgresql], [AS_HELP_STRING([--with-postgresql], [build the PostgreSQl database driver])],
+    [postgresql_driver=yes], [postgresql_driver=no])
+
+if test "x${postgresql_driver}" = xyes; then
+    AC_PATH_PROG([POSTGRESQL], [psql])
+    AC_PATH_PROG([POSTGRESQL_CONFIG], [pg_config])
+    AS_IF([test "x${POSTGRESQL_CONFIG}" = x], [AC_MSG_ERROR([Please install pg_config])])
+
+    have_postgresql=no
+    LIBS="${LIBS} -L"`${POSTGRESQL_CONFIG} --libdir`" -lpq "`${POSTGRESQL_CONFIG} --libs`
+    CPPFLAGS="${CPPFLAGS} -I"`${POSTGRESQL_CONFIG} --includedir`
+    AC_CHECK_HEADERS([libpq-fe.h], [have_postgresql=yes;break], [have_postgresql=no])
+
+    if test "x${have_postgresql}" = xyes; then
+        AC_DEFINE([HAVE_POSTGRESQL], [1], [PostgreSQL development library])
+    else
+        AC_MSG_FAILURE([libpq is required to build the Postgresql database driver])
+    fi
+fi
+
+if test "x${postgresql_driver}" = xyes; then
+    AC_DEFINE([WITH_POSTGRESQL], [1], [with the PostgreSQL driver])
+    optional_drivers="${optional_drivers} greyd_postgresql.la"
+    optional_ldadd="${optional_ldadd} -dlopen ../drivers/greyd_postgresql.la"
+    extra_tests="${extra_tests} test_db_postgresql.sh test_grey_postgresql.sh"
+    extra_test_programs="${extra_test_programs} test_db_postgresql.t test_grey_postgresql.t"
+fi
+
+#
 # sqlite3 db driver library & header checks.
 #
 AC_ARG_WITH([sqlite], [AS_HELP_STRING([--with-sqlite], [build the SQLite database driver])],
@@ -175,7 +206,7 @@ fi
 AC_ARG_WITH([bdb], [AS_HELP_STRING([--with-bdb], [build the Berkeley database driver])],
     [bdb_driver=yes], [bdb_driver=no])
 
-if test "x${bdb_driver}" = xno && test "x${sqlite_driver}" = xno && test "x${bdb_sql_driver}" = xno && test "x${mysql_driver}" = xno; then
+if test "x${bdb_driver}" = xno && test "x${sqlite_driver}" = xno && test "x${bdb_sql_driver}" = xno && test "x${mysql_driver}" = xno && test "x${postgresql_driver}" = xno; then
    # Default to the Berkeley DB driver if none have been selected.
    bdb_driver=yes
 fi
@@ -436,6 +467,7 @@ AC_CONFIG_FILES([Makefile
         check/data/config_test2.conf
         check/data/config_test3.conf
         check/test-mysql
+        check/test-postgresql
         packages/rpm/greyd.spec
         check/data/lexer_source_1.conf])
 AC_OUTPUT

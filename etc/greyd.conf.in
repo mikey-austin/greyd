@@ -125,6 +125,13 @@ section database {
     #name   = "greyd"
     #user   = "greyd"
     #pass   = "greyd"
+
+    #driver = "@libdir@/@PACKAGE@/greyd_postgresql.so"
+    #host   = "localhost"
+    #port   = "5432"
+    #name   = "greyd"
+    #user   = "greyd"
+    #pass   = "greyd"
 }
 
 #

@@ -43,6 +43,7 @@ check/data/lexer_source_1.conf
 check/data/lexer_source_2.conf.gz
 check/test-wrapper
 check/test-mysql
+check/test-postgresql
 check/benchmark_blacklist
 check/.deps/*
 check/.libs/*
@@ -50,6 +51,7 @@ check/*.la
 check/test_*
 !check/test_*.c
 !check/test_*_mysql.sh
+!check/test_*_postgresql.sh
 m4/*.m4
 test-driver
 src/.deps/*
