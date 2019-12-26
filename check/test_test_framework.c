@@ -23,8 +23,7 @@
 
 #include "test.h"
 
-int
-main(void)
+int main(void)
 {
     TEST_START(4);
 

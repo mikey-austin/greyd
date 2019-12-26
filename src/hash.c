@@ -25,10 +25,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "failures.h"
+#include "hash.h"
 #include "list.h"
 #include "utils.h"
-#include "hash.h"
-#include "failures.h"
 
 /**
  * Lookup a key in the hash table and return an entry pointer. This function
@@ -36,7 +36,7 @@
  *
  * An entry with a NULL value indicates that the entry is not being used.
  */
-static struct Hash_entry *Hash_find_entry(Hash_T hash, const char *key);
+static struct Hash_entry* Hash_find_entry(Hash_T hash, const char* key);
 
 /**
  * Resize the list of entries if the number of entries equals the configured
@@ -47,7 +47,7 @@ static void Hash_resize(Hash_T hash, int new_size);
 /**
  * The hash function to map a key to an index in the array of hash entries.
  */
-static unsigned int Hash_lookup(const char *key);
+static unsigned int Hash_lookup(const char* key);
 
 /**
  * Create and initialize the hash's array of entries.
@@ -55,41 +55,41 @@ static unsigned int Hash_lookup(const char *key);
 static void Hash_create_entries(Hash_T hash);
 
 extern Hash_T
-Hash_create(int size, void (*destroy)(struct Hash_entry *entry))
+Hash_create(int size, void (*destroy)(struct Hash_entry* entry))
 {
     int i;
     Hash_T new;
 
-    if((new = malloc(sizeof(*new))) == NULL)
+    if ((new = malloc(sizeof(*new))) == NULL)
         i_critical("malloc: %s", strerror(errno));
 
-    new->size    = size;
+    new->size = size;
     new->destroy = destroy;
 
     /* Leave the entries uninitialized until the first insert. */
-    new->entries     = NULL;
+    new->entries = NULL;
     new->num_entries = 0;
 
     return new;
 }
 
 extern void
-Hash_destroy(Hash_T *hash)
+Hash_destroy(Hash_T* hash)
 {
     int i;
 
-    if(hash == NULL || *hash == NULL) {
+    if (hash == NULL || *hash == NULL) {
         return;
     }
 
-    if((*hash)->destroy && (*hash)->num_entries > 0) {
-        for(i = 0; i < (*hash)->size; i++) {
+    if ((*hash)->destroy && (*hash)->num_entries > 0) {
+        for (i = 0; i < (*hash)->size; i++) {
             (*hash)->destroy(((*hash)->entries + i));
         }
     }
 
-    if(*hash) {
-        if((*hash)->entries) {
+    if (*hash) {
+        if ((*hash)->entries) {
             free((*hash)->entries);
             (*hash)->entries = NULL;
         }
@@ -103,10 +103,10 @@ Hash_reset(Hash_T hash)
 {
     int i;
 
-    if(hash->num_entries == 0)
+    if (hash->num_entries == 0)
         return;
 
-    for(i=0; i < hash->size; i++) {
+    for (i = 0; i < hash->size; i++) {
         hash->destroy((hash->entries + i));
         hash->entries[i].v = NULL;
     }
@@ -116,24 +116,21 @@ Hash_reset(Hash_T hash)
 }
 
 extern void
-Hash_insert(Hash_T hash, const char *key, void *value)
+Hash_insert(Hash_T hash, const char* key, void* value)
 {
-    struct Hash_entry *entry;
+    struct Hash_entry* entry;
 
-    if(hash->entries == NULL) {
+    if (hash->entries == NULL) {
         Hash_create_entries(hash);
-    }
-    else if(hash->num_entries >= hash->size) {
+    } else if (hash->num_entries >= hash->size) {
         Hash_resize(hash, (2 * hash->size));
     }
 
     entry = Hash_find_entry(hash, key);
-    if(entry->v != NULL)
-    {
+    if (entry->v != NULL) {
         /* An entry exists, clear contents before overwriting. */
         hash->destroy(entry);
-    }
-    else {
+    } else {
         /* As nothing was over written, increment the number of entries. */
         hash->num_entries++;
     }
@@ -143,12 +140,11 @@ Hash_insert(Hash_T hash, const char *key, void *value)
     entry->v = value;
 }
 
-extern void
-*Hash_get(Hash_T hash, const char *key)
+extern void* Hash_get(Hash_T hash, const char* key)
 {
-    struct Hash_entry *entry;
+    struct Hash_entry* entry;
 
-    if(hash->entries == NULL)
+    if (hash->entries == NULL)
         return NULL;
 
     entry = Hash_find_entry(hash, key);
@@ -156,18 +152,18 @@ extern void
 }
 
 extern void
-Hash_delete(Hash_T hash, const char *key)
+Hash_delete(Hash_T hash, const char* key)
 {
-    struct Hash_entry *entry;
+    struct Hash_entry* entry;
 
-    if(hash->entries == NULL)
+    if (hash->entries == NULL)
         return;
 
     entry = Hash_find_entry(hash, key);
-    if(entry->v != NULL) {
+    if (entry->v != NULL) {
         hash->destroy(entry);
         *(entry->k) = '\0';
-        entry->v    = NULL;
+        entry->v = NULL;
         hash->num_entries--;
     }
 }
@@ -176,14 +172,14 @@ extern List_T
 Hash_keys(Hash_T hash)
 {
     List_T keys = NULL;
-    struct Hash_entry *entry;
+    struct Hash_entry* entry;
     int i;
 
-    if(hash && hash->num_entries > 0) {
+    if (hash && hash->num_entries > 0) {
         keys = List_create(NULL);
-        for(i = 0; i < hash->size; i++) {
+        for (i = 0; i < hash->size; i++) {
             entry = hash->entries + i;
-            if(entry->k && entry->v != NULL) {
+            if (entry->k && entry->v != NULL) {
                 List_insert_after(keys, entry->k);
             }
         }
@@ -192,21 +188,19 @@ Hash_keys(Hash_T hash)
     return keys;
 }
 
-static struct Hash_entry
-*Hash_find_entry(Hash_T hash, const char *key)
+static struct Hash_entry* Hash_find_entry(Hash_T hash, const char* key)
 {
     unsigned int i, j;
-    struct Hash_entry *curr;
+    struct Hash_entry* curr;
 
     i = j = (Hash_lookup(key) % hash->size);
     do {
         curr = hash->entries + i;
-        if((strcmp(key, curr->k) == 0) || (curr->v == NULL))
+        if ((strcmp(key, curr->k) == 0) || (curr->v == NULL))
             break;
 
         i = ((i + 1) % hash->size);
-    }
-    while(i != j);
+    } while (i != j);
 
     return curr;
 }
@@ -215,11 +209,11 @@ static void
 Hash_resize(Hash_T hash, int new_size)
 {
     int i, old_size = hash->size;
-    struct Hash_entry *old_entries = hash->entries;
+    struct Hash_entry* old_entries = hash->entries;
 
-    if(new_size <= hash->size) {
+    if (new_size <= hash->size) {
         i_warning("Refusing to resize a hash of %d elements to %d",
-               hash->size, new_size);
+            hash->size, new_size);
         return;
     }
 
@@ -229,20 +223,20 @@ Hash_resize(Hash_T hash, int new_size)
      * not very efficient for large hashes, so best to choose an
      * appropriate starting size.
      */
-    hash->entries = (struct Hash_entry*) calloc(
+    hash->entries = (struct Hash_entry*)calloc(
         new_size, sizeof(*(hash->entries)));
 
-    if(!hash->entries)
+    if (!hash->entries)
         i_critical("Could not resize hash entries of size %d to %d",
-                   hash->size, new_size);
+            hash->size, new_size);
 
     /* Re-initialize the hash entries. */
     hash->size = new_size;
     hash->num_entries = 0;
 
     /* For each non-NULL entry, re-hash into the new entries array. */
-    for(i = 0; i < old_size; i++) {
-        if(old_entries[i].v != NULL) {
+    for (i = 0; i < old_size; i++) {
+        if (old_entries[i].v != NULL) {
             Hash_insert(hash, old_entries[i].k, old_entries[i].v);
         }
     }
@@ -258,9 +252,9 @@ Hash_create_entries(Hash_T hash)
     int i;
 
     hash->num_entries = 0;
-    hash->entries = (struct Hash_entry*) calloc(
+    hash->entries = (struct Hash_entry*)calloc(
         hash->size, sizeof(*(hash->entries)));
-    if(!hash->entries)
+    if (!hash->entries)
         i_critical("Could not allocate hash entries of size %d", hash->size);
 }
 
@@ -268,12 +262,12 @@ Hash_create_entries(Hash_T hash)
  * Use the djb2 string hash function.
  */
 static unsigned int
-Hash_lookup(const char *key)
+Hash_lookup(const char* key)
 {
     int c;
     unsigned int hash = 5381;
 
-    while((c = *key++))
+    while ((c = *key++))
         hash = ((hash << 5) + hash) + c;
 
     return hash;

@@ -36,31 +36,31 @@
  * A struct to contain a hash entry's key and value pair.
  */
 struct Hash_entry {
-    char  k[MAX_KEY_LEN + 1]; /**< Hash entry key */
-    void *v;                  /**< Hash entry value */
+    char k[MAX_KEY_LEN + 1]; /**< Hash entry key */
+    void* v; /**< Hash entry value */
 };
 
 /**
  * The main hash table structure.
  */
-typedef struct Hash_T *Hash_T;
+typedef struct Hash_T* Hash_T;
 struct Hash_T {
-    int  size;        /**< The initial hash size. */
-    int  num_entries; /**< The number of set elements. */
-    void (*destroy)(struct Hash_entry *entry);
-    struct Hash_entry  *entries;
+    int size; /**< The initial hash size. */
+    int num_entries; /**< The number of set elements. */
+    void (*destroy)(struct Hash_entry* entry);
+    struct Hash_entry* entries;
 };
 
 /**
  * Create a new hash table.
  */
 extern Hash_T Hash_create(int size,
-                          void (*destroy)(struct Hash_entry *entry));
+    void (*destroy)(struct Hash_entry* entry));
 
 /**
  * Destroy a hash table, freeing all elements
  */
-extern void Hash_destroy(Hash_T *hash);
+extern void Hash_destroy(Hash_T* hash);
 
 /**
  * Clear out all entries in the table.
@@ -70,18 +70,18 @@ extern void Hash_reset(Hash_T hash);
 /**
  * Insert a new element into the hash table.
  */
-extern void Hash_insert(Hash_T hash, const char *key, void *value);
+extern void Hash_insert(Hash_T hash, const char* key, void* value);
 
 /**
  * Fetch an element from the hash table by the specified key.
  */
-extern void *Hash_get(Hash_T hash, const char *key);
+extern void* Hash_get(Hash_T hash, const char* key);
 
 /**
  * Delete an element from the hash, and call the configured
  * element destructor on it.
  */
-extern void Hash_delete(Hash_T hash, const char *key);
+extern void Hash_delete(Hash_T hash, const char* key);
 
 /**
  * Return a list of the set keys in the supplied hash. Note, the

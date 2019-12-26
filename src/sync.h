@@ -30,32 +30,32 @@
 
 #include "greyd_config.h"
 
-#define SYNC_VERSION    2
+#define SYNC_VERSION 2
 #define SYNC_VERIFY_MSG 1
-#define SYNC_MCASTADDR  "224.0.1.241"
-#define SYNC_MCASTTTL   1
-#define SYNC_HMAC_LEN   20  /* SHA1 */
-#define SYNC_MAXSIZE    1408
-#define SYNC_KEY        "/etc/greyd/greyd.key"
+#define SYNC_MCASTADDR "224.0.1.241"
+#define SYNC_MCASTTTL 1
+#define SYNC_HMAC_LEN 20 /* SHA1 */
+#define SYNC_MAXSIZE 1408
+#define SYNC_KEY "/etc/greyd/greyd.key"
 
 /* Types compatible with spamd. */
-#define SYNC_END         0x0000
-#define SYNC_GREY        0x0001
-#define SYNC_WHITE       0x0002
-#define SYNC_TRAPPED     0x0003
+#define SYNC_END 0x0000
+#define SYNC_GREY 0x0001
+#define SYNC_WHITE 0x0002
+#define SYNC_TRAPPED 0x0003
 
 /* Extensions to the spamd protocol. */
-#define SYNC_DEL_WHITE   0x0004
+#define SYNC_DEL_WHITE 0x0004
 #define SYNC_DEL_TRAPPED 0x0005
 
 #define SYNC_ALIGNBYTES (15)
-#define SYNC_ALIGN(p)   (((u_int)(p) + SYNC_ALIGNBYTES) &~ SYNC_ALIGNBYTES)
+#define SYNC_ALIGN(p) (((u_int)(p) + SYNC_ALIGNBYTES) & ~SYNC_ALIGNBYTES)
 
-typedef struct Sync_engine_T *Sync_engine_T;
+typedef struct Sync_engine_T* Sync_engine_T;
 struct Sync_engine_T {
     Config_T config;
     u_short port;
-    FILE *grey_out;
+    FILE* grey_out;
     int sync_fd;
     int send_mcast;
     struct sockaddr_in sync_in;
@@ -63,16 +63,16 @@ struct Sync_engine_T {
     unsigned char sync_key[(SHA_DIGEST_LENGTH * 2) + 1];
     int sync_counter;
     List_T sync_hosts;
-    char *iface;
+    char* iface;
 };
 
 struct Sync_hdr {
-    u_int8_t  sh_version;
-    u_int8_t  sh_af;
+    u_int8_t sh_version;
+    u_int8_t sh_af;
     u_int16_t sh_length;
     u_int32_t sh_counter;
-    u_int8_t  sh_hmac[SYNC_HMAC_LEN];
-    u_int8_t  sh_pad[4];
+    u_int8_t sh_hmac[SYNC_HMAC_LEN];
+    u_int8_t sh_pad[4];
 } __attribute__((__packed__));
 
 struct Sync_tlv_hdr {
@@ -115,38 +115,38 @@ extern int Sync_start(Sync_engine_T engine);
 /**
  * Stop the sync engine and cleanup all sync resources.
  */
-extern void Sync_stop(Sync_engine_T *engine);
+extern void Sync_stop(Sync_engine_T* engine);
 
 /**
  * Add a new sync host to the engine's list of UDP sync hosts.
  */
-extern int Sync_add_host(Sync_engine_T engine, const char *name);
+extern int Sync_add_host(Sync_engine_T engine, const char* name);
 
 /**
  * Receive a sync message on the engine's socket and write grey
  * data to the greylister on the specified file handle.
  */
-extern void Sync_recv(Sync_engine_T engine, FILE *grey_out);
+extern void Sync_recv(Sync_engine_T engine, FILE* grey_out);
 
 /**
  * Send out a sync message to notify others of a change to a grey
  * entry.
  */
-extern void Sync_update(Sync_engine_T engine, struct Grey_tuple *gt,
-                        time_t now);
+extern void Sync_update(Sync_engine_T engine, struct Grey_tuple* gt,
+    time_t now);
 
 /**
  * Send out a sync message to notify others of a change to a white
  * entry.
  */
-extern void Sync_white(Sync_engine_T engine, char *ip, time_t now,
-                       time_t expire, short delete);
+extern void Sync_white(Sync_engine_T engine, char* ip, time_t now,
+    time_t expire, short delete);
 
 /**
  * Send out a sync message to notify others of a change to a
  * grey-trapped entry.
  */
-extern void Sync_trapped(Sync_engine_T engine, char *ip, time_t now,
-                         time_t expire, short delete);
+extern void Sync_trapped(Sync_engine_T engine, char* ip, time_t now,
+    time_t expire, short delete);
 
 #endif

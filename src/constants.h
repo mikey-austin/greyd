@@ -25,26 +25,26 @@
 #define CONSTANTS_DEFINED
 
 #define GREYLISTING_ENABLED 1
-#define IPV6_ENABLED        0
-#define MAX_HOST_NAME       255
-#define GREYD_PORT          8025
-#define GREYD_SYNC_PORT     8025
-#define GREYD_CFG_PORT      8026
-#define GREYD_MAIN_USER     "greyd"
-#define GREYD_DB_USER       "greydb"
-#define GREYD_CHROOT        1
-#define GREYD_CHROOT_DIR    "/var/empty"
-#define GREYD_BACKLOG       10
+#define IPV6_ENABLED 0
+#define MAX_HOST_NAME 255
+#define GREYD_PORT 8025
+#define GREYD_SYNC_PORT 8025
+#define GREYD_CFG_PORT 8026
+#define GREYD_MAIN_USER "greyd"
+#define GREYD_DB_USER "greydb"
+#define GREYD_CHROOT 1
+#define GREYD_CHROOT_DIR "/var/empty"
+#define GREYD_BACKLOG 10
 #define MAX_FILES_THRESHOLD 200
-#define MAX_TIME            400
-#define SETRLIMIT           1
-#define POLL_TIMEOUT        1000 /* In milliseconds. */
-#define GREYD_BANNER        "greyd IP-based SPAM blocker"
-#define NUM_BLACKLISTS      10
-#define TRACK_OUTBOUND       1
-#define SPF_ENABLED          1
-#define SPF_WHITELIST_PASS   0
-#define SPF_TRAP_SOFTFAIL    1
-#define DB_PERMITTED_DOM     0 /* Permitted domains stored in db. */
+#define MAX_TIME 400
+#define SETRLIMIT 1
+#define POLL_TIMEOUT 1000 /* In milliseconds. */
+#define GREYD_BANNER "greyd IP-based SPAM blocker"
+#define NUM_BLACKLISTS 10
+#define TRACK_OUTBOUND 1
+#define SPF_ENABLED 1
+#define SPF_WHITELIST_PASS 0
+#define SPF_TRAP_SOFTFAIL 1
+#define DB_PERMITTED_DOM 0 /* Permitted domains stored in db. */
 
 #endif

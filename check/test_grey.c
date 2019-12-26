@@ -24,43 +24,42 @@
 #include "../src/config.h"
 
 #include "test.h"
-#include <greydb.h>
-#include <firewall.h>
-#include <greyd_config.h>
-#include <lexer.h>
-#include <config_parser.h>
 #include <config_lexer.h>
+#include <config_parser.h>
+#include <config_value.h>
+#include <firewall.h>
 #include <grey.h>
 #include <greyd.h>
+#include <greyd_config.h>
+#include <greydb.h>
+#include <lexer.h>
 #include <list.h>
-#include <config_value.h>
 
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/wait.h>
 
-static void write_non_grey(int, char *, char *, long, FILE *);
-static void write_grey(char *, char *, char *, char *, char *, FILE *);
-static void write_trap(char *source, char *ip, long expires, FILE *grey_out);
-static void write_white(char *source, char *ip, long expires, FILE *grey_out);
-static void add_spamtrap(char *trapaddr, Config_T config);
-static void tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey,
-                           int *total_trapped, int *total_spamtrap, int *total_white_passed,
-                           int *total_white_blocked, int *total_grey_passed, int *total_grey_blocked);
+static void write_non_grey(int, char*, char*, long, FILE*);
+static void write_grey(char*, char*, char*, char*, char*, FILE*);
+static void write_trap(char* source, char* ip, long expires, FILE* grey_out);
+static void write_white(char* source, char* ip, long expires, FILE* grey_out);
+static void add_spamtrap(char* trapaddr, Config_T config);
+static void tally_database(Config_T c, int* total_entries, int* total_white, int* total_grey,
+    int* total_trapped, int* total_spamtrap, int* total_white_passed,
+    int* total_white_blocked, int* total_grey_passed, int* total_grey_blocked);
 
-int
-main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     DB_handle_T db;
     struct DB_key key;
     struct DB_val val;
     List_T ips;
-    struct List_entry *entry;
+    struct List_entry* entry;
     Lexer_source_T ls, message_source;
     Lexer_T l, message_lexer;
     Config_parser_T cp, message_parser;
@@ -70,36 +69,34 @@ main(int argc, char *argv[])
     int ret, grey[2], trap[2], fw[2], i;
     FILE *grey_in, *grey_out, *trap_out;
     pid_t reader_pid;
-    char *domain;
+    char* domain;
     FW_handle_T fw_handle;
-    char *conf, *conf_tmpl =
-        "drop_privs = 0\n"
-        "low_prio_mx = \"192.179.21.3\"\n"
-        "section grey {\n"
-        "  db_permitted_domains = 1,\n"
-        "  permitted_domains = \"data/permitted_domains.txt\",\n"
-        "  traplist_name    = \"test traplist\",\n"
-        "  traplist_message = \"you have been trapped\",\n"
-        "  grey_expiry      = 3600\n"
-        "}\n"
-        "section firewall {\n"
-        "  driver = \"greyd_fw_dummy.so\"\n"
-        "}\n"
-        "section database {\n"
-        "  driver = \"%s\",\n"
-        "  path   = \"/tmp/greyd_test_grey\",\n"
-        "  db_name = \"test_grey_%s.db\"\n"
-        "}";
+    char *conf, *conf_tmpl = "drop_privs = 0\n"
+                             "low_prio_mx = \"192.179.21.3\"\n"
+                             "section grey {\n"
+                             "  db_permitted_domains = 1,\n"
+                             "  permitted_domains = \"data/permitted_domains.txt\",\n"
+                             "  traplist_name    = \"test traplist\",\n"
+                             "  traplist_message = \"you have been trapped\",\n"
+                             "  grey_expiry      = 3600\n"
+                             "}\n"
+                             "section firewall {\n"
+                             "  driver = \"greyd_fw_dummy.so\"\n"
+                             "}\n"
+                             "section database {\n"
+                             "  driver = \"%s\",\n"
+                             "  path   = \"/tmp/greyd_test_grey\",\n"
+                             "  db_name = \"test_grey_%s.db\"\n"
+                             "}";
 
     TEST_START(34);
 
     asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER);
     c = Config_create();
-    if(argc > 1 && !strcmp(argv[1], "-")) {
+    if (argc > 1 && !strcmp(argv[1], "-")) {
         /* Read from stdin. */
         ls = Lexer_source_create_from_fd(0);
-    }
-    else {
+    } else {
         ls = Lexer_source_create_from_str(conf, strlen(conf));
     }
     l = Config_lexer_create(ls);
@@ -107,11 +104,11 @@ main(int argc, char *argv[])
     Config_parser_start(cp, c);
 
     /* Empty existing database file. */
-    char *db_path;
+    char* db_path;
     asprintf(&db_path, "%s/%s", Config_get_str(c, "path", "database", NULL),
-             Config_get_str(c, "db_name", "database", NULL));
+        Config_get_str(c, "db_name", "database", NULL));
     ret = unlink(db_path);
-    if(ret < 0 && errno != ENOENT) {
+    if (ret < 0 && errno != ENOENT) {
         printf("Error unlinking test DB %s: %s\n", db_path, strerror(errno));
     }
     free(db_path);
@@ -130,11 +127,12 @@ main(int argc, char *argv[])
 
     /* Check the loaded domains. */
     i = 0;
-    char *permitted_domains[2] = {
+    char* permitted_domains[2] = {
         "domain4.com",
         "domain2.com"
     };
-    LIST_EACH(greylister->domains, entry) {
+    LIST_EACH(greylister->domains, entry)
+    {
         domain = List_entry_value(entry);
         TEST_OK(!strcmp(permitted_domains[i++], domain), "domain loaded ok");
     }
@@ -154,15 +152,15 @@ main(int argc, char *argv[])
 
     pipe(grey);
     grey_out = fdopen(grey[1], "w");
-    grey_in  = fdopen(grey[0], "r");
+    grey_in = fdopen(grey[0], "r");
 
     /* Simulate a startup time in the past. */
-    greylister->startup  = time(NULL) - 120;
-    greylister->grey_in  = grey_in;
+    greylister->startup = time(NULL) - 120;
+    greylister->grey_in = grey_in;
     greylister->fw_out = NULL;
 
     /* Start the grey reader child process. */
-    switch(reader_pid = fork()) {
+    switch (reader_pid = fork()) {
     case -1:
         goto cleanup;
         break;
@@ -225,18 +223,18 @@ main(int argc, char *argv[])
 
     /* Entry to an explicit trap address in a permitted domain, will be trapped. */
     write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net",
-               "trap@domain3.com", grey_out);
+        "trap@domain3.com", grey_out);
 
     /* This entry is to a domain not in the allowed list of domains, will be trapped. */
     write_grey("2.3.2.5", "1.2.2.4", "jackiemclean.net", "m@jackiemclean.net",
-               "trap@willbetrapped.com", grey_out);
+        "trap@willbetrapped.com", grey_out);
 
     /* Add a whitelist entry with the same ip as an existing grey entry. */
     write_white("2.3.4.7", "1.2.3.4", time(NULL) + 3600, grey_out);
 
     /* Trigger a hit to the low-priority MX server. */
     write_grey("192.179.21.3", "1.2.2.34", "jackiemclean.net", "m@jackiemclean.net",
-               "notrap@domain4.com", grey_out);
+        "notrap@domain4.com", grey_out);
 
     /* Forcing a parse error will kill the reader process. */
     fprintf(grey_out, "==\n");
@@ -252,7 +250,7 @@ main(int argc, char *argv[])
     int total_white_passed, total_white_blocked;
     int total_grey_passed, total_grey_blocked;
     tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
-                   &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
+        &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
 
     TEST_OK(total_entries == 17, "Total entries as expected");
     TEST_OK(total_white == 5, "Total white as expected");
@@ -275,14 +273,14 @@ main(int argc, char *argv[])
 
     db = DB_init(c);
     DB_open(db, 0);
-    if(DB_get(db, &key, &val) == GREYDB_FOUND) {
+    if (DB_get(db, &key, &val) == GREYDB_FOUND) {
         /* Update the expires time. */
         val.data.gd.expire = time(NULL) - 120;
         DB_put(db, &key, &val);
     }
 
     key.data.gt.ip = "1.2.4.4";
-    if(DB_get(db, &key, &val) == GREYDB_FOUND) {
+    if (DB_get(db, &key, &val) == GREYDB_FOUND) {
         /* Update the pass time. */
         val.data.gd.pass = time(NULL) - 60;
         DB_put(db, &key, &val);
@@ -304,7 +302,7 @@ main(int argc, char *argv[])
     trap_out = fdopen(trap[1], "w");
     greylister->trap_out = trap_out;
 
-    if(Grey_scan_db(greylister) < 0)
+    if (Grey_scan_db(greylister) < 0)
         return 1;
 
     /* Check the whitelist. */
@@ -316,9 +314,9 @@ main(int argc, char *argv[])
     ret = Config_parser_start(message_parser, message);
     TEST_OK((ret == CONFIG_PARSER_OK), "Parsed whitelist message");
     TEST_OK(!strcmp(Config_get_str(message, "name", NULL, ""), "greyd-whitelist"),
-            "whitelist name ok");
+        "whitelist name ok");
     TEST_OK((Config_get_int(message, "af", NULL, 0) == AF_INET),
-            "address family name ok");
+        "address family name ok");
 
     Greyd_process_fw_message(message, fw_handle, NULL);
     FW_close(&fw_handle);
@@ -336,17 +334,19 @@ main(int argc, char *argv[])
 
     section = Config_get_section(message, CONFIG_DEFAULT_SECTION);
     TEST_OK(!strcmp(Config_section_get_str(section, "name", "_"),
-                    "test traplist"), "Traplist name received ok");
+                "test traplist"),
+        "Traplist name received ok");
 
     TEST_OK(!strcmp(Config_section_get_str(section, "message", "_"),
-                    "you have been trapped"), "Traplist message received ok");
+                "you have been trapped"),
+        "Traplist message received ok");
 
     ips = Config_section_get_list(section, "ips");
     TEST_OK(ips != NULL, "Received traplist entries list exists");
     TEST_OK(List_size(ips) == 5, "ips list size is as expected");
 
     tally_database(c, &total_entries, &total_white, &total_grey, &total_trapped, &total_spamtrap,
-                   &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
+        &total_white_passed, &total_white_blocked, &total_grey_passed, &total_grey_blocked);
 
     TEST_OK(total_entries == 14, "Total entries as expected");
     TEST_OK(total_white == 5, "Total white as expected");
@@ -376,9 +376,9 @@ cleanup:
  * the different types of entries.
  */
 static void
-tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey,
-              int *total_trapped, int *total_spamtrap, int *total_white_passed,
-              int *total_white_blocked, int *total_grey_passed, int *total_grey_blocked)
+tally_database(Config_T c, int* total_entries, int* total_white, int* total_grey,
+    int* total_trapped, int* total_spamtrap, int* total_white_passed,
+    int* total_white_blocked, int* total_grey_passed, int* total_grey_blocked)
 {
     DB_handle_T db;
     DB_itr_T itr;
@@ -394,15 +394,14 @@ tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey
     DB_start_txn(db);
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
 
-    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
+    while (DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         (*total_entries)++;
 
-        switch(key.type) {
+        switch (key.type) {
         case DB_KEY_IP:
-            if(val.data.gd.pcount == -1) {
+            if (val.data.gd.pcount == -1) {
                 (*total_trapped)++;
-            }
-            else {
+            } else {
                 (*total_white)++;
                 (*total_white_passed) += val.data.gd.pcount;
                 (*total_white_blocked) += val.data.gd.bcount;
@@ -427,7 +426,7 @@ tally_database(Config_T c, int *total_entries, int *total_white, int *total_grey
 }
 
 static void
-add_spamtrap(char *trapaddr, Config_T config)
+add_spamtrap(char* trapaddr, Config_T config)
 {
     DB_handle_T db;
     struct DB_key key;
@@ -453,39 +452,41 @@ add_spamtrap(char *trapaddr, Config_T config)
 }
 
 static void
-write_grey(char *dstip, char *ip, char *helo, char *from, char *to, FILE *grey_out)
+write_grey(char* dstip, char* ip, char* helo, char* from, char* to, FILE* grey_out)
 {
     fprintf(grey_out,
-            "type = %d\n"
-            "dst_ip = \"%s\"\n"
-            "ip = \"%s\"\n"
-            "helo = \"%s\"\n"
-            "from = \"%s\"\n"
-            "to = \"%s\"\n"
-            "%%\n", GREY_MSG_GREY, dstip, ip, helo, from, to);
+        "type = %d\n"
+        "dst_ip = \"%s\"\n"
+        "ip = \"%s\"\n"
+        "helo = \"%s\"\n"
+        "from = \"%s\"\n"
+        "to = \"%s\"\n"
+        "%%\n",
+        GREY_MSG_GREY, dstip, ip, helo, from, to);
     fflush(grey_out);
 }
 
 static void
-write_non_grey(int type, char *source, char *ip, long expires, FILE *grey_out)
+write_non_grey(int type, char* source, char* ip, long expires, FILE* grey_out)
 {
     fprintf(grey_out,
-            "type = %d\n"
-            "ip = \"%s\"\n"
-            "source = \"%s\"\n"
-            "expires = \"%ld\"\n"
-            "%%\n", type, ip, source, expires);
+        "type = %d\n"
+        "ip = \"%s\"\n"
+        "source = \"%s\"\n"
+        "expires = \"%ld\"\n"
+        "%%\n",
+        type, ip, source, expires);
     fflush(grey_out);
 }
 
 static void
-write_white(char *source, char *ip, long expires, FILE *grey_out)
+write_white(char* source, char* ip, long expires, FILE* grey_out)
 {
     write_non_grey(GREY_MSG_WHITE, source, ip, expires, grey_out);
 }
 
 static void
-write_trap(char *source, char *ip, long expires, FILE *grey_out)
+write_trap(char* source, char* ip, long expires, FILE* grey_out)
 {
     write_non_grey(GREY_MSG_TRAP, source, ip, expires, grey_out);
 }

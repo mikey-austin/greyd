@@ -46,13 +46,13 @@
 #ifndef SPAMD_PARSER_DEFINED
 #define SPAMD_PARSER_DEFINED
 
-#include "spamd_lexer.h"
 #include "blacklist.h"
 #include "ip.h"
+#include "spamd_lexer.h"
 
 #include <stdint.h>
 
-#define SPAMD_PARSER_OK  1
+#define SPAMD_PARSER_OK 1
 #define SPAMD_PARSER_ERR 0
 
 #define SPAMD_PARSER_IPV4_QUADS 4
@@ -60,14 +60,14 @@
 /**
  * The main spamd parser structure.
  */
-typedef struct Spamd_parser_T *Spamd_parser_T;
+typedef struct Spamd_parser_T* Spamd_parser_T;
 struct Spamd_parser_T {
-    u_int8_t    start[SPAMD_PARSER_IPV4_QUADS];
-    u_int8_t    end[SPAMD_PARSER_IPV4_QUADS];
-    Lexer_T     lexer;
+    u_int8_t start[SPAMD_PARSER_IPV4_QUADS];
+    u_int8_t end[SPAMD_PARSER_IPV4_QUADS];
+    Lexer_T lexer;
     Blacklist_T blacklist;
-    int         type;
-    int         curr;
+    int type;
+    int curr;
 };
 
 /**
@@ -84,7 +84,7 @@ extern Spamd_parser_T Spamd_parser_create(Lexer_T lexer);
  *
  * @param parser The initialized parser object to be destroyed.
  */
-extern void Spamd_parser_destroy(Spamd_parser_T *parser);
+extern void Spamd_parser_destroy(Spamd_parser_T* parser);
 
 /**
  * Start parsing the lexer's token stream, and populate the specified

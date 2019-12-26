@@ -21,49 +21,49 @@
  * @date   2014
  */
 
-#include <err.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
 #include <ctype.h>
+#include <err.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "constants.h"
+#include "failures.h"
+#include "grey.h"
 #include "greyd_config.h"
 #include "greydb.h"
-#include "grey.h"
-#include "utils.h"
-#include "sync.h"
 #include "ip.h"
 #include "log.h"
-#include "failures.h"
+#include "sync.h"
+#include "utils.h"
 
 #define PROG_NAME "greydb"
 
-#define TYPE_WHITE    0
-#define TYPE_TRAPHIT  1
+#define TYPE_WHITE 0
+#define TYPE_TRAPHIT 1
 #define TYPE_SPAMTRAP 2
-#define TYPE_DOMAIN   3
+#define TYPE_DOMAIN 3
 
 #define ACTION_LIST 0
-#define ACTION_DEL  1
-#define ACTION_ADD  2
+#define ACTION_DEL 1
+#define ACTION_ADD 2
 
-extern char *optarg;
+extern char* optarg;
 extern int optind, opterr, optopt;
 
 static void usage(void);
 static int db_list(DB_handle_T);
-static int db_update(DB_handle_T, char *, int, int, Sync_engine_T,
-                     int, int);
+static int db_update(DB_handle_T, char*, int, int, Sync_engine_T,
+    int, int);
 
 static void
 usage(void)
 {
     fprintf(stderr, "usage: %s [-f config] [[-DTt] -a keys] "
-            "[[-DTt] -d keys] \n",
-            PROG_NAME);
+                    "[[-DTt] -d keys] \n",
+        PROG_NAME);
     exit(1);
 }
 
@@ -77,19 +77,19 @@ db_list(DB_handle_T db)
     struct Grey_data gd;
 
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
-    while(DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
+    while (DB_itr_next(itr, &key, &val) != GREYDB_NOT_FOUND) {
         gd = val.data.gd;
 
-        switch(key.type) {
+        switch (key.type) {
         case DB_KEY_TUPLE:
             /*
              * This is a greylist entry.
              */
             gt = key.data.gt;
             printf("GREY|%s|%s|%s|%s|%lld|%lld|%lld|%d|%d\n",
-                   gt.ip, gt.helo, gt.from, gt.to, (long long) gd.first,
-                   (long long) gd.pass, (long long) gd.expire,
-                   gd.bcount, gd.pcount);
+                gt.ip, gt.helo, gt.from, gt.to, (long long)gd.first,
+                (long long)gd.pass, (long long)gd.expire,
+                gd.bcount, gd.pcount);
             break;
 
         case DB_KEY_MAIL:
@@ -104,18 +104,18 @@ db_list(DB_handle_T db)
             /*
              * We have a non-greylist entry.
              */
-            switch(gd.pcount) {
+            switch (gd.pcount) {
             case -1:
                 /* Spamtrap hit, with expiry time. */
                 printf("TRAPPED|%s|%lld\n", key.data.s,
-                       (long long) gd.expire);
+                    (long long)gd.expire);
                 break;
 
             default:
                 /* Must be a whitelist entry. */
                 printf("WHITE|%s|||%lld|%lld|%lld|%d|%d\n", key.data.s,
-                       (long long) gd.first, (long long) gd.pass,
-                       (long long) gd.expire, gd.bcount, gd.pcount);
+                    (long long)gd.first, (long long)gd.pass,
+                    (long long)gd.expire, gd.bcount, gd.pcount);
                 break;
             }
             break;
@@ -127,8 +127,8 @@ db_list(DB_handle_T db)
 }
 
 static int
-db_update(DB_handle_T db, char *ip, int action, int type,
-          Sync_engine_T syncer, int white_expiry, int trap_expiry)
+db_update(DB_handle_T db, char* ip, int action, int type,
+    Sync_engine_T syncer, int white_expiry, int trap_expiry)
 {
     struct DB_key key;
     struct DB_val val;
@@ -141,13 +141,13 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     memset(&addr, 0, GREY_MAX_MAIL);
     now = time(NULL);
 
-    switch(type) {
+    switch (type) {
     case TYPE_TRAPHIT:
     case TYPE_WHITE:
         /*
          * We are expecting a numeric IP address.
          */
-        if(IP_check_addr(ip) == -1) {
+        if (IP_check_addr(ip) == -1) {
             warnx("Invalid IP address %s", ip);
             return 1;
         }
@@ -158,7 +158,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
         key.type = DB_KEY_MAIL;
         normalize_email_addr(ip, addr, GREY_MAX_MAIL);
         ip = addr;
-        if(strchr(ip, '@') == NULL) {
+        if (strchr(ip, '@') == NULL) {
             warnx("Not an email address: %s", ip);
             return 1;
         }
@@ -174,9 +174,9 @@ db_update(DB_handle_T db, char *ip, int action, int type,
     DB_start_txn(db);
 
     key.data.s = ip;
-    if(action == ACTION_DEL) {
+    if (action == ACTION_DEL) {
         ret = DB_del(db, &key);
-        switch(ret) {
+        switch (ret) {
         case GREYDB_NOT_FOUND:
             warnx("No entry for %s", ip);
             goto rollback;
@@ -185,20 +185,19 @@ db_update(DB_handle_T db, char *ip, int action, int type,
             warnx("Deletion failed");
             goto rollback;
         }
-    }
-    else {
+    } else {
         /*
          * Add a new entry.
          */
         ret = DB_get(db, &key, &val);
-        switch(ret) {
+        switch (ret) {
         case GREYDB_FOUND:
             /*
              * Update the existing entry in the database.
              */
             gd = val.data.gd;
             gd.pcount++;
-            switch(type) {
+            switch (type) {
             case TYPE_WHITE:
                 gd.pass = now;
                 gd.expire = now + white_expiry;
@@ -226,7 +225,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
             val.type = DB_VAL_GREY;
             val.data.gd = gd;
-            if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
+            if ((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
                 warnx("Put failed");
                 goto rollback;
             }
@@ -239,7 +238,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
             gd.first = now;
             gd.bcount = 1;
 
-            switch(type) {
+            switch (type) {
             case TYPE_WHITE:
                 gd.pass = now;
                 gd.expire = now + white_expiry;
@@ -263,7 +262,7 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
             val.type = DB_VAL_GREY;
             val.data.gd = gd;
-            if((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
+            if ((ret = DB_put(db, &key, &val)) != GREYDB_OK) {
                 warnx("Put failed");
                 goto rollback;
             }
@@ -277,8 +276,8 @@ db_update(DB_handle_T db, char *ip, int action, int type,
 
     DB_commit_txn(db);
 
-    if(syncer) {
-        switch(type) {
+    if (syncer) {
+        switch (type) {
         case TYPE_WHITE:
             Sync_white(syncer, ip, now, gd.expire, (action == ACTION_DEL ? 1 : 0));
             break;
@@ -297,11 +296,10 @@ rollback:
     return 1;
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     int option, type = TYPE_WHITE, action = ACTION_LIST, i, ret = 0, c = 0;
-    char *config_file = DEFAULT_CONFIG;
+    char* config_file = DEFAULT_CONFIG;
     Config_T config, opts;
     DB_handle_T db;
     Sync_engine_T syncer = NULL;
@@ -310,8 +308,8 @@ main(int argc, char **argv)
     int white_expiry, trap_expiry;
 
     opts = Config_create();
-    while((option = getopt(argc, argv, "adtTDf:Y:")) != -1) {
-        switch(option) {
+    while ((option = getopt(argc, argv, "adtTDf:Y:")) != -1) {
+        switch (option) {
         case 'a':
             action = ACTION_ADD;
             break;
@@ -347,7 +345,7 @@ main(int argc, char **argv)
         }
     }
 
-    if(action == ACTION_LIST && type != TYPE_WHITE) {
+    if (action == ACTION_LIST && type != TYPE_WHITE) {
         usage();
     }
 
@@ -364,7 +362,7 @@ main(int argc, char **argv)
     db = DB_init(config);
     DB_open(db, (action == ACTION_LIST ? GREYDB_RO : GREYDB_RW));
 
-    switch(action) {
+    switch (action) {
     case ACTION_LIST:
         ret = db_list(db);
         break;
@@ -374,37 +372,35 @@ main(int argc, char **argv)
         /* Ensure that the sync bind address is not set. */
         Config_delete(config, "bind_address", "sync");
 
-        if(sync_send == 0
-           && (hosts = Config_get_list(config, "hosts", "sync")))
-        {
+        if (sync_send == 0
+            && (hosts = Config_get_list(config, "hosts", "sync"))) {
             sync_send += List_size(hosts);
         }
 
         /* Setup sync if enabled in configuration file. */
-        if(sync_send && ((syncer = Sync_init(config)) == NULL)) {
+        if (sync_send && ((syncer = Sync_init(config)) == NULL)) {
             warnx("sync disabled by configuration");
             sync_send = 0;
-        }
-        else if(syncer && Sync_start(syncer) == -1) {
+        } else if (syncer && Sync_start(syncer) == -1) {
             i_warning("could not start sync engine");
             Sync_stop(&syncer);
             sync_send = 0;
         }
 
         white_expiry = Config_get_int(config, "white_expiry", "grey",
-                                      GREY_WHITEEXP);
+            GREY_WHITEEXP);
         trap_expiry = Config_get_int(config, "trap_expiry", "grey",
-                                     GREY_TRAPEXP);
+            GREY_TRAPEXP);
 
-        for(i = optind; i < argc; i++) {
-            if(argv[i][0] != '\0') {
+        for (i = optind; i < argc; i++) {
+            if (argv[i][0] != '\0') {
                 c++;
                 ret += db_update(db, argv[i], action, type, syncer,
-                                 white_expiry, trap_expiry);
+                    white_expiry, trap_expiry);
             }
         }
 
-        if(c == 0) {
+        if (c == 0) {
             warnx("No addresses specified");
         }
         break;
@@ -415,7 +411,7 @@ main(int argc, char **argv)
 
     DB_close(&db);
     Config_destroy(&config);
-    if(sync_send)
+    if (sync_send)
         Sync_stop(&syncer);
 
     return ret;

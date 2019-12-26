@@ -29,25 +29,25 @@
 
 #include <zlib.h>
 
-#define LEXER_SOURCE_STR  1
+#define LEXER_SOURCE_STR 1
 #define LEXER_SOURCE_FILE 2
-#define LEXER_SOURCE_GZ   3
+#define LEXER_SOURCE_GZ 3
 
-typedef struct Lexer_source_T *Lexer_source_T;
+typedef struct Lexer_source_T* Lexer_source_T;
 struct Lexer_source_T {
-    int    type;
-    void  *data;
-    int  (*_getc)(void *data);
-    void (*_ungetc)(void *data, int c);
-    void (*_destroy)(void *data);
-    int (*_error)(void *data);
-    void (*_clear_error)(void *data);
+    int type;
+    void* data;
+    int (*_getc)(void* data);
+    void (*_ungetc)(void* data, int c);
+    void (*_destroy)(void* data);
+    int (*_error)(void* data);
+    void (*_clear_error)(void* data);
 };
 
 /**
  * Create a new configuration source from an absolute path.
  */
-extern Lexer_source_T Lexer_source_create_from_file(const char *filename);
+extern Lexer_source_T Lexer_source_create_from_file(const char* filename);
 
 /**
  * Create a new configuration source from an open file descriptor.
@@ -58,7 +58,7 @@ extern Lexer_source_T Lexer_source_create_from_fd(int fd);
  * Create a new configuration source from a NULL-terminated buffer. Note,
  * the buffer will be copied into the newly created source object.
  */
-extern Lexer_source_T Lexer_source_create_from_str(const char *buf, int len);
+extern Lexer_source_T Lexer_source_create_from_str(const char* buf, int len);
 
 /**
  * Create a new configuration source from a gzipped file.
@@ -68,7 +68,7 @@ extern Lexer_source_T Lexer_source_create_from_gz(gzFile gzf);
 /**
  * Destroy a source object and it's data.
  */
-extern void Lexer_source_destroy(Lexer_source_T *source);
+extern void Lexer_source_destroy(Lexer_source_T* source);
 
 /**
  * Get the next character from this source's queue. An EOF will be returned

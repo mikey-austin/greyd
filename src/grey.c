@@ -25,58 +25,58 @@
 
 #include <sys/types.h>
 
+#include <ctype.h>
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
 #include <grp.h>
 #include <limits.h>
-#include <ctype.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #ifdef HAVE_SPF
-#  include <sys/types.h>
-#  include <sys/socket.h>
-#  include <netinet/in.h>
-#  include <net/if.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #endif
 #ifdef HAVE_SPF2_SPF_H
-#  include <spf2/spf.h>
+#include <spf2/spf.h>
 #endif
 #ifdef HAVE_SPF_H
-#  include <spf.h>
+#include <spf.h>
 #endif
 
-#include "constants.h"
-#include "utils.h"
-#include "failures.h"
-#include "grey.h"
-#include "sync.h"
-#include "greyd.h"
-#include "greydb.h"
-#include "greyd_config.h"
 #include "config_lexer.h"
 #include "config_parser.h"
-#include "list.h"
+#include "constants.h"
+#include "failures.h"
+#include "grey.h"
+#include "greyd.h"
+#include "greyd_config.h"
+#include "greydb.h"
 #include "ip.h"
+#include "list.h"
+#include "sync.h"
+#include "utils.h"
 
-#define GREY_TRAP_NAME       "greyd-greytrap"
-#define GREY_TRAP_MSG        "Your address %A has mailed to spamtraps here"
-#define GREY_WHITE_NAME      "greyd-whitelist"
+#define GREY_TRAP_NAME "greyd-greytrap"
+#define GREY_TRAP_MSG "Your address %A has mailed to spamtraps here"
+#define GREY_WHITE_NAME "greyd-whitelist"
 #define GREY_WHITE_NAME_IPV6 "greyd-whitelist-ipv6"
 
-static void destroy_address(void *);
-static void drop_grey_privs(Greylister_T, struct passwd *);
+static void destroy_address(void*);
+static void drop_grey_privs(Greylister_T, struct passwd*);
 static void shutdown_greyd(int);
 static int process_message(Greylister_T, Config_T);
-static void process_grey(Greylister_T, struct Grey_tuple *, int, char *);
-static void process_non_grey(Greylister_T, int, char *, char *, char *, int, int);
-static int trap_check(Greylister_T, char *);
+static void process_grey(Greylister_T, struct Grey_tuple*, int, char*);
+static void process_non_grey(Greylister_T, int, char*, char*, char*, int, int);
+static int trap_check(Greylister_T, char*);
 static void update_firewall(Greylister_T, int);
 #ifdef HAVE_SPF
-static int spf_lookup(Greylister_T, struct Grey_tuple *);
+static int spf_lookup(Greylister_T, struct Grey_tuple*);
 #endif
 
 Greylister_T Grey_greylister = NULL;
@@ -86,18 +86,18 @@ Grey_setup(Config_T config)
 {
     Greylister_T greylister = NULL;
 
-    if((greylister = malloc(sizeof(*greylister))) == NULL) {
+    if ((greylister = malloc(sizeof(*greylister))) == NULL) {
         i_critical("Could not malloc greylister");
     }
 
-    greylister->config     = config;
-    greylister->trap_out   = NULL;
-    greylister->grey_in    = NULL;
-    greylister->grey_pid   = -1;
+    greylister->config = config;
+    greylister->trap_out = NULL;
+    greylister->grey_in = NULL;
+    greylister->grey_pid = -1;
     greylister->reader_pid = -1;
-    greylister->startup    = -1;
-    greylister->syncer     = NULL;
-    greylister->shutdown   = 0;
+    greylister->startup = -1;
+    greylister->syncer = NULL;
+    greylister->shutdown = 0;
 
     /*
      * Gather configuration from the grey section.
@@ -144,18 +144,18 @@ Grey_setup(Config_T config)
 }
 
 extern void
-Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
-           FILE *trap_out, FILE *fw_out)
+Grey_start(Greylister_T greylister, pid_t grey_pid, FILE* grey_in,
+    FILE* trap_out, FILE* fw_out)
 {
     char *pidfile, *db_user;
-    struct passwd *db_pw;
+    struct passwd* db_pw;
     struct sigaction sa;
     List_T hosts;
 
     memset(&sa, 0, sizeof(sa));
     greylister->grey_pid = grey_pid;
-    greylister->startup  = time(NULL);
-    greylister->grey_in  = grey_in;
+    greylister->startup = time(NULL);
+    greylister->grey_in = grey_in;
     greylister->trap_out = trap_out;
     greylister->fw_out = fw_out;
 
@@ -174,12 +174,11 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
     sigaction(SIGINT, &sa, NULL);
 
     db_user = Config_get_str(greylister->config, "user", "grey",
-                             GREYD_DB_USER);
-    if((db_pw = getpwnam(db_user)) == NULL)
+        GREYD_DB_USER);
+    if ((db_pw = getpwnam(db_user)) == NULL)
         i_critical("no such user %s", db_user);
 
-    switch((greylister->reader_pid = fork()))
-    {
+    switch ((greylister->reader_pid = fork())) {
     case -1:
         i_critical("Could not fork greyd reader");
         exit(1);
@@ -188,7 +187,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
         /*
          * In child. Obtain a fresh database handle.
          */
-        if((greylister->db_handle = DB_init(greylister->config)) == NULL)
+        if ((greylister->db_handle = DB_init(greylister->config)) == NULL)
             i_critical("Could not create db handle");
 
         /*
@@ -196,11 +195,10 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
          */
         Config_delete(greylister->config, "bind_address", "sync");
 
-        if((hosts = Config_get_list(greylister->config, "hosts", "sync"))
-           && List_size(hosts) > 0
-           && (greylister->syncer = Sync_init(greylister->config))
-           && Sync_start(greylister->syncer) == -1)
-        {
+        if ((hosts = Config_get_list(greylister->config, "hosts", "sync"))
+            && List_size(hosts) > 0
+            && (greylister->syncer = Sync_init(greylister->config))
+            && Sync_start(greylister->syncer) == -1) {
             i_warning("could not start sync engine");
             Sync_stop(&greylister->syncer);
         }
@@ -218,17 +216,16 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
         greylister->fw_out = NULL;
 
 #ifdef HAVE_SPF
-        if(Config_get_int(greylister->config, "enable", "spf", SPF_ENABLED))
-        {
+        if (Config_get_int(greylister->config, "enable", "spf", SPF_ENABLED)) {
             greylister->spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
-            if(greylister->spf_server == NULL)
+            if (greylister->spf_server == NULL)
                 i_critical("could not create SPF server");
         }
 #endif
 
         /* TODO: Set proc title to "(greyd db update)". */
 
-        if(Grey_start_reader(greylister) == -1) {
+        if (Grey_start_reader(greylister) == -1) {
             i_critical("Greyd reader failed to start");
             exit(1);
         }
@@ -239,7 +236,7 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE *grey_in,
      * In parent. This process has no access to the grey data being
      * sent from the main greyd process.
      */
-    if((greylister->db_handle = DB_init(greylister->config)) == NULL) {
+    if ((greylister->db_handle = DB_init(greylister->config)) == NULL) {
         i_critical("Could not create db handle");
     }
 
@@ -259,9 +256,9 @@ error:
 }
 
 extern void
-Grey_finish(Greylister_T *greylister)
+Grey_finish(Greylister_T* greylister)
 {
-    if(*greylister == NULL)
+    if (*greylister == NULL)
         return;
 
     (*greylister)->config = NULL;
@@ -272,18 +269,18 @@ Grey_finish(Greylister_T *greylister)
     List_destroy(&((*greylister)->traplist));
     List_destroy(&((*greylister)->domains));
 
-    if((*greylister)->trap_out != NULL)
+    if ((*greylister)->trap_out != NULL)
         fclose((*greylister)->trap_out);
 
-    if((*greylister)->grey_in != NULL)
+    if ((*greylister)->grey_in != NULL)
         fclose((*greylister)->grey_in);
 
-    if((*greylister)->fw_out != NULL)
+    if ((*greylister)->fw_out != NULL)
         fclose((*greylister)->fw_out);
 
 #ifdef HAVE_SPF
-        if((*greylister)->spf_server != NULL)
-            SPF_server_free((*greylister)->spf_server);
+    if ((*greylister)->spf_server != NULL)
+        SPF_server_free((*greylister)->spf_server);
 #endif
 
     free(*greylister);
@@ -301,7 +298,7 @@ Grey_start_reader(Greylister_T greylister)
     int ret, fd;
 
     fd = fileno(greylister->grey_in);
-    if(fd == -1) {
+    if (fd == -1) {
         i_warning("No greylist pipe stream");
         return 0;
     }
@@ -310,17 +307,17 @@ Grey_start_reader(Greylister_T greylister)
     lexer = Config_lexer_create(source);
     parser = Config_parser_create(lexer);
 
-    for(;;) {
-        if(greylister->shutdown) {
+    for (;;) {
+        if (greylister->shutdown) {
             i_debug("stopping grey reader");
             goto cleanup;
         }
 
         message = Config_create();
         ret = Config_parser_start(parser, message);
-        switch(ret) {
+        switch (ret) {
         case CONFIG_PARSER_OK:
-            if(process_message(greylister, message) == -1)
+            if (process_message(greylister, message) == -1)
                 goto cleanup;
             break;
 
@@ -334,14 +331,14 @@ Grey_start_reader(Greylister_T greylister)
          * Check if an error occured on the grey_in end of the pipe, as
          * we can't distinguish between a legitimate EOF and an error.
          */
-        if(Lexer_source_error(source)) {
+        if (Lexer_source_error(source)) {
             i_debug("error detected on grey_in: %s", strerror(errno));
             goto cleanup;
         }
     }
 
 cleanup:
-    if(message != NULL)
+    if (message != NULL)
         Config_destroy(&message);
     Config_parser_destroy(&parser);
     Grey_finish(&greylister);
@@ -352,21 +349,21 @@ cleanup:
 extern void
 Grey_start_scanner(Greylister_T greylister)
 {
-    for(;;) {
-        if(greylister->shutdown)
+    for (;;) {
+        if (greylister->shutdown)
             break;
 
-        if(Grey_scan_db(greylister) == -1)
+        if (Grey_scan_db(greylister) == -1)
             i_warning("db scan failed");
 
         sleep(GREY_DB_SCAN_INTERVAL);
     }
 
     i_info("exiting");
-    if(Grey_greylister->grey_pid != -1)
+    if (Grey_greylister->grey_pid != -1)
         kill(Grey_greylister->grey_pid, SIGTERM);
 
-    if(Grey_greylister->reader_pid != -1)
+    if (Grey_greylister->reader_pid != -1)
         kill(Grey_greylister->reader_pid, SIGTERM);
 
     Grey_finish(&greylister);
@@ -384,21 +381,21 @@ Grey_scan_db(Greylister_T greylister)
     DB_open(db, 0);
     DB_start_txn(db);
 
-    if(DB_scan(db, &now, greylister->whitelist, greylister->whitelist_ipv6,
-               greylister->traplist, &greylister->white_exp) != GREYDB_OK)
-    {
+    if (DB_scan(db, &now, greylister->whitelist, greylister->whitelist_ipv6,
+            greylister->traplist, &greylister->white_exp)
+        != GREYDB_OK) {
         ret = -1;
         goto cleanup;
     }
     DB_commit_txn(db);
 
     Greyd_send_config(greylister->trap_out,
-                      greylister->traplist_name,
-                      greylister->traplist_msg,
-                      greylister->traplist);
+        greylister->traplist_name,
+        greylister->traplist_msg,
+        greylister->traplist);
 
     update_firewall(greylister, AF_INET);
-    if(Config_get_int(greylister->config, "enable_ipv6", NULL, IPV6_ENABLED))
+    if (Config_get_int(greylister->config, "enable_ipv6", NULL, IPV6_ENABLED))
         update_firewall(greylister, AF_INET6);
 
 cleanup:
@@ -406,7 +403,7 @@ cleanup:
     List_remove_all(greylister->whitelist_ipv6);
     List_remove_all(greylister->traplist);
 
-    if(ret < 0)
+    if (ret < 0)
         DB_rollback_txn(db);
 
     return ret;
@@ -415,32 +412,30 @@ cleanup:
 extern void
 Grey_load_domains(Greylister_T greylister)
 {
-    char *domains_file = NULL;
-    FILE *domains = NULL;
+    char* domains_file = NULL;
+    FILE* domains = NULL;
     char domain[GREY_MAX_MAIL], *dp, *sp, *addr;
     int overflow = 0;
 
-    if(!((domains_file = Config_get_str(
-            greylister->config, "permitted_domains", "grey", NULL)) != NULL
-        && (domains = fopen(domains_file, "r")) != NULL))
-    {
+    if (!((domains_file = Config_get_str(
+               greylister->config, "permitted_domains", "grey", NULL))
+                != NULL
+            && (domains = fopen(domains_file, "r")) != NULL)) {
         return;
-    }
-    else if(domains_file && domains == NULL) {
+    } else if (domains_file && domains == NULL) {
         i_warning("failed to load domains from %s", domains_file);
         return;
     }
 
-    if(greylister->domains)
+    if (greylister->domains)
         List_remove_all(greylister->domains);
 
-    while(fgets(domain, sizeof(domain), domains) != NULL) {
+    while (fgets(domain, sizeof(domain), domains) != NULL) {
         sp = domain;
-        if((dp = strchr(domain, '\n')) == NULL) {
+        if ((dp = strchr(domain, '\n')) == NULL) {
             overflow = 1;
             continue;
-        }
-        else if(overflow) {
+        } else if (overflow) {
             /* This is the tail end of an overly large line. */
             overflow = 0;
             continue;
@@ -449,29 +444,28 @@ Grey_load_domains(Greylister_T greylister)
         /* Remove trailing white space. */
         do {
             dp--;
-        }
-        while(dp > sp && isspace(*dp));
+        } while (dp > sp && isspace(*dp));
 
-        if(dp == sp)
+        if (dp == sp)
             continue;
         else
             *(++dp) = '\0';
 
         /* Remove leading white space and skip comments. */
-        while(sp != dp && isspace(*sp))
-            sp++ ;
+        while (sp != dp && isspace(*sp))
+            sp++;
 
-        if(*sp == '\0' || *sp == '#')
+        if (*sp == '\0' || *sp == '#')
             continue;
 
-        if((addr = strdup(sp)) == NULL)
+        if ((addr = strdup(sp)) == NULL)
             i_warning("error inserting domain: %s", strerror(errno));
         List_insert_after(greylister->domains, addr);
     }
 
-    if(ferror(domains)) {
+    if (ferror(domains)) {
         i_warning("error while loading domains: %s",
-                  strerror(errno));
+            strerror(errno));
     }
 }
 
@@ -484,24 +478,24 @@ Grey_load_domains(Greylister_T greylister)
  * @return -1 An error occured.
  */
 static int
-trap_check(Greylister_T greylister, char *to)
+trap_check(Greylister_T greylister, char* to)
 {
     struct DB_key key;
     struct DB_val val;
-    struct List_entry *entry;
-    char *domain;
+    struct List_entry* entry;
+    char* domain;
     int ret, to_len, from_pos, match = 0, check_domains = 0;
 
-    if(List_size(greylister->domains) > 0) {
+    if (List_size(greylister->domains) > 0) {
         check_domains = 1;
         to_len = strlen(to);
-        LIST_EACH(greylister->domains, entry) {
+        LIST_EACH(greylister->domains, entry)
+        {
             domain = List_entry_value(entry);
             from_pos = to_len - strlen(domain);
 
-            if((from_pos >= 0)
-               && (strcasecmp(to + from_pos, domain) == 0))
-            {
+            if ((from_pos >= 0)
+                && (strcasecmp(to + from_pos, domain) == 0)) {
                 match = 1;
             }
         }
@@ -510,16 +504,14 @@ trap_check(Greylister_T greylister, char *to)
     key.type = DB_KEY_DOM_PART;
     key.data.s = to;
 
-    if(!match && Config_get_int(greylister->config, "db_permitted_domains",
-                                "grey", DB_PERMITTED_DOM))
-    {
+    if (!match && Config_get_int(greylister->config, "db_permitted_domains", "grey", DB_PERMITTED_DOM)) {
         check_domains = 1;
         ret = DB_get(greylister->db_handle, &key, &val);
-        if(ret == GREYDB_FOUND)
+        if (ret == GREYDB_FOUND)
             match = 1;
     }
 
-    if(check_domains && !match) {
+    if (check_domains && !match) {
         /* Trap this address. */
         return 0;
     }
@@ -530,7 +522,7 @@ trap_check(Greylister_T greylister, char *to)
      */
     key.type = DB_KEY_MAIL;
     ret = DB_get(greylister->db_handle, &key, &val);
-    switch(ret) {
+    switch (ret) {
     case GREYDB_FOUND:
         return 0;
 
@@ -546,42 +538,42 @@ static void
 update_firewall(Greylister_T greylister, int af)
 {
     List_T ips;
-    struct List_entry *entry;
+    struct List_entry* entry;
     char *ip, *name;
     int first = 1;
 
-    if(af == AF_INET) {
+    if (af == AF_INET) {
         name = greylister->whitelist_name;
         ips = greylister->whitelist;
-    }
-    else {
+    } else {
         name = greylister->whitelist_name_ipv6;
         ips = greylister->whitelist_ipv6;
     }
 
-    if(greylister->fw_out != NULL && List_size(ips) > 0) {
+    if (greylister->fw_out != NULL && List_size(ips) > 0) {
         fprintf(greylister->fw_out,
-                "type=\"replace\"\n"
-                "name=\"%s\"\n"
-                "af=%u\n"
-                "ips=[",
-                name, af);
+            "type=\"replace\"\n"
+            "name=\"%s\"\n"
+            "af=%u\n"
+            "ips=[",
+            name, af);
 
-        LIST_EACH(ips, entry) {
+        LIST_EACH(ips, entry)
+        {
             ip = List_entry_value(entry);
             fprintf(greylister->fw_out, "%s\"%s\"", (first ? "" : ","), ip);
             first = 0;
         }
         fprintf(greylister->fw_out, "]\n%%\n");
 
-        if(fflush(greylister->fw_out) == EOF)
+        if (fflush(greylister->fw_out) == EOF)
             i_debug("update firewall: fflush failed");
     }
 }
 
 static void
-process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
-             char *dst_ip)
+process_grey(Greylister_T greylister, struct Grey_tuple* gt, int sync,
+    char* dst_ip)
 {
     DB_handle_T db = greylister->db_handle;
     struct DB_key key;
@@ -593,7 +585,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
     now = time(NULL);
     DB_open(db, 0);
 
-    switch(trap_check(greylister, gt->to)) {
+    switch (trap_check(greylister, gt->to)) {
     case 1:
         /* Do not trap. */
         spamtrap = 0;
@@ -616,13 +608,12 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
     }
 
 #ifdef HAVE_SPF
-    if(sync && !spamtrap) {
+    if (sync && !spamtrap) {
         spfres = spf_lookup(greylister, gt);
-        switch(spfres) {
+        switch (spfres) {
         case 0:
-            if(Config_get_int(greylister->config, "whitelist_on_pass",
-                              "spf", SPF_WHITELIST_PASS))
-            {
+            if (Config_get_int(greylister->config, "whitelist_on_pass",
+                    "spf", SPF_WHITELIST_PASS)) {
                 /* Whitelist IP address. */
                 key.type = DB_KEY_IP;
                 key.data.s = gt->ip;
@@ -635,7 +626,7 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
                 val.type = DB_VAL_GREY;
                 val.data.gd = gd;
 
-                if(!(DB_put(db, &key, &val) == GREYDB_OK))
+                if (!(DB_put(db, &key, &val) == GREYDB_OK))
                     goto rollback;
 
                 i_debug("whitelisting %s", gt->ip);
@@ -655,15 +646,14 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
 #endif
 
     DB_start_txn(db);
-    switch(DB_get(db, &key, &val)) {
+    switch (DB_get(db, &key, &val)) {
     case GREYDB_NOT_FOUND:
         /*
          * We have a new entry.
          */
-        if(sync && greylister->low_prio_mx
-           && (strcmp(dst_ip, greylister->low_prio_mx) == 0)
-           && ((greylister->startup + 60) < now))
-        {
+        if (sync && greylister->low_prio_mx
+            && (strcmp(dst_ip, greylister->low_prio_mx) == 0)
+            && ((greylister->startup + 60) < now)) {
             /*
              * We haven't seen a greylist entry for this tuple,
 			 * and yet the connection was to a low priority MX
@@ -675,8 +665,8 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
             key.type = DB_KEY_IP;
             key.data.s = gt->ip;
             i_debug("trapping %s for trying %s first for tuple (%s, %s, %s, %s)",
-                    gt->ip, greylister->low_prio_mx,
-                    gt->ip, gt->helo, gt->from, gt->to);
+                gt->ip, greylister->low_prio_mx,
+                gt->ip, gt->helo, gt->from, gt->to);
         }
 
         /*
@@ -692,12 +682,12 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
         val.type = DB_VAL_GREY;
         val.data.gd = gd;
 
-        switch(DB_put(db, &key, &val)) {
+        switch (DB_put(db, &key, &val)) {
         case GREYDB_OK:
-            if(sync) {
+            if (sync) {
                 i_debug("new %sentry %s from %s to %s, helo %s",
-                        (spamtrap ? "greytrap " : ""), gt->ip,
-                        gt->from, gt->to, gt->helo );
+                    (spamtrap ? "greytrap " : ""), gt->ip,
+                    gt->from, gt->to, gt->helo);
             }
             break;
 
@@ -714,18 +704,17 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
         gd = val.data.gd;
         gd.bcount++;
         gd.pcount = (spamtrap ? -1 : 0);
-        if((gd.first + greylister->pass_time) < now)
+        if ((gd.first + greylister->pass_time) < now)
             gd.pass = now;
         val.data.gd = gd;
 
-        if(DB_put(db, &key, &val) == GREYDB_OK) {
-            if(sync) {
+        if (DB_put(db, &key, &val) == GREYDB_OK) {
+            if (sync) {
                 i_debug("updated %sentry %s from %s to %s, helo %s",
-                        (spamtrap ? "greytrap " : ""), gt->ip,
-                        gt->from, gt->to, gt->helo );
+                    (spamtrap ? "greytrap " : ""), gt->ip,
+                    gt->from, gt->to, gt->helo);
             }
-        }
-        else {
+        } else {
             goto rollback;
         }
         break;
@@ -738,11 +727,10 @@ process_grey(Greylister_T greylister, struct Grey_tuple *gt, int sync,
     /*
      * Entry successfully updated, send out sync message.
      */
-    if(greylister->syncer && sync) {
-        if(spamtrap) {
+    if (greylister->syncer && sync) {
+        if (spamtrap) {
             Sync_trapped(greylister->syncer, gt->ip, now, now + expire, 0);
-        }
-        else {
+        } else {
             Sync_update(greylister->syncer, gt, now);
         }
     }
@@ -755,8 +743,8 @@ rollback:
 }
 
 static void
-process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
-                 char *expires, int sync, int delete)
+process_non_grey(Greylister_T greylister, int spamtrap, char* ip, char* source,
+    char* expires, int sync, int delete)
 {
     DB_handle_T db = greylister->db_handle;
     struct DB_key key;
@@ -764,16 +752,15 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
     struct Grey_data gd;
     time_t now;
     long expire;
-    char *end;
+    char* end;
 
     now = time(NULL);
 
-	/* Expiry times have to be in the future. */
+    /* Expiry times have to be in the future. */
     errno = 0;
     expire = strtol(expires, &end, 10);
-    if(!delete && (expire == 0 || expires[0] == '\0' || *end != '\0'
-           || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN))))
-    {
+    if (!delete &&(expire == 0 || expires[0] == '\0' || *end != '\0'
+            || (errno == ERANGE && (expire == LONG_MAX || expire == LONG_MIN)))) {
         i_warning("could not parse expires %s", expires);
         return;
     }
@@ -784,12 +771,12 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
     DB_open(db, 0);
     DB_start_txn(db);
 
-    switch(DB_get(db, &key, &val)) {
+    switch (DB_get(db, &key, &val)) {
     case GREYDB_NOT_FOUND:
         /*
          * This is a new entry.
          */
-        if(delete)
+        if (delete)
             break;
 
         memset(&gd, 0, sizeof(gd));
@@ -800,10 +787,10 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
         val.type = DB_VAL_GREY;
         val.data.gd = gd;
 
-        if(DB_put(db, &key, &val) == GREYDB_OK && sync) {
+        if (DB_put(db, &key, &val) == GREYDB_OK && sync) {
             i_debug("new %s from %s for %s, expires %s",
-                    (spamtrap ? "TRAP" : "WHITE"), source, ip,
-                    expires);
+                (spamtrap ? "TRAP" : "WHITE"), source, ip,
+                expires);
         }
         break;
 
@@ -811,21 +798,19 @@ process_non_grey(Greylister_T greylister, int spamtrap, char *ip, char *source,
         /*
          * This is an existing entry.
          */
-        if(delete) {
-            if(DB_del(db, &key) == GREYDB_OK && sync) {
+        if (delete) {
+            if (DB_del(db, &key) == GREYDB_OK && sync) {
                 i_debug("deleted %s", ip);
             }
-        }
-        else {
-            if(spamtrap) {
+        } else {
+            if (spamtrap) {
                 val.data.gd.pcount = -1;
                 val.data.gd.bcount++;
-            }
-            else {
+            } else {
                 val.data.gd.pcount++;
             }
 
-            if(DB_put(db, &key, &val) == GREYDB_OK && sync) {
+            if (DB_put(db, &key, &val) == GREYDB_OK && sync) {
                 i_debug("updated %s", ip);
             }
         }
@@ -850,7 +835,7 @@ process_message(Greylister_T greylister, Config_T message)
     struct Grey_tuple gt;
     char *dst_ip, *ip, *source, *expires;
 
-    type   = Config_get_int(message, "type", NULL, -1);
+    type = Config_get_int(message, "type", NULL, -1);
     dst_ip = Config_get_str(message, "dst_ip", NULL, "");
 
     /*
@@ -859,26 +844,26 @@ process_message(Greylister_T greylister, Config_T message)
      */
     sync = Config_get_int(message, "sync", NULL, 1);
 
-    switch(type) {
+    switch (type) {
     case GREY_MSG_GREY:
-        gt.ip   = Config_get_str(message, "ip", NULL, NULL);
+        gt.ip = Config_get_str(message, "ip", NULL, NULL);
         gt.helo = Config_get_str(message, "helo", NULL, NULL);
         gt.from = Config_get_str(message, "from", NULL, NULL);
-        gt.to   = Config_get_str(message, "to", NULL, NULL);
-        if(gt.ip && gt.helo && gt.from && gt.to) {
+        gt.to = Config_get_str(message, "to", NULL, NULL);
+        if (gt.ip && gt.helo && gt.from && gt.to) {
             process_grey(greylister, &gt, sync, dst_ip);
         }
         break;
 
     case GREY_MSG_TRAP:
     case GREY_MSG_WHITE:
-        ip      = Config_get_str(message, "ip", NULL, NULL);
-        source  = Config_get_str(message, "source", NULL, NULL);
+        ip = Config_get_str(message, "ip", NULL, NULL);
+        source = Config_get_str(message, "source", NULL, NULL);
         expires = Config_get_str(message, "expires", NULL, NULL);
-        delete  = Config_get_int(message, "delete", NULL, 0);
-        if(ip && source && expires)
+        delete = Config_get_int(message, "delete", NULL, 0);
+        if (ip && source && expires)
             process_non_grey(greylister, (type == GREY_MSG_TRAP ? 1 : 0),
-                             ip, source, expires, sync, delete);
+                ip, source, expires, sync, delete);
         break;
 
     default:
@@ -889,20 +874,19 @@ process_message(Greylister_T greylister, Config_T message)
 }
 
 static void
-destroy_address(void *address)
+destroy_address(void* address)
 {
-    char *to_destroy = (char *) address;
+    char* to_destroy = (char*)address;
 
-    if(to_destroy != NULL)
+    if (to_destroy != NULL)
         free(to_destroy);
 }
 
 static void
-drop_grey_privs(Greylister_T greylister, struct passwd *user)
+drop_grey_privs(Greylister_T greylister, struct passwd* user)
 {
-    if(user && Config_get_int(greylister->config, "drop_privs", NULL, 1)
-       && drop_privs(user) == -1)
-    {
+    if (user && Config_get_int(greylister->config, "drop_privs", NULL, 1)
+        && drop_privs(user) == -1) {
         i_critical("failed to drop privileges");
     }
 }
@@ -910,7 +894,7 @@ drop_grey_privs(Greylister_T greylister, struct passwd *user)
 static void
 shutdown_greyd(int sig)
 {
-    if(Grey_greylister) {
+    if (Grey_greylister) {
         Grey_greylister->shutdown = 1;
     }
 }
@@ -926,32 +910,31 @@ shutdown_greyd(int sig)
  * @return  2 on validation failure
  */
 static int
-spf_lookup(Greylister_T greylister, struct Grey_tuple *gt)
+spf_lookup(Greylister_T greylister, struct Grey_tuple* gt)
 {
-    SPF_request_t *req;
-    SPF_response_t *res = NULL;
+    SPF_request_t* req;
+    SPF_response_t* res = NULL;
     int result = -1;
 
-    if(greylister->spf_server == NULL)
+    if (greylister->spf_server == NULL)
         return 1;
 
     req = SPF_request_new(greylister->spf_server);
-    if(SPF_request_set_ipv4_str(req, gt->ip))
+    if (SPF_request_set_ipv4_str(req, gt->ip))
         goto error;
 
-    if(SPF_request_set_env_from(req, gt->from))
+    if (SPF_request_set_env_from(req, gt->from))
         goto error;
 
-    if(SPF_request_set_helo_dom(req, gt->helo))
+    if (SPF_request_set_helo_dom(req, gt->helo))
         goto error;
 
     SPF_request_query_mailfrom(req, &res);
-    switch(SPF_response_result(res))
-    {
+    switch (SPF_response_result(res)) {
     case SPF_RESULT_PASS:
         result = 0;
         i_info("SPF passed for %s %s helo %s",
-               gt->ip, gt->from, gt->helo);
+            gt->ip, gt->from, gt->helo);
         break;
 
     case SPF_RESULT_NEUTRAL:
@@ -960,9 +943,8 @@ spf_lookup(Greylister_T greylister, struct Grey_tuple *gt)
         break;
 
     case SPF_RESULT_SOFTFAIL:
-        if(!Config_get_int(greylister->config, "trap_on_softfail",
-                          "spf", SPF_TRAP_SOFTFAIL))
-        {
+        if (!Config_get_int(greylister->config, "trap_on_softfail",
+                "spf", SPF_TRAP_SOFTFAIL)) {
             result = 1;
             break;
         }
@@ -971,19 +953,19 @@ spf_lookup(Greylister_T greylister, struct Grey_tuple *gt)
     case SPF_RESULT_FAIL:
         result = 2;
         i_warning("SPF failure for %s %s helo %s",
-                  gt->ip, gt->from, gt->helo);
+            gt->ip, gt->from, gt->helo);
         break;
 
     default:
         i_warning("SPF error for %s %s helo %s: %s (%d)",
-                  gt->ip, gt->from, gt->helo,
-                  SPF_strerror(SPF_response_errcode(res)),
-                  SPF_response_errcode(res));
+            gt->ip, gt->from, gt->helo,
+            SPF_strerror(SPF_response_errcode(res)),
+            SPF_response_errcode(res));
         break;
     }
 
 error:
-    if(res)
+    if (res)
         SPF_response_free(res);
     SPF_request_free(req);
 

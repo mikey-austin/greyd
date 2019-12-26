@@ -31,7 +31,7 @@
 /**
  * The main queue structure.
  */
-typedef struct Queue_T *Queue_T;
+typedef struct Queue_T* Queue_T;
 struct Queue_T {
     List_T list;
 };
@@ -39,22 +39,22 @@ struct Queue_T {
 /**
  * Create a new queue table.
  */
-extern Queue_T Queue_create(void (*destroy)(void *value));
+extern Queue_T Queue_create(void (*destroy)(void* value));
 
 /**
  * Destroy a queue, freeing all elements.
  */
-extern void Queue_destroy(Queue_T *queue);
+extern void Queue_destroy(Queue_T* queue);
 
 /**
  * Insert a new element onto the end of the queue.
  */
-extern void Queue_enqueue(Queue_T queue, void *value);
+extern void Queue_enqueue(Queue_T queue, void* value);
 
 /**
  * Fetch and remove an element from the front of the list.
  */
-extern void *Queue_dequeue(Queue_T queue);
+extern void* Queue_dequeue(Queue_T queue);
 
 /**
  * Return the size of the queue.

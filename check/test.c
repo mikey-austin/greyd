@@ -29,28 +29,27 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 #define T Test_Plan_T
 
 #define TEST_DATA_DIR "/data/"
-#define TEST_CWD      1024
+#define TEST_CWD 1024
 
-extern struct T
-*Test_start(int total)
+extern struct T* Test_start(int total)
 {
-    struct T *plan;
+    struct T* plan;
 
     plan = malloc(sizeof(*plan));
-    if(plan == NULL)
+    if (plan == NULL)
         return NULL;
 
     /* Initialize the plan. */
-    plan->total     = total;
-    plan->current   = 1;
+    plan->total = total;
+    plan->current = 1;
     plan->succeeded = 0;
-    plan->failed    = 0;
+    plan->failed = 0;
 
     /* Print a simple header indicating the number of tests to be run. */
     printf("%d..%d\n", plan->current, plan->total);
@@ -59,9 +58,9 @@ extern struct T
 }
 
 extern void
-Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int line)
+Test_ok(struct T* plan, int expr, const char* desc, const char* file, const int line)
 {
-    if(expr) {
+    if (expr) {
         printf("ok %d - %s\n", plan->current, desc);
         plan->succeeded++;
     } else {
@@ -75,16 +74,16 @@ Test_ok(struct T *plan, int expr, const char *desc, const char *file, const int 
 }
 
 extern void
-Test_results(struct T *plan)
+Test_results(struct T* plan)
 {
-    if(plan->failed > 0) {
+    if (plan->failed > 0) {
         printf("# Looks like you failed %d test%s of %d.\n",
-               plan->failed, (plan->failed > 1 ? "s" : ""), plan->total);
+            plan->failed, (plan->failed > 1 ? "s" : ""), plan->total);
     }
 }
 
 extern int
-Test_complete(struct T *plan)
+Test_complete(struct T* plan)
 {
     int failed = plan->failed;
 
@@ -92,7 +91,7 @@ Test_complete(struct T *plan)
     Test_results(plan);
 
     /* Clean up. */
-    if(plan != NULL) {
+    if (plan != NULL) {
         free(plan);
         plan = NULL;
     }
@@ -100,20 +99,19 @@ Test_complete(struct T *plan)
     return failed;
 }
 
-extern char
-*Test_get_file_path(const char *filename)
+extern char* Test_get_file_path(const char* filename)
 {
     int path_len;
     char *path, cwd[TEST_CWD + 1];
 
-    if(getcwd(cwd, TEST_CWD) == NULL) {
+    if (getcwd(cwd, TEST_CWD) == NULL) {
         printf("Could not get current working directory...\n");
         exit(1);
     }
 
     /* Allocate space for path. */
     path_len = strlen(cwd) + strlen(TEST_DATA_DIR) + strlen(filename) + 1;
-    if((path = malloc(path_len)) == NULL) {
+    if ((path = malloc(path_len)) == NULL) {
         printf("Could not allocate file path...\n");
         exit(1);
     }

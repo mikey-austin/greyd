@@ -22,8 +22,8 @@
  */
 
 #include "test.h"
-#include <greyd_config.h>
 #include <config_parser.h>
+#include <greyd_config.h>
 
 #include <string.h>
 
@@ -35,14 +35,13 @@
 #define VAL1 "value 1"
 #define VAL2 123
 
-int
-main(void)
+int main(void)
 {
     Config_T c, m;
     Config_section_T s1, s2, s;
     Config_value_T v;
     List_T list;
-    int *count;
+    int* count;
 
     TEST_START(34);
 
@@ -109,13 +108,13 @@ main(void)
     TEST_OK((v && (strcmp(v->v.s, "localhost") == 0)), "Section variable overridden correctly");
 
     /* Check the hashed included file counts. */
-    count = (int *) Hash_get(c->processed_includes, "data/config_test1.conf");
+    count = (int*)Hash_get(c->processed_includes, "data/config_test1.conf");
     TEST_OK((count && (*count == 1)), "First config include file count as expected");
 
-    count = (int *) Hash_get(c->processed_includes, "data/config_test2.conf");
+    count = (int*)Hash_get(c->processed_includes, "data/config_test2.conf");
     TEST_OK((count && (*count == 1)), "Second config include file count as expected");
 
-    count = (int *) Hash_get(c->processed_includes, "data/config_test3.conf");
+    count = (int*)Hash_get(c->processed_includes, "data/config_test3.conf");
     TEST_OK((count && (*count == 1)), "Third config include file count as expected");
 
     TEST_OK((Queue_size(c->includes) == 0), "Include file to process queue is empty as expected");

@@ -25,21 +25,19 @@
 #include <spamd_parser.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-int
-main(void)
+int main(void)
 {
     Lexer_source_T ls;
     Lexer_T lexer;
     Spamd_parser_T parser;
     Blacklist_T bl;
     int ret;
-    char *src =
-        "192.168.12.1/32 # This is a test CIDR address\n"
-        "10.10.10.0 # A single address\n"
-        "192.168.1.1 - 192.168.150.0 # A range\n";
+    char* src = "192.168.12.1/32 # This is a test CIDR address\n"
+                "10.10.10.0 # A single address\n"
+                "192.168.1.1 - 192.168.150.0 # A range\n";
 
     TEST_START(3);
 

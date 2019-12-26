@@ -24,20 +24,19 @@
 #include "../src/config.h"
 
 #include "test.h"
-#include <greydb.h>
-#include <greyd_config.h>
-#include <lexer.h>
-#include <config_parser.h>
 #include <config_lexer.h>
+#include <config_parser.h>
 #include <grey.h>
+#include <greyd_config.h>
+#include <greydb.h>
+#include <lexer.h>
 
-#include <string.h>
-#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-int
-main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     DB_handle_T db;
     DB_itr_T itr;
@@ -50,25 +49,23 @@ main(int argc, char *argv[])
     struct Grey_tuple gt;
     struct Grey_data gd, gd2;
     int ret, i = 0;
-    char *conf_tmpl =
-        "drop_privs = 0\n"
-        "section database {\n"
-        "  driver = \"%s\",\n"
-        "  path   = \"/tmp/greyd_test_db\",\n"
-        "  db_name = \"test_%s.db\"\n"
-        "}";
-    char *db_path;
-    char *conf = NULL;
+    char* conf_tmpl = "drop_privs = 0\n"
+                      "section database {\n"
+                      "  driver = \"%s\",\n"
+                      "  path   = \"/tmp/greyd_test_db\",\n"
+                      "  db_name = \"test_%s.db\"\n"
+                      "}";
+    char* db_path;
+    char* conf = NULL;
 
-    if((asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER)) < 0)
+    if ((asprintf(&conf, conf_tmpl, DB_DRIVER, DB_DRIVER)) < 0)
         return 1;
 
     c = Config_create();
-    if(argc > 1 && !strcmp(argv[1], "-")) {
+    if (argc > 1 && !strcmp(argv[1], "-")) {
         /* Read from stdin. */
         ls = Lexer_source_create_from_fd(0);
-    }
-    else {
+    } else {
         ls = Lexer_source_create_from_str(conf, strlen(conf));
     }
     l = Config_lexer_create(ls);
@@ -76,10 +73,10 @@ main(int argc, char *argv[])
     Config_parser_start(cp, c);
 
     /* Empty existing database file. */
-    if((asprintf(&db_path, "/tmp/greyd_test_db/test_%s.db", DB_DRIVER)) < 0)
+    if ((asprintf(&db_path, "/tmp/greyd_test_db/test_%s.db", DB_DRIVER)) < 0)
         return 1;
     ret = unlink(db_path);
-    if(ret < 0 && errno != ENOENT) {
+    if (ret < 0 && errno != ENOENT) {
         printf("Error unlinking test DB: %s\n", strerror(errno));
     }
 
@@ -192,11 +189,11 @@ main(int argc, char *argv[])
     memset(&key1, 0, sizeof(key1));
     memset(&val1, 0, sizeof(val1));
 
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
         gt = key1.data.gt;
         gd = val1.data.gd;
 
-        switch(gd.first) {
+        switch (gd.first) {
         case 1:
             TEST_OK(!strcmp(gt.ip, "192.168.12.1"), "ip ok");
             TEST_OK(!strcmp(gt.helo, "gmail.com"), "helo ok");
@@ -254,7 +251,7 @@ main(int argc, char *argv[])
     itr = DB_get_itr(db, DB_DOMAINS);
     memset(&key1, 0, sizeof(key1));
     memset(&val1, 0, sizeof(val1));
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
         TEST_OK(key1.type == DB_KEY_DOM, "domain type as expected");
         TEST_OK(!strcmp(key1.data.s, "greyd.org"), "domain as expected");
     }
@@ -265,7 +262,7 @@ main(int argc, char *argv[])
     itr = DB_get_itr(db, DB_SPAMTRAPS);
     memset(&key1, 0, sizeof(key1));
     memset(&val1, 0, sizeof(val1));
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND) {
         TEST_OK(key1.type == DB_KEY_MAIL, "spamtrap type as expected");
         TEST_OK(!strcmp(key1.data.s, "trap@hotmail.com"), "trap as expected");
     }
@@ -275,13 +272,13 @@ main(int argc, char *argv[])
     /* Test transactions over the multiple database types. */
     DB_start_txn(db);
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
         DB_itr_del_curr(itr);
     DB_close_itr(&itr);
     DB_rollback_txn(db);
 
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
         ;
     TEST_OK((itr->current == 4), "txn rollback ok");
     DB_close_itr(&itr);
@@ -289,13 +286,13 @@ main(int argc, char *argv[])
     /* And again, but committing this time. */
     DB_start_txn(db);
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
         DB_itr_del_curr(itr);
     DB_close_itr(&itr);
     DB_commit_txn(db);
 
     itr = DB_get_itr(db, DB_ENTRIES | DB_SPAMTRAPS | DB_DOMAINS);
-    while(DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
+    while (DB_itr_next(itr, &key1, &val1) != GREYDB_NOT_FOUND)
         ;
     TEST_OK((itr->current == -1), "truncated ok");
     DB_close_itr(&itr);

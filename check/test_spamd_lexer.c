@@ -28,18 +28,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-int
-main(void)
+int main(void)
 {
     Lexer_source_T cs;
     Lexer_T lexer;
     int tok;
-    char *src =
-        "# This is a comment \n"
-        "192.168.12.1              # Trailing comment \n"
-        "192.12.2.0 - 192.12.2.255 # IP range \n"
-        "114.23.44.22/24           # CIDR notation \n"
-        "123455";
+    char* src = "# This is a comment \n"
+                "192.168.12.1              # Trailing comment \n"
+                "192.12.2.0 - 192.12.2.255 # IP range \n"
+                "114.23.44.22/24           # CIDR notation \n"
+                "123455";
 
     TEST_START(59);
 

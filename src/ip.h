@@ -27,80 +27,79 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
 
 #include "list.h"
 
-#define IP_MAX_MASKBITS    128
+#define IP_MAX_MASKBITS 128
 #define IP_MAX_MASKBITS_V4 32
 
 /* Convenience macro to work around a getnameinfo inconsistency. */
 #define IP_SOCKADDR_LEN(sock) ((sock)->sa_family == AF_INET \
-                                   ? sizeof(struct sockaddr_in) \
-                                   : sizeof(struct sockaddr_in6))
+        ? sizeof(struct sockaddr_in)                        \
+        : sizeof(struct sockaddr_in6))
 
 /**
  * Structure to house a single IPv4 CIDR network.
  */
 struct IP_cidr {
     u_int32_t addr;
-    u_int8_t  bits;
+    u_int8_t bits;
 };
 
 /**
  * Structure to house an IPv4 or IPv6 address (ie 128 bits worth).
  */
 struct IP_addr {
-	union {
-		struct in_addr	v4;
-		struct in6_addr	v6;
-		u_int8_t		addr8[16];
-		u_int16_t		addr16[8];
-		u_int32_t		addr32[4];
-	} _addr;
-#define v4	    _addr.v4
-#define v6	    _addr.v6
-#define addr8	_addr.addr8
-#define addr16	_addr.addr16
-#define addr32	_addr.addr32
+    union {
+        struct in_addr v4;
+        struct in6_addr v6;
+        u_int8_t addr8[16];
+        u_int16_t addr16[8];
+        u_int32_t addr32[4];
+    } _addr;
+#define v4 _addr.v4
+#define v6 _addr.v6
+#define addr8 _addr.addr8
+#define addr16 _addr.addr16
+#define addr32 _addr.addr32
 };
 
 /**
  * Convert a string address to a binary address/netmask.
  */
-extern int IP_str_to_addr_mask(const char *address, struct IP_addr *n,
-                               struct IP_addr *m, sa_family_t *af);
+extern int IP_str_to_addr_mask(const char* address, struct IP_addr* n,
+    struct IP_addr* m, sa_family_t* af);
 /**
  * Convert the supplied cidr into it's corresponding range.
  */
-extern void IP_cidr_to_range(struct IP_cidr *cidr, u_int32_t *start,
-                             u_int32_t *end);
+extern void IP_cidr_to_range(struct IP_cidr* cidr, u_int32_t* start,
+    u_int32_t* end);
 
 /**
  * Decompose the supplied range into a series of CIDRs, and populate the
  * supplied list. The number of CIDR blocks created is returned.
  */
 extern int IP_range_to_cidr_list(List_T cidrs, u_int32_t start,
-                                 u_int32_t end);
-
+    u_int32_t end);
 
 /**
  * Return a human-readable string representation of the CIDR block.
  *
  * The returned string must be cleaned up manually using free.
  */
-extern char *IP_cidr_to_str(const struct IP_cidr *cidr);
+extern char* IP_cidr_to_str(const struct IP_cidr* cidr);
 
 /**
  * Return 1 if the addresses a (with mask m) matches address b
  * otherwise return 0. It is assumed that address a has been
  * pre-masked out, we only need to mask b.
  */
-extern int IP_match_addr(const struct IP_addr *a, const struct IP_addr *m,
-                         const struct IP_addr *b, sa_family_t af);
+extern int IP_match_addr(const struct IP_addr* a, const struct IP_addr* m,
+    const struct IP_addr* b, sa_family_t af);
 
 /**
  * Check if a supplied NULL-terminated string is a valid
@@ -110,7 +109,7 @@ extern int IP_match_addr(const struct IP_addr *a, const struct IP_addr *m,
  * @return AF_INET6 if the string is a valid IPv4 address.
  * @return -1 if the string is an invalid address.
  */
-extern short IP_check_addr(const char *addr);
+extern short IP_check_addr(const char* addr);
 
 /**
  * Convert a sockaddr_storage address (from any address family)
@@ -119,7 +118,7 @@ extern short IP_check_addr(const char *addr);
  * @return The address family on success
  * @return -1 on failure
  */
-extern int IP_sockaddr_to_addr(struct sockaddr_storage *ss,
-                               struct IP_addr *addr);
+extern int IP_sockaddr_to_addr(struct sockaddr_storage* ss,
+    struct IP_addr* addr);
 
 #endif

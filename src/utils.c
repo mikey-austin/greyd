@@ -24,15 +24,15 @@
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <errno.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <pwd.h>
 #include <grp.h>
+#include <pwd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "failures.h"
 #include "utils.h"
@@ -42,14 +42,14 @@
 static int Pidfile_fd = -1;
 
 extern size_t
-sstrncat(char *dst, const char *src, size_t dsize)
+sstrncat(char* dst, const char* src, size_t dsize)
 {
     const size_t slen = strlen(src);
     const size_t dlen = strnlen(dst, dsize);
 
-    if(dlen != dsize) {
+    if (dlen != dsize) {
         size_t count = slen;
-        if(count > dsize - dlen - 1)
+        if (count > dsize - dlen - 1)
             count = dsize - dlen - 1;
         dst += dlen;
         memcpy(dst, src, count);
@@ -60,11 +60,11 @@ sstrncat(char *dst, const char *src, size_t dsize)
 }
 
 extern size_t
-sstrncpy(char *dst, const char *src, size_t dsize)
+sstrncpy(char* dst, const char* src, size_t dsize)
 {
     const size_t slen = strlen(src);
 
-    if(dsize != 0) {
+    if (dsize != 0) {
         const size_t dlen = dsize > slen ? slen : dsize - 1;
         memcpy(dst, src, dlen);
         dst[dlen] = '\0';
@@ -74,39 +74,37 @@ sstrncpy(char *dst, const char *src, size_t dsize)
 }
 
 extern void
-normalize_email_addr(const char *addr, char *buf, int buf_size)
+normalize_email_addr(const char* addr, char* buf, int buf_size)
 {
-    char *cp;
+    char* cp;
 
-    if(*addr == '<')
+    if (*addr == '<')
         addr++;
 
-    for(cp = buf; buf_size > 0 && *addr != '\0'; addr++) {
+    for (cp = buf; buf_size > 0 && *addr != '\0'; addr++) {
         /*
          * Copy valid characters into destination buffer. We disallow
          * backslashes and quote characters.
          */
-        if(*addr != '\\' && *addr != '"' && *addr != '>' && *addr != '<')
-            *cp++ = tolower((unsigned char) *addr);
+        if (*addr != '\\' && *addr != '"' && *addr != '>' && *addr != '<')
+            *cp++ = tolower((unsigned char)*addr);
     }
     buf[buf_size - 1] = '\0';
 }
 
 extern int
-drop_privs(struct passwd *user)
+drop_privs(struct passwd* user)
 {
 #ifdef HAVE_SETRESGID
-    if(setgroups(1, &user->pw_gid)
-       || setresgid(user->pw_gid, user->pw_gid, user->pw_gid)
-       || setresuid(user->pw_uid, user->pw_uid, user->pw_uid))
-    {
+    if (setgroups(1, &user->pw_gid)
+        || setresgid(user->pw_gid, user->pw_gid, user->pw_gid)
+        || setresuid(user->pw_uid, user->pw_uid, user->pw_uid)) {
         return -1;
     }
 #elif HAVE_SETREGID
-    if(setgroups(1, &user->pw_gid)
-       || setregid(user->pw_gid, user->pw_gid)
-       || setreuid(user->pw_uid, user->pw_uid))
-    {
+    if (setgroups(1, &user->pw_gid)
+        || setregid(user->pw_gid, user->pw_gid)
+        || setreuid(user->pw_uid, user->pw_uid)) {
         return -1;
     }
 #endif
@@ -115,14 +113,14 @@ drop_privs(struct passwd *user)
 }
 
 extern int
-write_pidfile(struct passwd *user, const char *path)
+write_pidfile(struct passwd* user, const char* path)
 {
     char buf[PIDLEN + 1];
     int ret;
     struct flock lock;
 
-    Pidfile_fd = open(path, (O_RDWR|O_CREAT), (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH));
-    if(Pidfile_fd < 0) {
+    Pidfile_fd = open(path, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+    if (Pidfile_fd < 0) {
         return -1;
     }
 
@@ -131,13 +129,12 @@ write_pidfile(struct passwd *user, const char *path)
     lock.l_whence = SEEK_SET;
     lock.l_len = 0;
 
-    if(fcntl(Pidfile_fd, F_SETLK, &lock) < 0) {
-        if(errno == EACCES || errno == EAGAIN) {
+    if (fcntl(Pidfile_fd, F_SETLK, &lock) < 0) {
+        if (errno == EACCES || errno == EAGAIN) {
             /* Another process has already locked the pidfile. */
             close(Pidfile_fd);
             ret = -2;
-        }
-        else {
+        } else {
             ret = -1;
         }
         close(Pidfile_fd);
@@ -145,10 +142,10 @@ write_pidfile(struct passwd *user, const char *path)
     }
 
     ftruncate(Pidfile_fd, 0);
-    snprintf(buf, PIDLEN, "%ld", (long) getpid());
+    snprintf(buf, PIDLEN, "%ld", (long)getpid());
     write(Pidfile_fd, buf, strlen(buf) + 1);
 
-    if(fchown(Pidfile_fd, user->pw_uid, user->pw_gid) == -1) {
+    if (fchown(Pidfile_fd, user->pw_uid, user->pw_gid) == -1) {
         close(Pidfile_fd);
         return -1;
     }
@@ -158,29 +155,27 @@ write_pidfile(struct passwd *user, const char *path)
 }
 
 extern void
-close_pidfile(const char *path, const char *chroot_dir)
+close_pidfile(const char* path, const char* chroot_dir)
 {
-    const char *chroot_pidfile;
+    const char* chroot_pidfile;
 
-    if(chroot_dir != NULL
-       && (strlen(path) > strlen(chroot_dir)))
-    {
+    if (chroot_dir != NULL
+        && (strlen(path) > strlen(chroot_dir))) {
         /* Try to remove the chroot path from the pidfile path. */
         chroot_pidfile = strstr(path, chroot_dir);
-        if(chroot_pidfile == NULL)
+        if (chroot_pidfile == NULL)
             chroot_pidfile = path;
         else
             chroot_pidfile += strlen(chroot_dir);
-    }
-    else {
+    } else {
         chroot_pidfile = path;
     }
 
-    if(Pidfile_fd > 0)
+    if (Pidfile_fd > 0)
         close(Pidfile_fd);
 
-    if(unlink(chroot_pidfile) != 0) {
+    if (unlink(chroot_pidfile) != 0) {
         i_warning("could not unlink %s: %s",
-                  chroot_pidfile, strerror(errno));
+            chroot_pidfile, strerror(errno));
     }
 }

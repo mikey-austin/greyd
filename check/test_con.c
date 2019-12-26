@@ -22,28 +22,27 @@
  */
 
 #include "test.h"
+#include <blacklist.h>
 #include <con.h>
+#include <config_lexer.h>
+#include <config_parser.h>
+#include <grey.h>
 #include <greyd.h>
 #include <greyd_config.h>
-#include <lexer.h>
-#include <config_parser.h>
-#include <config_lexer.h>
-#include <grey.h>
-#include <list.h>
 #include <hash.h>
-#include <blacklist.h>
+#include <lexer.h>
+#include <list.h>
 
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/wait.h>
 
-int
-main(void)
+int main(void)
 {
     Lexer_source_T ls;
     Lexer_T l;
@@ -54,27 +53,26 @@ main(void)
     Blacklist_T bl1, bl2, bl3;
     struct sockaddr_storage src;
     int ret;
-    char *conf =
-        "hostname = \"greyd.org\"\n"
-        "banner   = \"greyd IP-based SPAM blocker\"\n"
-        "section grey {\n"
-        "  enable           = 1,\n"
-        "  traplist_name    = \"test traplist\",\n"
-        "  traplist_message = \"you have been trapped\",\n"
-        "  grey_expiry      = 3600,\n"
-        "  stutter          = 15\n"
-        "}\n"
-        "section firewall {\n"
-        "  driver = \"../drivers/fw_dummy.so\"\n"
-        "}\n"
-        "section database {\n"
-        "  driver = \"../drivers/bdb.so\",\n"
-        "  path   = \"/tmp/greyd_test_grey.db\"\n"
-        "}";
+    char* conf = "hostname = \"greyd.org\"\n"
+                 "banner   = \"greyd IP-based SPAM blocker\"\n"
+                 "section grey {\n"
+                 "  enable           = 1,\n"
+                 "  traplist_name    = \"test traplist\",\n"
+                 "  traplist_message = \"you have been trapped\",\n"
+                 "  grey_expiry      = 3600,\n"
+                 "  stutter          = 15\n"
+                 "}\n"
+                 "section firewall {\n"
+                 "  driver = \"../drivers/fw_dummy.so\"\n"
+                 "}\n"
+                 "section database {\n"
+                 "  driver = \"../drivers/bdb.so\",\n"
+                 "  path   = \"/tmp/greyd_test_grey.db\"\n"
+                 "}";
 
     /* Empty existing database file. */
     ret = unlink("/tmp/greyd_test_grey.db");
-    if(ret < 0 && errno != ENOENT) {
+    if (ret < 0 && errno != ENOENT) {
         printf("Error unlinking test Berkeley DB: %s\n", strerror(errno));
     }
 
@@ -98,7 +96,7 @@ main(void)
     bl1 = Blacklist_create("blacklist_1", "You (%A) are on blacklist 1", BL_STORAGE_TRIE);
     bl2 = Blacklist_create("blacklist_2", "You (%A) are on blacklist 2", BL_STORAGE_TRIE);
     bl3 = Blacklist_create("blacklist_3_with_an_enormously_big_long_long_epic_epicly_long_large_name",
-                           "Your address %A\\nis on blacklist 3", BL_STORAGE_TRIE);
+        "Your address %A\\nis on blacklist 3", BL_STORAGE_TRIE);
 
     Hash_insert(gs.blacklists, bl1->name, bl1);
     Hash_insert(gs.blacklists, bl2->name, bl2);
@@ -119,8 +117,8 @@ main(void)
      * Start testing the connection management.
      */
     memset(&src, 0, sizeof(src));
-    ((struct sockaddr_in *) &src)->sin_family = AF_INET;
-    inet_pton(AF_INET, "10.10.10.1", &((struct sockaddr_in *) &src)->sin_addr);
+    ((struct sockaddr_in*)&src)->sin_family = AF_INET;
+    inet_pton(AF_INET, "10.10.10.1", &((struct sockaddr_in*)&src)->sin_addr);
 
     memset(&con, 0, sizeof(con));
     Con_init(&con, 0, &src, &gs);
@@ -133,7 +131,7 @@ main(void)
     TEST_OK(con.out_p == con.out_buf, "out buf pointer ok");
     TEST_OK(con.out_size == CON_OUT_BUF_SIZE, "out buf size ok");
     TEST_OK(!strcmp(con.lists, "blacklist_1 blacklist_2"),
-            "list summary ok");
+        "list summary ok");
 
     /* The size of the banner. */
     TEST_OK(con.out_remaining == 75, "out buf remaining ok");
@@ -156,8 +154,8 @@ main(void)
 
     /* Test recycling a connection. */
     memset(&src, 0, sizeof(src));
-    ((struct sockaddr_in6 *) &src)->sin6_family = AF_INET6;
-    inet_pton(AF_INET6, "2001::fad3:1", &((struct sockaddr_in6 *) &src)->sin6_addr);
+    ((struct sockaddr_in6*)&src)->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, "2001::fad3:1", &((struct sockaddr_in6*)&src)->sin6_addr);
 
     Con_init(&con, 0, &src, &gs);
 
@@ -174,7 +172,7 @@ main(void)
      * function should truncate with a "...".
      */
     TEST_OK(!strcmp(con.lists, "blacklist_2 ..."),
-            "list summary ok");
+        "list summary ok");
 
     /* The size of the banner. */
     TEST_OK(con.out_remaining == 75, "out buf remaining ok");
@@ -187,10 +185,10 @@ main(void)
      */
     Con_build_reply(&con, "451");
     TEST_OK(!strcmp(con.out_p,
-                    "451-You (2001::fad3:1) are on blacklist 2\n"
-                    "451-Your address 2001::fad3:1\n"
-                    "451 is on blacklist 3\n"),
-            "Blacklisted error response ok");
+                "451-You (2001::fad3:1) are on blacklist 2\n"
+                "451-Your address 2001::fad3:1\n"
+                "451 is on blacklist 3\n"),
+        "Blacklisted error response ok");
     TEST_OK(con.out_remaining == 94, "out buf remaining ok");
 
     /*
@@ -209,10 +207,10 @@ main(void)
     in[nread] = '\0';
 
     TEST_OK(!strcmp(in,
-                    "451-You (2001::fad3:1) are on blacklist 2\n"
-                    "451-Your address 2001::fad3:1\n"
-                    "451 is on blacklist 3\n"),
-            "Con write without stuttering ok");
+                "451-You (2001::fad3:1) are on blacklist 2\n"
+                "451-Your address 2001::fad3:1\n"
+                "451 is on blacklist 3\n"),
+        "Con write without stuttering ok");
 
     /*
      * Test the writing with stuttering. Note the reply is longer due
@@ -223,7 +221,7 @@ main(void)
     gs.max_cons = 100;
     gs.max_black = 100;
     con.w = now;
-    while(con.out_remaining > 0) {
+    while (con.out_remaining > 0) {
         Con_handle_write(&con, &now, &gs);
         now += con.stutter + 1;
     }
@@ -233,16 +231,16 @@ main(void)
     in[nread] = '\0';
 
     TEST_OK(!strcmp(in,
-                    "451-You (2001::fad3:1) are on blacklist 2\r\n"
-                    "451-Your address 2001::fad3:1\r\n"
-                    "451 is on blacklist 3\r\n"),
-            "Con write with stuttering ok");
+                "451-You (2001::fad3:1) are on blacklist 2\r\n"
+                "451-Your address 2001::fad3:1\r\n"
+                "451 is on blacklist 3\r\n"),
+        "Con write with stuttering ok");
 
     /* Test recycling a connection, which is not on a blacklist. */
     Con_close(&con, &gs);
     memset(&src, 0, sizeof(src));
-    ((struct sockaddr_in6 *) &src)->sin6_family = AF_INET6;
-    inet_pton(AF_INET6, "fa40::fad3:1", &((struct sockaddr_in6 *) &src)->sin6_addr);
+    ((struct sockaddr_in6*)&src)->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, "fa40::fad3:1", &((struct sockaddr_in6*)&src)->sin6_addr);
 
     Con_init(&con, 0, &src, &gs);
     TEST_OK(List_size(con.blacklists) == 0, "not on blacklist ok");
@@ -253,8 +251,8 @@ main(void)
      */
     Con_build_reply(&con, "551");
     TEST_OK(!strcmp(con.out_p,
-                    "451 Temporary failure, please try again later.\r\n"),
-            "greylisted error response ok");
+                "451 Temporary failure, please try again later.\r\n"),
+        "greylisted error response ok");
     Con_close(&con, &gs);
     List_destroy(&con.blacklists);
 
@@ -262,14 +260,14 @@ main(void)
      * Test the connection reading function.
      */
     memset(&src, 0, sizeof(src));
-    ((struct sockaddr_in *) &src)->sin_family = AF_INET;
-    inet_pton(AF_INET, "10.10.10.1", &((struct sockaddr_in *) &src)->sin_addr);
+    ((struct sockaddr_in*)&src)->sin_family = AF_INET;
+    inet_pton(AF_INET, "10.10.10.1", &((struct sockaddr_in*)&src)->sin_addr);
 
     pipe(con_pipe);
     memset(&con, 0, sizeof(con));
     Con_init(&con, con_pipe[0], &src, &gs);
 
-    char *out = "EHLO greyd.org\r\n";
+    char* out = "EHLO greyd.org\r\n";
     write(con_pipe[1], out, strlen(out));
 
     Con_handle_read(&con, &now, &gs); /* This should change the state. */
@@ -279,7 +277,7 @@ main(void)
     TEST_OK(!strcmp(con.helo, "greyd.org"), "helo parsed ok");
     TEST_OK(con.state = CON_STATE_HELO_OUT, "state helo out ok");
 
-    char *mail_from = "MAIL FROM: <Mikey@greyd.ORG>\r\n";
+    char* mail_from = "MAIL FROM: <Mikey@greyd.ORG>\r\n";
     write(con_pipe[1], mail_from, strlen(mail_from));
 
     Con_next_state(&con, &now, &gs);
@@ -288,7 +286,7 @@ main(void)
     TEST_OK(!strcmp(con.mail, "mikey@greyd.org"), "MAIL FROM parsed ok");
     TEST_OK(con.state = CON_STATE_MAIL_OUT, "state mail out ok");
 
-    char *rcpt = "RCPT TO: info@greyd.org\r\n";
+    char* rcpt = "RCPT TO: info@greyd.org\r\n";
     write(con_pipe[1], rcpt, strlen(rcpt));
 
     Con_next_state(&con, &now, &gs);
@@ -297,7 +295,7 @@ main(void)
     TEST_OK(!strcmp(con.rcpt, "info@greyd.org"), "RCPT parsed ok");
     TEST_OK(con.state = CON_STATE_RCPT_OUT, "state rcpt out ok");
 
-    char *data = "DATA\r\n";
+    char* data = "DATA\r\n";
     write(con_pipe[1], data, strlen(data));
 
     Con_next_state(&con, &now, &gs);
@@ -305,7 +303,7 @@ main(void)
     Con_handle_read(&con, &now, &gs);
     TEST_OK(con.state = CON_STATE_DATA_OUT, "state data out ok");
 
-    char *msg = "This is a spam message\r\ndeliver me!\r\n.\r\n";
+    char* msg = "This is a spam message\r\ndeliver me!\r\n.\r\n";
     write(con_pipe[1], msg, strlen(msg));
 
     Con_next_state(&con, &now, &gs);

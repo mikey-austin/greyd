@@ -21,29 +21,29 @@
  * @date   2014
  */
 
+#include "config_lexer.h"
 #include "failures.h"
 #include "lexer_source.h"
-#include "config_lexer.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 extern Lexer_T
 Lexer_create(Lexer_source_T source, int (*next_token)(Lexer_T lexer))
 {
     Lexer_T lexer;
 
-    if((lexer = malloc(sizeof(*lexer))) == NULL) {
+    if ((lexer = malloc(sizeof(*lexer))) == NULL) {
         i_critical("Could not create lexer");
     }
 
-    lexer->source           = source;
-    lexer->seen_end         = 0;
-    lexer->current_line     = 0;
+    lexer->source = source;
+    lexer->seen_end = 0;
+    lexer->current_line = 0;
     lexer->current_line_pos = 0;
-    lexer->prev_line_pos    = 0;
+    lexer->prev_line_pos = 0;
 
     lexer->next_token = next_token;
 
@@ -57,12 +57,12 @@ Lexer_next_token(Lexer_T lexer)
 }
 
 extern void
-Lexer_destroy(Lexer_T *lexer)
+Lexer_destroy(Lexer_T* lexer)
 {
-    if(lexer == NULL || *lexer == NULL)
+    if (lexer == NULL || *lexer == NULL)
         return;
 
-    if((*lexer)->source)
+    if ((*lexer)->source)
         Lexer_source_destroy(&((*lexer)->source));
 
     free(*lexer);
@@ -72,11 +72,10 @@ Lexer_destroy(Lexer_T *lexer)
 extern void
 Lexer_reuse_char(Lexer_T lexer, int c)
 {
-    if(c == EOF || c < 0) {
+    if (c == EOF || c < 0) {
         /* We can't reuse an EOF character. */
         lexer->seen_end = 1;
-    }
-    else {
+    } else {
         L_UNGETC(lexer, c);
     }
 }
@@ -88,8 +87,7 @@ Lexer_getc(Lexer_T lexer)
 
     c = Lexer_source_getc(lexer->source);
     lexer->prev_line_pos = lexer->current_line_pos;
-    switch(c)
-    {
+    switch (c) {
     case '\n':
         lexer->current_line++;
         lexer->current_line_pos = 0;
@@ -105,11 +103,10 @@ Lexer_getc(Lexer_T lexer)
 extern void
 Lexer_ungetc(Lexer_T lexer, int c)
 {
-    if(c == '\n') {
+    if (c == '\n') {
         lexer->current_line--;
         lexer->current_line_pos = lexer->prev_line_pos;
-    }
-    else if(lexer->current_line_pos > 0) {
+    } else if (lexer->current_line_pos > 0) {
         lexer->current_line_pos--;
     }
 

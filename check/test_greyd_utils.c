@@ -22,24 +22,22 @@
  */
 
 #include "test.h"
-#include <greyd_config.h>
-#include <greyd.h>
 #include <blacklist.h>
+#include <greyd.h>
+#include <greyd_config.h>
 #include <hash.h>
 #include <list.h>
 
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdio.h>
 
-static void destroy_blacklist(struct Hash_entry *entry);
+static void destroy_blacklist(struct Hash_entry* entry);
 
-int
-main(void)
+int main(void)
 {
     int com[2];
-    FILE *out;
+    FILE* out;
     List_T ips, ips2;
     Blacklist_T bl, bl2;
     struct Greyd_state state;
@@ -84,9 +82,9 @@ main(void)
 }
 
 static void
-destroy_blacklist(struct Hash_entry *entry)
+destroy_blacklist(struct Hash_entry* entry)
 {
-    if(entry && entry->v) {
-        Blacklist_destroy((Blacklist_T *) &entry->v);
+    if (entry && entry->v) {
+        Blacklist_destroy((Blacklist_T*)&entry->v);
     }
 }

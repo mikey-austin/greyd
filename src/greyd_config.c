@@ -21,17 +21,17 @@
  * @date   2014
  */
 
-#include "utils.h"
-#include "failures.h"
-#include "config_section.h"
-#include "hash.h"
 #include "greyd_config.h"
 #include "config_parser.h"
+#include "config_section.h"
+#include "failures.h"
+#include "hash.h"
+#include "utils.h"
 
 #include <err.h>
+#include <glob.h>
 #include <stdlib.h>
 #include <string.h>
-#include <glob.h>
 
 #define CONFIG_INIT_SECTIONS 8
 #define CONFIG_INIT_INCLUDES 3
@@ -39,17 +39,17 @@
 /**
  * Destructor for configuration section hash entries.
  */
-static void Config_section_value_destroy(struct Hash_entry *entry);
+static void Config_section_value_destroy(struct Hash_entry* entry);
 
 /**
  * Destructor for include hash entries.
  */
-static void Config_include_destroy_hash(struct Hash_entry *entry);
+static void Config_include_destroy_hash(struct Hash_entry* entry);
 
 /**
  * Destroy each queue value appropriately when the queue is destroyed.
  */
-static void Config_include_destroy(void *value);
+static void Config_include_destroy(void* value);
 
 extern Config_T
 Config_create()
@@ -57,7 +57,7 @@ Config_create()
     Config_T config;
 
     config = malloc(sizeof(*config));
-    if(config == NULL) {
+    if (config == NULL) {
         errx(1, "Could not create configuration");
     }
 
@@ -72,9 +72,9 @@ Config_create()
 }
 
 extern void
-Config_destroy(Config_T *config)
+Config_destroy(Config_T* config)
 {
-    if(config == NULL || *config == NULL) {
+    if (config == NULL || *config == NULL) {
         return;
     }
 
@@ -107,56 +107,56 @@ Config_add_whitelist(Config_T config, Config_section_T section)
 }
 
 extern Config_section_T
-Config_get_section(Config_T config, const char *section_name)
+Config_get_section(Config_T config, const char* section_name)
 {
     return Hash_get(config->sections, section_name);
 }
 
 extern Config_section_T
-Config_get_blacklist(Config_T config, const char *section_name)
+Config_get_blacklist(Config_T config, const char* section_name)
 {
     return Hash_get(config->blacklists, section_name);
 }
 
 extern Config_section_T
-Config_get_whitelist(Config_T config, const char *section_name)
+Config_get_whitelist(Config_T config, const char* section_name)
 {
     return Hash_get(config->whitelists, section_name);
 }
 
 extern void
-Config_load_file(Config_T config, char *file)
+Config_load_file(Config_T config, char* file)
 {
     Lexer_source_T source;
     Lexer_T lexer;
     Config_parser_T parser;
-    char *include;
-    int *count;
+    char* include;
+    int* count;
 
-    if(file) {
+    if (file) {
         source = Lexer_source_create_from_file(file);
         lexer = Config_lexer_create(source);
         parser = Config_parser_create(lexer);
 
-        if(Config_parser_start(parser, config) != CONFIG_PARSER_OK)
+        if (Config_parser_start(parser, config) != CONFIG_PARSER_OK)
             errx(1, "Parse error processing %s, line %d col %d",
-                 file, parser->lexer->current_line,
-                 parser->lexer->current_line_pos);
+                file, parser->lexer->current_line,
+                parser->lexer->current_line_pos);
 
         /* Clean up the parser & friends. */
         Config_parser_destroy(&parser);
 
         /* Record this file as being "processed". */
-        if((count = malloc(sizeof(*count))) == NULL)
+        if ((count = malloc(sizeof(*count))) == NULL)
             err(1, "malloc");
 
         *count = 1;
         Hash_insert(config->processed_includes, file, count);
     }
 
-    while(Queue_size(config->includes) > 0) {
+    while (Queue_size(config->includes) > 0) {
         include = Queue_dequeue(config->includes);
-        if(Hash_get(config->processed_includes, include) == NULL)
+        if (Hash_get(config->processed_includes, include) == NULL)
             Config_load_file(config, include);
 
         /* Cleanup the dequeued include. */
@@ -174,23 +174,25 @@ Config_merge(Config_T config, Config_T from)
     Config_value_T from_val, to_val;
     char *key, *section_key;
 
-    if(!config || !from || (keys = Hash_keys(from->sections)) == NULL)
+    if (!config || !from || (keys = Hash_keys(from->sections)) == NULL)
         return;
 
-    LIST_EACH(keys, entry) {
+    LIST_EACH(keys, entry)
+    {
         key = List_entry_value(entry);
 
         /* Create the section if it doesn't exist. */
-        if((section = Hash_get(config->sections, key)) == NULL) {
+        if ((section = Hash_get(config->sections, key)) == NULL) {
             section = Config_section_create(key);
             Config_add_section(config, section);
         }
 
         from_section = Hash_get(from->sections, key);
-        if((section_keys = Hash_keys(from_section->vars)) == NULL)
+        if ((section_keys = Hash_keys(from_section->vars)) == NULL)
             continue;
 
-        LIST_EACH(section_keys, keys_entry) {
+        LIST_EACH(section_keys, keys_entry)
+        {
             section_key = List_entry_value(keys_entry);
             from_val = Hash_get(from_section->vars, section_key);
             to_val = Config_value_clone(from_val);
@@ -204,7 +206,7 @@ Config_merge(Config_T config, Config_T from)
 }
 
 extern void
-Config_add_include(Config_T config, const char *file)
+Config_add_include(Config_T config, const char* file)
 {
     char *match, *include;
     int len, i;
@@ -213,7 +215,7 @@ Config_add_include(Config_T config, const char *file)
     /*
      * Treat the supplied file path as a potential glob expansion.
      */
-    if((i = glob(file, GLOB_TILDE, NULL, &paths)) != 0) {
+    if ((i = glob(file, GLOB_TILDE, NULL, &paths)) != 0) {
         globfree(&paths);
         return;
     }
@@ -221,10 +223,10 @@ Config_add_include(Config_T config, const char *file)
     /*
      * Loop through each match and check if it has already been processed.
      */
-    for(i = 0; i < paths.gl_pathc; i++) {
-        if(Hash_get(config->processed_includes, (match = paths.gl_pathv[i])) == NULL) {
+    for (i = 0; i < paths.gl_pathc; i++) {
+        if (Hash_get(config->processed_includes, (match = paths.gl_pathv[i])) == NULL) {
             len = strlen(match) + 1;
-            if((include = malloc(len)) == NULL) {
+            if ((include = malloc(len)) == NULL) {
                 errx(1, "Could not enqueue matched file %s", match);
             }
             sstrncpy(include, match, len);
@@ -239,60 +241,59 @@ Config_add_include(Config_T config, const char *file)
     globfree(&paths);
 }
 
-extern char
-*Config_get_str(Config_T config, const char *varname,
-                const char *section_name, char *default_str)
+extern char* Config_get_str(Config_T config, const char* varname,
+    const char* section_name, char* default_str)
 {
     Config_section_T section;
 
-    if(section_name == NULL)
+    if (section_name == NULL)
         section_name = CONFIG_DEFAULT_SECTION;
 
-    if((section = Hash_get(config->sections, section_name)) == NULL)
+    if ((section = Hash_get(config->sections, section_name)) == NULL)
         return default_str;
     else
         return Config_section_get_str(section, varname, default_str);
 }
 
 extern int
-Config_get_int(Config_T config, const char *varname,
-               const char *section_name, int default_int)
+Config_get_int(Config_T config, const char* varname,
+    const char* section_name, int default_int)
 {
     Config_section_T section;
 
-    if(section_name == NULL)
+    if (section_name == NULL)
         section_name = CONFIG_DEFAULT_SECTION;
 
-    if((section = Hash_get(config->sections, section_name)) == NULL)
+    if ((section = Hash_get(config->sections, section_name)) == NULL)
         return default_int;
     else
         return Config_section_get_int(section, varname, default_int);
 }
 
 extern List_T
-Config_get_list(Config_T config, const char *varname, const char *section_name)
+Config_get_list(Config_T config, const char* varname, const char* section_name)
 {
     Config_section_T section;
 
-    if(section_name == NULL)
+    if (section_name == NULL)
         section_name = CONFIG_DEFAULT_SECTION;
 
-    if((section = Hash_get(config->sections, section_name)) == NULL)
+    if ((section = Hash_get(config->sections, section_name)) == NULL)
         return NULL;
     else
         return Config_section_get_list(section, varname);
 }
 
 extern void
-Config_set_int(Config_T config, const char *varname,
-               const char *section_name, int value)
+Config_set_int(Config_T config, const char* varname,
+    const char* section_name, int value)
 {
     Config_section_T section;
 
-    if(section_name == NULL)
+    if (section_name == NULL)
         section_name = CONFIG_DEFAULT_SECTION;
 
-    if((section = Hash_get(config->sections, section_name)) == NULL) {
+    if ((section = Hash_get(config->sections, section_name)) == NULL) {
         section = Config_section_create(section_name);
         Config_add_section(config, section);
     }
@@ -301,15 +302,15 @@ Config_set_int(Config_T config, const char *varname,
 }
 
 extern void
-Config_set_str(Config_T config, const char *varname,
-               const char *section_name, char *value)
+Config_set_str(Config_T config, const char* varname,
+    const char* section_name, char* value)
 {
     Config_section_T section;
 
-    if(section_name == NULL)
+    if (section_name == NULL)
         section_name = CONFIG_DEFAULT_SECTION;
 
-    if((section = Hash_get(config->sections, section_name)) == NULL) {
+    if ((section = Hash_get(config->sections, section_name)) == NULL) {
         section = Config_section_create(section_name);
         Config_add_section(config, section);
     }
@@ -318,29 +319,29 @@ Config_set_str(Config_T config, const char *varname,
 }
 
 extern void
-Config_delete(Config_T config, const char *varname,
-               const char *section_name)
+Config_delete(Config_T config, const char* varname,
+    const char* section_name)
 {
     Config_section_T section;
 
-    if(section_name == NULL)
+    if (section_name == NULL)
         section_name = CONFIG_DEFAULT_SECTION;
 
-    if((section = Hash_get(config->sections, section_name)) != NULL) {
+    if ((section = Hash_get(config->sections, section_name)) != NULL) {
         Config_section_delete(section, varname);
     }
 }
 
 extern void
-Config_append_list_str(Config_T config, const char *varname,
-                       const char *section_name, const char *str)
+Config_append_list_str(Config_T config, const char* varname,
+    const char* section_name, const char* str)
 {
     Config_section_T section;
     Config_value_T val, new_val;
     List_T list;
 
     /* Create the section if it doesn't exist. */
-    if((section = Config_get_section(config, section_name)) == NULL) {
+    if ((section = Config_get_section(config, section_name)) == NULL) {
         section = Config_section_create(section_name);
         Config_add_section(config, section);
     }
@@ -350,7 +351,7 @@ Config_append_list_str(Config_T config, const char *varname,
     Config_value_set_str(new_val, str);
 
     /* Get the list config value, or create it if it doesn't exist. */
-    if((val = Config_section_get(section, varname)) == NULL) {
+    if ((val = Config_section_get(section, varname)) == NULL) {
         val = Config_value_create(CONFIG_VAL_TYPE_LIST);
         Config_section_set(section, varname, val);
     }
@@ -360,28 +361,28 @@ Config_append_list_str(Config_T config, const char *varname,
 }
 
 static void
-Config_section_value_destroy(struct Hash_entry *entry)
+Config_section_value_destroy(struct Hash_entry* entry)
 {
-    if(entry && entry->v) {
-        Config_section_destroy((Config_section_T *) &(entry->v));
+    if (entry && entry->v) {
+        Config_section_destroy((Config_section_T*)&(entry->v));
     }
 }
 
 static void
-Config_include_destroy_hash(struct Hash_entry *entry)
+Config_include_destroy_hash(struct Hash_entry* entry)
 {
-    if(entry && entry->v) {
+    if (entry && entry->v) {
         free(entry->v);
         entry->v = NULL;
     }
 }
 
 static void
-Config_include_destroy(void *value)
+Config_include_destroy(void* value)
 {
-    char *include = (char *) value;
+    char* include = (char*)value;
 
-    if(include) {
+    if (include) {
         free(include);
         include = NULL;
     }

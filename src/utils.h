@@ -28,7 +28,7 @@
 #include <stdlib.h>
 
 #ifndef MAX
-#  define MAX(a, b) (((a) >= (b)) ? (a) : (b))
+#define MAX(a, b) (((a) >= (b)) ? (a) : (b))
 #endif
 
 /**
@@ -38,25 +38,25 @@
  * Returns strlen(src) + MIN(dsize, strlen(initial dst)).
  * If retval >= dsize, truncation occurred.
  */
-extern size_t sstrncat(char *dst, const char *src, size_t dsize);
+extern size_t sstrncat(char* dst, const char* src, size_t dsize);
 
 /**
  * Copy src to string dst of size dsize.  At most dsize-1 characters
  * will be copied.  Always NUL terminates (unless dsize == 0).
  * Returns strlen(src); if retval >= dsize, truncation occurred.
  */
-extern size_t sstrncpy(char *dst, const char *src, size_t dsize);
+extern size_t sstrncpy(char* dst, const char* src, size_t dsize);
 
 /**
  * Take a NUL-terminated email address, remove any '<' & '>' characters,
  * and ensure that it is lower case.
  */
-extern void normalize_email_addr(const char *addr, char *buf, int buf_size);
+extern void normalize_email_addr(const char* addr, char* buf, int buf_size);
 
 /**
  * Drop privileges to the supplied user.
  */
-extern int drop_privs(struct passwd *user);
+extern int drop_privs(struct passwd* user);
 
 /**
  * Write the pidfile to the specified location and chown it.
@@ -65,11 +65,11 @@ extern int drop_privs(struct passwd *user);
  * @return -1 if the PID could not be written
  * @return -2 if there is another instance of greyd already running
  */
-extern int write_pidfile(struct passwd *user, const char *pidfile);
+extern int write_pidfile(struct passwd* user, const char* pidfile);
 
 /**
  * Close pidfile fd and unlink pidfile, accounting for any chroot.
  */
-extern void close_pidfile(const char *path, const char *chroot_dir);
+extern void close_pidfile(const char* path, const char* chroot_dir);
 
 #endif

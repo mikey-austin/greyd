@@ -21,8 +21,8 @@
  * @date   2014
  */
 
-#include "utils.h"
 #include "config_value.h"
+#include "utils.h"
 
 #include <err.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@
 /**
  * The destructor for config value lists.
  */
-static void Config_value_list_entry_destroy(void *value);
+static void Config_value_list_entry_destroy(void* value);
 
 extern Config_value_T
 Config_value_create(short type)
@@ -39,12 +39,11 @@ Config_value_create(short type)
     Config_value_T new;
 
     new = malloc(sizeof(*new));
-    if(new == NULL) {
+    if (new == NULL) {
         err(1, "malloc");
-    }
-    else {
+    } else {
         new->type = type;
-        switch(new->type) {
+        switch (new->type) {
         case CONFIG_VAL_TYPE_LIST:
             new->v.l = List_create(Config_value_list_entry_destroy);
             break;
@@ -58,38 +57,38 @@ extern void
 Config_value_set_int(Config_value_T value, int data)
 {
     value->type = CONFIG_VAL_TYPE_INT;
-    value->v.i  = data;
+    value->v.i = data;
 }
 
 extern void
-Config_value_set_str(Config_value_T value, const char *data)
+Config_value_set_str(Config_value_T value, const char* data)
 {
     int slen = strlen(data) + 1;
 
     value->type = CONFIG_VAL_TYPE_STR;
     value->v.s = malloc(slen);
-    if(value->v.s == NULL)
+    if (value->v.s == NULL)
         err(1, "malloc");
     sstrncpy(value->v.s, data, slen);
 }
 
 extern void
-Config_value_destroy(Config_value_T *value)
+Config_value_destroy(Config_value_T* value)
 {
-    if(value == NULL || *value == NULL)
+    if (value == NULL || *value == NULL)
         return;
 
-    switch((*value)->type) {
+    switch ((*value)->type) {
     case CONFIG_VAL_TYPE_STR:
-        if((*value)->v.s != NULL) {
+        if ((*value)->v.s != NULL) {
             free((*value)->v.s);
             (*value)->v.s = NULL;
         }
         break;
 
     case CONFIG_VAL_TYPE_LIST:
-        if((*value)->v.l != NULL) {
-            List_destroy((List_T *) &((*value)->v.l));
+        if ((*value)->v.l != NULL) {
+            List_destroy((List_T*)&((*value)->v.l));
             (*value)->v.l = NULL;
         }
         break;
@@ -103,13 +102,13 @@ extern Config_value_T
 Config_value_clone(Config_value_T value)
 {
     Config_value_T clone, value_list_entry, entry_clone;
-    struct List_entry *entry;
+    struct List_entry* entry;
 
-    if(value == NULL)
+    if (value == NULL)
         return NULL;
 
     clone = Config_value_create(value->type);
-    switch(clone->type) {
+    switch (clone->type) {
     case CONFIG_VAL_TYPE_INT:
         Config_value_set_int(clone, value->v.i);
         break;
@@ -119,7 +118,8 @@ Config_value_clone(Config_value_T value)
         break;
 
     case CONFIG_VAL_TYPE_LIST:
-        LIST_EACH(value->v.l, entry) {
+        LIST_EACH(value->v.l, entry)
+        {
             value_list_entry = List_entry_value(entry);
             entry_clone = Config_value_clone(value_list_entry);
             List_insert_after(clone->v.l, entry_clone);
@@ -130,25 +130,27 @@ Config_value_clone(Config_value_T value)
     return clone;
 }
 
-extern char
-*cv_str(Config_value_T value)
+extern char* cv_str(Config_value_T value)
 {
     return (value && value->type == CONFIG_VAL_TYPE_STR
-            ? value->v.s : NULL);
+            ? value->v.s
+            : NULL);
 }
 
 extern int
 cv_int(Config_value_T value)
 {
     return (value && value->type == CONFIG_VAL_TYPE_INT
-            ? value->v.i : -1);
+            ? value->v.i
+            : -1);
 }
 
 extern List_T
 cv_list(Config_value_T value)
 {
     return (value && value->type == CONFIG_VAL_TYPE_LIST
-            ? value->v.l : NULL);
+            ? value->v.l
+            : NULL);
 }
 
 extern int
@@ -158,7 +160,7 @@ cv_type(Config_value_T value)
 }
 
 static void
-Config_value_list_entry_destroy(void *value)
+Config_value_list_entry_destroy(void* value)
 {
-    Config_value_destroy((Config_value_T *) &value);
+    Config_value_destroy((Config_value_T*)&value);
 }

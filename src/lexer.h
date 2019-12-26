@@ -26,24 +26,24 @@
 
 #include "lexer_source.h"
 
-#define LEXER_MAX_STR_LEN   256
+#define LEXER_MAX_STR_LEN 256
 
 /*
  * Convenience macros.
  */
-#define L_GETC(lexer)      Lexer_getc(lexer)
+#define L_GETC(lexer) Lexer_getc(lexer)
 #define L_UNGETC(lexer, c) Lexer_ungetc(lexer, c)
 #define L_MATCH(a, len, b) (len == strlen(b) && strncmp(a, b, len) == 0)
 
 union Lexer_token_value {
-    int  i;
+    int i;
     char s[LEXER_MAX_STR_LEN + 1];
 };
 
 /**
  * The main config lexer structure.
  */
-typedef struct Lexer_T *Lexer_T;
+typedef struct Lexer_T* Lexer_T;
 struct Lexer_T {
     /* Semantic value of current scanned token. */
     union Lexer_token_value current_value;
@@ -70,7 +70,7 @@ extern Lexer_T Lexer_create(Lexer_source_T source, int (*next_token)(Lexer_T lex
  * Destroy a lexer object. This will automatically destroy the associated
  * configuration source object.
  */
-extern void Lexer_destroy(Lexer_T *lexer);
+extern void Lexer_destroy(Lexer_T* lexer);
 
 /**
  * Scan the specified configuration source's character stream and return

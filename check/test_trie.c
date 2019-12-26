@@ -25,11 +25,10 @@
 #include <trie.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-int
-main(void)
+int main(void)
 {
     TEST_START(7);
 
@@ -39,7 +38,7 @@ main(void)
     unsigned char k4[] = { 0x30 };
     unsigned char k5[] = { 0x70 };
 
-    struct Trie *t = Trie_create(NULL, 0, NULL);
+    struct Trie* t = Trie_create(NULL, 0, NULL);
     Trie_insert(t, k1, 1);
     Trie_insert(t, k2, 1);
     Trie_insert(t, k3, 1);

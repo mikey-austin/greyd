@@ -25,13 +25,12 @@
 #include <utils.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define SIZE 50
 
-int
-main(void)
+int main(void)
 {
     char email1[SIZE] = "<tesT@Email.OrG";
     char email2[SIZE] = "<tesT2@Email.OrG>";

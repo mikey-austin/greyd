@@ -24,8 +24,8 @@
 #ifndef GREYD_DEFINED
 #define GREYD_DEFINED
 
-#include <stdio.h>
 #include <signal.h>
+#include <stdio.h>
 
 #include "firewall.h"
 #include "hash.h"
@@ -40,7 +40,7 @@ struct Greyd_state {
 
     volatile sig_atomic_t shutdown;
 
-    struct Con *cons;
+    struct Con* cons;
     int max_files;
     int max_cons;
     int max_black;
@@ -48,9 +48,9 @@ struct Greyd_state {
     int black_clients;
 
     pid_t fw_pid;
-    FILE *grey_out;
-    FILE *fw_out;
-    FILE *fw_in;
+    FILE* grey_out;
+    FILE* fw_out;
+    FILE* fw_in;
 
     Hash_T blacklists;
 };
@@ -59,21 +59,21 @@ struct Greyd_state {
  * Process configuration input, and add resulting blacklist to the
  * state's list.
  */
-extern void Greyd_process_config(int fd, struct Greyd_state *state);
+extern void Greyd_process_config(int fd, struct Greyd_state* state);
 
 /**
  * Send blacklist configuration to the specified file descriptor.
  */
-extern void Greyd_send_config(FILE *out, char *bl_name, char *bl_msg, List_T ips);
+extern void Greyd_send_config(FILE* out, char* bl_name, char* bl_msg, List_T ips);
 
 /**
  * Process a request for the firewall process.
  */
-extern void Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE *out);
+extern void Greyd_process_fw_message(Config_T message, FW_handle_T fw_handle, FILE* out);
 
 /**
  * Start the firewall management process.
  */
-extern int Greyd_start_fw_child(struct Greyd_state *state, int in_fd, int nat_in_fd, int out_fd);
+extern int Greyd_start_fw_child(struct Greyd_state* state, int in_fd, int nat_in_fd, int out_fd);
 
 #endif

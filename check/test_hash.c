@@ -25,9 +25,9 @@
 #include <hash.h>
 #include <list.h>
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 
 #define HASH_SIZE 2
@@ -45,14 +45,13 @@
 #define TEST_VAL5 "test value 5"
 
 /* Include the private hash callback functions. */
-void destroy(struct Hash_entry *entry);
+void destroy(struct Hash_entry* entry);
 
-int
-main(void)
+int main(void)
 {
     Hash_T hash;
     List_T keys;
-    struct List_entry *entry;
+    struct List_entry* entry;
     char *s, *s1, *s2, *s3, *s4, *s5, *s6, *key;
     int i;
 
@@ -66,12 +65,18 @@ main(void)
     TEST_OK((hash->num_entries == 0), "Hash number of entries is zero as expected");
 
     /* Test insertion of keys in different orders. */
-    s1 = malloc(strlen(TEST_VAL1) + 1); strcpy(s1, TEST_VAL1);
-    s2 = malloc(strlen(TEST_VAL2) + 1); strcpy(s2, TEST_VAL2);
-    s3 = malloc(strlen(TEST_VAL3) + 1); strcpy(s3, TEST_VAL3);
-    s4 = malloc(strlen(TEST_VAL4) + 1); strcpy(s4, TEST_VAL4);
-    s5 = malloc(strlen(TEST_VAL5) + 1); strcpy(s5, TEST_VAL5);
-    s6 = malloc(strlen(TEST_VAL5) + 1); strcpy(s6, TEST_VAL5);
+    s1 = malloc(strlen(TEST_VAL1) + 1);
+    strcpy(s1, TEST_VAL1);
+    s2 = malloc(strlen(TEST_VAL2) + 1);
+    strcpy(s2, TEST_VAL2);
+    s3 = malloc(strlen(TEST_VAL3) + 1);
+    strcpy(s3, TEST_VAL3);
+    s4 = malloc(strlen(TEST_VAL4) + 1);
+    strcpy(s4, TEST_VAL4);
+    s5 = malloc(strlen(TEST_VAL5) + 1);
+    strcpy(s5, TEST_VAL5);
+    s6 = malloc(strlen(TEST_VAL5) + 1);
+    strcpy(s6, TEST_VAL5);
 
     Hash_insert(hash, TEST_KEY5, s5);
     Hash_insert(hash, TEST_KEY4, s4);
@@ -80,13 +85,14 @@ main(void)
     keys = Hash_keys(hash);
     TEST_OK(List_size(keys) == 3, "Hash keys list size ok");
     i = 0;
-    LIST_EACH(keys, entry) {
+    LIST_EACH(keys, entry)
+    {
         key = List_entry_value(entry);
-        if(!strcmp(key, TEST_KEY3))
+        if (!strcmp(key, TEST_KEY3))
             i++;
-        if(!strcmp(key, TEST_KEY4))
+        if (!strcmp(key, TEST_KEY4))
             i++;
-        if(!strcmp(key, TEST_KEY5))
+        if (!strcmp(key, TEST_KEY5))
             i++;
     }
     TEST_OK(i == 3, "All expected keys were in keys list");
@@ -142,11 +148,10 @@ main(void)
     TEST_COMPLETE;
 }
 
-void
-destroy(struct Hash_entry *entry)
+void destroy(struct Hash_entry* entry)
 {
     /* Free the malloced value. */
-    if(entry && entry->v) {
+    if (entry && entry->v) {
         free(entry->v);
     }
 }

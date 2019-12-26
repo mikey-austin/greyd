@@ -21,14 +21,14 @@
  * @date   2014
  */
 
+#include "config_lexer.h"
 #include "failures.h"
 #include "lexer_source.h"
-#include "config_lexer.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 extern Lexer_T
 Config_lexer_create(Lexer_source_T source)
@@ -48,19 +48,19 @@ Config_lexer_next_token(Lexer_T lexer)
     /*
      * Scan for the next token.
      */
-    for(;;) {
-        if(lexer->seen_end) {
+    for (;;) {
+        if (lexer->seen_end) {
             return CONFIG_LEXER_TOK_EOF;
         }
 
         c = L_GETC(lexer);
 
-        if(isdigit(c)) {
+        if (isdigit(c)) {
             /*
              * This is an integer.
              */
 
-            for(i = (c - '0'); isdigit(c = L_GETC(lexer)); ) {
+            for (i = (c - '0'); isdigit(c = L_GETC(lexer));) {
                 i = (i * 10) + (c - '0');
             }
 
@@ -70,34 +70,29 @@ Config_lexer_next_token(Lexer_T lexer)
             return (lexer->current_token = CONFIG_LEXER_TOK_INT);
         }
 
-        if(isalpha(c)) {
+        if (isalpha(c)) {
             /*
              * This is either a value name or a reserved word.
              */
 
             do {
                 lexer->current_value.s[len++] = tolower(c);
-            }
-            while((isalpha(c = L_GETC(lexer)) || isdigit(c) || c == '_')
-                  && len <= LEXER_MAX_STR_LEN);
+            } while ((isalpha(c = L_GETC(lexer)) || isdigit(c) || c == '_')
+                && len <= LEXER_MAX_STR_LEN);
 
             lexer->current_value.s[len] = '\0';
             Lexer_reuse_char(lexer, c);
 
             /* Search for reserved words. */
-            if(L_MATCH(lexer->current_value.s, len, "section")) {
+            if (L_MATCH(lexer->current_value.s, len, "section")) {
                 return (lexer->current_token = CONFIG_LEXER_TOK_SECTION);
-            }
-            else if(L_MATCH(lexer->current_value.s, len, "include")) {
+            } else if (L_MATCH(lexer->current_value.s, len, "include")) {
                 return (lexer->current_token = CONFIG_LEXER_TOK_INCLUDE);
-            }
-            else if(L_MATCH(lexer->current_value.s, len, "blacklist")) {
+            } else if (L_MATCH(lexer->current_value.s, len, "blacklist")) {
                 return (lexer->current_token = CONFIG_LEXER_TOK_BLACKLIST);
-            }
-            else if(L_MATCH(lexer->current_value.s, len, "whitelist")) {
+            } else if (L_MATCH(lexer->current_value.s, len, "whitelist")) {
                 return (lexer->current_token = CONFIG_LEXER_TOK_WHITELIST);
-            }
-            else {
+            } else {
                 /*
                  * The scanned token is not a reserved word and is not a
                  * string value, so it must be a configuration variable name.
@@ -110,7 +105,7 @@ Config_lexer_next_token(Lexer_T lexer)
         /*
          * Process remaining characters.
          */
-        switch(c) {
+        switch (c) {
         case ' ':
         case '\t':
         case '\r':
@@ -124,7 +119,7 @@ Config_lexer_next_token(Lexer_T lexer)
              * Ignore everything until the end of the line (or end of file).
              */
 
-            while((c = L_GETC(lexer)) != '\n' && c != EOF)
+            while ((c = L_GETC(lexer)) != '\n' && c != EOF)
                 ;
             Lexer_reuse_char(lexer, c);
 
@@ -136,8 +131,8 @@ Config_lexer_next_token(Lexer_T lexer)
              * quote characters.
              */
 
-            while(((c = L_GETC(lexer)) != '"' || seen_esc) && len <= LEXER_MAX_STR_LEN && c != EOF) {
-                if(c == '\\' && !seen_esc) {
+            while (((c = L_GETC(lexer)) != '"' || seen_esc) && len <= LEXER_MAX_STR_LEN && c != EOF) {
+                if (c == '\\' && !seen_esc) {
                     seen_esc = 1;
                 } else {
                     /* Add the character to the current value if there is space. */
@@ -148,7 +143,7 @@ Config_lexer_next_token(Lexer_T lexer)
                 }
             }
 
-            if(c != '"') {
+            if (c != '"') {
                 /* We don't need the closing quote character. */
                 Lexer_reuse_char(lexer, c);
             }

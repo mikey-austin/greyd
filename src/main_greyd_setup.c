@@ -32,52 +32,51 @@
 
 #include <config.h>
 
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include <err.h>
-#include <stdlib.h>
+#include <fcntl.h>
+#include <netdb.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <zlib.h>
-#include <netdb.h>
 
-#include "log.h"
-#include "utils.h"
-#include "greyd_config.h"
-#include "list.h"
-#include "hash.h"
 #include "blacklist.h"
-#include "spamd_parser.h"
+#include "constants.h"
 #include "firewall.h"
 #include "greyd.h"
-#include "constants.h"
+#include "greyd_config.h"
+#include "hash.h"
+#include "list.h"
+#include "log.h"
+#include "spamd_parser.h"
+#include "utils.h"
 
-#define DEFAULT_CURL    "/bin/curl"
-#define DEFAULT_MSG     "You have been blacklisted..."
-#define PROG_NAME        "greyd-setup"
-#define MAX_PLEN        1024
-#define METHOD_FTP      "ftp"
-#define METHOD_HTTP     "http"
-#define METHOD_EXEC     "exec"
-#define METHOD_FILE     "file"
-#define INIT_BL         10
+#define DEFAULT_CURL "/bin/curl"
+#define DEFAULT_MSG "You have been blacklisted..."
+#define PROG_NAME "greyd-setup"
+#define MAX_PLEN 1024
+#define METHOD_FTP "ftp"
+#define METHOD_HTTP "http"
+#define METHOD_EXEC "exec"
+#define METHOD_FILE "file"
+#define INIT_BL 10
 #define GREYD_BLACKLIST "greyd-blacklist"
 
-extern char *optarg;
+extern char* optarg;
 extern int optind, opterr, optopt;
 
 static void usage(void);
 static Spamd_parser_T get_parser(Config_section_T section, Config_T config);
-static int open_child(char *file, char **argv);
-static int file_get(char *url, char *curl_path, char *curl_proxy);
-static void free_cidr(void *);
+static int open_child(char* file, char** argv);
+static int file_get(char* url, char* curl_path, char* curl_proxy);
+static void free_cidr(void*);
 static void send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
-                           Config_T config, int final_list, List_T all_cidrs);
+    Config_T config, int final_list, List_T all_cidrs);
 
 /* Global debug variable. */
 static int debug = 0;
@@ -90,31 +89,31 @@ usage(void)
 }
 
 static void
-free_cidr(void *value)
+free_cidr(void* value)
 {
-    if(value)
+    if (value)
         free(value);
 }
 
 static int
-file_get(char *url, char *curl_path, char *proxy)
+file_get(char* url, char* curl_path, char* proxy)
 {
-    char *argv[6] = { curl_path, "-s",
-                      proxy ? "--proxy" : url,
-                      proxy ? proxy : NULL,
-                      proxy ? url : NULL,
-                      NULL };
+    char* argv[6] = { curl_path, "-s",
+        proxy ? "--proxy" : url,
+        proxy ? proxy : NULL,
+        proxy ? url : NULL,
+        NULL };
 
-    if(curl_path == NULL)
+    if (curl_path == NULL)
         return -1;
 
-    if(debug) {
-       fprintf(stderr,
-               "Getting %s%s%s%s\n",
-               url,
-               proxy ? " (via proxy " : "",
-               proxy ? proxy : "",
-               proxy ? ")" : "");
+    if (debug) {
+        fprintf(stderr,
+            "Getting %s%s%s%s\n",
+            url,
+            proxy ? " (via proxy " : "",
+            proxy ? proxy : "",
+            proxy ? ")" : "");
     }
 
     return open_child(curl_path, argv);
@@ -125,17 +124,17 @@ file_get(char *url, char *curl_path, char *proxy)
  * pertaining to it's stdout.
  */
 static int
-open_child(char *file, char **argv)
+open_child(char* file, char** argv)
 {
     int pdes[2];
 
-    if(pipe(pdes) != 0)
+    if (pipe(pdes) != 0)
         return (-1);
 
-    if(file == NULL)
+    if (file == NULL)
         return -1;
 
-    switch(fork()) {
+    switch (fork()) {
     case -1:
         close(pdes[0]);
         close(pdes[1]);
@@ -144,12 +143,12 @@ open_child(char *file, char **argv)
     case 0:
         /* child */
         close(pdes[0]);
-        if(pdes[1] != STDOUT_FILENO) {
+        if (pdes[1] != STDOUT_FILENO) {
             dup2(pdes[1], STDOUT_FILENO);
             close(pdes[1]);
         }
 
-        if(execvp(file, argv) == -1)
+        if (execvp(file, argv) == -1)
             err(1, "could not execute %s", file);
 
         _exit(1);
@@ -178,23 +177,19 @@ get_parser(Config_section_T section, Config_T config)
 
     /* Extract the method & file variables from the section. */
     method = Config_section_get_str(section, "method", NULL);
-    if((file = Config_section_get_str(section, "file", NULL)) == NULL)
-    {
+    if ((file = Config_section_get_str(section, "file", NULL)) == NULL) {
         warnx("No file configuration variables set");
         return NULL;
     }
 
-    if((method == NULL)
-       || (strncmp(method, METHOD_FILE, strlen(METHOD_FILE)) == 0))
-    {
+    if ((method == NULL)
+        || (strncmp(method, METHOD_FILE, strlen(METHOD_FILE)) == 0)) {
         /*
          * A file on the local filesystem is to be processed.
          */
         fd = open(file, O_RDONLY);
-    }
-    else if((strncmp(method, METHOD_HTTP, strlen(METHOD_HTTP)) == 0)
-            || (strncmp(method, METHOD_FTP, strlen(METHOD_FTP)) == 0))
-    {
+    } else if ((strncmp(method, METHOD_HTTP, strlen(METHOD_HTTP)) == 0)
+        || (strncmp(method, METHOD_FTP, strlen(METHOD_FTP)) == 0)) {
         /*
          * The file is to be fetched via curl.
          */
@@ -202,7 +197,7 @@ get_parser(Config_section_T section, Config_T config)
         curl_proxy = Config_get_str(config, "curl_proxy", "setup", NULL);
 
         asprintf(&url, "%s://%s", method, file);
-        if(url == NULL) {
+        if (url == NULL) {
             warnx("Could not create URL");
             return NULL;
         }
@@ -210,21 +205,18 @@ get_parser(Config_section_T section, Config_T config)
         fd = file_get(url, curl_path, curl_proxy);
         free(url);
         url = NULL;
-    }
-    else if(strncmp(method, METHOD_EXEC, strlen(METHOD_EXEC)) == 0) {
+    } else if (strncmp(method, METHOD_EXEC, strlen(METHOD_EXEC)) == 0) {
         /*
          * The file is to be exec'ed, with the output to be parsed. The
          * string specified in the "file" variable is to be interpreted as
          * a command invocation.
          */
         len = strlen(file);
-        if((argv = calloc(len, sizeof(char *))) == NULL)
+        if ((argv = calloc(len, sizeof(char*))) == NULL)
             err(1, "calloc");
 
-        for(ap = argv; ap < &argv[len - 1] &&
-                (*ap = strsep(&file, " \t")) != NULL;)
-        {
-            if(**ap != '\0')
+        for (ap = argv; ap < &argv[len - 1] && (*ap = strsep(&file, " \t")) != NULL;) {
+            if (**ap != '\0')
                 ap++;
         }
 
@@ -232,8 +224,7 @@ get_parser(Config_section_T section, Config_T config)
         fd = open_child(argv[0], argv);
         free(argv);
         argv = NULL;
-    }
-    else {
+    } else {
         warnx("Unknown method %s", method);
         return NULL;
     }
@@ -241,7 +232,7 @@ get_parser(Config_section_T section, Config_T config)
     /*
      * Now run the appropriate file descriptor through zlib.
      */
-    if((gzf = gzdopen(fd, "r")) == NULL) {
+    if ((gzf = gzdopen(fd, "r")) == NULL) {
         warnx("gzdopen");
         return NULL;
     }
@@ -255,22 +246,23 @@ get_parser(Config_section_T section, Config_T config)
 
 static void
 send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
-               Config_T config, int final_list, List_T all_cidrs)
+    Config_T config, int final_list, List_T all_cidrs)
 {
     List_T cidrs;
-    struct List_entry *entry;
-    char *cidr;
+    struct List_entry* entry;
+    char* cidr;
     int nadded = 0, priv_sock, reserved_port = IPPORT_RESERVED - 1;
     int cfg_port = Config_get_int(config, "config_port", NULL,
-                                  GREYD_CFG_PORT);
+        GREYD_CFG_PORT);
     struct sockaddr_in cfg_addr;
-    FILE *cfg_out;
+    FILE* cfg_out;
 
     cidrs = Blacklist_collapse(blacklist);
 
-    if(!greyonly) {
+    if (!greyonly) {
         /* Append this blacklist's cidrs to the global list. */
-        LIST_EACH(cidrs, entry) {
+        LIST_EACH(cidrs, entry)
+        {
             cidr = List_entry_value(entry);
             List_insert_after(all_cidrs, strdup(cidr));
         }
@@ -279,11 +271,10 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
          * If this is the final list, we send all of the collected CIDRs
          * to the firewall in one hit.
          */
-        if(final_list
-           && (!fw || (nadded = FW_replace(fw, GREYD_BLACKLIST, all_cidrs, AF_INET)) < 0))
-        {
+        if (final_list
+            && (!fw || (nadded = FW_replace(fw, GREYD_BLACKLIST, all_cidrs, AF_INET)) < 0)) {
             errx(1, "Could not configure firewall");
-            if(debug)
+            if (debug)
                 warnx("%d entries added to firewall", nadded);
         }
     }
@@ -293,7 +284,7 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
      * source port must be in the privileged range.
      */
     priv_sock = rresvport(&reserved_port);
-    if(priv_sock == -1)
+    if (priv_sock == -1)
         err(1, "could not bind privileged source port");
 
     memset(&cfg_addr, 0, sizeof(cfg_addr));
@@ -301,10 +292,10 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
     cfg_addr.sin_family = AF_INET;
     cfg_addr.sin_port = htons(cfg_port);
 
-    if(connect(priv_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
+    if (connect(priv_sock, (struct sockaddr*)&cfg_addr, sizeof(cfg_addr)) == -1)
         err(1, "could not connect to greyd-config");
 
-    if((cfg_out = fdopen(priv_sock, "w")) == NULL)
+    if ((cfg_out = fdopen(priv_sock, "w")) == NULL)
         err(1, "could not write to greyd-config");
 
     Greyd_send_config(cfg_out, blacklist->name, blacklist->message, cidrs);
@@ -314,8 +305,7 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
     List_destroy(&cidrs);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     int option, dryrun = 0, greyonly = 1, daemonize = 0;
     int bltype, res, count;
@@ -326,11 +316,11 @@ main(int argc, char **argv)
     Blacklist_T blacklist = NULL;
     Config_value_T val;
     List_T lists, all_cidrs;
-    struct List_entry *entry;
+    struct List_entry* entry;
     FW_handle_T fw = NULL;
 
-    while((option = getopt(argc, argv, "f:bdDn")) != -1) {
-        switch(option) {
+    while ((option = getopt(argc, argv, "f:bdDn")) != -1) {
+        switch (option) {
         case 'f':
             config_file = optarg;
             break;
@@ -358,14 +348,14 @@ main(int argc, char **argv)
     }
 
     argc -= optind;
-    if(argc != 0) {
+    if (argc != 0) {
         usage();
     }
 
     config = Config_create();
     Config_load_file(config, config_file);
 
-    if(daemonize) {
+    if (daemonize) {
         daemon(0, 0);
     }
 
@@ -373,13 +363,13 @@ main(int argc, char **argv)
     Config_set_int(config, "drop_privs", NULL, 0);
 
     lists = Config_get_list(config, "lists", "setup");
-    if(lists == NULL || List_size(lists) == 0) {
+    if (lists == NULL || List_size(lists) == 0) {
         errx(1, "no lists configured in %s", config_file);
     }
 
     Log_setup(config, PROG_NAME);
 
-    if(!greyonly && !dryrun)
+    if (!greyonly && !dryrun)
         fw = FW_open(config);
 
     all_cidrs = List_create(free_cidr);
@@ -387,17 +377,18 @@ main(int argc, char **argv)
     /*
      * Loop through lists configured in the configuration.
      */
-    LIST_EACH(lists, entry) {
+    LIST_EACH(lists, entry)
+    {
         val = List_entry_value(entry);
-        if((list_name = cv_str(val)) == NULL)
+        if ((list_name = cv_str(val)) == NULL)
             continue;
 
-        if((section = Config_get_blacklist(config, list_name))) {
+        if ((section = Config_get_blacklist(config, list_name))) {
             /*
              * We have a new blacklist. If there was a previous list,
              * send it off and destroy it before creating the new one.
              */
-            if(blacklist && !dryrun) {
+            if (blacklist && !dryrun) {
                 send_blacklist(fw, blacklist, greyonly, config, 0, all_cidrs);
             }
             Blacklist_destroy(&blacklist);
@@ -405,20 +396,17 @@ main(int argc, char **argv)
             message = Config_section_get_str(section, "message", DEFAULT_MSG);
             blacklist = Blacklist_create(list_name, message, 0);
             bltype = BL_TYPE_BLACK;
-        }
-        else if((section = Config_get_whitelist(config, list_name))
-            && blacklist != NULL)
-        {
+        } else if ((section = Config_get_whitelist(config, list_name))
+            && blacklist != NULL) {
             /*
              * Add this whitelist's entries to the previous blacklist.
              */
             bltype = BL_TYPE_WHITE;
-        }
-        else {
+        } else {
             continue;
         }
 
-        if((parser = get_parser(section, config)) == NULL) {
+        if ((parser = get_parser(section, config)) == NULL) {
             warnx("Ignoring list %s", list_name);
             continue;
         }
@@ -428,17 +416,17 @@ main(int argc, char **argv)
          */
         count = blacklist->count;
         res = Spamd_parser_start(parser, blacklist, bltype);
-        if(res != SPAMD_PARSER_OK) {
+        if (res != SPAMD_PARSER_OK) {
             warnx("blacklist parse error processing %s, line %d col %d",
-                  list_name, parser->lexer->current_line,
-                  parser->lexer->current_line_pos);
+                list_name, parser->lexer->current_line,
+                parser->lexer->current_line_pos);
         }
 
-        if(debug) {
+        if (debug) {
             fprintf(stderr, "%slist %s %zu entries\n",
-                    (bltype == BL_TYPE_BLACK ? "black" : "white"),
-                    list_name,
-                    ((blacklist->count - count) / 2));
+                (bltype == BL_TYPE_BLACK ? "black" : "white"),
+                list_name,
+                ((blacklist->count - count) / 2));
         }
 
         Spamd_parser_destroy(&parser);
@@ -447,7 +435,7 @@ main(int argc, char **argv)
     /*
      * Send the last blacklist and cleanup the various objects.
      */
-    if(blacklist && !dryrun) {
+    if (blacklist && !dryrun) {
         send_blacklist(fw, blacklist, greyonly, config, 1, all_cidrs);
         FW_close(&fw);
     }

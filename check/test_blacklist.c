@@ -25,23 +25,22 @@
 #include <blacklist.h>
 #include <list.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <arpa/inet.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-static u_int32_t stoi(const char *address);
+static u_int32_t stoi(const char* address);
 
-int
-main(void)
+int main(void)
 {
     Blacklist_T bl;
     u_int32_t a1, b1, a2, b2, a3, b3;
     char *s, *c;
     int i = 0;
     List_T cidrs;
-    struct List_entry *entry;
+    struct List_entry* entry;
     struct IP_addr a;
 
     TEST_START(27);
@@ -50,9 +49,9 @@ main(void)
     TEST_OK((bl != NULL), "Blacklist created successfully");
     TEST_OK((strcmp(bl->name, "Test List") == 0), "Name set successfully");
     TEST_OK((strcmp(bl->message, "You have been blacklisted") == 0),
-            "Message set successfully");
+        "Message set successfully");
     TEST_OK((bl->size == BLACKLIST_INIT_SIZE),
-            "Correct entry list size ");
+        "Correct entry list size ");
     TEST_OK((bl->count == 0), "Correctly initialized list of entries");
 
     a1 = ntohl(stoi("192.168.1.0"));
@@ -66,7 +65,7 @@ main(void)
     TEST_OK((bl->entries[0].white == 0), "First address is not white");
 
     TEST_OK((bl->entries[1].address.v4.s_addr == b1),
-            "Second address is correct");
+        "Second address is correct");
     TEST_OK((bl->entries[1].black == -1), "Second address is black");
     TEST_OK((bl->entries[1].white == 0), "Second address is not white");
 
@@ -74,7 +73,7 @@ main(void)
 
     /* Test collapsing a blacklist with 3 overlapping regions. */
     bl = Blacklist_create("Test List", "You have been blacklisted", 0);
-    a1 = ntohl(stoi("10.0.0.0"));  /* black */
+    a1 = ntohl(stoi("10.0.0.0")); /* black */
     b1 = ntohl(stoi("10.0.0.20")) + 1;
 
     a2 = ntohl(stoi("10.0.0.10")); /* black */
@@ -88,9 +87,10 @@ main(void)
     Blacklist_add_range(bl, a3, b3, BL_TYPE_WHITE);
 
     cidrs = Blacklist_collapse(bl);
-    LIST_EACH(cidrs, entry) {
+    LIST_EACH(cidrs, entry)
+    {
         c = List_entry_value(entry);
-        switch(i) {
+        switch (i) {
         case 0:
             s = "10.0.0.0/27";
             break;
@@ -149,7 +149,7 @@ main(void)
 }
 
 static u_int32_t
-stoi(const char *address)
+stoi(const char* address)
 {
     u_int32_t addr;
     inet_pton(AF_INET, address, &addr);

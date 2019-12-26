@@ -26,13 +26,12 @@
 
 #include <string.h>
 
-static void destroy_string(void *str);
+static void destroy_string(void* str);
 
-int
-main(void)
+int main(void)
 {
     List_T list;
-    struct List_entry *curr;
+    struct List_entry* curr;
     char *v1 = "value 1", *v2 = "value 2", *v3 = "value 3", *v;
     int i;
 
@@ -42,22 +41,22 @@ main(void)
     TEST_OK((list != NULL), "List created successfully");
     TEST_OK((List_size(list) == 0), "List size correct");
 
-    List_insert_after(list, (void *) v2);
-    List_insert_after(list, (void *) v3);
-    List_insert_head(list, (void *) v1);
+    List_insert_after(list, (void*)v2);
+    List_insert_after(list, (void*)v3);
+    List_insert_head(list, (void*)v1);
     TEST_OK((List_size(list) == 3), "List size is as expected");
 
     /*
      * Test list iteration.
      */
     i = 0;
-    LIST_EACH(list, curr) {
-        if(i < 3) {
+    LIST_EACH(list, curr)
+    {
+        if (i < 3) {
             TEST_OK((curr != NULL), "List iteration is as expected");
 
-            v = (char *) List_entry_value(curr);
-            switch(i)
-            {
+            v = (char*)List_entry_value(curr);
+            switch (i) {
             case 0:
                 TEST_OK((v && strcmp(v, v1) == 0), "Retrieved value is correct");
                 break;
@@ -106,7 +105,7 @@ main(void)
 
     /* Test the emptying of the list explicitly. */
     list = List_create(NULL);
-    List_insert_after(list, (void *) v2);
+    List_insert_after(list, (void*)v2);
     List_remove_all(list);
 
     TEST_OK(List_size(list) == 0, "List size is 0 after emptying");
@@ -118,9 +117,9 @@ main(void)
 }
 
 static void
-destroy_string(void *str)
+destroy_string(void* str)
 {
-    if(str) {
+    if (str) {
         free(str);
     }
 }

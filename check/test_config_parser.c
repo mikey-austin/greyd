@@ -25,11 +25,10 @@
 #include <config_parser.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-int
-main(void)
+int main(void)
 {
     Lexer_source_T cs;
     Lexer_T lexer;
@@ -37,25 +36,24 @@ main(void)
     Config_T c;
     Config_section_T s;
     Config_value_T v, v2;
-    struct List_entry *curr;
+    struct List_entry* curr;
     int ret, i;
-    char *include;
-    char *src =
-        "# This is a test config file\n\n\n"
-        "test_var_1    =  12345 # This is a comment \n"
-        "# This is another comment followed by a new line \n\n"
-        "section test_section_1 {\n\n\n"
-        "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
-        "    test_var_3 = 12,\n"
-        "    test_var_4 = [ 4321, \"a string\", ], # trailing comma\n"
-        "} \n"
-        "blacklist spews {\n"
-        "    test_var_5 = [\n"
-        "    222,\n"
-        "    \"another string\" ]\n"
-        "}\n"
-        "whitelist custom { test_var_6 = [ 1, 2, 3 ] ; test_var_7 = 55 }\n"
-        "include \"data/config_test1.conf\"";
+    char* include;
+    char* src = "# This is a test config file\n\n\n"
+                "test_var_1    =  12345 # This is a comment \n"
+                "# This is another comment followed by a new line \n\n"
+                "section test_section_1 {\n\n\n"
+                "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
+                "    test_var_3 = 12,\n"
+                "    test_var_4 = [ 4321, \"a string\", ], # trailing comma\n"
+                "} \n"
+                "blacklist spews {\n"
+                "    test_var_5 = [\n"
+                "    222,\n"
+                "    \"another string\" ]\n"
+                "}\n"
+                "whitelist custom { test_var_6 = [ 1, 2, 3 ] ; test_var_7 = 55 }\n"
+                "include \"data/config_test1.conf\"";
 
     TEST_START(22);
 
@@ -90,21 +88,22 @@ main(void)
     TEST_OK((s != NULL), "Blacklist parsed correctly");
     v = Config_section_get(s, "test_var_5");
     TEST_OK((cv_type(v) == CONFIG_VAL_TYPE_LIST),
-            "Parsed custom section list variable correctly");
+        "Parsed custom section list variable correctly");
     TEST_OK((List_size(cv_list(v)) == 2), "List size is as expected");
 
     i = 1;
-    LIST_EACH(cv_list(v), curr) {
+    LIST_EACH(cv_list(v), curr)
+    {
         v2 = List_entry_value(curr);
-        switch(i++) {
+        switch (i++) {
         case 1:
             TEST_OK((cv_int(v2) == 222),
-                    "Integer list value is correct");
+                "Integer list value is correct");
             break;
 
         case 2:
             TEST_OK((strcmp(cv_str(v2), "another string") == 0),
-                    "String list value is correct");
+                "String list value is correct");
             break;
         }
     }
@@ -116,7 +115,8 @@ main(void)
     TEST_OK((List_size(cv_list(v)) == 3), "List size is as expected");
 
     i = 1;
-    LIST_EACH(cv_list(v), curr) {
+    LIST_EACH(cv_list(v), curr)
+    {
         v2 = List_entry_value(curr);
         TEST_OK((cv_int(v2) == i), "List value is correct");
         i++;
@@ -126,7 +126,7 @@ main(void)
     TEST_OK((cv_int(v) == 55), "Parsed whitelist section int variable correctly");
 
     TEST_OK((Queue_size(c->includes) == 1), "Include parsed and enqueued correctly");
-    include = (char *) Queue_dequeue(c->includes);
+    include = (char*)Queue_dequeue(c->includes);
     TEST_OK((include && (strcmp(include, "data/config_test1.conf") == 0)), "Correct included file");
 
     free(include);

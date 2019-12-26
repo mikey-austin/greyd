@@ -86,20 +86,20 @@
 #include "config_lexer.h"
 #include "greyd_config.h"
 
-#define CONFIG_PARSER_OK  1
+#define CONFIG_PARSER_OK 1
 #define CONFIG_PARSER_ERR 0
 
 /**
  * The main config parser structure.
  */
-typedef struct Config_parser_T *Config_parser_T;
+typedef struct Config_parser_T* Config_parser_T;
 struct Config_parser_T {
-    Config_T         config;  /**< Reference to the config object. */
+    Config_T config; /**< Reference to the config object. */
     Config_section_T section; /**< Reference to the current section. */
-    Config_value_T   value;   /**< Reference to the current config value. */
-    Lexer_T          lexer;
-    int              curr;    /**< The current token being looked at. */
-    int              sectype; /**< The type of section being parsed. */
+    Config_value_T value; /**< Reference to the current config value. */
+    Lexer_T lexer;
+    int curr; /**< The current token being looked at. */
+    int sectype; /**< The type of section being parsed. */
 };
 
 /**
@@ -125,7 +125,7 @@ extern void Config_parser_set_lexer(Config_parser_T parser, Lexer_T lexer);
  *
  * @param parser The initialized parser object to be destroyed.
  */
-extern void Config_parser_destroy(Config_parser_T *parser);
+extern void Config_parser_destroy(Config_parser_T* parser);
 
 /**
  * Start parsing the lexer's token stream, and populate the specified config object.

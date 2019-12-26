@@ -21,8 +21,8 @@
  * @date   2015
  */
 
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "failures.h"
@@ -33,21 +33,20 @@
 
 #define IS_LEAF(t) ((t)->kids[0] == NULL && (t)->kids[1] == NULL)
 
-static int bytecmp(const void *, int, const void *, int);
+static int bytecmp(const void*, int, const void*, int);
 
-extern struct Trie
-*Trie_create(const unsigned char *key, int klen,
-             int (*cmp)(const void *, int, const void *, int))
+extern struct Trie* Trie_create(const unsigned char* key, int klen,
+    int (*cmp)(const void*, int, const void*, int))
 {
-    struct Trie *trie;
+    struct Trie* trie;
 
-    if((trie = calloc(1, sizeof(*trie))) == NULL)
+    if ((trie = calloc(1, sizeof(*trie))) == NULL)
         i_critical("calloc: %s", strerror(errno));
     trie->cmp = cmp ? cmp : bytecmp;
 
-    if(key) {
+    if (key) {
         trie->klen = klen;
-        if((trie->key = calloc(klen, sizeof(*trie->key))) == NULL)
+        if ((trie->key = calloc(klen, sizeof(*trie->key))) == NULL)
             i_critical("calloc: %s", strerror(errno));
         memcpy(trie->key, key, klen);
     }
@@ -56,43 +55,40 @@ extern struct Trie
 }
 
 extern void
-Trie_destroy(struct Trie *trie)
+Trie_destroy(struct Trie* trie)
 {
     int i;
 
-    if(trie != NULL) {
-        if(trie->key)
+    if (trie != NULL) {
+        if (trie->key)
             free(trie->key);
 
-        for(i = 0; i < TRIE_RADIX; i++)
+        for (i = 0; i < TRIE_RADIX; i++)
             Trie_destroy(trie->kids[i]);
 
         free(trie);
     }
 }
 
-extern struct Trie
-*Trie_insert(struct Trie *trie, const unsigned char *key, int klen)
+extern struct Trie* Trie_insert(struct Trie* trie, const unsigned char* key, int klen)
 {
     struct Trie *t = trie, *kid;
     int kbits = klen * 8;
 
-    if(trie == NULL) {
+    if (trie == NULL) {
         return NULL;
-    }
-    else if(IS_LEAF(trie) && trie->key == NULL) {
+    } else if (IS_LEAF(trie) && trie->key == NULL) {
         trie->kids[BIT(key, 0)] = Trie_create(key, klen, trie->cmp);
         return trie;
     }
 
-    while(t && !IS_LEAF(t)) {
-        if(t->branch >= kbits) {
+    while (t && !IS_LEAF(t)) {
+        if (t->branch >= kbits) {
             /* TODO: handle different key sizes. */
             break;
-        }
-        else {
+        } else {
             kid = t->kids[BIT(key, t->branch)];
-            if(kid == NULL) {
+            if (kid == NULL) {
                 /* Insert new node here. */
                 t->kids[BIT(key, t->branch)] = Trie_create(key, klen, trie->cmp);
                 return trie;
@@ -101,14 +97,14 @@ extern struct Trie
         }
     }
 
-    if(t && !trie->cmp(t->key, t->klen, key, klen)) {
+    if (t && !trie->cmp(t->key, t->klen, key, klen)) {
         /* Already in trie. */
         return trie;
     }
 
     /* Split this node based on where the keys differ. */
     int bit = 0, val;
-    while(bit < kbits && BIT(t->key, bit) == (val = BIT(key, bit))) {
+    while (bit < kbits && BIT(t->key, bit) == (val = BIT(key, bit))) {
         bit++;
     }
 
@@ -123,16 +119,15 @@ extern struct Trie
 }
 
 extern int
-Trie_contains(struct Trie *trie, const unsigned char *key, int klen)
+Trie_contains(struct Trie* trie, const unsigned char* key, int klen)
 {
-    struct Trie *t = trie;
+    struct Trie* t = trie;
     int kbits = klen * 8;
 
-    while(t && !IS_LEAF(t)) {
-        if(t->branch >= kbits) {
+    while (t && !IS_LEAF(t)) {
+        if (t->branch >= kbits) {
             return 0;
-        }
-        else {
+        } else {
             t = t->kids[BIT(key, t->branch)];
         }
     }
@@ -141,12 +136,12 @@ Trie_contains(struct Trie *trie, const unsigned char *key, int klen)
 }
 
 static int
-bytecmp(const void *a, int alen, const void *b, int blen)
+bytecmp(const void* a, int alen, const void* b, int blen)
 {
-    const unsigned char *a_bytes = a;
-    const unsigned char *b_bytes = b;
+    const unsigned char* a_bytes = a;
+    const unsigned char* b_bytes = b;
 
-    if(alen != blen)
+    if (alen != blen)
         return (alen > blen ? 1 : -1);
 
     return memcmp(a_bytes, b_bytes, alen);

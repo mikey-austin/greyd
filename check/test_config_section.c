@@ -34,8 +34,7 @@
 #define VAL1 "value 1"
 #define VAL2 123
 
-int
-main(void)
+int main(void)
 {
     Config_section_T s1;
     Config_value_T v;

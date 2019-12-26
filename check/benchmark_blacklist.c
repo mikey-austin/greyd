@@ -18,16 +18,15 @@
 #include <spamd_parser.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <zlib.h>
+#include <string.h>
 #include <time.h>
+#include <zlib.h>
 
 #define SEED 100
 #define SAMPLES 50000
 
-int
-main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     /* Load a sample blacklist. */
     Lexer_source_T ls;
@@ -39,11 +38,11 @@ main(int argc, char *argv[])
     gzFile gzf;
 
     /* First arg is the seed. */
-    if(argc > 1)
+    if (argc > 1)
         seed = atoi(argv[1]);
     srand(seed);
 
-    if((gzf = gzopen("data/traplist.gz", "r")) == NULL) {
+    if ((gzf = gzopen("data/traplist.gz", "r")) == NULL) {
         err(1, "gzdopen");
     }
 
@@ -58,22 +57,22 @@ main(int argc, char *argv[])
 
     /* Load into trie. */
     int i, j, r;
-    struct Blacklist_entry *entry;
+    struct Blacklist_entry* entry;
     struct Blacklist_trie_entry tentry;
-    unsigned char *bytes;
+    unsigned char* bytes;
     struct IP_addr samples[SAMPLES];
 
-    for(i = 0, j = 0; i < bl->count; i++) {
+    for (i = 0, j = 0; i < bl->count; i++) {
         entry = &bl->entries[i];
         entry->mask.addr32[0] = 0xFFFFFFFF;
 
         tentry.af = AF_INET;
         tentry.address = entry->address;
         tentry.mask = entry->mask;
-        Trie_insert(bl_trie->trie, (unsigned char *) &tentry, sizeof(tentry));
+        Trie_insert(bl_trie->trie, (unsigned char*)&tentry, sizeof(tentry));
         bl_trie->count++;
 
-        if((i % 4) == (rand() % 4) && j < SAMPLES) {
+        if ((i % 4) == (rand() % 4) && j < SAMPLES) {
             samples[j++].addr32[0] = entry->address.addr32[0];
         }
     }
@@ -87,50 +86,50 @@ main(int argc, char *argv[])
 
     /* Time lookup of samples across blacklist. */
     begin = clock();
-    for(i = 0, errors = 0; i < j; i++) {
-        if(!Blacklist_match(bl, &samples[i], AF_INET))
+    for (i = 0, errors = 0; i < j; i++) {
+        if (!Blacklist_match(bl, &samples[i], AF_INET))
             errors++;
     }
     end = clock();
-    spent = (double) (end - begin) / CLOCKS_PER_SEC;
+    spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("blacklist: %d searched, %d errors in %lf seconds\n", j, errors, spent);
 
     /* Time lookup across trie. */
     begin = clock();
-    for(i = 0, errors = 0; i < j; i++) {
-        if(!Blacklist_match(bl_trie, &samples[i], AF_INET))
+    for (i = 0, errors = 0; i < j; i++) {
+        if (!Blacklist_match(bl_trie, &samples[i], AF_INET))
             errors++;
     }
     end = clock();
-    spent = (double) (end - begin) / CLOCKS_PER_SEC;
+    spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("trie: %d searched, %d errors in %lf seconds\n\n", j, errors, spent);
 
     /***********************************************************
      * For unsuccessful searches, mask out each sample address.
      */
-    for(i = 0; i < j; i++) {
+    for (i = 0; i < j; i++) {
         samples[i].addr32[0] &= 0xFF000000;
     }
 
     printf("--> test unsuccessful searches <--\n");
     /* Time lookup of samples across blacklist. */
     begin = clock();
-    for(i = 0, errors = 0; i < j; i++) {
-        if(!Blacklist_match(bl, &samples[i], AF_INET))
+    for (i = 0, errors = 0; i < j; i++) {
+        if (!Blacklist_match(bl, &samples[i], AF_INET))
             errors++;
     }
     end = clock();
-    spent = (double) (end - begin) / CLOCKS_PER_SEC;
+    spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("blacklist: %d searched, %d errors in %lf seconds\n", j, errors, spent);
 
     /* Time lookup across trie. */
     begin = clock();
-    for(i = 0, errors = 0; i < j; i++) {
-        if(!Blacklist_match(bl_trie, &samples[i], AF_INET))
+    for (i = 0, errors = 0; i < j; i++) {
+        if (!Blacklist_match(bl_trie, &samples[i], AF_INET))
             errors++;
     }
     end = clock();
-    spent = (double) (end - begin) / CLOCKS_PER_SEC;
+    spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("trie: %d searched, %d errors in %lf seconds\n", j, errors, spent);
 
     /* Cleanup. */

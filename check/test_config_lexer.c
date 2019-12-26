@@ -25,26 +25,24 @@
 #include <config_lexer.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-int
-main(void)
+int main(void)
 {
-    char *test_file;
+    char* test_file;
     Lexer_source_T cs;
     Lexer_T lexer;
     int tok;
-    char *src =
-        "test_var_1    =  12345 # This is a comment \n"
-        "# This is another comment followed by a new line \n"
-        "section {\n"
-        "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
-        "    test_var_3 = 12\n"
-        "} \n"
-        "include \"/etc/somefile\"\n"
-        "test_var_4 = [ 1234, \"a string\"]"
-        "blacklist whitelist";
+    char* src = "test_var_1    =  12345 # This is a comment \n"
+                "# This is another comment followed by a new line \n"
+                "section {\n"
+                "    test_var_2 = \"long \\\"string\\\"\", # A \"quoted\" string literal\n"
+                "    test_var_3 = 12\n"
+                "} \n"
+                "include \"/etc/somefile\"\n"
+                "test_var_4 = [ 1234, \"a string\"]"
+                "blacklist whitelist";
 
     TEST_START(74);
 

@@ -28,9 +28,9 @@
 /**
  * Setup the logging framework.
  */
-extern void Log_setup(Config_T config, const char *prog_name);
+extern void Log_setup(Config_T config, const char* prog_name);
 
 /**
  * Write a message to the logging system.
  */
-extern void Log_write(int severity, const char *msg, va_list args);
+extern void Log_write(int severity, const char* msg, va_list args);

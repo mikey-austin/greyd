@@ -23,46 +23,46 @@
 
 #include <config.h>
 
-#include <sys/types.h>
 #include <sys/resource.h>
+#include <sys/types.h>
 
+#include "con.h"
+#include "config_parser.h"
+#include "constants.h"
+#include "failures.h"
+#include "grey.h"
+#include "greyd.h"
+#include "greyd_config.h"
+#include "hash.h"
+#include "ip.h"
+#include "lexer_source.h"
+#include "log.h"
+#include "sync.h"
+#include "utils.h"
+#include <ctype.h>
 #include <err.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
-#include <ctype.h>
-#include <signal.h>
-#include <pwd.h>
 #include <grp.h>
 #include <poll.h>
-#include "failures.h"
-#include "greyd_config.h"
-#include "constants.h"
-#include "grey.h"
-#include "sync.h"
-#include "ip.h"
-#include "utils.h"
-#include "con.h"
-#include "greyd.h"
-#include "hash.h"
-#include "log.h"
-#include "config_parser.h"
-#include "lexer_source.h"
+#include <pwd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #define PROG_NAME "greyd"
 
-extern char *optarg;
+extern char* optarg;
 extern int optind, opterr, optopt;
 
 static void usage(void);
 static int max_files(void);
-static void destroy_blacklist(struct Hash_entry *entry);
+static void destroy_blacklist(struct Hash_entry* entry);
 static void shutdown_greyd(int sig);
 
-struct Greyd_state *Greyd_state = NULL;
+struct Greyd_state* Greyd_state = NULL;
 
 static void
 usage(void)
@@ -81,7 +81,7 @@ usage(void)
 static void
 shutdown_greyd(int sig)
 {
-    if(Greyd_state)
+    if (Greyd_state)
         Greyd_state->shutdown = 1;
 }
 
@@ -91,31 +91,30 @@ max_files(void)
     int max_files = CON_DEFAULT_MAX;
 
 #ifdef __linux
-    FILE *file_max = fopen("/proc/sys/fs/file-max", "r");
-    if(file_max == NULL || fscanf(file_max, "%d", &max_files) == EOF) {
-        if(file_max)
+    FILE* file_max = fopen("/proc/sys/fs/file-max", "r");
+    if (file_max == NULL || fscanf(file_max, "%d", &max_files) == EOF) {
+        if (file_max)
             fclose(file_max);
         return max_files;
     }
     fclose(file_max);
 #endif
 
-    if((max_files - MAX_FILES_THRESHOLD) < 10)
+    if ((max_files - MAX_FILES_THRESHOLD) < 10)
         errx(1, "max files is only %d, refusing to continue", max_files);
     else
         return (max_files - MAX_FILES_THRESHOLD);
 }
 
 static void
-destroy_blacklist(struct Hash_entry *entry)
+destroy_blacklist(struct Hash_entry* entry)
 {
-    if(entry && entry->v) {
-        Blacklist_destroy((Blacklist_T *) &entry->v);
+    if (entry && entry->v) {
+        Blacklist_destroy((Blacklist_T*)&entry->v);
     }
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     struct Greyd_state state;
     Sync_engine_T syncer = NULL;
@@ -131,22 +130,21 @@ main(int argc, char **argv)
     struct rlimit limit;
     struct sockaddr_in main_addr, cfg_addr, main_in_addr;
     struct sockaddr_in6 main_addr6, main_in_addr6;
-    struct passwd *main_pw;
+    struct passwd* main_pw;
     List_T hosts;
-    char *main_user;
+    char* main_user;
     pid_t grey_pid;
     FILE *grey_in, *trap_out, *grey_fw;
-    char *chroot_dir = NULL;
+    char* chroot_dir = NULL;
     time_t now;
     int prev_max_fd = 0, sync_recv = 0, sync_send = 0;
-    struct pollfd *fds = NULL;
+    struct pollfd* fds = NULL;
     struct sigaction sa;
 
     opts = Config_create();
-    if(gethostname(hostname, sizeof(hostname)) == -1) {
+    if (gethostname(hostname, sizeof(hostname)) == -1) {
         err(1, "gethostname");
-    }
-    else {
+    } else {
         /* Set the default to the output of gethostname. */
         Config_set_str(opts, "hostname", NULL, hostname);
     }
@@ -157,10 +155,10 @@ main(int argc, char **argv)
     /* Global reference only to be used for signal handlers. */
     Greyd_state = &state;
 
-    while((option = getopt(argc, argv,
-                           "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:P:")) != -1)
-    {
-        switch(option) {
+    while ((option = getopt(argc, argv,
+                "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:P:"))
+        != -1) {
+        switch (option) {
         case 'f':
             config_file = optarg;
             break;
@@ -189,7 +187,7 @@ main(int argc, char **argv)
             i = atoi(optarg);
             if (i > state.max_files) {
                 warnx("%d > system max of %d connections",
-                      i, state.max_files);
+                    i, state.max_files);
                 usage();
             }
             Config_set_int(opts, "max_cons_black", NULL, i);
@@ -199,7 +197,7 @@ main(int argc, char **argv)
             i = atoi(optarg);
             if (i > state.max_files) {
                 warnx("%d > system max of %d connections",
-                      i, state.max_files);
+                    i, state.max_files);
                 usage();
             }
             Config_set_int(opts, "max_cons", NULL, i);
@@ -222,9 +220,9 @@ main(int argc, char **argv)
             break;
 
         case 'G':
-            if(sscanf(optarg, "%llu:%llu:%llu", &pass_time, &grey_time,
-                      &white_time) != 3)
-            {
+            if (sscanf(optarg, "%llu:%llu:%llu", &pass_time, &grey_time,
+                    &white_time)
+                != 3) {
                 usage();
             }
 
@@ -238,9 +236,7 @@ main(int argc, char **argv)
 
         case 'h':
             memset(hostname, 0, sizeof(hostname));
-            if(sstrncpy(hostname, optarg, sizeof(hostname)) >=
-               sizeof(hostname))
-            {
+            if (sstrncpy(hostname, optarg, sizeof(hostname)) >= sizeof(hostname)) {
                 warnx("-h arg too long");
                 usage();
             }
@@ -249,14 +245,14 @@ main(int argc, char **argv)
 
         case 's':
             i = atoi(optarg);
-            if(i < 0 || i > (10 * CON_STUTTER))
+            if (i < 0 || i > (10 * CON_STUTTER))
                 usage();
             Config_set_int(opts, "stutter", NULL, i);
             break;
 
         case 'S':
             i = atoi(optarg);
-            if(i < 0 || i > (10 * CON_GREY_STUTTER))
+            if (i < 0 || i > (10 * CON_GREY_STUTTER))
                 usage();
             Config_set_int(opts, "stutter", "grey", i);
             break;
@@ -275,7 +271,7 @@ main(int argc, char **argv)
 
         case 'w':
             i = atoi(optarg);
-            if(i <= 0)
+            if (i <= 0)
                 usage();
             Config_set_int(opts, "window", NULL, i);
             break;
@@ -307,32 +303,29 @@ main(int argc, char **argv)
     i = Config_get_int(config, "max_cons_black", NULL, CON_DEFAULT_MAX);
     state.max_black = (i > state.max_files ? state.max_files : i);
 
-    if(sync_send == 0
-       && (hosts = Config_get_list(state.config, "hosts", "sync")))
-    {
+    if (sync_send == 0
+        && (hosts = Config_get_list(state.config, "hosts", "sync"))) {
         sync_send += List_size(hosts);
     }
 
-    if(sync_recv == 0
-       && Config_get_str(state.config, "bind_address", "sync", NULL) != NULL)
-    {
+    if (sync_recv == 0
+        && Config_get_str(state.config, "bind_address", "sync", NULL) != NULL) {
         sync_recv = 1;
     }
 
     Log_setup(state.config, PROG_NAME);
 
-    if(!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
+    if (!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
         state.max_black = state.max_cons;
-    }
-    else if(state.max_black > state.max_cons) {
+    } else if (state.max_black > state.max_cons) {
         warnx("Max black cons (%u) must not exceed total max cons (%u)",
-              state.max_black, state.max_cons);
+            state.max_black, state.max_cons);
         usage();
     }
 
-    if(!Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
+    if (!Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
         limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
-        if(setrlimit(RLIMIT_NOFILE, &limit) == -1)
+        if (setrlimit(RLIMIT_NOFILE, &limit) == -1)
             err(1, "setrlimit");
     }
 
@@ -344,68 +337,66 @@ main(int argc, char **argv)
     /*
      * Setup the main IPv4 socket.
      */
-    if((main_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if ((main_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         err(1, "socket");
 
-    if(setsockopt(main_sock, SOL_SOCKET, SO_REUSEADDR, &sock_val,
-                  sizeof(sock_val)) == -1)
-    {
+    if (setsockopt(main_sock, SOL_SOCKET, SO_REUSEADDR, &sock_val,
+            sizeof(sock_val))
+        == -1) {
         err(1, "setsockopt");
     }
 
     bind_addr = Config_get_str(state.config, "bind_address", NULL, NULL);
     memset(&main_addr, 0, sizeof(main_addr));
-    if(bind_addr != NULL) {
-        if(inet_pton(AF_INET, bind_addr, &main_addr.sin_addr) != 1)
+    if (bind_addr != NULL) {
+        if (inet_pton(AF_INET, bind_addr, &main_addr.sin_addr) != 1)
             err(1, "inet_pton");
-    }
-    else {
+    } else {
         main_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     }
     main_addr.sin_family = AF_INET;
     main_addr.sin_port = htons(port);
 
-    if(bind(main_sock, (struct sockaddr *) &main_addr, sizeof(main_addr)) == -1)
+    if (bind(main_sock, (struct sockaddr*)&main_addr, sizeof(main_addr)) == -1)
         err(1, "bind");
 
     /*
      * Setup the main IPv6 socket if explicitly enabled.
      */
-    if(Config_get_int(state.config, "enable_ipv6", NULL, IPV6_ENABLED)) {
-        if((main_sock6 = socket(AF_INET6, SOCK_STREAM, 0)) == -1)
+    if (Config_get_int(state.config, "enable_ipv6", NULL, IPV6_ENABLED)) {
+        if ((main_sock6 = socket(AF_INET6, SOCK_STREAM, 0)) == -1)
             err(1, "socket");
 
-        if(setsockopt(main_sock6, SOL_SOCKET, SO_REUSEADDR, &sock_val,
-                      sizeof(sock_val)) == -1)
-        {
+        if (setsockopt(main_sock6, SOL_SOCKET, SO_REUSEADDR, &sock_val,
+                sizeof(sock_val))
+            == -1) {
             err(1, "setsockopt");
         }
 
         bind_addr6 = Config_get_str(state.config, "bind_address_ipv6", NULL, NULL);
         memset(&main_addr6, 0, sizeof(main_addr6));
-        if(bind_addr6 != NULL) {
-            if(inet_pton(AF_INET6, bind_addr6, &main_addr6.sin6_addr) != 1)
+        if (bind_addr6 != NULL) {
+            if (inet_pton(AF_INET6, bind_addr6, &main_addr6.sin6_addr) != 1)
                 err(1, "inet_pton");
-        }
-        else {
+        } else {
             main_addr6.sin6_addr = in6addr_any;
         }
         main_addr6.sin6_family = AF_INET6;
         main_addr6.sin6_port = htons(port);
 
-        if(bind(main_sock6, (struct sockaddr *) &main_addr6, sizeof(main_addr6)) == -1)
+        if (bind(main_sock6, (struct sockaddr*)&main_addr6, sizeof(main_addr6)) == -1)
             err(1, "bind IPv6");
     }
 
     /*
      * Setup the configuration socket to only listen for connections on loopback.
      */
-    if((cfg_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if ((cfg_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         err(1, "socket");
 
-    if(setsockopt(cfg_sock, SOL_SOCKET, SO_REUSEADDR, &sock_val,
-                  sizeof(sock_val)) == -1)
-    {
+    if (setsockopt(cfg_sock, SOL_SOCKET, SO_REUSEADDR, &sock_val,
+            sizeof(sock_val))
+        == -1) {
         err(1, "setsockopt");
     }
 
@@ -414,11 +405,11 @@ main(int argc, char **argv)
     cfg_addr.sin_family = AF_INET;
     cfg_addr.sin_port = htons(cfg_port);
 
-    if(bind(cfg_sock, (struct sockaddr *) &cfg_addr, sizeof(cfg_addr)) == -1)
+    if (bind(cfg_sock, (struct sockaddr*)&cfg_addr, sizeof(cfg_addr)) == -1)
         err(1, "bind local");
 
-    if(Config_get_int(state.config, "daemonize", NULL, 1)) {
-        if(daemon(1, 0) == -1)
+    if (Config_get_int(state.config, "daemonize", NULL, 1)) {
+        if (daemon(1, 0) == -1)
             err(1, "daemon");
     }
 
@@ -427,33 +418,33 @@ main(int argc, char **argv)
     state.fw_pid = -1;
 
     main_user = Config_get_str(state.config, "user", NULL, GREYD_MAIN_USER);
-    if((main_pw = getpwnam(main_user)) == NULL)
+    if ((main_pw = getpwnam(main_user)) == NULL)
         errx(1, "no such user %s", main_user);
 
     pidfile = Config_get_str(state.config, "greyd_pidfile", NULL,
-                             GREYD_PIDFILE);
-    switch(write_pidfile(main_pw, pidfile)) {
+        GREYD_PIDFILE);
+    switch (write_pidfile(main_pw, pidfile)) {
     case -1:
         i_critical("could not write pidfile %s: %s", pidfile,
-                  strerror(errno));
+            strerror(errno));
 
     case -2:
         i_critical("it appears greyd is already running...", pidfile);
     }
 
-    if(Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
-        if(pipe(fw_pipe) == -1)
+    if (Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
+        if (pipe(fw_pipe) == -1)
             i_critical("firewall pipe: %s", strerror(errno));
 
-        if(pipe(nat_pipe) == -1)
+        if (pipe(nat_pipe) == -1)
             i_critical("firewall nat pipe: %s", strerror(errno));
 
-        if(pipe(grey_fw_pipe) == -1)
+        if (pipe(grey_fw_pipe) == -1)
             i_critical("grey firewall pipe: %s", strerror(errno));
 
         /* Fork the firewall process. */
         state.fw_pid = fork();
-        switch(state.fw_pid) {
+        switch (state.fw_pid) {
         case -1:
             i_error("fork firewall failed: %s", strerror(errno));
 
@@ -473,30 +464,31 @@ main(int argc, char **argv)
         }
 
         /* In parent. */
-        if((state.fw_out = fdopen(fw_pipe[1], "w")) == NULL)
+        if ((state.fw_out = fdopen(fw_pipe[1], "w")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
         close(fw_pipe[0]);
 
-        if((state.fw_in = fdopen(nat_pipe[0], "r")) == NULL)
+        if ((state.fw_in = fdopen(nat_pipe[0], "r")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
         close(nat_pipe[1]);
 
         /* Ensure that the the grey connections outweigh the blacklisted. */
         state.max_black = (state.max_black >= state.max_cons
-                           ? state.max_cons - 100 : state.max_black);
-        if(state.max_black < 0) {
+                ? state.max_cons - 100
+                : state.max_black);
+        if (state.max_black < 0) {
             i_warning("maximum blacklisted connections is 0");
             state.max_black = 0;
         }
 
-        if(pipe(grey_pipe) == -1)
+        if (pipe(grey_pipe) == -1)
             i_critical("grey pipe: %s", strerror(errno));
 
-        if(pipe(trap_pipe) == -1)
+        if (pipe(trap_pipe) == -1)
             i_critical("trap pipe: %s", strerror(errno));
 
         grey_pid = fork();
-        switch(grey_pid) {
+        switch (grey_pid) {
         case -1:
             i_error("fork greylister: %s", strerror(errno));
 
@@ -504,7 +496,7 @@ main(int argc, char **argv)
             /* In child. */
             signal(SIGPIPE, SIG_IGN);
 
-            if((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
+            if ((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
                 i_critical("fdopen: %s", strerror(errno));
             close(grey_pipe[0]);
 
@@ -517,15 +509,15 @@ main(int argc, char **argv)
 
         greylister = Grey_setup(state.config);
 
-        if((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
+        if ((grey_in = fdopen(grey_pipe[0], "r")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
         close(grey_pipe[1]);
 
-        if((trap_out = fdopen(trap_pipe[1], "w")) == NULL)
+        if ((trap_out = fdopen(trap_pipe[1], "w")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
         close(trap_pipe[0]);
 
-        if((grey_fw = fdopen(grey_fw_pipe[1], "w")) == NULL)
+        if ((grey_fw = fdopen(grey_fw_pipe[1], "w")) == NULL)
             i_critical("fdopen: %s", strerror(errno));
         close(grey_fw_pipe[0]);
 
@@ -541,14 +533,12 @@ jail:
      */
     Config_delete(state.config, "hosts", "sync");
 
-    if((sync_send || sync_recv)
-       && (syncer = Sync_init(state.config)) == NULL)
-    {
+    if ((sync_send || sync_recv)
+        && (syncer = Sync_init(state.config)) == NULL) {
         i_warning("sync disabled by configuration");
         sync_send = 0;
         sync_recv = 0;
-    }
-    else if(syncer && Sync_start(syncer) == -1) {
+    } else if (syncer && Sync_start(syncer) == -1) {
         i_warning("could not start sync engine");
         Sync_stop(&syncer);
         sync_send = 0;
@@ -562,30 +552,29 @@ jail:
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
 
-    if(Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
+    if (Config_get_int(state.config, "chroot", NULL, GREYD_CHROOT)) {
         tzset();
         chroot_dir = Config_get_str(state.config, "chroot_dir", NULL,
-                                    GREYD_CHROOT_DIR);
-        if(chroot(chroot_dir) == -1)
+            GREYD_CHROOT_DIR);
+        if (chroot(chroot_dir) == -1)
             i_critical("cannot chroot to %s", chroot_dir);
     }
 
-    if(main_pw && Config_get_int(state.config, "drop_privs", NULL, 1)
-       && drop_privs(main_pw) == -1)
-    {
+    if (main_pw && Config_get_int(state.config, "drop_privs", NULL, 1)
+        && drop_privs(main_pw) == -1) {
         i_critical("failed to drop privileges: %s", strerror(errno));
     }
 
-    if(listen(main_sock, GREYD_BACKLOG) == -1)
+    if (listen(main_sock, GREYD_BACKLOG) == -1)
         i_critical("listen: %s", strerror(errno));
 
-    if(listen(cfg_sock, GREYD_BACKLOG) == -1)
+    if (listen(cfg_sock, GREYD_BACKLOG) == -1)
         i_critical("listen: %s", strerror(errno));
 
     i_warning("listening for incoming connections");
 
-    if(main_sock6 > 0) {
-        if(listen(main_sock6, GREYD_BACKLOG) == -1)
+    if (main_sock6 > 0) {
+        if (listen(main_sock6, GREYD_BACKLOG) == -1)
             i_critical("listen: %s", strerror(errno));
         i_warning("listening for incoming IPv6 connections");
     }
@@ -595,35 +584,35 @@ jail:
     state.blacklists = Hash_create(NUM_BLACKLISTS, destroy_blacklist);
 
     state.cons = calloc(state.max_cons, sizeof(*state.cons));
-    if(state.cons == NULL)
+    if (state.cons == NULL)
         err(1, "calloc");
 
-    for(i = 0; i < state.max_cons; i++)
+    for (i = 0; i < state.max_cons; i++)
         state.cons[i].fd = -1;
 
-    for(;;) {
+    for (;;) {
         int max_fd, writers, timeout;
-        struct Con *con;
+        struct Con* con;
         int accept_fd;
         socklen_t main_addr_len, main_addr6_len;
 
-        if(state.shutdown)
+        if (state.shutdown)
             break;
 
         max_fd = MAX(main_sock, cfg_sock);
-        if(sync_recv && syncer && syncer->sync_fd)
+        if (sync_recv && syncer && syncer->sync_fd)
             max_fd = MAX(max_fd, syncer->sync_fd);
-        if(main_sock6 > 0)
+        if (main_sock6 > 0)
             max_fd = MAX(max_fd, main_sock6);
         max_fd = MAX(max_fd, trap_fd);
 
         time(&now);
-        for(i = 0; i < state.max_cons; i++) {
-            if(state.cons[i].fd != -1)
+        for (i = 0; i < state.max_cons; i++) {
+            if (state.cons[i].fd != -1)
                 max_fd = MAX(max_fd, state.cons[i].fd);
         }
 
-        if(max_fd > prev_max_fd) {
+        if (max_fd > prev_max_fd) {
             /*
              * We have more fds than the previous iteration, so ensure
              * there is enough space.
@@ -631,25 +620,24 @@ jail:
             free(fds);
             fds = NULL;
             fds = calloc(max_fd + 1, sizeof(*fds));
-            if(fds == NULL)
+            if (fds == NULL)
                 i_critical("calloc: %s", strerror(errno));
 
             prev_max_fd = max_fd;
-        }
-        else {
+        } else {
             memset(fds, 0, (max_fd + 1) * sizeof(*fds));
         }
 
         /* Ensure that all unset fds are ignored by poll. */
-        for(i = 0; i < (max_fd + 1); i++)
+        for (i = 0; i < (max_fd + 1); i++)
             fds[i].fd = -1;
 
         writers = 0;
-        for(i = 0; i < state.max_cons; i++) {
+        for (i = 0; i < state.max_cons; i++) {
             con = &state.cons[i];
 
-            if(con->fd != -1 && con->r) {
-                if(con->r + MAX_TIME <= now) {
+            if (con->fd != -1 && con->r) {
+                if (con->r + MAX_TIME <= now) {
                     Con_close(con, &state);
                     continue;
                 }
@@ -657,13 +645,13 @@ jail:
                 fds[con->fd % max_fd].events = POLLIN;
             }
 
-            if(con->fd != -1 && con->w) {
-                if(con->w + MAX_TIME <= now) {
+            if (con->fd != -1 && con->w) {
+                if (con->w + MAX_TIME <= now) {
                     Con_close(con, &state);
                     continue;
                 }
 
-                if(con->w <= now) {
+                if (con->w <= now) {
                     fds[con->fd % max_fd].fd = con->fd;
                     fds[con->fd % max_fd].events |= POLLOUT;
                 }
@@ -671,32 +659,31 @@ jail:
             }
         }
 
-        if(state.slow_until == 0) {
+        if (state.slow_until == 0) {
             fds[main_sock % max_fd].fd = main_sock;
             fds[main_sock % max_fd].events = POLLIN;
 
-            if(main_sock6 > 0) {
+            if (main_sock6 > 0) {
                 fds[main_sock6 % max_fd].fd = main_sock6;
                 fds[main_sock6 % max_fd].events = POLLIN;
             }
 
             /* Only allow one config connection at a time. */
-            if(cfg_fd == -1) {
+            if (cfg_fd == -1) {
                 fds[cfg_sock % max_fd].fd = cfg_sock;
                 fds[cfg_sock % max_fd].events = POLLIN;
-            }
-            else {
+            } else {
                 fds[cfg_fd % max_fd].fd = cfg_fd;
                 fds[cfg_fd % max_fd].events = POLLIN;
             }
         }
 
-        if(trap_fd > 0) {
+        if (trap_fd > 0) {
             fds[trap_fd % max_fd].fd = trap_fd;
             fds[trap_fd % max_fd].events = POLLIN;
         }
 
-        if(sync_recv && syncer && syncer->sync_fd > 0) {
+        if (sync_recv && syncer && syncer->sync_fd > 0) {
             fds[syncer->sync_fd % max_fd].fd = syncer->sync_fd;
             fds[syncer->sync_fd % max_fd].events = POLLIN;
         }
@@ -705,16 +692,15 @@ jail:
          * If we are not listening, ensure we wake up at least once
          * a second to progress the stuttered writers.
          */
-        if(writers == 0 && state.slow_until == 0) {
+        if (writers == 0 && state.slow_until == 0) {
             /* Just sleep until a connection arrives. */
             timeout = -1;
-        }
-        else {
+        } else {
             timeout = POLL_TIMEOUT;
         }
 
-        if(poll(fds, max_fd + 1, timeout) == -1) {
-            if(errno != EINTR) {
+        if (poll(fds, max_fd + 1, timeout) == -1) {
+            if (errno != EINTR) {
                 i_warning("poll: %s", strerror(errno));
                 goto shutdown;
             }
@@ -722,66 +708,62 @@ jail:
         }
 
         /* Check if we can stop throttling connections. */
-        if(state.slow_until && state.slow_until <= now)
+        if (state.slow_until && state.slow_until <= now)
             state.slow_until = 0;
 
         /* Handle any accepted clients in progress. */
-        for(i = 0; i < state.max_cons; i++) {
+        for (i = 0; i < state.max_cons; i++) {
             con = &state.cons[i];
 
-            if(con->fd != -1 &&
-               (fds[con->fd % max_fd].revents & (POLLERR | POLLHUP)))
-            {
+            if (con->fd != -1 && (fds[con->fd % max_fd].revents & (POLLERR | POLLHUP))) {
                 Con_close(con, &state);
             }
 
-            if(con->fd != -1 && (fds[con->fd % max_fd].revents & POLLIN))
+            if (con->fd != -1 && (fds[con->fd % max_fd].revents & POLLIN))
                 Con_handle_read(con, &now, &state);
 
-            if(con->fd != -1 && (fds[con->fd % max_fd].revents & POLLOUT))
+            if (con->fd != -1 && (fds[con->fd % max_fd].revents & POLLOUT))
                 Con_handle_write(con, &now, &state);
         }
 
         /* Handle the main IPv4 socket. */
-        if(fds[main_sock % max_fd].revents & POLLIN) {
+        if (fds[main_sock % max_fd].revents & POLLIN) {
             memset(&main_in_addr, 0, sizeof(main_in_addr));
             main_addr_len = sizeof(main_in_addr);
             accept_fd = accept(main_sock,
-                               (struct sockaddr *) &main_in_addr,
-                               &main_addr_len);
-            Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr,
-                       &state);
-        }
-        else if(fds[main_sock % max_fd].revents & (POLLERR | POLLHUP)) {
+                (struct sockaddr*)&main_in_addr,
+                &main_addr_len);
+            Con_accept(accept_fd, (struct sockaddr_storage*)&main_in_addr,
+                &state);
+        } else if (fds[main_sock % max_fd].revents & (POLLERR | POLLHUP)) {
             i_warning("main socket poll error");
             goto shutdown;
         }
 
         /* Handle the main IPv6 socket. */
-        if(main_sock6 > 0) {
-            if(fds[main_sock6 % max_fd].revents & POLLIN) {
+        if (main_sock6 > 0) {
+            if (fds[main_sock6 % max_fd].revents & POLLIN) {
                 memset(&main_in_addr6, 0, sizeof(main_in_addr6));
                 main_addr6_len = sizeof(main_in_addr6);
                 accept_fd = accept(main_sock6,
-                                   (struct sockaddr *) &main_in_addr6,
-                                   &main_addr6_len);
-                Con_accept(accept_fd, (struct sockaddr_storage *) &main_in_addr6,
-                           &state);
-            }
-            else if(fds[main_sock6 % max_fd].revents & (POLLERR | POLLHUP)) {
+                    (struct sockaddr*)&main_in_addr6,
+                    &main_addr6_len);
+                Con_accept(accept_fd, (struct sockaddr_storage*)&main_in_addr6,
+                    &state);
+            } else if (fds[main_sock6 % max_fd].revents & (POLLERR | POLLHUP)) {
                 i_warning("main IPv6 socket poll error");
                 goto shutdown;
             }
         }
 
         /* Handle the configuration socket. */
-        if(fds[cfg_sock % max_fd].revents & POLLIN) {
+        if (fds[cfg_sock % max_fd].revents & POLLIN) {
             memset(&main_in_addr, 0, sizeof(main_in_addr));
             main_addr_len = sizeof(main_in_addr);
             cfg_fd = accept(cfg_sock,
-                               (struct sockaddr *) &main_in_addr,
-                            &main_addr_len);
-            if(cfg_fd == -1) {
+                (struct sockaddr*)&main_in_addr,
+                &main_addr_len);
+            if (cfg_fd == -1) {
                 switch (errno) {
                 case EINTR:
                 case ECONNABORTED:
@@ -795,18 +777,15 @@ jail:
                 default:
                     i_error("accept: %s", strerror(errno));
                 }
-            }
-            else if(ntohs(main_in_addr.sin_port) >= IPPORT_RESERVED) {
+            } else if (ntohs(main_in_addr.sin_port) >= IPPORT_RESERVED) {
                 close(cfg_fd);
                 cfg_fd = -1;
                 state.slow_until = 0;
             }
-        }
-        else if(fds[cfg_sock % max_fd].revents & (POLLERR | POLLHUP)) {
+        } else if (fds[cfg_sock % max_fd].revents & (POLLERR | POLLHUP)) {
             i_warning("config socket poll error");
             goto shutdown;
-        }
-        else if(cfg_fd > 0 && fds[cfg_fd % max_fd].revents & POLLIN) {
+        } else if (cfg_fd > 0 && fds[cfg_fd % max_fd].revents & POLLIN) {
             Greyd_process_config(cfg_fd, &state);
             close(cfg_fd);
             cfg_fd = -1;
@@ -814,23 +793,21 @@ jail:
         }
 
         /* Handle the trap pipe input. */
-        if(trap_fd > 0) {
-            if(fds[trap_fd % max_fd].revents & POLLIN) {
+        if (trap_fd > 0) {
+            if (fds[trap_fd % max_fd].revents & POLLIN) {
                 Greyd_process_config(trap_fd, &state);
-            }
-            else if(fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP)) {
-                if(fds[trap_fd % max_fd].revents & POLLERR)
+            } else if (fds[trap_fd % max_fd].revents & (POLLERR | POLLHUP)) {
+                if (fds[trap_fd % max_fd].revents & POLLERR)
                     i_warning("trap pipe poll error");
                 goto shutdown;
             }
         }
 
         /* Finally process any sync messages. */
-        if(sync_recv && syncer) {
-            if(fds[syncer->sync_fd % max_fd].revents & POLLIN) {
+        if (sync_recv && syncer) {
+            if (fds[syncer->sync_fd % max_fd].revents & POLLIN) {
                 Sync_recv(syncer, state.grey_out);
-            }
-            else if(fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP)) {
+            } else if (fds[syncer->sync_fd % max_fd].revents & (POLLERR | POLLHUP)) {
                 i_warning("syncer poll error");
                 goto shutdown;
             }
@@ -840,18 +817,18 @@ jail:
 shutdown:
     i_debug("stopping main process");
 
-    for(i = 0; i < state.max_cons; i++) {
-        if(state.cons[i].fd != -1)
+    for (i = 0; i < state.max_cons; i++) {
+        if (state.cons[i].fd != -1)
             Con_close(&state.cons[i], &state);
 
-        if(state.cons[i].blacklists != NULL)
+        if (state.cons[i].blacklists != NULL)
             List_destroy(&state.cons[i].blacklists);
     }
 
-    if(syncer)
+    if (syncer)
         Sync_stop(&syncer);
 
-    if(state.fw_pid != -1)
+    if (state.fw_pid != -1)
         kill(state.fw_pid, SIGTERM);
 
     close_pidfile(pidfile, chroot_dir);

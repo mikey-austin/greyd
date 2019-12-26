@@ -24,13 +24,12 @@
 #include "test.h"
 #include <lexer_source.h>
 
-#include <string.h>
-#include <stdlib.h>
-#include <zlib.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <zlib.h>
 
-int
-main(void)
+int main(void)
 {
     char *test_file, *src = "limit = 10";
     Lexer_source_T cs;

@@ -26,13 +26,12 @@
 
 #include <string.h>
 
-int
-main(void)
+int main(void)
 {
     Config_value_T v1, v2, v3, val;
     Config_value_T c1, c2, c3;
-    const char *str1 = "hello world";
-    struct List_entry *entry;
+    const char* str1 = "hello world";
+    struct List_entry* entry;
 
     TEST_START(13);
 
@@ -54,7 +53,7 @@ main(void)
     TEST_OK((c2 != v2 && c2->type == CONFIG_VAL_TYPE_STR), "str clone type value");
     TEST_OK((cv_int(c1) == 100), "int clone data ok");
     TEST_OK((v2->v.s != c2->v.s && strcmp(cv_str(c2), str1) == 0),
-            "str clone data ok");
+        "str clone data ok");
 
     /*
      * Create a value of list type, and add v1 & v2.
@@ -62,17 +61,17 @@ main(void)
     v3 = Config_value_create(CONFIG_VAL_TYPE_LIST);
     TEST_OK((v3->type = CONFIG_VAL_TYPE_LIST), "Can create list config value");
 
-    List_insert_after(v3->v.l, (void *) v1);
-    List_insert_after(v3->v.l, (void *) v2);
+    List_insert_after(v3->v.l, (void*)v1);
+    List_insert_after(v3->v.l, (void*)v2);
     TEST_OK((List_size(v3->v.l) == 2), "Config variables added onto list correctly");
 
     c3 = Config_value_clone(v3);
-    TEST_OK(c3 != v3 && c3->v.l != v3->v.l &&
-            (List_size(v3->v.l) == 2), "List cloned correctly");
+    TEST_OK(c3 != v3 && c3->v.l != v3->v.l && (List_size(v3->v.l) == 2), "List cloned correctly");
 
-    LIST_EACH(v3->v.l, entry) {
+    LIST_EACH(v3->v.l, entry)
+    {
         val = List_entry_value(entry);
-        switch(val->type) {
+        switch (val->type) {
         case CONFIG_VAL_TYPE_INT:
             TEST_OK((cv_int(val) == 100), "int list clone data ok");
             break;

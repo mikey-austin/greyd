@@ -22,21 +22,21 @@
  */
 
 #include "failures.h"
-#include "log.h"
 #include "constants.h"
+#include "log.h"
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #define RETURN_CRIT 1
-#define RETURN_ERR  2
+#define RETURN_ERR 2
 
 extern void
-i_critical(const char *msg, ...)
+i_critical(const char* msg, ...)
 {
     va_list args;
 
@@ -48,7 +48,7 @@ i_critical(const char *msg, ...)
 }
 
 extern void
-i_error(const char *msg, ...)
+i_error(const char* msg, ...)
 {
     va_list args;
 
@@ -60,7 +60,7 @@ i_error(const char *msg, ...)
 }
 
 extern void
-i_warning(const char *msg, ...)
+i_warning(const char* msg, ...)
 {
     va_list args;
 
@@ -70,7 +70,7 @@ i_warning(const char *msg, ...)
 }
 
 extern void
-i_info(const char *msg, ...)
+i_info(const char* msg, ...)
 {
     va_list args;
 
@@ -80,7 +80,7 @@ i_info(const char *msg, ...)
 }
 
 extern void
-i_debug(const char *msg, ...)
+i_debug(const char* msg, ...)
 {
     va_list args;
 

@@ -27,20 +27,20 @@
 #define TRIE_RADIX 2
 
 struct Trie {
-    unsigned char *key;
+    unsigned char* key;
     int klen;
     int branch;
-    struct Trie *kids[TRIE_RADIX];
-    int (*cmp)(const void *, int, const void *, int);
+    struct Trie* kids[TRIE_RADIX];
+    int (*cmp)(const void*, int, const void*, int);
 };
 
-extern struct Trie *Trie_create(const unsigned char *key, int klen,
-             int (*cmp)(const void *, int, const void *, int));
+extern struct Trie* Trie_create(const unsigned char* key, int klen,
+    int (*cmp)(const void*, int, const void*, int));
 
-extern struct Trie *Trie_insert(struct Trie *trie, const unsigned char *key, int klen);
+extern struct Trie* Trie_insert(struct Trie* trie, const unsigned char* key, int klen);
 
-extern int Trie_contains(struct Trie *trie, const unsigned char *key, int klen);
+extern int Trie_contains(struct Trie* trie, const unsigned char* key, int klen);
 
-extern void Trie_destroy(struct Trie *trie);
+extern void Trie_destroy(struct Trie* trie);
 
 #endif

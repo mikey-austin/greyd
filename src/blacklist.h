@@ -43,8 +43,8 @@
 struct Blacklist_entry {
     struct IP_addr address;
     struct IP_addr mask;
-    int8_t         black;
-    int8_t         white;
+    int8_t black;
+    int8_t white;
 };
 
 struct Blacklist_trie_entry {
@@ -56,39 +56,38 @@ struct Blacklist_trie_entry {
 /**
  * The main blacklist structure.
  */
-typedef struct Blacklist_T *Blacklist_T;
+typedef struct Blacklist_T* Blacklist_T;
 struct Blacklist_T {
-    char   *name;
-    char   *message;
-    size_t  size;
-    size_t  count;
-    int     type;
-    struct Trie *trie;
-    struct Blacklist_entry *entries;
-
+    char* name;
+    char* message;
+    size_t size;
+    size_t count;
+    int type;
+    struct Trie* trie;
+    struct Blacklist_entry* entries;
 };
 
 /**
  * Create an empty blacklist.
  */
-extern Blacklist_T Blacklist_create(const char *name, const char *message, int flags);
+extern Blacklist_T Blacklist_create(const char* name, const char* message, int flags);
 
 /**
  * Destroy a blacklist and cleanup.
  */
-extern void Blacklist_destroy(Blacklist_T *list);
+extern void Blacklist_destroy(Blacklist_T* list);
 
 /**
  * Return 1 if the source address is in the list, otherwise return 0.
  */
-extern int Blacklist_match(Blacklist_T list, struct IP_addr *source,
-                           sa_family_t af);
+extern int Blacklist_match(Blacklist_T list, struct IP_addr* source,
+    sa_family_t af);
 
 /**
  * Add a single IPv4/IPv6 formatted address to the specified blacklist's
  * list of entries.
  */
-extern int Blacklist_add(Blacklist_T list, const char *address);
+extern int Blacklist_add(Blacklist_T list, const char* address);
 
 /**
  * Add a range of addresses to the blacklist of the specified type. A
@@ -96,7 +95,7 @@ extern int Blacklist_add(Blacklist_T list, const char *address);
  * start and end addresses.
  */
 extern void Blacklist_add_range(Blacklist_T list, u_int32_t start,
-                                u_int32_t end, int type);
+    u_int32_t end, int type);
 
 /**
  * "Collapse" a blacklist's entries by removing overlapping regions as well
