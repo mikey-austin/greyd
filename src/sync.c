@@ -555,7 +555,6 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
     u_int16_t sglen, fromlen, tolen, helolen, padlen;
     char pad[SYNC_ALIGNBYTES];
     int i = 0;
-    HMAC_CTX ctx;
     u_int hmac_len;
 
     i_debug("sync grey update helo %s ip %s from %s to %s",
@@ -569,9 +568,9 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
     tolen = strlen(gt->to) + 1;
     helolen = strlen(gt->helo) + 1;
 
-    HMAC_CTX_init(&ctx);
-    HMAC_Init(&ctx, engine->sync_key, sizeof(engine->sync_key),
-              EVP_sha1());
+    HMAC_CTX *ctx = HMAC_CTX_new();
+    HMAC_Init_ex(ctx, engine->sync_key, sizeof(engine->sync_key),
+                 EVP_sha1(), NULL);
 
     sglen = sizeof(sg) + fromlen + tolen + helolen;
     padlen = SYNC_ALIGN(sglen) - sglen;
@@ -583,7 +582,7 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
     hdr.sh_length = htons(sizeof(hdr) + sglen + padlen + sizeof(end));
     iov[i].iov_base = &hdr;
     iov[i].iov_len = sizeof(hdr);
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     /* Add single SPAM sync greylisting entry */
@@ -596,27 +595,27 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
     sg.sg_helo_length = htons(helolen);
     iov[i].iov_base = &sg;
     iov[i].iov_len = sizeof(sg);
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     iov[i].iov_base = gt->from;
     iov[i].iov_len = fromlen;
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     iov[i].iov_base = gt->to;
     iov[i].iov_len = tolen;
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     iov[i].iov_base = gt->helo;
     iov[i].iov_len = helolen;
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     iov[i].iov_base = pad;
     iov[i].iov_len = padlen;
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     /* Add end marker */
@@ -624,14 +623,14 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple *gt, time_t now)
     end.st_length = htons(sizeof(end));
     iov[i].iov_base = &end;
     iov[i].iov_len = sizeof(end);
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
-    HMAC_Final(&ctx, hdr.sh_hmac, &hmac_len);
+    HMAC_Final(ctx, hdr.sh_hmac, &hmac_len);
 
     /* Send message to the target hosts. */
     send_sync_message(engine, iov, i);
-    HMAC_CTX_cleanup(&ctx);
+    HMAC_CTX_free(ctx);
 }
 
 extern void
@@ -654,7 +653,6 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     struct Sync_tlv_addr sd;
     struct Sync_tlv_hdr end;
     int i = 0;
-    HMAC_CTX ctx;
     u_int hmac_len;
     char *type_name = "";
 
@@ -680,8 +678,8 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     memset(&hdr, 0, sizeof(hdr));
     memset(&sd, 0, sizeof(sd));
 
-    HMAC_CTX_init(&ctx);
-    HMAC_Init(&ctx, engine->sync_key, sizeof(engine->sync_key), EVP_sha1());
+    HMAC_CTX *ctx = HMAC_CTX_new();
+    HMAC_Init_ex(ctx, engine->sync_key, sizeof(engine->sync_key), EVP_sha1(), NULL);
 
     /* Add SPAM sync packet header. */
     hdr.sh_version = SYNC_VERSION;
@@ -690,7 +688,7 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     hdr.sh_length = htons(sizeof(hdr) + sizeof(sd) + sizeof(end));
     iov[i].iov_base = &hdr;
     iov[i].iov_len = sizeof(hdr);
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     /* Add single SPAM sync address entry */
@@ -701,7 +699,7 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     sd.sd_ip = inet_addr(ip);
     iov[i].iov_base = &sd;
     iov[i].iov_len = sizeof(sd);
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
     /* Add end marker */
@@ -709,14 +707,14 @@ send_address(Sync_engine_T engine, char *ip, time_t now, time_t expire, u_int16_
     end.st_length = htons(sizeof(end));
     iov[i].iov_base = &end;
     iov[i].iov_len = sizeof(end);
-    HMAC_Update(&ctx, iov[i].iov_base, iov[i].iov_len);
+    HMAC_Update(ctx, iov[i].iov_base, iov[i].iov_len);
     i++;
 
-    HMAC_Final(&ctx, hdr.sh_hmac, &hmac_len);
+    HMAC_Final(ctx, hdr.sh_hmac, &hmac_len);
 
     /* Send message to the target hosts. */
     send_sync_message(engine, iov, i);
-    HMAC_CTX_cleanup(&ctx);
+    HMAC_CTX_free(ctx);
 }
 
 static void

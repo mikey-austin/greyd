@@ -1,6 +1,6 @@
 # Run tests through valgrind if it exists.
 VALGRIND="@VALGRIND@"
-if [ -x $VALGRIND ]; then
+if [ "x$VALGRIND" != "x" ]; then
     $VALGRIND -q --trace-children=yes --track-origins=yes --leak-check=full --error-exitcode=1 --tool=memcheck $@
 else
     $@
