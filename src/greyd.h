@@ -25,6 +25,7 @@
 #define GREYD_DEFINED
 
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "firewall.h"
@@ -53,6 +54,8 @@ struct Greyd_state {
     FILE* fw_in;
 
     Hash_T blacklists;
+
+    bool proxy_protocol_enabled;
 };
 
 /**

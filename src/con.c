@@ -140,7 +140,9 @@ Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
     con->out_remaining = 0;
     con->in_p = con->in_buf;
     con->in_remaining = 0;
-    con->state = CON_STATE_BANNER_IN;
+    con->state = state->proxy_protocol_enabled
+        ? CON_STATE_PROXY_IN
+        : CON_STATE_BANNER_IN;
 
     time(&now);
     Con_next_state(con, &now, state);
@@ -375,12 +377,25 @@ Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
 
     switch (con->state) {
     case CON_STATE_PROXY_IN:
-        // TODO: implement proxy protocol
+        con->in_p = con->in_buf;
+        con->in_remaining = sizeof(con->in_buf) - 1;
+        con->last_state = con->state;
+        con->state = CON_STATE_PROXY_OUT;
+        con->r = *now;
         break;
 
     case CON_STATE_PROXY_OUT:
-        // TODO: implement proxy protocol
-        break;
+        if (match(con->in_buf, "PROXY")) {
+            /*
+             * TODO: parse proxy protocol v1 string from:
+             *
+             *  http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+             *
+             *  PROXY {TCP4|TCP6|UNKNOWN} <client-ip-addr> <dest-ip-addr> <client-port> <dest-port><CR><LF>
+             */
+            break;
+        }
+        goto done;
 
     case CON_STATE_BANNER_IN:
         if ((human_time = strdup(ctime(now))) == NULL)
@@ -792,11 +807,11 @@ Con_get_orig_dst(struct Con* con, struct Greyd_state* state)
     unsigned short src_port, proxy_port;
     int read_fd;
 
-    if (Config_get_int(state->config, "proxy_protocol_enable", NULL, PROXY_PROTOCOL_ENABLED)) {
+    if (state->proxy_protocol_enabled) {
         /*
-         * We use the configured source and destination addresses specified by the proxy
-         * protocol. There is no need to lookup the original destination via the NAT table
-         * when running with this configuration.
+         * When the proxy protocol is enabled we obtain the destination
+         * address from the obtained proxy info line, so don't bother poking
+         * into the NAT table here.
          */
         return;
     }

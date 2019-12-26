@@ -46,6 +46,7 @@
 #include <poll.h>
 #include <pwd.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -306,6 +307,11 @@ int main(int argc, char** argv)
     state.max_cons = (i > state.max_files ? state.max_files : i);
     i = Config_get_int(config, "max_cons_black", NULL, CON_DEFAULT_MAX);
     state.max_black = (i > state.max_files ? state.max_files : i);
+
+    if (Config_get_int(config, "proxy_protocol_enable", NULL, PROXY_PROTOCOL_ENABLED)) {
+        i_info("proxy protocol enabled");
+        state.proxy_protocol_enabled = true;
+    }
 
     if (sync_send == 0
         && (hosts = Config_get_list(state.config, "hosts", "sync"))) {
