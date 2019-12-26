@@ -81,6 +81,7 @@ usage(void)
 static void
 shutdown_greyd(int sig)
 {
+    i_info("shutting down greyd");
     if (Greyd_state)
         Greyd_state->shutdown = 1;
 }
@@ -91,13 +92,16 @@ max_files(void)
     int max_files = CON_DEFAULT_MAX;
 
 #ifdef __linux
+    int proc_max_files = max_files;
     FILE* file_max = fopen("/proc/sys/fs/file-max", "r");
-    if (file_max == NULL || fscanf(file_max, "%d", &max_files) == EOF) {
+    if (file_max == NULL || fscanf(file_max, "%d", &proc_max_files) == EOF) {
         if (file_max)
             fclose(file_max);
-        return max_files;
+        max_files = proc_max_files;
     }
-    fclose(file_max);
+
+    if (file_max)
+        fclose(file_max);
 #endif
 
     if ((max_files - MAX_FILES_THRESHOLD) < 10)
@@ -590,6 +594,7 @@ jail:
     for (i = 0; i < state.max_cons; i++)
         state.cons[i].fd = -1;
 
+    /* Main event loop. */
     for (;;) {
         int max_fd, writers, timeout;
         struct Con* con;

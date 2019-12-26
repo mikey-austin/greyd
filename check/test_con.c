@@ -123,8 +123,8 @@ int main(void)
     memset(&con, 0, sizeof(con));
     Con_init(&con, 0, &src, &gs);
 
-    TEST_OK(con.state == 0, "init state ok");
-    TEST_OK(con.last_state == 0, "last state ok");
+    TEST_OK(con.state == CON_STATE_BANNER_OUT, "init state ok");
+    TEST_OK(con.last_state == CON_STATE_BANNER_IN, "last state ok");
     TEST_OK(List_size(con.blacklists) == 2, "blacklist matches ok");
     TEST_OK(!strcmp(con.src_addr, "10.10.10.1"), "src addr ok");
     TEST_OK(con.out_buf != NULL, "out buf ok");
@@ -159,8 +159,8 @@ int main(void)
 
     Con_init(&con, 0, &src, &gs);
 
-    TEST_OK(con.state == 0, "init state ok");
-    TEST_OK(con.last_state == 0, "last state ok");
+    TEST_OK(con.state == CON_STATE_BANNER_OUT, "init state ok");
+    TEST_OK(con.last_state == CON_STATE_BANNER_IN, "last state ok");
     TEST_OK(List_size(con.blacklists) == 2, "blacklist matches ok");
     TEST_OK(!strcmp(con.src_addr, "2001::fad3:1"), "src addr ok");
     TEST_OK(con.out_buf != NULL, "out buf ok");

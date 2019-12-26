@@ -46,7 +46,10 @@
 /**
  * State machine connection states.
  */
-#define CON_STATE_BANNER_SENT 0
+#define CON_STATE_PROXY_IN -3
+#define CON_STATE_PROXY_OUT -2
+#define CON_STATE_BANNER_IN -1
+#define CON_STATE_BANNER_OUT 0
 #define CON_STATE_HELO_IN 1
 #define CON_STATE_HELO_OUT 2
 #define CON_STATE_MAIL_IN 3

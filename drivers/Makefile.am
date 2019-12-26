@@ -1,8 +1,15 @@
 AM_CPPFLAGS = -DPFCTL_PATH='"$(PFCTL)"'
 
-EXTRA_LTLIBRARIES = greyd_bdb.la greyd_sqlite.la greyd_bdb_sql.la greyd_netfilter.la greyd_pf.la greyd_npf.la greyd_mysql.la greyd_postgresql.la
+EXTRA_LTLIBRARIES = greyd_bdb.la \
+                    greyd_sqlite.la \
+                    greyd_bdb_sql.la \
+                    greyd_netfilter.la \
+                    greyd_pf.la \
+                    greyd_npf.la \
+                    greyd_mysql.la \
+                    greyd_postgresql.la \
+                    greyd_fw_dummy.la
 pkglib_LTLIBRARIES = $(optional_drivers)
-noinst_LTLIBRARIES = greyd_fw_dummy.la
 
 greyd_fw_dummy_la_SOURCES = fw_dummy.c
 greyd_fw_dummy_la_LDFLAGS = -module -avoid-version -rpath '$(libdir)'

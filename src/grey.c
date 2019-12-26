@@ -894,6 +894,7 @@ drop_grey_privs(Greylister_T greylister, struct passwd* user)
 static void
 shutdown_greyd(int sig)
 {
+    i_info("shutting down greylister process");
     if (Grey_greylister) {
         Grey_greylister->shutdown = 1;
     }

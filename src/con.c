@@ -67,8 +67,6 @@ Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
     List_T bl_names;
     struct IP_addr ipaddr;
 
-    time(&now);
-
     /* Free resources before zeroing out this entry. */
     if (con->out_buf != NULL) {
         free(con->out_buf);
@@ -105,26 +103,6 @@ Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
     if (ret != 0)
         i_critical("getnameinfo: %s", gai_strerror(ret));
 
-    if ((human_time = strdup(ctime(&now))) == NULL)
-        i_critical("strdup failed");
-
-    /* Replace the newline with a \0. */
-    human_time[strlen(human_time) - 1] = '\0';
-    snprintf(con->out_buf, con->out_size, "220 %s ESMTP %s; %s\r\n",
-        Config_get_str(state->config, "hostname", NULL, NULL),
-        Config_get_str(state->config, "banner", NULL, GREYD_BANNER),
-        human_time);
-    free(human_time);
-
-    con->out_p = con->out_buf;
-    con->out_remaining = strlen(con->out_p);
-
-    con->in_p = con->in_buf;
-    con->in_remaining = 0;
-
-    /* Set the stuttering time values. */
-    con->w = now + con->stutter;
-    con->s = now;
     sstrncpy(con->r_end_chars, "\n", CON_REMOTE_END_SIZE);
 
     /* Lookup any blacklists based on this client's src IP address. */
@@ -156,6 +134,16 @@ Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
     } else {
         con->lists = NULL;
     }
+
+    /* Initialize state machine. */
+    con->out_p = con->out_buf;
+    con->out_remaining = 0;
+    con->in_p = con->in_buf;
+    con->in_remaining = 0;
+    con->state = CON_STATE_BANNER_IN;
+
+    time(&now);
+    Con_next_state(con, &now, state);
 }
 
 extern void
@@ -354,7 +342,7 @@ handled:
 extern void
 Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
 {
-    char *p, *q;
+    char *p, *q, *human_time;
     char email_addr[GREY_MAX_MAIL];
     char* hostname = Config_get_str(state->config, "hostname", NULL, NULL);
     char* error_code = Config_get_str(state->config, "error_code", NULL, CON_ERROR_CODE);
@@ -386,7 +374,35 @@ Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
     }
 
     switch (con->state) {
-    case CON_STATE_BANNER_SENT:
+    case CON_STATE_PROXY_IN:
+        // TODO: implement proxy protocol
+        break;
+
+    case CON_STATE_PROXY_OUT:
+        // TODO: implement proxy protocol
+        break;
+
+    case CON_STATE_BANNER_IN:
+        if ((human_time = strdup(ctime(now))) == NULL)
+            i_critical("strdup failed");
+
+        /* Replace the newline with a \0. */
+        human_time[strlen(human_time) - 1] = '\0';
+        snprintf(con->out_buf, con->out_size, "220 %s ESMTP %s; %s\r\n",
+            Config_get_str(state->config, "hostname", NULL, NULL),
+            Config_get_str(state->config, "banner", NULL, GREYD_BANNER),
+            human_time);
+        free(human_time);
+
+        con->out_p = con->out_buf;
+        con->out_remaining = strlen(con->out_p);
+        con->w = *now + con->stutter;
+        con->s = *now;
+        con->last_state = con->state;
+        con->state = CON_STATE_BANNER_OUT;
+        break;
+
+    case CON_STATE_BANNER_OUT:
         con->in_p = con->in_buf;
         con->in_remaining = sizeof(con->in_buf) - 1;
         con->last_state = con->state;
@@ -400,7 +416,7 @@ Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
             con->helo[0] = '\0';
             get_helo(con->helo, sizeof(con->helo), con->in_buf);
             if (*con->helo == '\0') {
-                next_state = CON_STATE_BANNER_SENT;
+                next_state = CON_STATE_BANNER_OUT;
                 snprintf(con->out_buf, con->out_size,
                     "501 Syntax: %s hostname\r\n",
                     match(con->in_buf, "HELO") ? "HELO" : "EHLO");
@@ -775,6 +791,15 @@ Con_get_orig_dst(struct Con* con, struct Greyd_state* state)
     struct pollfd fd;
     unsigned short src_port, proxy_port;
     int read_fd;
+
+    if (Config_get_int(state->config, "proxy_protocol_enable", NULL, PROXY_PROTOCOL_ENABLED)) {
+        /*
+         * We use the configured source and destination addresses specified by the proxy
+         * protocol. There is no need to lookup the original destination via the NAT table
+         * when running with this configuration.
+         */
+        return;
+    }
 
     if (getsockname(con->fd, (struct sockaddr*)&ss_proxy, &proxy_len) == -1)
         return;
