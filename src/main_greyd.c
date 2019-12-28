@@ -308,11 +308,6 @@ int main(int argc, char** argv)
     i = Config_get_int(config, "max_cons_black", NULL, CON_DEFAULT_MAX);
     state.max_black = (i > state.max_files ? state.max_files : i);
 
-    if (Config_get_int(config, "proxy_protocol_enable", NULL, PROXY_PROTOCOL_ENABLED)) {
-        i_info("proxy protocol enabled");
-        state.proxy_protocol_enabled = true;
-    }
-
     if (sync_send == 0
         && (hosts = Config_get_list(state.config, "hosts", "sync"))) {
         sync_send += List_size(hosts);
@@ -324,6 +319,11 @@ int main(int argc, char** argv)
     }
 
     Log_setup(state.config, PROG_NAME);
+
+    if (Config_get_int(config, "proxy_protocol_enable", NULL, PROXY_PROTOCOL_ENABLED)) {
+        i_info("proxy protocol enabled");
+        state.proxy_protocol_enabled = true;
+    }
 
     if (!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
         state.max_black = state.max_cons;

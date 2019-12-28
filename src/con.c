@@ -49,10 +49,15 @@
 
 #define DNAT_LOOKUP_TIMEOUT 1000 /* In ms. */
 
+#define PROXY_OK 0
+#define PROXY_UNKNOWN 1
+#define PROXY_ERROR 2
+
 static int match(const char*, const char*);
 static void get_helo(char*, size_t, char*);
 static void set_log(char*, size_t, char*);
 static void destroy_blacklist(void*);
+static int parse_proxy_protocol_header(char*, size_t, char*, size_t, char*);
 
 extern void
 Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
@@ -145,6 +150,7 @@ Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
         : CON_STATE_BANNER_IN;
 
     time(&now);
+    con->s = now;
     Con_next_state(con, &now, state);
 }
 
@@ -386,18 +392,27 @@ Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
 
     case CON_STATE_PROXY_OUT:
         if (match(con->in_buf, "PROXY")) {
-            /*
-             * TODO: parse proxy protocol v1 string from:
-             *
-             *  http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
-             *
-             *  PROXY {TCP4|TCP6|UNKNOWN} <client-ip-addr> <dest-ip-addr> <client-port> <dest-port><CR><LF>
-             */
-            break;
+            /* TODO: restrict parsing to a trusted pre-configured set of ip addresses */
+            int ret = parse_proxy_protocol_header(
+                con->src_addr, sizeof(con->src_addr), con->dst_addr,
+                sizeof(con->dst_addr), con->in_buf);
+            switch (ret) {
+            case PROXY_OK:
+                goto start;
+
+            case PROXY_UNKNOWN:
+                i_debug("UNKNOWN proxy protocol header encountered; refusing to continue");
+                goto done;
+
+            default:
+                i_warning("invalid proxy protocol header; error code -> %d", ret);
+                goto done;
+            }
         }
         goto done;
 
     case CON_STATE_BANNER_IN:
+    start:
         if ((human_time = strdup(ctime(now))) == NULL)
             i_critical("strdup failed");
 
@@ -412,7 +427,6 @@ Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
         con->out_p = con->out_buf;
         con->out_remaining = strlen(con->out_p);
         con->w = *now + con->stutter;
-        con->s = *now;
         con->last_state = con->state;
         con->state = CON_STATE_BANNER_OUT;
         break;
@@ -986,4 +1000,52 @@ destroy_blacklist(void* value)
     if (bl) {
         Blacklist_destroy(&bl);
     }
+}
+
+static int
+parse_proxy_protocol_header(char* src, size_t srclen, char* dst, size_t dstlen, char* v1_orig_header)
+{
+    char header[strlen(v1_orig_header) + 1], *token = NULL;
+    int af = AF_INET, ret = 0;
+    struct sockaddr_storage sa;
+
+    strcpy(header, v1_orig_header);
+    strtok(header, " ");
+    token = strtok(NULL, " ");
+
+    /* Parse the protocol family. */
+    if (token && strcmp(token, "UNKNOWN") == 0) {
+        return PROXY_UNKNOWN;
+    } else if (token && strcmp(token, "TCP4") == 0) {
+        af = AF_INET;
+    } else if (token && strcmp(token, "TCP6") == 0) {
+        af = AF_INET6;
+    } else {
+        i_debug("unknown protocol family; %s", token ? token : "<null>");
+        return PROXY_ERROR;
+    }
+
+    /* Parse the source address. */
+    if ((token = strtok(NULL, " ")) == NULL)
+        return PROXY_ERROR;
+
+    ret = inet_pton(af, token, &sa);
+    if (ret != 1) {
+        i_debug("invalid proxy src addr chars %d", token);
+        return PROXY_ERROR;
+    }
+    inet_ntop(af, &sa, src, srclen);
+
+    /* Parse the destination address. */
+    if ((token = strtok(NULL, " ")) == NULL)
+        return PROXY_ERROR;
+
+    ret = inet_pton(af, token, &sa);
+    if (ret != 1) {
+        i_debug("invalid proxy dst addr chars %d", token);
+        return PROXY_ERROR;
+    }
+    inet_ntop(af, &sa, dst, dstlen);
+
+    return PROXY_OK;
 }
