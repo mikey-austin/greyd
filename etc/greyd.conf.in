@@ -20,6 +20,20 @@ user = "greyd"
 bind_address = "127.0.0.1"
 
 #
+# Proxy protocol configuration. Enabling this configuration allows greyd to sit behind
+# a TCP load balancer that speaks the proxy protocol v1 as defined in:
+#
+#   http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+#
+# proxy_protocol_enable = 0
+
+#
+# The upstream proxies must be explicitly configured. Without this any client would
+# be able to spoof their addresses.
+#
+# proxy_protocol_permitted_proxies = [ "127.0.0.0/24", "1.2.3.4", "::1/128" ]
+
+#
 # Main greyd port.
 #
 port = 8025
@@ -62,6 +76,9 @@ error_code = "450"
 #
 chroot     = 1
 chroot_dir = "/var/empty/greyd"
+
+# Whether or not to drop privileges.
+# drop_privs = 1
 
 #
 # Pidfile locations for greyd & greylogd daemons. If

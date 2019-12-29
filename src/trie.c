@@ -132,7 +132,7 @@ Trie_contains(struct Trie* trie, const unsigned char* key, int klen)
         }
     }
 
-    return t && !trie->cmp(t->key, t->klen, key, klen);
+    return t && t->key && !trie->cmp(t->key, t->klen, key, klen);
 }
 
 static int

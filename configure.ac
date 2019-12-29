@@ -58,7 +58,7 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h str
 
 # Optional drivers to build.
 optional_drivers=greyd_fw_dummy.la
-optional_ldadd=
+optional_ldadd="-dlopen ../drivers/greyd_fw_dummy.la"
 AC_SUBST([optional_drivers])
 AC_SUBST([optional_ldadd])
 

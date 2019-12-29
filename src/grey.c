@@ -656,9 +656,9 @@ process_grey(Greylister_T greylister, struct Grey_tuple* gt, int sync,
             && ((greylister->startup + 60) < now)) {
             /*
              * We haven't seen a greylist entry for this tuple,
-			 * and yet the connection was to a low priority MX
-			 * which we know can't be hit first if the client
-			 * is adhering to the RFC's.
+             * and yet the connection was to a low priority MX
+             * which we know can't be hit first if the client
+             * is adhering to the RFC's.
              */
             spamtrap = 1;
             expire = greylister->trap_exp;
@@ -894,7 +894,6 @@ drop_grey_privs(Greylister_T greylister, struct passwd* user)
 static void
 shutdown_greyd(int sig)
 {
-    i_info("shutting down greylister process");
     if (Grey_greylister) {
         Grey_greylister->shutdown = 1;
     }

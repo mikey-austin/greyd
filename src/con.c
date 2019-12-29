@@ -27,10 +27,12 @@
 
 #include <sys/socket.h>
 
+#include <arpa/inet.h>
 #include <err.h>
 #include <errno.h>
 #include <netdb.h>
 #include <poll.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -58,6 +60,7 @@ static void get_helo(char*, size_t, char*);
 static void set_log(char*, size_t, char*);
 static void destroy_blacklist(void*);
 static int parse_proxy_protocol_header(char*, size_t, char*, size_t, char*);
+static bool allow_proxy(struct Con*, struct Greyd_state*);
 
 extern void
 Con_init(struct Con* con, int fd, struct sockaddr_storage* src,
@@ -391,8 +394,7 @@ Con_next_state(struct Con* con, time_t* now, struct Greyd_state* state)
         break;
 
     case CON_STATE_PROXY_OUT:
-        if (match(con->in_buf, "PROXY")) {
-            /* TODO: restrict parsing to a trusted pre-configured set of ip addresses */
+        if (match(con->in_buf, "PROXY") && allow_proxy(con, state)) {
             int ret = parse_proxy_protocol_header(
                 con->src_addr, sizeof(con->src_addr), con->dst_addr,
                 sizeof(con->dst_addr), con->in_buf);
@@ -1048,4 +1050,21 @@ parse_proxy_protocol_header(char* src, size_t srclen, char* dst, size_t dstlen, 
     inet_ntop(af, &sa, dst, dstlen);
 
     return PROXY_OK;
+}
+
+static bool
+allow_proxy(struct Con* con, struct Greyd_state* state)
+{
+    int af;
+    bool allow = false;
+    struct IP_addr proxy;
+
+    af = IP_sockaddr_to_addr(&con->src, &proxy);
+    if (Blacklist_match(state->proxy_protocol_permitted_proxies, &proxy, af)) {
+        allow = true;
+    } else {
+        i_warning("rejecting unknown proxy -> %s", con->src_addr);
+    }
+
+    return allow;
 }

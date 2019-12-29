@@ -57,6 +57,16 @@ The following options may be specified outside of a section. A *boolean* value i
 * **daemonize** = *boolean*:
   Detach from the controlling terminal. Defaults to *1*.
 
+* **proxy_protocol_enable** = *boolean*:
+  Proxy protocol configuration. Enabling this configuration allows greyd to sit behind a TCP load balancer that speaks the proxy protocol v1 as defined in the [protocol spec](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt).
+  Defaults to *false*. Note that if this is enabled *all* client connections will need to specify the proxy protocol header first, ie there is no mixing of proxied and direct requests.
+  You *must* also specify the `proxy_protocol_permitted_proxies` list of trusted proxies. There are many upstream proxies/load balancers that support this protocol, for example nginx and haproxy to name a couple.
+
+* **proxy_protocol_permitted_proxies** = *list*:
+  The upstream proxies must be explicitly configured. Without this any client would be able to spoof their addresses. This setting
+  only has an effect if `proxy_protocol_enable` is set to *true*. The elements in this list must be strings consisting of IPv4 and/or IPv6
+  CIDRs.
+
 * **drop_privs** = *boolean*:
   Drop priviliges and run as the specified **user**. Defaults to *1*.
 

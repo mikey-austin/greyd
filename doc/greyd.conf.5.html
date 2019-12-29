@@ -134,6 +134,12 @@ include "/etc/greyd/conf.d/*.conf"
 <dt><strong>debug</strong> = <em>boolean</em></dt><dd><p>Log debug messages which are suppressed by default.</p></dd>
 <dt><strong>verbose</strong> = <em>boolean</em></dt><dd><p>Log blacklisted connection headers.</p></dd>
 <dt><strong>daemonize</strong> = <em>boolean</em></dt><dd><p>Detach from the controlling terminal. Defaults to <em>1</em>.</p></dd>
+<dt><strong>proxy_protocol_enable</strong> = <em>boolean</em></dt><dd><p>Proxy protocol configuration. Enabling this configuration allows greyd to sit behind a TCP load balancer that speaks the proxy protocol v1 as defined in the <a href="http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">protocol spec</a>.
+Defaults to <em>false</em>. Note that if this is enabled <em>all</em> client connections will need to specify the proxy protocol header first, ie there is no mixing of proxied and direct requests.
+You <em>must</em> also specify the <code>proxy_protocol_permitted_proxies</code> list of trusted proxies. There are many upstream proxies/load balancers that support this protocol, for example nginx and haproxy to name a couple.</p></dd>
+<dt><strong>proxy_protocol_permitted_proxies</strong> = <em>list</em></dt><dd><p>The upstream proxies must be explicitly configured. Without this any client would be able to spoof their addresses. This setting
+only has an effect if <code>proxy_protocol_enable</code> is set to <em>true</em>. The elements in this list must be strings consisting of IPv4 and/or IPv6
+CIDRs.</p></dd>
 <dt><strong>drop_privs</strong> = <em>boolean</em></dt><dd><p>Drop priviliges and run as the specified <strong>user</strong>. Defaults to <em>1</em>.</p></dd>
 <dt><strong>chroot</strong> = <em>boolean</em></dt><dd><p>Chroot the main <strong>greyd</strong> process that accepts connections. Defaults to <em>1</em>.</p></dd>
 <dt><strong>chroot_dir</strong> = <em>string</em></dt><dd><p>The location to chroot to.</p></dd>
@@ -375,7 +381,7 @@ include "/etc/greyd/conf.d/*.conf"
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>May 2016</li>
+    <li class='tc'>December 2019</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 

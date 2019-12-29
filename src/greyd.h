@@ -30,6 +30,7 @@
 
 #include "firewall.h"
 #include "hash.h"
+#include "blacklist.h"
 
 /**
  * Structure to encapsulate the state of the main
@@ -56,7 +57,14 @@ struct Greyd_state {
     Hash_T blacklists;
 
     bool proxy_protocol_enabled;
+    /* We use a blacklist structure to contain the permitted ranges for fast lookups. */
+    Blacklist_T proxy_protocol_permitted_proxies;
 };
+
+/**
+ * Parse and set the list of permitted proxy protocol upstream proxies.
+ */
+extern void Greyd_set_proxy_protocol_permitted_proxies(List_T cidrs, struct Greyd_state* state);
 
 /**
  * Process configuration input, and add resulting blacklist to the

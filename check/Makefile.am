@@ -115,54 +115,54 @@ test_trie_t_LDADD = $(test_ldadd)
 test_trie_t_CFLAGS = $(test_cflags)
 test_trie_t_SOURCES = test_trie.c test.c
 
-test_db_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
+test_db_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.la"'
 test_db_t_LDFLAGS = $(test_ldflags)
 test_db_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb.la
 test_db_t_SOURCES = test_db.c test.c
 
 test_db_sqlite_t_LDFLAGS = $(test_ldflags)
 test_db_sqlite_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_sqlite.la
-test_db_sqlite_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
+test_db_sqlite_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.la"'
 test_db_sqlite_t_SOURCES = test_db.c test.c
 
 test_db_bdb_sql_t_LDFLAGS = $(test_ldflags)
 test_db_bdb_sql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_bdb_sql.la
-test_db_bdb_sql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
+test_db_bdb_sql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.la"'
 test_db_bdb_sql_t_SOURCES = test_db.c test.c
 
 test_db_mysql_t_LDFLAGS = $(test_ldflags)
 test_db_mysql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_mysql.la
-test_db_mysql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_mysql.so"'
+test_db_mysql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_mysql.la"'
 test_db_mysql_t_SOURCES = test_db.c test.c
 
 test_db_postgresql_t_LDFLAGS = $(test_ldflags)
 test_db_postgresql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_postgresql.la
-test_db_postgresql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_postgresql.so"'
+test_db_postgresql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_postgresql.la"'
 test_db_postgresql_t_SOURCES = test_db.c test.c
 
 test_grey_t_LDFLAGS = $(test_ldflags)
 test_grey_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb.la
-test_grey_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.so"'
+test_grey_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb.la"'
 test_grey_t_SOURCES = test_grey.c test.c
 
 test_grey_sqlite_t_LDFLAGS = $(test_ldflags)
 test_grey_sqlite_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_sqlite.la
-test_grey_sqlite_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.so"'
+test_grey_sqlite_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_sqlite.la"'
 test_grey_sqlite_t_SOURCES = test_grey.c test.c
 
 test_grey_bdb_sql_t_LDFLAGS = $(test_ldflags)
 test_grey_bdb_sql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_bdb_sql.la
-test_grey_bdb_sql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.so"'
+test_grey_bdb_sql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_bdb_sql.la"'
 test_grey_bdb_sql_t_SOURCES = test_grey.c test.c
 
 test_grey_mysql_t_LDFLAGS = $(test_ldflags)
 test_grey_mysql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_mysql.la
-test_grey_mysql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_mysql.so"'
+test_grey_mysql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_mysql.la"'
 test_grey_mysql_t_SOURCES = test_grey.c test.c
 
 test_grey_postgresql_t_LDFLAGS = $(test_ldflags)
 test_grey_postgresql_t_LDADD = libgreyd_test.la -dlopen ../drivers/greyd_fw_dummy.la -dlopen ../drivers/greyd_postgresql.la
-test_grey_postgresql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_postgresql.so"'
+test_grey_postgresql_t_CFLAGS = $(test_cflags) -D'DB_DRIVER="greyd_postgresql.la"'
 test_grey_postgresql_t_SOURCES = test_grey.c test.c
 
 benchmark_blacklist_LDFLAGS = $(test_ldflags)

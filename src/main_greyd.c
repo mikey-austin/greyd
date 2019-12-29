@@ -82,7 +82,6 @@ usage(void)
 static void
 shutdown_greyd(int sig)
 {
-    i_info("shutting down greyd");
     if (Greyd_state)
         Greyd_state->shutdown = 1;
 }
@@ -323,6 +322,8 @@ int main(int argc, char** argv)
     if (Config_get_int(config, "proxy_protocol_enable", NULL, PROXY_PROTOCOL_ENABLED)) {
         i_info("proxy protocol enabled");
         state.proxy_protocol_enabled = true;
+        Greyd_set_proxy_protocol_permitted_proxies(
+            Config_get_list(config, "proxy_protocol_permitted_proxies", NULL), &state);
     }
 
     if (!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {
@@ -333,7 +334,7 @@ int main(int argc, char** argv)
         usage();
     }
 
-    if (!Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
+    if (Config_get_int(state.config, "setrlimit", NULL, SETRLIMIT)) {
         limit.rlim_cur = limit.rlim_max = state.max_cons + 15;
         if (setrlimit(RLIMIT_NOFILE, &limit) == -1)
             err(1, "setrlimit");
@@ -848,6 +849,9 @@ shutdown:
     fclose(state.grey_out);
     Hash_destroy(&state.blacklists);
     Config_destroy(&state.config);
+
+    if (state.proxy_protocol_enabled)
+        Blacklist_destroy(&state.proxy_protocol_permitted_proxies);
 
     return 0;
 }

@@ -49,6 +49,30 @@
 #define CMP(a, b) strncmp((a), (b), sizeof((b)))
 
 extern void
+Greyd_set_proxy_protocol_permitted_proxies(List_T cidrs, struct Greyd_state* state)
+{
+    struct List_entry* cur;
+    Config_value_T val;
+    char* cidr;
+
+    state->proxy_protocol_permitted_proxies = Blacklist_create(
+        "permitted-proxies", "permitted upstream proxies", BL_STORAGE_LIST);
+    if (cidrs == NULL || List_size(cidrs) == 0) {
+        i_warning("no permitted proxies configured, refusing to serve requests");
+        return;
+    }
+
+    LIST_EACH(cidrs, cur)
+    {
+        val = List_entry_value(cur);
+        if ((cidr = cv_str(val)) == NULL)
+            continue;
+        i_info("allowing upstream proxy -> %s", cidr);
+        Blacklist_add(state->proxy_protocol_permitted_proxies, cidr);
+    }
+}
+
+extern void
 Greyd_process_config(int fd, struct Greyd_state* state)
 {
     Config_T message;

@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "May 2016" "" ""
+.TH "GREYD\.CONF" "5" "December 2019" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -97,6 +97,14 @@ Log blacklisted connection headers\.
 .TP
 \fBdaemonize\fR = \fIboolean\fR
 Detach from the controlling terminal\. Defaults to \fI1\fR\.
+.
+.TP
+\fBproxy_protocol_enable\fR = \fIboolean\fR
+Proxy protocol configuration\. Enabling this configuration allows greyd to sit behind a TCP load balancer that speaks the proxy protocol v1 as defined in the protocol spec \fIhttp://www\.haproxy\.org/download/1\.8/doc/proxy\-protocol\.txt\fR\. Defaults to \fIfalse\fR\. Note that if this is enabled \fIall\fR client connections will need to specify the proxy protocol header first, ie there is no mixing of proxied and direct requests\. You \fImust\fR also specify the \fBproxy_protocol_permitted_proxies\fR list of trusted proxies\. There are many upstream proxies/load balancers that support this protocol, for example nginx and haproxy to name a couple\.
+.
+.TP
+\fBproxy_protocol_permitted_proxies\fR = \fIlist\fR
+The upstream proxies must be explicitly configured\. Without this any client would be able to spoof their addresses\. This setting only has an effect if \fBproxy_protocol_enable\fR is set to \fItrue\fR\. The elements in this list must be strings consisting of IPv4 and/or IPv6 CIDRs\.
 .
 .TP
 \fBdrop_privs\fR = \fIboolean\fR
