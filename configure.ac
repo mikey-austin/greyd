@@ -1,5 +1,5 @@
 AC_PREREQ([2.68])
-AC_INIT([greyd], [0.11.0], [mikey@greyd.org])
+AC_INIT([greyd], [0.11.1], [mikey@greyd.org])
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE
 LT_INIT([dlopen])
@@ -289,6 +289,22 @@ if test "x${netfilter_driver}" = xyes; then
     if test "x${have_netfilter}" = xyes; then
         netfilter_LIBS="$netfilter_LIBS -lipset"
         AC_DEFINE([HAVE_LIBIPSET], [1], [Netfilter IPSET management library])
+        AC_MSG_CHECKING([for libipset version 7 or later])
+        AC_COMPILE_IFELSE([AC_LANG_SOURCE(
+            [[
+                 #include <libipset/session.h>
+                 void test_func(void)
+                 {
+                     ipset_session_init(NULL, NULL);
+                 }
+            ]])],
+            [
+                 AC_MSG_RESULT([yes])
+            ],
+            [
+                 AC_MSG_RESULT([no])
+                 AC_DEFINE([LIBIPSET_PRE_V7_COMPAT], [ 1 ], [Define to 1 if libipset library version prior to v7])
+            ])
     else
         AC_MSG_FAILURE([libipset is required to build the netfilter driver])
     fi
