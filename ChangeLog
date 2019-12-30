@@ -1,5 +1,9 @@
 2019-12-30  Mikey Austin  <mikey@greyd.org>
 
+	* Updated netfilter driver to work with the latest ipset 7+
+
+2019-12-30  Mikey Austin  <mikey@greyd.org>
+
 	* New proxy protocol support
 
 2015-06-26  Mikey Austin  <mikey@greyd.org>
