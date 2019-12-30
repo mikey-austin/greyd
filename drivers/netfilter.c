@@ -106,6 +106,16 @@ static int ipset_swap_and_destroy(struct ipset_session*, const char*, const char
 static void set_effective_caps(void);
 static void destroy_log_entry(void*);
 
+static int
+ipset_printf(__attribute ((__unused__)) struct ipset_session *session, void *p, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    return 0;
+}
+
 /**
  * This is the libnetfilter_conntrack data callback, called for each
  * conntrack object returned from the netlink socket. We need to do
@@ -147,8 +157,8 @@ int Mod_fw_open(FW_handle_T handle)
     fwh->log = NULL;
 
     ipset_load_types();
-    fwh->session = ipset_session_init(printf);
-    ipset_envopt_parse(fwh->session, IPSET_ENV_EXIST, NULL);
+    fwh->session = ipset_session_init(ipset_printf, NULL);
+    ipset_envopt_set(fwh->session, IPSET_ENV_EXIST);
     if (fwh->session == NULL) {
         i_warning("ipset_session_init");
         goto err;
@@ -515,7 +525,7 @@ ipset_create(struct ipset_session* session, const char* set_name,
 
     if (ipset_session_data_set(session, IPSET_SETNAME, set_name) != 0) {
         i_warning("ipset create %s: %s", set_name,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
 
@@ -523,7 +533,7 @@ ipset_create(struct ipset_session* session, const char* set_name,
 
     if ((type = ipset_type_get(session, IPSET_CMD_CREATE)) == NULL) {
         i_warning("ipset type get %s: %s", set_name,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
     ipset_session_data_set(session, IPSET_OPT_TYPE, type);
@@ -537,7 +547,7 @@ ipset_create(struct ipset_session* session, const char* set_name,
 
     if (ipset_cmd(session, IPSET_CMD_CREATE, 0) < 0) {
         i_warning("ipset create %s: %s", set_name,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
 
@@ -563,13 +573,13 @@ ipset_add(struct ipset_session* session, const char* set_name, char* cidr,
 
     if (ipset_parse_elem(session, type->last_elem_optional, cidr) < 0) {
         i_warning("ipset parse elem %s: %s", cidr,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
 
     if (ipset_cmd(session, IPSET_CMD_ADD, 0) < 0) {
         i_warning("ipset add %s: %s", set_name,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
 
@@ -588,7 +598,7 @@ ipset_swap_and_destroy(struct ipset_session* session, const char* set_name,
 
     if (ipset_cmd(session, IPSET_CMD_SWAP, 0) != 0) {
         i_warning("ipset swap %s <-> %s: %s", set_name, stage_set_name,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
 
@@ -601,7 +611,7 @@ ipset_swap_and_destroy(struct ipset_session* session, const char* set_name,
 
     if (ipset_cmd(session, IPSET_CMD_DESTROY, 0) < 0) {
         i_warning("ipset destroy %s: %s", stage_set_name,
-            ipset_session_error(session));
+            ipset_session_report_msg(session));
         return -1;
     }
 
