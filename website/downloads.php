@@ -16,7 +16,7 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
-                    <a href="https://github.com/mikey-austin/greyd/releases/download/v0.11.1/greyd-0.11.1.tar.gz">greyd-0.11.1.tar.gz</a> - 2019-12-30
+                    <a href="https://github.com/mikey-austin/greyd/releases/download/v0.11.2/greyd-0.11.2.tar.gz">greyd-0.11.2.tar.gz</a> - 2019-12-30
                 </li>
             </ul>
             <p>
@@ -48,7 +48,7 @@
             </p>
 
             <div class="highlight">
-<code>$ tar xzf greyd-0.11.1.tar.gz && cd greyd-0.11.1
+<code>$ tar xzf greyd-0.11.2.tar.gz && cd greyd-0.11.2
 $ ./configure --with-sqlite --with-netfilter
 $ make
 $ sudo make install</code>
