@@ -1,0 +1,25 @@
+* Building RPM packages with docker
+
+Using docker to build greyd RPMs is very convenient.
+
+All commands are run in a checkout of the source directory.
+
+** Build the centos 7 rpmbuild docker image
+
+#+BEGIN_SRC bash
+  docker build -t greyd-rpmbuild:centos7 \
+         -f packages/docker/Dockerfile.rpmbuild.centos7 .
+#+END_SRC
+
+** Make an RPM
+
+Build and RPM with the source in the current directory and output the results
+to ~/tmp/~:
+
+#+BEGIN_SRC bash
+  docker run \
+         -v `pwd`:/home/builder/source \
+         -v /tmp/:/home/builder/rpm/RPMS \
+         greyd-rpmbuild:centos7
+#+END_SRC
+

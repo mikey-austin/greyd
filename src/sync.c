@@ -552,9 +552,16 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple* gt, time_t now)
     tolen = strlen(gt->to) + 1;
     helolen = strlen(gt->helo) + 1;
 
+#ifdef OPENSSL_PRE_1_1_COMPAT
+    HMAC_CTX _ctx, *ctx = &_ctx;
+    HMAC_CTX_init(ctx);
+    HMAC_Init(ctx, engine->sync_key, sizeof(engine->sync_key),
+        EVP_sha1());
+#else
     HMAC_CTX* ctx = HMAC_CTX_new();
     HMAC_Init_ex(ctx, engine->sync_key, sizeof(engine->sync_key),
         EVP_sha1(), NULL);
+#endif
 
     sglen = sizeof(sg) + fromlen + tolen + helolen;
     padlen = SYNC_ALIGN(sglen) - sglen;
@@ -614,7 +621,11 @@ Sync_update(Sync_engine_T engine, struct Grey_tuple* gt, time_t now)
 
     /* Send message to the target hosts. */
     send_sync_message(engine, iov, i);
+#ifdef OPENSSL_PRE_1_1_COMPAT
+    HMAC_CTX_cleanup(ctx);
+#else
     HMAC_CTX_free(ctx);
+#endif
 }
 
 extern void
@@ -662,8 +673,15 @@ send_address(Sync_engine_T engine, char* ip, time_t now, time_t expire, u_int16_
     memset(&hdr, 0, sizeof(hdr));
     memset(&sd, 0, sizeof(sd));
 
+#ifdef OPENSSL_PRE_1_1_COMPAT
+    HMAC_CTX _ctx, *ctx = &_ctx;
+    HMAC_CTX_init(ctx);
+    HMAC_Init(ctx, engine->sync_key, sizeof(engine->sync_key),
+        EVP_sha1());
+#else
     HMAC_CTX* ctx = HMAC_CTX_new();
     HMAC_Init_ex(ctx, engine->sync_key, sizeof(engine->sync_key), EVP_sha1(), NULL);
+#endif
 
     /* Add SPAM sync packet header. */
     hdr.sh_version = SYNC_VERSION;
@@ -698,7 +716,11 @@ send_address(Sync_engine_T engine, char* ip, time_t now, time_t expire, u_int16_
 
     /* Send message to the target hosts. */
     send_sync_message(engine, iov, i);
+#ifdef OPENSSL_PRE_1_1_COMPAT
+    HMAC_CTX_cleanup(&ctx);
+#else
     HMAC_CTX_free(ctx);
+#endif
 }
 
 static void

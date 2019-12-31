@@ -8,9 +8,9 @@ URL:       http://greyd.org
 Source0:   %{name}-%{version}.tar.gz
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-Requires: libtool-ltdl, zlib, openssl, libdb, libcap, ipset, libmnl, libnetfilter_conntrack >= 1.0.4, libnetfilter_log, libspf2
+Requires: libtool-ltdl, zlib, openssl, libdb, libcap, ipset, libmnl, libnetfilter_conntrack >= 1.0.4, libnetfilter_log, libspf2, sqlite
 
-BuildRequires: libtool-ltdl-devel, zlib-devel, openssl-devel, libdb-devel, libcap-devel, ipset-devel, libmnl-devel, libnetfilter_conntrack-devel >= 1.0.4, libnetfilter_log-devel, libspf2-devel
+BuildRequires: libtool-ltdl-devel, zlib-devel, openssl-devel, libdb-devel, libcap-devel, ipset-devel, libmnl-devel, libnetfilter_conntrack-devel >= 1.0.4, libnetfilter_log-devel, libspf2-devel, sqlite-devel
 
 %description
 Greyd is a lightweight greylisting & blacklisting daemon. It runs on your gateway and pretends to be a real mail server. It keeps track of all hosts who connect, and automatically whitelists hosts after a period.
@@ -30,6 +30,7 @@ Greyd is a lightweight greylisting & blacklisting daemon. It runs on your gatewa
             --includedir=%{_includedir} \
             --with-bdb \
             --with-netfilter \
+            --with-sqlite \
             --with-spf
 make
 

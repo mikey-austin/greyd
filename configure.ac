@@ -53,6 +53,10 @@ else
     AC_MSG_FAILURE([libcrypto (OpenSSL) is missing, required for sync])
 fi
 
+AC_CHECK_FUNC([HMAC_CTX_new], [], [
+    AC_DEFINE([OPENSSL_PRE_1_1_COMPAT], [1], [Define to 1 if we are pre openssl 1.1])
+], [Added in openssl 1.1])
+
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/socket.h syslog.h unistd.h])
 
@@ -303,7 +307,7 @@ if test "x${netfilter_driver}" = xyes; then
             ],
             [
                  AC_MSG_RESULT([no])
-                 AC_DEFINE([LIBIPSET_PRE_V7_COMPAT], [ 1 ], [Define to 1 if libipset library version prior to v7])
+                 AC_DEFINE([LIBIPSET_PRE_V7_COMPAT], [1], [Define to 1 if libipset library version prior to v7])
             ])
     else
         AC_MSG_FAILURE([libipset is required to build the netfilter driver])
