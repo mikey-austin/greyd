@@ -14,12 +14,11 @@ All commands are run in a checkout of the source directory.
 ** Make an RPM
 
 Build and RPM with the source in the current directory and output the results
-to ~/tmp/~:
+to ~packages/rpm/~:
 
 #+BEGIN_SRC bash
   docker run \
          -v `pwd`:/home/builder/source \
-         -v /tmp/:/home/builder/rpm/RPMS \
          greyd-rpmbuild:centos7
 #+END_SRC
 
