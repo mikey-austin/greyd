@@ -10,7 +10,7 @@ jobs:
     - name: update
       run: sudo apt-get update
     - name: update
-      run: sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev libsqlite3-dev libdb5.1-sql-dev valgrind
+      run: sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev libsqlite3-dev libdb5.3-sql-dev valgrind
     - name: autoreconf
       run: autoreconf -i
     - name: configure
