@@ -4,15 +4,17 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v1
+    - name: update
+      run: sudo apt-get update
+    - name: update
+      run: sudo apt-get install autoconf automake libtool libltdl-dev libdb-dev zlib1g-dev libssl-dev libsqlite3-dev libdb5.1-sql-dev valgrind
+    - name: autoreconf
+      run: autoreconf -i
     - name: configure
-      run: ./configure
-    - name: make
-      run: make
+      run: ./configure --with-bdb --with-bdb-sql --with-sqlite --disable-shared
     - name: make check
       run: make check
     - name: make distcheck
