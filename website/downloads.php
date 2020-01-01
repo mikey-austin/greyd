@@ -41,10 +41,10 @@
         </div>
 
         <div class="tile wide">
-          <h3>Installation from the greyd.org package repository (currently only centos 7)</h3>
+          <h3>Installation via greyd.org repo (Centos 7)</h3>
 
           <p>
-            To use the repository you can add the ~greyd.repo~ file like so:
+            To use the repository you can add the <strong>greyd.repo</strong> file like so:
           </p>
             <div class="highlight">
 <code>$ cat /etc/yum.repos.d/greyd.repo 
