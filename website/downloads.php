@@ -16,7 +16,7 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
-                    <a href="https://github.com/mikey-austin/greyd/releases/download/v0.11.2/greyd-0.11.2.tar.gz">greyd-0.11.2.tar.gz</a> - 2019-12-30
+                    <a href="https://github.com/mikey-austin/greyd/releases/download/v0.11.3/greyd-0.11.3.tar.gz">greyd-0.11.3.tar.gz</a> - 2019-12-30
                 </li>
             </ul>
             <p>
@@ -74,7 +74,7 @@ Is this ok [y/N]: y</code></div>
             </p>
 
             <div class="highlight">
-<code>$ tar xzf greyd-0.11.2.tar.gz && cd greyd-0.11.2
+<code>$ tar xzf greyd-0.11.3.tar.gz && cd greyd-0.11.3
 $ ./configure --with-sqlite --with-netfilter
 $ make
 $ sudo make install</code>

@@ -1,5 +1,10 @@
 2020-01-01  Mikey Austin  <mikey@greyd.org>
 
+	* Fix bug in sync module hmac ctx cleanup
+	* Added new -F (foreground) option to greyd
+
+2020-01-01  Mikey Austin  <mikey@greyd.org>
+
 	* Updated sync module to work with earlier < 1.1 versions of openssl
 
 2019-12-30  Mikey Austin  <mikey@greyd.org>
