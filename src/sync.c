@@ -717,7 +717,7 @@ send_address(Sync_engine_T engine, char* ip, time_t now, time_t expire, u_int16_
     /* Send message to the target hosts. */
     send_sync_message(engine, iov, i);
 #ifdef OPENSSL_PRE_1_1_COMPAT
-    HMAC_CTX_cleanup(&ctx);
+    HMAC_CTX_cleanup(ctx);
 #else
     HMAC_CTX_free(ctx);
 #endif
