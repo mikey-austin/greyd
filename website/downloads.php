@@ -41,7 +41,32 @@
         </div>
 
         <div class="tile wide">
-            <h3>Installation</h3>
+          <h3>Installation from the greyd.org package repository (currently only centos 7)</h3>
+
+          <p>
+            To use the repository you can add the ~greyd.repo~ file like so:
+          </p>
+<code>$ cat /etc/yum.repos.d/greyd.repo 
+[greyd]
+name=greyd Packages for Enterprise Linux 7 - $basearch
+baseurl=https://greyd.org/repo/centos/7/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://greyd.org/repo/greyd_pkg_sign_pub.asc
+</code>
+
+          <p>
+            Then be sure to accept the greyd GPG signing key:
+          </p>
+
+<code>Retrieving key from https://greyd.org/repo/greyd_pkg_sign_pub.asc
+Importing GPG key 0x5425A1D0:
+ Userid     : "Mikey Austin <mikey@greyd.org>"
+ Fingerprint: c3c7 ddb8 db4c 4f5b a4eb 7e67 6686 de7c 5425 a1d0
+ From       : https://greyd.org/repo/greyd_pkg_sign_pub.asc
+Is this ok [y/N]: y</mikey>
+
+            <h3>Installation from Source</h3>
 
             <p>
                 To build on GNU/Linux with the <em>SQLite DB driver</em> and the <em>Netfilter driver</em>, the following configure flags will do the trick (see ./configure --help for more):

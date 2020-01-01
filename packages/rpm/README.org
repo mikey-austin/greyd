@@ -1,0 +1,50 @@
+* Maintaining the greyd.org RPM repository
+
+** Centos 7
+
+There are a few dependencies that are not in the base centos 7 repositories, namely:
+
+- libnetfilter_log
+- libnetfilter_log-devel
+- libspf2
+- libspf2-devel
+
+In order to avoid users of the greyd.org repository having to include EPEL just for these dependencies,
+we can mirror them in our repository like so:
+
+#+BEGIN_SRC bash
+  # In /repo/centos/7/x86_64/
+  repotrack --repoid=epel \
+            libspf2 \
+            libspf2-devel \
+            libnetfilter_log-devel \
+            libnetfilter_log
+
+  # Followed by a regeneration of the repo metadata.
+  createrepo .
+#+END_SRC
+
+*** Using the greyd centos repository
+
+To use the repository you can add the ~greyd.repo~ file like so:
+
+#+BEGIN_EXAMPLE
+  $ cat /etc/yum.repos.d/greyd.repo 
+  [greyd]
+  name=greyd Packages for Enterprise Linux 7 - $basearch
+  baseurl=https://greyd.org/repo/centos/7/$basearch
+  enabled=1
+  gpgcheck=1
+  gpgkey=https://greyd.org/repo/greyd_pkg_sign_pub.asc
+#+END_EXAMPLE
+
+Then be sure to accept the greyd GPG signing key:
+
+#+BEGIN_EXAMPLE
+  Retrieving key from https://greyd.org/repo/greyd_pkg_sign_pub.asc
+  Importing GPG key 0x5425A1D0:
+   Userid     : "Mikey Austin <mikey@greyd.org>"
+   Fingerprint: c3c7 ddb8 db4c 4f5b a4eb 7e67 6686 de7c 5425 a1d0
+   From       : https://greyd.org/repo/greyd_pkg_sign_pub.asc
+  Is this ok [y/N]: y
+#+END_EXAMPLE
