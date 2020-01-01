@@ -69,11 +69,11 @@ static void
 usage(void)
 {
     fprintf(stderr,
-        "usage: %s [-f config] [-45bdv] [-B maxblack] [-c maxcon] "
+        "usage: %s [-f config] [-45bdvF] [-B maxblack] [-c maxcon] "
         "[-G passtime:greyexp:whiteexp]\n"
         "\t[-h hostname] [-l address] [-M address] [-n name] [-p port]\n"
         "\t[-P pidfile] [-S secs] [-s secs] [-L ipv6 address]\n"
-        "[-w window] [-Y synctarget] [-y synclisten]\n",
+        "\t[-w window] [-Y synctarget] [-y synclisten]\n",
         PROG_NAME);
 
     exit(1);
@@ -160,9 +160,13 @@ int main(int argc, char** argv)
     Greyd_state = &state;
 
     while ((option = getopt(argc, argv,
-                "456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:P:"))
+                "F456f:l:L:c:B:p:bdG:h:s:S:M:n:vw:y:Y:P:"))
         != -1) {
         switch (option) {
+        case 'F':
+            Config_set_int(opts, "daemonize", NULL, 0);
+            break;
+
         case 'f':
             config_file = optarg;
             break;

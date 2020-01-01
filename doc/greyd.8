@@ -1,13 +1,13 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD" "8" "December 2019" "" ""
+.TH "GREYD" "8" "January 2020" "" ""
 .
 .SH "NAME"
 \fBgreyd\fR \- spam deferral daemon
 .
 .SH "SYNOPSIS"
-\fBgreyd\fR [\fB\-456bdv\fR] [\fB\-f\fR config] [\fB\-B\fR maxblack] [\fB\-c\fR maxcon] [\fB\-G\fR passtime:greyexp:whiteexp] [\fB\-h\fR hostname] [\fB\-l\fR address] [\fB\-L\fR address] [\fB\-M\fR address] [\fB\-n\fR name] [\fB\-p\fR port] [\fB\-P\fR pidfile] [\fB\-S\fR secs] [\fB\-s\fR secs] [\fB\-w\fR window] [\fB\-Y\fR synctarget] [\fB\-y\fR synclisten]
+\fBgreyd\fR [\fB\-456bdvF\fR] [\fB\-f\fR config] [\fB\-B\fR maxblack] [\fB\-c\fR maxcon] [\fB\-G\fR passtime:greyexp:whiteexp] [\fB\-h\fR hostname] [\fB\-l\fR address] [\fB\-L\fR address] [\fB\-M\fR address] [\fB\-n\fR name] [\fB\-p\fR port] [\fB\-P\fR pidfile] [\fB\-S\fR secs] [\fB\-s\fR secs] [\fB\-w\fR window] [\fB\-Y\fR synctarget] [\fB\-y\fR synclisten]
 .
 .SH "DESCRIPTION"
 \fBgreyd\fR is a fake mail daemon which rejects false mail\. It is designed to be very efficient so that it does not slow down the receiving machine\.
@@ -110,6 +110,10 @@ Delay each character sent to the client by the specified amount of seconds\. The
 .TP
 \fB\-v\fR
 Enable verbose logging\. By default \fBgreyd\fR logs connections, disconnections and blacklist matches to syslog at \fILOG_INFO\fR level\. With verbose logging enabled, message detail including subject and recipient information is logged at \fILOG_INFO\fR, along with the message body and SMTP dialogue being logged at \fILOG_DEBUG\fR level\.
+.
+.TP
+\fB\-F\fR
+Run \fBgreyd\fR in the foreground, ie don\'t daemonize\.
 .
 .TP
 \fB\-w\fR \fIwindow\fR

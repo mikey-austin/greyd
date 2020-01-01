@@ -3,7 +3,7 @@ greyd(8) -- spam deferral daemon
 
 ## SYNOPSIS
 
-`greyd` [**-456bdv**] [**-f** config] [**-B** maxblack] [**-c** maxcon] [**-G** passtime:greyexp:whiteexp] [**-h** hostname] [**-l** address] [**-L** address] [**-M** address] [**-n** name] [**-p** port] [**-P** pidfile] [**-S** secs] [**-s** secs] [**-w** window] [**-Y** synctarget] [**-y** synclisten]
+`greyd` [**-456bdvF**] [**-f** config] [**-B** maxblack] [**-c** maxcon] [**-G** passtime:greyexp:whiteexp] [**-h** hostname] [**-l** address] [**-L** address] [**-M** address] [**-n** name] [**-p** port] [**-P** pidfile] [**-S** secs] [**-s** secs] [**-w** window] [**-Y** synctarget] [**-y** synclisten]
 
 ## DESCRIPTION
 
@@ -79,6 +79,9 @@ Delay each character sent to the client by the specified amount of seconds. The 
 
 * **-v**:
 Enable verbose logging. By default **greyd** logs connections, disconnections and blacklist matches to syslog at *LOG_INFO* level. With verbose logging enabled, message detail including subject and recipient information is logged at *LOG_INFO*, along with the message body and SMTP dialogue being logged at *LOG_DEBUG* level.
+
+* **-F**:
+Run **greyd** in the foreground, ie don't daemonize.
 
 * **-w** *window*:
 Set the socket receive buffer to this many bytes, adjusting the window size.
