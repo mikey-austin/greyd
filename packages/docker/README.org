@@ -22,3 +22,22 @@ to ~packages/rpm/~:
          greyd-rpmbuild:centos7
 #+END_SRC
 
+** Sign the RPMs before distribution
+
+You first need to set the ~.rpmmacros~ appropriately, eg:
+
+#+BEGIN_EXAMPLE
+  %_topdir    /home/mikey/rpmbuild
+  %_gpg_name  Mikey Austin <mikey@greyd.org>
+  %_gpg_bin   /usr/bin/gpg2
+#+END_EXAMPLE
+
+Then you can sign the resulting RPM files:
+
+#+BEGIN_SRC bash
+  find packages/rpm/*.rpm -exec rpm --addsign {} \;
+#+END_SRC
+
+It's easier to sign the artifacts outside of the docker image so we
+don't need to muck about with private keys and different versions of
+gpg.
