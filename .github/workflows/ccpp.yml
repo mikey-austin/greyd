@@ -17,5 +17,3 @@ jobs:
       run: ./configure --with-bdb --with-sqlite --disable-shared
     - name: make check
       run: make check
-    - name: make distcheck
-      run: make distcheck
