@@ -41,3 +41,36 @@ Then you can sign the resulting RPM files:
 It's easier to sign the artifacts outside of the docker image so we
 don't need to muck about with private keys and different versions of
 gpg.
+
+** Building the main greyd image
+
+*** Centos 7 image
+
+We make use of the above RPM distribution to simplify the the building
+and installation of the docker image.
+
+*** Building the image
+
+From the root directory of the repository:
+
+#+BEGIN_SRC bash
+  docker build -t greyd:centos7 \
+         -f packages/docker/Dockerfile.greyd.centos7 .
+#+END_SRC
+
+*** Running the image
+
+You will probably want to mount your own configuration to
+~/etc/greyd/greyd.conf~, or better yet build your own image
+that does this and uses the greyd image as the base.
+
+Below is an example of a typical run:
+
+#+BEGIN_SRC bash
+  docker run -P -p8025:8025 \
+         -v ~/.greyd.conf:/etc/greyd/greyd.conf \
+         greyd:centos7
+#+END_SRC
+
+Make sure that the ~bind_address~ is set to ~0.0.0.0~ in your configuration
+or else the ports won't be accessible.

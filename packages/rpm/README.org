@@ -24,6 +24,8 @@ we can mirror them in our repository like so:
   createrepo .
 #+END_SRC
 
+You then need to resign the above packages with the greyd key.
+
 *** Using the greyd centos repository
 
 To use the repository you can add the ~greyd.repo~ file like so:

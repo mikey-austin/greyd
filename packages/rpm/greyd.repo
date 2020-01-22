@@ -1,0 +1,6 @@
+[greyd]
+name=greyd Packages for Enterprise Linux 7 - $basearch
+baseurl=https://greyd.org/repo/centos/7/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://greyd.org/repo/greyd_pkg_sign_pub.asc

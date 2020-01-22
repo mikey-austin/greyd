@@ -1,0 +1,12 @@
+FROM centos:7
+
+ADD packages/rpm/greyd.repo /etc/yum.repos.d/greyd.repo
+
+RUN rpm --import https://greyd.org/repo/greyd_pkg_sign_pub.asc && \
+        yum install -y greyd && \
+        yum clean all
+
+EXPOSE 8025/tcp
+
+# Override config at /etc/greyd/greyd.conf
+ENTRYPOINT [ "/usr/sbin/greyd", "-F" ]
