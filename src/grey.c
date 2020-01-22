@@ -59,6 +59,7 @@
 #include "greydb.h"
 #include "ip.h"
 #include "list.h"
+#include "log.h"
 #include "sync.h"
 #include "utils.h"
 
@@ -184,6 +185,8 @@ Grey_start(Greylister_T greylister, pid_t grey_pid, FILE* grey_in,
         exit(1);
 
     case 0:
+        Log_reinit(greylister->config);
+
         /*
          * In child. Obtain a fresh database handle.
          */

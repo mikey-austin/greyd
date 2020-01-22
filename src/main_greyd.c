@@ -153,6 +153,7 @@ int main(int argc, char** argv)
         Config_set_str(opts, "hostname", NULL, hostname);
     }
 
+    memset(&state, 0, sizeof(struct Greyd_state));
     state.shutdown = 0;
     state.max_files = max_files();
 
@@ -465,6 +466,8 @@ int main(int argc, char** argv)
 
         case 0:
             /* In child. */
+            Log_reinit(state.config);
+
             memset(&sa, 0, sizeof(sa));
             sigfillset(&sa.sa_mask);
             sa.sa_handler = shutdown_greyd;
@@ -509,6 +512,8 @@ int main(int argc, char** argv)
 
         case 0:
             /* In child. */
+            Log_reinit(state.config);
+
             signal(SIGPIPE, SIG_IGN);
 
             if ((state.grey_out = fdopen(grey_pipe[1], "w")) == NULL)
