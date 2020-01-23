@@ -329,6 +329,8 @@ int main(int argc, char** argv)
         state.proxy_protocol_enabled = true;
         Greyd_set_proxy_protocol_permitted_proxies(
             Config_get_list(config, "proxy_protocol_permitted_proxies", NULL), &state);
+    } else {
+        state.proxy_protocol_enabled = false;
     }
 
     if (!Config_get_int(state.config, "enable", "grey", GREYLISTING_ENABLED)) {

@@ -1,3 +1,8 @@
+2020-01-23  Mikey Austin  <mikey@greyd.org>
+
+	* Fix bug in proxy initialization
+	* Added container support
+
 2020-01-01  Mikey Austin  <mikey@greyd.org>
 
 	* Fix bug in sync module hmac ctx cleanup
