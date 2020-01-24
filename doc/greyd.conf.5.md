@@ -54,6 +54,10 @@ The following options may be specified outside of a section. A *boolean* value i
 * **verbose** = *boolean*:
   Log blacklisted connection headers.
 
+* **log_to_file** = *string*:
+  When this option is set greyd will send logs to the specified path. This is useful for
+  containerized environments.
+
 * **daemonize** = *boolean*:
   Detach from the controlling terminal. Defaults to *1*.
 

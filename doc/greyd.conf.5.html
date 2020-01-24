@@ -133,6 +133,8 @@ include "/etc/greyd/conf.d/*.conf"
 <dl>
 <dt><strong>debug</strong> = <em>boolean</em></dt><dd><p>Log debug messages which are suppressed by default.</p></dd>
 <dt><strong>verbose</strong> = <em>boolean</em></dt><dd><p>Log blacklisted connection headers.</p></dd>
+<dt><strong>log_to_file</strong> = <em>string</em></dt><dd><p>When this option is set greyd will send logs to the specified path. This is useful for
+containerized environments.</p></dd>
 <dt><strong>daemonize</strong> = <em>boolean</em></dt><dd><p>Detach from the controlling terminal. Defaults to <em>1</em>.</p></dd>
 <dt><strong>proxy_protocol_enable</strong> = <em>boolean</em></dt><dd><p>Proxy protocol configuration. Enabling this configuration allows greyd to sit behind a TCP load balancer that speaks the proxy protocol v1 as defined in the <a href="http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">protocol spec</a>.
 Defaults to <em>false</em>. Note that if this is enabled <em>all</em> client connections will need to specify the proxy protocol header first, ie there is no mixing of proxied and direct requests.
@@ -381,7 +383,7 @@ CIDRs.</p></dd>
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>December 2019</li>
+    <li class='tc'>January 2020</li>
     <li class='tr'>greyd.conf(5)</li>
   </ol>
 

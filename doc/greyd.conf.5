@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GREYD\.CONF" "5" "December 2019" "" ""
+.TH "GREYD\.CONF" "5" "January 2020" "" ""
 .
 .SH "NAME"
 \fBgreyd\.conf\fR \- greyd configuration file
@@ -93,6 +93,10 @@ Log debug messages which are suppressed by default\.
 .TP
 \fBverbose\fR = \fIboolean\fR
 Log blacklisted connection headers\.
+.
+.TP
+\fBlog_to_file\fR = \fIstring\fR
+When this option is set greyd will send logs to the specified path\. This is useful for containerized environments\.
 .
 .TP
 \fBdaemonize\fR = \fIboolean\fR

@@ -34,6 +34,11 @@ bind_address = "127.0.0.1"
 # proxy_protocol_permitted_proxies = [ "127.0.0.0/24", "1.2.3.4", "::1/128" ]
 
 #
+# Send logs to a particular file, instead of to stdout or syslog.
+#
+#log_to_file = "/var/log/greyd.log"
+
+#
 # Main greyd port.
 #
 port = 8025

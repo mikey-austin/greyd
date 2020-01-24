@@ -32,18 +32,15 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#define DEV_STDOUT "/dev/stdout"
-
 static short Log_debug = 0;
 static short Log_syslog = 0;
 static const char* Log_ident = NULL;
 
 extern void Log_reinit(Config_T config)
 {
-    if (!Config_get_int(config, "chroot", NULL, 0)) {
-        // Re-open stdout to make this dead-simple logger container
-        // compatible.
-        int fd = open(DEV_STDOUT, O_WRONLY);
+    char *log_file = NULL;
+    if ((log_file = Config_get_str(config, "log_to_file", NULL, NULL)) != NULL) {
+        int fd = open(log_file, O_WRONLY);
         if (fd >= 0) {
             dup2(fd, STDOUT_FILENO);
         }
@@ -60,6 +57,8 @@ Log_setup(Config_T config, const char* prog_name)
         Log_syslog = 1;
         openlog(Log_ident, LOG_PID | LOG_NDELAY, LOG_DAEMON);
     }
+
+    Log_reinit(config);
 }
 
 extern void
