@@ -1,3 +1,8 @@
+2020-01-25  Mikey Austin  <mikey@greyd.org>
+
+	* Improved file logging module
+	* Updated logger to always write to stderr
+
 2020-01-24  Mikey Austin  <mikey@greyd.org>
 
 	* Added new log_to_file configuration

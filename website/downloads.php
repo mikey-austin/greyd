@@ -16,6 +16,9 @@
             <p>Grab the latest distribution:</p>
             <ul>
                 <li>
+                    <a href="https://github.com/mikey-austin/greyd/releases/download/v0.11.6/greyd-0.11.6.tar.gz">greyd-0.11.6.tar.gz</a> - 2020-01-25
+                </li>
+                <li>
                     <a href="https://github.com/mikey-austin/greyd/releases/download/v0.11.5/greyd-0.11.5.tar.gz">greyd-0.11.5.tar.gz</a> - 2020-01-24
                 </li>
                 <li>
@@ -80,7 +83,7 @@ Is this ok [y/N]: y</code></div>
             </p>
 
             <div class="highlight">
-<code>$ tar xzf greyd-0.11.5.tar.gz && cd greyd-0.11.5
+<code>$ tar xzf greyd-0.11.6.tar.gz && cd greyd-0.11.6
 $ ./configure --with-sqlite --with-netfilter
 $ make
 $ sudo make install</code>

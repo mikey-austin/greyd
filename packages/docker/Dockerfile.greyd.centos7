@@ -8,5 +8,7 @@ RUN rpm --import https://greyd.org/repo/greyd_pkg_sign_pub.asc && \
 
 EXPOSE 8025/tcp
 
+RUN ln -sf /dev/stdout /tmp/greyd.log
+
 # Override config at /etc/greyd/greyd.conf
 ENTRYPOINT [ "/usr/sbin/greyd", "-F" ]
