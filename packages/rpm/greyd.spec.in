@@ -89,6 +89,7 @@ fi
 %define _unpackaged_files_terminate_build 0
 %doc README COPYING AUTHORS
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
+%config(noreplace) %{_sysconfdir}/%{name}/%{name}.docker.conf
 %attr(0750,root,root) %{_sbindir}/grey*
 %attr(0755,root,root) %config /etc/rc.d/init.d/greyd
 %attr(0755,root,root) %config /etc/rc.d/init.d/greylogd
