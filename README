@@ -1,7 +1,8 @@
 greyd - greylisting & blacklisting daemon
 ================================================
 
-[![Build Status](https://travis-ci.org/mikey-austin/greyd.svg?branch=master)](https://travis-ci.org/mikey-austin/greyd)
+![C/C++ CI](https://github.com/mikey-austin/greyd/workflows/C/C++%20CI/badge.svg)
+![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/mikeyaustin/greyd)
 
 Project Website
 ---------------
