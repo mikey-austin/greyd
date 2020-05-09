@@ -32,7 +32,9 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/in.h>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>

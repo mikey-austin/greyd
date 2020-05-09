@@ -74,3 +74,19 @@ Below is an example of a typical run:
 
 Make sure that the ~bind_address~ is set to ~0.0.0.0~ in your configuration
 or else the ports won't be accessible.
+
+* Alpine docker images
+
+The alpine greyd docker file builds greyd from source in contrast
+to the centos 7 greyd docker image which installs via yum.
+
+* Running greyd via docker
+
+Note, in order for greyd to be allowed to manage ipsets and other
+netfilter related operations, the container needs to be run with
+the ~NET_ADMIN~ capability like so:
+
+#+BEGIN_EXAMPLE
+$ docker run -P -p8025:8025 --cap-add=NET_ADMIN greyd:alpine
+greyd[7]: listening for incoming connections
+#+END_EXAMPLE

@@ -472,7 +472,7 @@ AC_TYPE_SSIZE_T
 # Checks for library functions.
 AC_FUNC_CHOWN
 AC_FUNC_FORK
-AC_CHECK_FUNCS([dup2 getcwd gethostname inet_ntoa memset mkdir socket strchr strdup strerror strncasecmp strpbrk strtol tzset strnlen setresgid setresuid setregid setreuid])
+AC_CHECK_FUNCS([rresvport dup2 getcwd gethostname inet_ntoa memset mkdir socket strchr strdup strerror strncasecmp strpbrk strtol tzset strnlen setresgid setresuid setregid setreuid])
 
 AC_CONFIG_FILES([Makefile
         src/Makefile

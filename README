@@ -36,6 +36,19 @@ to **spamd**, **greyd** aims to:
 
   - Be able to sync seemlessly with native **spamd**.
 
+Docker
+------
+
+Both centos7 and alpine based images are automatically built and available via the
+[greyd dockerhub](https://hub.docker.com/repository/docker/mikeyaustin/greyd).
+
+Note, the centos7 image is built from the latest greyd release, where the alpine
+image is built from the latest commit on master.
+
+You can run greyd with something like:
+
+    $ docker run -P -p8025:8025 --cap-add=NET_ADMIN mikeyaustin/greyd:alpine
+
 Platforms
 ---------
 

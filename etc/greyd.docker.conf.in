@@ -82,14 +82,30 @@ setrlimit = 0
 # The firewall configuration.
 #
 section firewall {
-    driver = "/usr/lib64/greyd/greyd_fw_dummy.so"
+    #driver = "@libdir@/@PACKAGE@/greyd_fw_dummy.la"
+    driver = "@libdir@/@PACKAGE@/greyd_netfilter.la"
+
+    # Max. number of IPSET set elements.
+    max_elements = 1000000
+
+    # Max. IPSET hash size.
+    hash_size = 1048576
+
+    #
+    # Greylogd tracking via the iptables NFLOG target and
+    # corresponding --nflog-group.
+    #
+    track_outbound  = 1
+    inbound_group  = 155
+    outbound_group = 255
 }
 
 #
 # The greylisting database configuration.
 #
 section database {
-    driver  = "/usr/lib64/greyd/greyd_sqlite.so"
+    driver  = "@libdir@/@PACKAGE@/greyd_sqlite.la"
+    #driver  = "@libdir@/@PACKAGE@/greyd_bdb.la"
     path    = "/tmp/"
     db_name = "@PACKAGE@.db"
 }
@@ -112,7 +128,7 @@ section sync {
 # SPF validation
 #
 section spf {
-    enable = 1
+    enable = 0
 
     # Whitelist hosts that pass SPF validation.
     whitelist_on_pass = 0

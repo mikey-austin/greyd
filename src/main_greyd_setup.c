@@ -283,9 +283,16 @@ send_blacklist(FW_handle_T fw, Blacklist_T blacklist, int greyonly,
      * Send this blacklist's information to greyd over the config connection. The
      * source port must be in the privileged range.
      */
+#ifdef HAVE_RRESVPORT
     priv_sock = rresvport(&reserved_port);
     if (priv_sock == -1)
         err(1, "could not bind privileged source port");
+#else
+    // TODO: change this communication with the greyd daemon to be
+    //       over a unix socket so we don't need to rely on these
+    //       low ports (which doesn't work on musl).
+    err(1, "cannot bind to privileged ports on this system");
+#endif
 
     memset(&cfg_addr, 0, sizeof(cfg_addr));
     cfg_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
