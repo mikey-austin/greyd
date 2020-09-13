@@ -23,7 +23,9 @@ RUN apk add --update-cache \
         libnetfilter_log libnetfilter_log-dev \
         libspf2 libspf2-dev \
         sqlite sqlite-dev \
-        mariadb-client mariadb-dev \
+        mariadb-client \
+        mariadb-connector-c \
+        mariadb-connector-c-dev \
         #
         # Build and install the software.
         #
@@ -58,7 +60,7 @@ RUN apk add --update-cache \
         libmnl-dev \
         libnetfilter_conntrack-dev \
         libnetfilter_log-dev \
-        mariadb-dev \
+        mariadb-connector-c-dev \
         libspf2-dev \
         #
         # Remove package cache
