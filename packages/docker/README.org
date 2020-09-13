@@ -80,6 +80,11 @@ or else the ports won't be accessible.
 The alpine greyd docker file builds greyd from source in contrast
 to the centos 7 greyd docker image which installs via yum.
 
+#+BEGIN_SRC bash
+  docker build -t greyd:alpine \
+      -f packages/docker/Dockerfile.alpine .
+#+END_SRC
+
 * Running greyd via docker
 
 Note, in order for greyd to be allowed to manage ipsets and other

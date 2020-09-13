@@ -12,7 +12,7 @@ daemonize = 0
 #
 # Main daemon user to drop privileges to.
 #
-user = "root"
+user = "greyd"
 
 #
 # Address to listen on.
@@ -57,8 +57,8 @@ banner = "greyd IP-based SPAM blocker"
 #
 error_code = "450"
 
-chroot     = 0
-drop_privs = 0
+chroot     = 1
+drop_privs = 1
 greyd_pidfile = "/tmp/greyd.pid"
 greylogd_pidfile = "/tmp/greylogd.pid"
 
@@ -82,30 +82,31 @@ setrlimit = 0
 # The firewall configuration.
 #
 section firewall {
-    #driver = "@libdir@/@PACKAGE@/greyd_fw_dummy.la"
-    driver = "@libdir@/@PACKAGE@/greyd_netfilter.la"
+    driver = "@libdir@/@PACKAGE@/greyd_fw_dummy.la"
+    #driver = "@libdir@/@PACKAGE@/greyd_netfilter.la"
 
     # Max. number of IPSET set elements.
-    max_elements = 1000000
+    #max_elements = 1000000
 
     # Max. IPSET hash size.
-    hash_size = 1048576
+    #hash_size = 1048576
 
     #
     # Greylogd tracking via the iptables NFLOG target and
     # corresponding --nflog-group.
     #
-    track_outbound  = 1
-    inbound_group  = 155
-    outbound_group = 255
+    #track_outbound  = 1
+    #inbound_group  = 155
+    #outbound_group = 255
 }
 
 #
 # The greylisting database configuration.
 #
 section database {
-    driver  = "@libdir@/@PACKAGE@/greyd_sqlite.la"
-    #driver  = "@libdir@/@PACKAGE@/greyd_bdb.la"
+    #driver  = "@libdir@/@PACKAGE@/greyd_sqlite.la"
+    #driver  = "@libdir@/@PACKAGE@/greyd_mysql.la"
+    driver  = "@libdir@/@PACKAGE@/greyd_bdb.la"
     path    = "/tmp/"
     db_name = "@PACKAGE@.db"
 }
@@ -143,7 +144,7 @@ section spf {
 #
 section grey {
     enable              = 1
-    user                = "root"
+    user                = "greydb"
     traplist_name       = "greyd-greytrap"
     traplist_message    = "Your address %A has mailed to spamtraps here"
     whitelist_name      = "greyd-whitelist"

@@ -23,6 +23,7 @@ RUN apk add --update-cache \
         libnetfilter_log libnetfilter_log-dev \
         libspf2 libspf2-dev \
         sqlite sqlite-dev \
+        mariadb-client mariadb-dev \
         #
         # Build and install the software.
         #
@@ -31,6 +32,7 @@ RUN apk add --update-cache \
         DEFAULT_CONFIG="/usr/local/etc/greyd/greyd.docker.conf" \
         GREYD_PIDFILE="/tmp/greyd.pid" \
         GREYLOGD_PIDFILE="/tmp/greylogd.pid" \
+        --with-mysql \
         --with-bdb \
         --with-sqlite \
         --with-netfilter \
@@ -56,6 +58,7 @@ RUN apk add --update-cache \
         libmnl-dev \
         libnetfilter_conntrack-dev \
         libnetfilter_log-dev \
+        mariadb-dev \
         libspf2-dev \
         #
         # Remove package cache
@@ -65,5 +68,9 @@ RUN apk add --update-cache \
 EXPOSE 8025/tcp
 
 RUN ln -sf /dev/stdout /tmp/greyd.log
+RUN addgroup -S greyd
+RUN addgroup -S greydb
+RUN adduser -HSD greyd greyd
+RUN adduser -HSD greydb greydb
 
 ENTRYPOINT [ "/usr/local/sbin/greyd", "-F" ]
